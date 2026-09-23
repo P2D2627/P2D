@@ -15,3 +15,23 @@ export_credentials.cfg
 .mono/
 data_*/
 mono_crash.*.json
+
+# Export / build output
+builds/
+export/
+# export_presets.cfg versiona-se: num grupo, os presets de export sao partilhados.
+# As credenciais ficam noutro ficheiro (export_credentials.cfg), ja ignorado acima.
+
+# Studio / Claude Code
+.claude/
+CLAUDE.md
+CLAUDE.local.md
+STUDIO_LOG.md
+STUDIO_ARCHIVE.md
+
+# Documentos (README fica: e a montra do repo)
+*.md
+!README.md
+
+# NAO ignorar: *.import e *.uid versionam-se sempre.
+# Sem eles, quem clonar reimporta tudo e as referencias entre recursos partem.
