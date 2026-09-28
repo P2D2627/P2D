@@ -22,12 +22,14 @@ export/
 # export_presets.cfg versiona-se: num grupo, os presets de export sao partilhados.
 # As credenciais ficam noutro ficheiro (export_credentials.cfg), ja ignorado acima.
 
-# Studio / Claude Code
+# Claude Code (setup local; nada disto vai para o repo)
 .claude/
 CLAUDE.md
 CLAUDE.local.md
-STUDIO_LOG.md
-STUDIO_ARCHIVE.md
+ESTADO.md
+producao.md
+uso_de_ia.md
+decisoes/
 
 # Documentos (README fica: e a montra do repo)
 *.md
