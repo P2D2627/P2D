@@ -22,18 +22,5 @@ export/
 # export_presets.cfg versiona-se: num grupo, os presets de export sao partilhados.
 # As credenciais ficam noutro ficheiro (export_credentials.cfg), ja ignorado acima.
 
-# Claude Code (setup local; nada disto vai para o repo)
-.claude/
-CLAUDE.md
-CLAUDE.local.md
-ESTADO.md
-producao.md
-uso_de_ia.md
-decisoes/
-
-# Documentos (README fica: e a montra do repo)
-*.md
-!README.md
-
 # NAO ignorar: *.import e *.uid versionam-se sempre.
 # Sem eles, quem clonar reimporta tudo e as referencias entre recursos partem.

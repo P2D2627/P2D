@@ -1,13 +1,11 @@
-# One of Us
+# P2D
 
-Metroidvania 2D de exploração vertical, desenvolvido em Godot 4 para a unidade curricular de
+Aventura de plataformas 2D, desenvolvida em Godot 4 para a unidade curricular de
 **Projeto de Jogo 2D** (Mestrado em Desenvolvimento de Jogos Digitais, Universidade de Aveiro).
-Tema: *Destroy Yourself*.
+Tema: *Destroy Yourself*. Título por decidir.
 
-Um humano cai nos esgotos de uma metrópole distópica, onde vivem duas sociedades de mutantes em
-guerra. Para voltar à superfície tem de se mutar: injetar o ADN da facção que o acolheu e
-substituir o próprio corpo, parte a parte. A árvore de progressão é literalmente o corpo do
-protagonista — ficar mais forte e ficar menos humano são a mesma ação.
+Um homem que se acha tão justo como Job acorda no inferno e tem de subir sete pecados sem poder
+atacar, enquanto cada demónio lhe oferece um atalho e o jogo toma nota do que ele aceita.
 
 > ⚠️ **Estado: pré-produção.** O projeto está configurado mas ainda não tem gameplay. Correr o
 > projeto abre uma janela vazia.
@@ -81,9 +79,6 @@ nossas.
 | `move_left` / `move_right` | A / D, setas | stick esquerdo (eixo 0) |
 | `move_up` / `move_down` | W / S, setas | stick esquerdo (eixo 1) |
 | `jump` | Espaço | A / Cross |
-| `attack_light` | J | X / Square |
-| `attack_heavy` | K | Y / Triangle |
-| `dash` | Shift | RB / R1 |
 | `interact` | E | B / Circle |
 | `pause` | Escape | Start |
 
