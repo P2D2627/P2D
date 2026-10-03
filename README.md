@@ -45,6 +45,7 @@ código 0 se passarem e 1 se falharem (`godot` é o executável do Godot 4.7):
 
 ```
 godot --headless --fixed-fps 60 --path Projeto --script res://tests/test_jump_height.gd
+godot --headless --fixed-fps 60 --path Projeto --script res://tests/test_player_movement_stats.gd
 ```
 
 ## Decisões de arquitetura
@@ -129,10 +130,19 @@ o player em todas as cenas.
 | Max Fall Speed | 1400 px/s | a velocidade máxima a cair |
 | Jump Height | 240 px | 2,5 alturas do player; o salto chega exatamente a esta altura |
 | Time To Peak | 0,35 s | do chão ao topo; a descer é mais rápido, cerca de 0,27 s |
+| Min Jump Height | 80 px | o salto mais baixo: um toque rápido sobe cerca de 88 px, menos do que a altura do player |
 
 Para quem desenha níveis: a sala `scenes/levels/test_room.tscn` (F6) serve para experimentar o
-movimento, e o salto mais baixo, ao largar o botão cedo, entra nesta tabela quando estiver feito. O
-dano de queda, quando houver SP, mede-se pela altura da queda, porque a velocidade a cair tem máximo.
+movimento. O salto sobe entre cerca de 88 px, com um toque rápido, e 240 px, com o botão seguro até
+ao topo; quanto mais tempo se segura, mais alto. Largar o botão a subir torna a gravidade mais
+forte, e é isso que encurta o salto. O dano de queda, quando houver SP, mede-se pela altura da
+queda, porque a velocidade a cair tem máximo.
+
+Para quem fizer molas, empurrões para cima ou plataformas que sobem: a subir sem o botão de saltar
+carregado, o player trava como num salto curto, mesmo que a subida não venha de um salto. Ao sair de
+uma plataforma que se move, o `CharacterBody2D` soma por omissão a velocidade dela à do player, por
+isso também conta. Quando a primeira destas coisas entrar, o player tem de passar a distinguir as
+duas subidas.
 
 ## Convenções de código
 

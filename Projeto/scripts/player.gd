@@ -7,6 +7,8 @@ extends CharacterBody2D
 
 func _ready() -> void:
 	assert(stats != null, "Player: assign a PlayerMovementStats resource to Stats.")
+	assert(stats.min_jump_height <= stats.jump_height,
+			"Player: Min Jump Height is above Jump Height in Stats, so every jump is a full jump.")
 
 
 func _physics_process(delta: float) -> void:
@@ -18,8 +20,17 @@ func _physics_process(delta: float) -> void:
 
 func _apply_gravity(delta: float) -> void:
 	if not is_on_floor():
-		var gravity: float = stats.get_rise_gravity() if velocity.y < 0.0 else stats.fall_gravity
-		velocity.y = move_toward(velocity.y, stats.max_fall_speed, gravity * delta)
+		velocity.y = move_toward(velocity.y, stats.max_fall_speed, _current_gravity() * delta)
+
+
+## Falling uses fall_gravity. Going up uses the jump's own gravity while Jump is held, and a
+## stronger one once it is let go, which makes the jump lower.
+func _current_gravity() -> float:
+	if velocity.y >= 0.0:
+		return stats.fall_gravity
+	if Input.is_action_pressed(&"jump"):
+		return stats.get_rise_gravity()
+	return stats.get_jump_cut_gravity()
 
 
 func _apply_jump(delta: float) -> void:
