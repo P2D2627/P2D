@@ -98,6 +98,32 @@ Inspector, nunca o número no código.
 Separar *hitbox* (o que causa dano) de *hurtbox* (o que recebe dano) permite que um ataque
 atravesse um inimigo sem o empurrar, e que inimigos se atinjam uns aos outros se quisermos.
 
+## Player
+
+Cena em `scenes/actors/player.tscn`, com o script `scripts/player.gd`. É um `CharacterBody2D`
+com uma caixa de colisão de 48 × 96 px e a origem nos pés: para pôr o player num nível, a origem
+fica na linha do chão. Está na camada `player` e colide com `world` e `one_way_platform`.
+
+**Sensação: fast paced.** Uma velocidade só, sem botão de correr. O player arranca quase logo e
+para depois de um deslize curto. O peso da personagem vem da apresentação (aterragem, som,
+câmara), não de controlos lentos. As variações de velocidade vêm do jogo: o crucifixo e a preguiça
+abrandam.
+
+Os valores afinam-se no Inspector, no recurso `resources/player_movement_stats.tres`. Mudá-lo muda
+o player em todas as cenas.
+
+| Valor | Agora | Na prática |
+|---|---|---|
+| Max Run Speed | 720 px/s | atravessa o ecrã em cerca de 2,7 s |
+| Time To Max Speed | 0,1 s | anda 36 px até chegar à velocidade máxima |
+| Time To Stop | 0,15 s | desliza cerca de 54 px depois de largar a tecla |
+| Fall Gravity | 7850 px/s² | chega à queda máxima em cerca de 0,18 s |
+| Max Fall Speed | 1400 px/s | a velocidade máxima a cair |
+
+Para quem desenha níveis: a sala `scenes/levels/test_room.tscn` (F6) serve para experimentar o
+movimento, e as medidas do salto entram aqui quando o salto estiver feito. O dano de queda, quando
+houver SP, mede-se pela altura da queda, porque a velocidade a cair tem máximo.
+
 ## Convenções de código
 
 - **GDScript com tipagem estática** em variáveis, parâmetros e retornos. Não é estilo: o Godot
