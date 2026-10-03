@@ -119,17 +119,18 @@ câmara), não de controlos lentos. As variações de velocidade vêm do jogo: o
 abrandam.
 
 Os valores afinam-se no Inspector, no recurso `resources/player_movement_stats.tres`. Mudá-lo muda
-o player em todas as cenas.
+o player em todas as cenas. A coluna "Na prática" diz o que o jogo faz, frame a frame, a 60 frames
+por segundo.
 
 | Valor | Agora | Na prática |
 |---|---|---|
 | Max Run Speed | 720 px/s | atravessa o ecrã em cerca de 2,7 s |
-| Time To Max Speed | 0,1 s | anda 36 px até chegar à velocidade máxima |
-| Time To Stop | 0,15 s | desliza cerca de 54 px depois de largar a tecla |
+| Time To Max Speed | 0,1 s | anda 42 px até chegar à velocidade máxima |
+| Time To Stop | 0,15 s | desliza 48 px depois de largar a tecla |
 | Fall Gravity | 7850 px/s² | chega à queda máxima em cerca de 0,18 s |
 | Max Fall Speed | 1400 px/s | a velocidade máxima a cair |
 | Jump Height | 240 px | 2,5 alturas do player; o salto chega exatamente a esta altura |
-| Time To Peak | 0,35 s | do chão ao topo; a descer é mais rápido, cerca de 0,27 s |
+| Time To Peak | 0,35 s | do chão ao topo, arredondado a frames inteiros (1/60 s); a descer é mais rápido, cerca de 0,27 s |
 | Min Jump Height | 80 px | o salto mais baixo: um toque rápido sobe cerca de 88 px, menos do que a altura do player |
 
 Para quem desenha níveis: a sala `scenes/levels/test_room.tscn` (F6) serve para experimentar o
