@@ -8,6 +8,9 @@ extends Resource
 @export_range(0.01, 1.0, 0.01, "suffix:s") var time_to_max_speed: float = 0.1
 ## Seconds to stop from top speed after letting go.
 @export_range(0.01, 1.0, 0.01, "suffix:s") var time_to_stop: float = 0.15
+## Share of the running acceleration and braking kept in the air: 1 is the same as on the floor, 0
+## keeps the speed the player left the floor with.
+@export_range(0.0, 1.0, 0.05) var air_control: float = 0.7
 
 @export_group("Gravity")
 ## Downward acceleration while falling, in px/s².

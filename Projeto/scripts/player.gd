@@ -41,9 +41,13 @@ func _apply_jump(delta: float) -> void:
 		velocity.y = -(stats.get_jump_velocity() - half_frame_of_gravity)
 
 
+## Speeds up and slows down with the times in Stats. In the air both take longer, because only the
+## share in air_control is kept. is_on_floor() comes from the last move_and_slide(), so the take-off
+## frame still runs as on the floor and the landing frame as in the air.
 func _apply_run(delta: float) -> void:
 	var direction: float = signf(Input.get_axis(&"move_left", &"move_right"))
 	var ramp_time: float = stats.time_to_max_speed if direction != 0.0 else stats.time_to_stop
 	var target_speed: float = direction * stats.max_run_speed
-	var step: float = stats.max_run_speed / ramp_time * delta
+	var control: float = 1.0 if is_on_floor() else stats.air_control
+	var step: float = stats.max_run_speed / ramp_time * control * delta
 	velocity.x = move_toward(velocity.x, target_speed, step)
