@@ -36,7 +36,15 @@ não é versionada e pode ser apagada sem perder trabalho.
     ├── scripts/
     │   └── components/  componentes reutilizáveis (HealthComponent, Hitbox, Hurtbox…)
     ├── resources/     ficheiros .tres de dados e balanceamento
+    ├── tests/         testes que correm sem janela (ver abaixo)
     └── assets/        sprites, audio, fonts
+```
+
+Os testes de `Projeto/tests/` correm sem janela, a partir da raiz do repositório, e terminam com
+código 0 se passarem e 1 se falharem (`godot` é o executável do Godot 4.7):
+
+```
+godot --headless --fixed-fps 60 --path Projeto --script res://tests/test_jump_height.gd
 ```
 
 ## Decisões de arquitetura
@@ -119,10 +127,12 @@ o player em todas as cenas.
 | Time To Stop | 0,15 s | desliza cerca de 54 px depois de largar a tecla |
 | Fall Gravity | 7850 px/s² | chega à queda máxima em cerca de 0,18 s |
 | Max Fall Speed | 1400 px/s | a velocidade máxima a cair |
+| Jump Height | 240 px | 2,5 alturas do player; o salto chega exatamente a esta altura |
+| Time To Peak | 0,35 s | do chão ao topo; a descer é mais rápido, cerca de 0,27 s |
 
 Para quem desenha níveis: a sala `scenes/levels/test_room.tscn` (F6) serve para experimentar o
-movimento, e as medidas do salto entram aqui quando o salto estiver feito. O dano de queda, quando
-houver SP, mede-se pela altura da queda, porque a velocidade a cair tem máximo.
+movimento, e o salto mais baixo, ao largar o botão cedo, entra nesta tabela quando estiver feito. O
+dano de queda, quando houver SP, mede-se pela altura da queda, porque a velocidade a cair tem máximo.
 
 ## Convenções de código
 
