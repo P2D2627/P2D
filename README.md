@@ -8,8 +8,9 @@ Um homem que se considera tão justo como Job acorda no inferno e tem de subir s
 pecado capital, sem poder atacar. Cada demónio oferece-lhe um atalho, e o jogo regista o que ele
 aceita.
 
-> **Estado:** a personagem jogável já anda, salta e tem controlo no ar, numa sala de teste. Ainda
-> não existem níveis, câmara, arte nem som.
+> **Estado:** a personagem jogável já anda, salta e tem controlo no ar, e o salto tolera pedidos
+> ligeiramente fora de tempo. Existe apenas uma sala de teste: ainda não há níveis, câmara, arte nem
+> som.
 
 Este documento tem duas partes. A primeira descreve, para toda a equipa, o que já pode ser
 experimentado e as medidas que servem o desenho de níveis. A segunda, "Para quem programa",
@@ -20,7 +21,8 @@ documenta a organização técnica do projeto.
 1. Instalar o Godot 4.7.x, versão standard (não a versão .NET).
 2. No Project Manager, importar `Projeto/project.godot`. O projeto Godot encontra-se na subpasta
    `Projeto/`, e não na raiz do repositório.
-3. Abrir `scenes/levels/test_room.tscn` e premir F6. A tecla F5 abre a cena principal, que ainda
+3. Abrir `scenes/levels/test_room.tscn` e premir F6. A sala tem um bloco elevado, com duas bordas,
+   para experimentar os saltos a partir de uma borda. A tecla F5 abre a cena principal, que ainda
    está vazia.
 
 | Ação | Teclado | Comando |
@@ -70,6 +72,25 @@ O controlo aéreo permite corrigir um salto mal calculado. O jogo avalia o jogad
 que faz, e mortes causadas pelos controlos levariam a aceitar atalhos por frustração. O valor de
 70 % é provisório e será afinado quando existirem câmara e níveis.
 
+### Tolerâncias do salto
+
+Um salto pedido uma fração de segundo fora de tempo é aceite. O objetivo é que um salto que o
+jogador sente como dado a tempo não falhe sem razão aparente, o que se confundiria com falta de
+resposta dos controlos; o efeito será confirmado em playtest. As tolerâncias beneficiam também quem
+reage mais devagar.
+
+- Tolerância de borda (*coyote time*): durante 0,07 s (4 passos de física) depois de sair de uma
+  plataforma sem saltar, a personagem ainda pode saltar. A correr, o último salto aceite parte com a
+  parte de trás do corpo 37 a 48 px para lá da borda, conforme o ponto de onde a corrida começa.
+- Tolerância de aterragem (*jump buffer*): um salto pedido até 0,07 s antes de aterrar fica guardado
+  e é executado no primeiro instante em contacto com o chão. A altura continua a depender do tempo
+  durante o qual o botão é mantido: um toque dado antes da aterragem produz o salto mínimo.
+
+Durante a tolerância de borda, a gravidade continua a atuar, para que a personagem não pareça
+caminhar no ar. Por isso, o último salto aceite parte 13 px abaixo da borda e sobe 227 px acima
+dela, menos 13 px do que um salto dado na borda. Os dois tempos são provisórios e serão afinados
+quando existirem câmara e níveis.
+
 ## Medidas para o desenho de níveis
 
 | Medida | Valor | Em dimensões da personagem |
@@ -77,19 +98,27 @@ que faz, e mortes causadas pelos controlos levariam a aceitar atalhos por frustr
 | Altura do salto completo (altura máxima dos pés) | 240 px | 2,5 alturas |
 | Altura do salto com o botão premido durante 0,1 s | 153 px | 1,6 alturas |
 | Altura do salto mínimo, com o botão largado logo | 88 px | menos de 1 altura |
-| Vão mais largo que um salto em corrida atravessa, de borda a borda | 480 px | 10 larguras |
+| Vão mais largo que um salto em corrida atravessa, de borda a borda | 479 a 490 px | 10 larguras |
+| Vão mais largo, com o salto dado no último instante da tolerância de borda | 520 a 531 px | 11 larguras |
+| Altura máxima, acima da borda, do salto dado no último instante da tolerância de borda | 227 px | 2,4 alturas |
 | Tempo no ar num salto completo | 0,6 s | |
 | Distância de travagem no chão | 48 px | 1 largura |
 | Distância de travagem no ar | 71 px | 1,5 larguras |
 | Queda até à velocidade máxima | 143 px | 1,5 alturas |
 
-- Uma plataforma a 240 px, ou um vão de 480 px, só é ultrapassável com um salto perfeito, dado no
-  último instante. Os níveis devem deixar margem.
-- A personagem ainda consegue saltar com parte do corpo fora da plataforma, e o vão de 480 px já
-  conta com isso.
-- Ainda não existe tolerância nas bordas: o salto tem de ser iniciado com a personagem sobre a
-  plataforma. A fase seguinte acrescenta um intervalo curto após a saída da borda, durante o qual
-  ainda é possível saltar, e guarda um salto pedido pouco antes da aterragem.
+- Os vãos máximos variam alguns píxeis com o ponto de onde a corrida começa, porque a física avança
+  em passos de 1/60 s; foram medidos a partir de 12 pontos de partida, e a tabela dá o menor e o
+  maior valor.
+- Uma plataforma a 240 px só é alcançável com um salto completo. Os níveis devem deixar margem.
+- A personagem ainda consegue saltar com parte do corpo fora da plataforma, e os vãos medidos já
+  contam com isso.
+- A tolerância de borda é uma margem para o jogador, e não alcance para o nível. Um vão que deva ser
+  sempre transponível não deve passar de 431 px: o menor vão máximo medido (479 px) menos uma
+  largura do corpo, para que o salto ainda passe se for dado até uma largura antes da borda. Um vão
+  que deva ser intransponível deve medir pelo menos 579 px: o maior vão medido com a tolerância
+  (531 px) mais uma largura do corpo.
+- Se uma opção de acessibilidade vier a alargar a tolerância de borda, o limite dos vãos
+  intransponíveis terá de subir: com 0,2 s, o máximo permitido no Inspector, o vão chega aos 559 px.
 - O wall jump e a câmara ainda não existem, e os valores serão afinados. Após cada afinação, as
   medidas voltam a ser obtidas com o `measure_movement.gd` (ver "Testes e medidas").
 - Os níveis podem vir a ser construídos com tiles ou com cenário pintado. Quando o tamanho do tile
@@ -112,6 +141,8 @@ do Godot e edita-se no Inspector. As alterações aplicam-se à personagem em to
 | Jump Height | 240 px | a altura do salto completo |
 | Time To Peak | 0,35 s | o tempo até ao ponto mais alto do salto |
 | Min Jump Height | 80 px | a altura do salto mínimo; um toque sobe alguns px acima deste valor |
+| Coyote Time | 0,07 s | o tempo, depois de sair de uma plataforma sem saltar, durante o qual o salto ainda é aceite (0 desliga) |
+| Jump Buffer Time | 0,07 s | o tempo durante o qual um salto pedido no ar fica guardado à espera de ser possível (0 desliga) |
 
 ## Referências
 
@@ -136,6 +167,7 @@ do Godot e edita-se no Inspector. As alterações aplicam-se à personagem em to
     │   └── components/  componentes reutilizáveis (HealthComponent, Hitbox, Hurtbox…)
     ├── resources/     ficheiros .tres de dados e balanceamento
     ├── tests/         testes e medidas que correm sem janela
+    │   └── support/   preparação comum aos testes
     └── assets/        sprites, audio, fonts
 ```
 
@@ -151,10 +183,18 @@ o executável do Godot 4.7). Os testes terminam com o código 0 quando passam e 
 godot --headless --fixed-fps 60 --path Projeto --script res://tests/test_jump_height.gd
 godot --headless --fixed-fps 60 --path Projeto --script res://tests/test_air_control.gd
 godot --headless --fixed-fps 60 --path Projeto --script res://tests/test_player_movement_stats.gd
+godot --headless --fixed-fps 60 --path Projeto --script res://tests/test_coyote_time.gd
+godot --headless --fixed-fps 60 --path Projeto --script res://tests/test_jump_buffer.gd
 ```
 
+Os testes mais recentes estendem `tests/support/player_test.gd`, que reúne a preparação comum:
+plataformas, uma personagem com uma cópia própria dos valores do `.tres` e a escrita dos resultados.
+Esse ficheiro não é um teste e não se corre sozinho.
+
 O `measure_movement.gd` não verifica resultados: imprime as medidas da secção "Medidas para o
-desenho de níveis", com os valores que estiverem no `.tres`.
+desenho de níveis", com os valores que estiverem no `.tres`. As medidas junto das bordas correm a
+partir de 12 pontos de partida, 1 px entre cada um, que cobrem um passo de física à velocidade
+máxima, e imprimem o menor e o maior valor.
 
 ```
 godot --headless --fixed-fps 60 --path Projeto --script res://tests/measure_movement.gd
@@ -178,6 +218,13 @@ recurso `PlayerMovementStats` (`scripts/player_movement_stats.gd`), guardado em
 - No ar, a aceleração e a travagem do chão são multiplicadas pelo Air Control. Preferiu-se um
   multiplicador a dois tempos próprios para o ar: um valor chega até um playtest pedir dois, e um
   multiplicador combina com outros fatores, como um corte do controlo logo a seguir a um wall jump.
+- As tolerâncias do salto são dois contadores de passos de física. O da tolerância de borda enche-se
+  em cada passo no chão e esvazia-se no ar; o da tolerância de aterragem enche-se quando o botão é
+  premido. O salto ocorre no passo em que há um pedido guardado e a personagem pode saltar, e
+  esvazia os dois contadores, pelo que cada pedido produz um único salto. Os tempos convertem-se em
+  passos inteiros, como o tempo até ao ponto mais alto, e os testes verificam os limites passo a
+  passo. Preferiram-se contadores no script a nós `Timer` para que a contagem fique no mesmo código
+  que decide o salto.
 - O `is_on_floor()` reflete o último `move_and_slide()`. Por isso, o passo da descolagem ainda usa
   o controlo do chão, e o da aterragem ainda usa o do ar; o `test_air_control.gd` verifica-o.
 

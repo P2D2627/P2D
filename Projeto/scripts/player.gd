@@ -4,6 +4,11 @@ extends CharacterBody2D
 ## Movement values. Every player that uses the same file shares them.
 @export var stats: PlayerMovementStats
 
+## Physics frames left in which Jump still works after leaving the floor without jumping.
+var _coyote_frames_left: int = 0
+## Physics frames left in which a press of Jump is kept, waiting for a moment the player can jump.
+var _jump_buffer_frames_left: int = 0
+
 
 func _ready() -> void:
 	assert(stats != null, "Player: assign a PlayerMovementStats resource to Stats.")
@@ -33,12 +38,33 @@ func _current_gravity() -> float:
 	return stats.get_jump_cut_gravity()
 
 
+## Jumps when a kept press of Jump meets a moment the player can jump: on the floor, or in the air
+## while coyote frames are left. Coyote frames fill up on the floor and run down in the air; a
+## press is kept on its own frame and for Jump Buffer's frames after it.
 func _apply_jump(delta: float) -> void:
-	if Input.is_action_just_pressed(&"jump") and is_on_floor():
-		# Physics moves the player at its speed at the start of each frame, which overshoots
-		# the peak. Half a frame of gravity off the take-off speed puts it on jump_height.
-		var half_frame_of_gravity: float = stats.get_rise_gravity() * delta / 2.0
-		velocity.y = -(stats.get_jump_velocity() - half_frame_of_gravity)
+	if is_on_floor():
+		_coyote_frames_left = stats.get_coyote_frames()
+	if Input.is_action_just_pressed(&"jump"):
+		# One frame for the press itself, then Jump Buffer's frames.
+		_jump_buffer_frames_left = stats.get_jump_buffer_frames() + 1
+	if _jump_buffer_frames_left > 0 and (is_on_floor() or _coyote_frames_left > 0):
+		_jump(delta)
+		return
+	if _jump_buffer_frames_left > 0:
+		_jump_buffer_frames_left -= 1
+	if not is_on_floor() and _coyote_frames_left > 0:
+		_coyote_frames_left -= 1
+
+
+## Uses the kept press and the coyote frames up, so one press makes one jump and a later press in
+## the air can only jump on a landing, then leaves at the take-off speed.
+func _jump(delta: float) -> void:
+	_jump_buffer_frames_left = 0
+	_coyote_frames_left = 0
+	# Physics moves the player at its speed at the start of each frame, which overshoots
+	# the peak. Half a frame of gravity off the take-off speed puts it on jump_height.
+	var half_frame_of_gravity: float = stats.get_rise_gravity() * delta / 2.0
+	velocity.y = -(stats.get_jump_velocity() - half_frame_of_gravity)
 
 
 ## Speeds up and slows down with the times in Stats. In the air both take longer, because only the

@@ -27,6 +27,12 @@ extends Resource
 ## Height of the lowest jump, from a quick tap on Jump, in px. A tap peaks a few px above it,
 ## because the take-off frame always rises at full take-off speed.
 @export_range(1.0, 1000.0, 1.0, "suffix:px") var min_jump_height: float = 80.0
+## Seconds after leaving the floor without jumping in which Jump still works as on the floor.
+## Rounded to whole physics frames; 0 turns it off.
+@export_range(0.0, 0.2, 0.01, "suffix:s") var coyote_time: float = 0.07
+## Seconds a press of Jump is kept while the player cannot jump, so it still jumps on landing.
+## Rounded to whole physics frames; 0 keeps the press for its own frame only.
+@export_range(0.0, 0.2, 0.01, "suffix:s") var jump_buffer_time: float = 0.07
 
 
 ## Upward speed when leaving the floor, in px/s. Comes from jump_height and time_to_peak.
@@ -44,6 +50,16 @@ func get_rise_gravity() -> float:
 ## takes three times the gravity. Never below get_rise_gravity(), so letting go can't jump higher.
 func get_jump_cut_gravity() -> float:
 	return get_rise_gravity() * jump_height / minf(min_jump_height, jump_height)
+
+
+## coyote_time in whole physics frames, rounded to the nearest one.
+func get_coyote_frames() -> int:
+	return roundi(coyote_time * Engine.physics_ticks_per_second)
+
+
+## jump_buffer_time in whole physics frames, rounded to the nearest one.
+func get_jump_buffer_frames() -> int:
+	return roundi(jump_buffer_time * Engine.physics_ticks_per_second)
 
 
 ## time_to_peak rounded to the nearest whole physics frame, at least one. The half-frame correction
