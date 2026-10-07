@@ -100,10 +100,12 @@ No ar, encostada a uma parede, a personagem pode deslizar e saltar da parede.
 
 O deslize começa quando o jogador empurra a personagem contra a parede e mantém-se sem que a
 direção continue premida. Termina quando o jogador empurra para o lado oposto, salta, chega ao chão
-ou a parede acaba. Na descida, a velocidade passa de imediato a 350 px/s, um quarto da velocidade
-máxima de queda, e a personagem desce uma altura do corpo em 0,28 s; na subida, não há travão.
-Dispensar a direção premida durante o deslize segue as Game Accessibility Guidelines (s.d.-a), que
-recomendam não obrigar o jogador a manter teclas premidas.
+ou a parede acaba. Na descida, a velocidade fica limitada a 350 px/s, um quarto da velocidade
+máxima de queda: se a personagem cair mais depressa, trava de imediato para esse valor; se cair
+mais devagar, como no topo de um salto, continua a acelerar até ele. A 350 px/s, desce uma altura
+do corpo em 0,28 s. Na subida, não há travão. Dispensar a direção premida durante o deslize segue
+as Game Accessibility Guidelines (s.d.-a), que recomendam não obrigar o jogador a manter teclas
+premidas.
 
 O salto da parede é dado com a tecla de saltar sempre que a personagem toca numa parede no ar,
 empurrando-a ou não. A personagem sai para o lado oposto à parede, à velocidade máxima da corrida e
@@ -114,7 +116,7 @@ personagem afasta-se 144 px da parede. É este bloqueio que impede a subida de u
 mesmo com a melhor combinação de teclas, cada salto devolve a personagem à mesma parede 96 px mais
 abaixo. Entre duas paredes próximas, numa chaminé, a subida não tem limite; na chaminé da sala de
 teste, com 120 px de largura, cada salto sobe 90 px premindo apenas a tecla de saltar. A regra de
-que uma parede isolada não se sobe aguarda a confirmação do grupo.
+que uma parede isolada não se sobe por saltos da parede aguarda a confirmação do grupo.
 
 Tal como na borda de uma plataforma, existe uma tolerância: durante 0,07 s depois de largar uma
 parede, a tecla de saltar ainda produz o salto da parede. Os valores do deslize e do bloqueio são
@@ -162,10 +164,16 @@ provisórios e serão afinados quando existirem câmara e níveis.
   duas velocidades da personagem.
 - Uma parede que a personagem consiga tocar durante um salto aumenta a altura alcançável. Uma
   plataforma que deva ser sempre alcançável com a ajuda de uma parede não deve ficar a mais de
-  379 px acima do ponto de partida: a altura medida (475 px) menos uma altura do corpo. Com o salto
-  da parede dado até 0,07 s fora do melhor momento, a personagem ainda chega aos 462 px. Uma
+  379 px acima do ponto de partida: a altura medida (475 px) menos uma altura do corpo. Uma
   plataforma que deva ser inalcançável, havendo uma parede ao alcance de um salto, deve ficar a pelo
   menos 571 px: a altura medida mais uma altura do corpo.
+- A altura medida junto a uma parede supõe que o jogador larga a tecla de saltar durante um só passo
+  de física (1/60 s) antes de a premir para o salto da parede. Nesse passo, a personagem ainda sobe
+  sem o botão premido e fica sujeita à gravidade do salto curto, razão pela qual a altura não chega
+  ao dobro de um salto completo (480 px). Largando a tecla durante 4 passos (0,07 s), a altura
+  máxima desce para 458 px e, durante 6 passos (0,1 s), para 446 px. Com o salto da parede dado até
+  0,07 s fora do melhor momento, e a tecla largada durante um só passo, a personagem chega aos
+  462 px. Todos estes valores ficam entre os dois limites anteriores (379 e 571 px).
 - Uma chaminé que deva ser sempre subida não deve passar de 174 px de largura: a maior largura
   medida premindo apenas a tecla de saltar (222 px) menos uma largura do corpo. Premir a tecla
   0,07 s depois de tocar na parede reduz essa largura para 178 px, valor que a margem cobre. Uma
@@ -173,7 +181,9 @@ provisórios e serão afinados quando existirem câmara e níveis.
   combinação de teclas (480 px) mais uma largura do corpo. Entre 174 e 528 px, a subida depende da
   perícia do jogador, pelo que estas larguras devem ficar fora do caminho obrigatório, reservadas a
   desafios opcionais.
-- Uma parede isolada não se sobe, qualquer que seja a sua altura.
+- Uma parede isolada não se sobe por saltos da parede, qualquer que seja a sua altura: cada
+  salto devolve a personagem à parede 96 px mais abaixo. O topo dessa parede alcança-se como o de
+  uma plataforma, com um salto normal; uma parede de 200 px, por exemplo, sobe-se assim.
 - A câmara ainda não existe, e os valores serão afinados. Após cada afinação, as medidas voltam a
   ser obtidas com o `measure_movement.gd` (ver "Testes e medidas").
 - Os níveis podem vir a ser construídos com tiles ou com cenário pintado. Quando o tamanho do tile
@@ -190,7 +200,7 @@ do Godot e edita-se no Inspector. As alterações aplicam-se à personagem em to
 | Max Run Speed | 720 px/s | a velocidade horizontal |
 | Time To Max Speed | 0,1 s | o tempo de aceleração |
 | Time To Stop | 0,15 s | o tempo de travagem e, por consequência, o deslize |
-| Air Control | 0,7 | a fração da aceleração e da travagem do chão que se mantém no ar (1: igual ao chão; 0: nenhuma) |
+| Air Control | 0,7 | a fração da aceleração e da travagem do chão que se mantém no ar (1: igual ao chão; 0: nenhuma, e empurrar para o lado oposto deixa de soltar a personagem de uma parede) |
 | Fall Gravity | 7850 px/s² | a aceleração da queda |
 | Max Fall Speed | 1400 px/s | a velocidade máxima de queda |
 | Jump Height | 240 px | a altura do salto completo |
@@ -324,9 +334,13 @@ sair de uma plataforma em movimento, o `CharacterBody2D` soma por omissão a vel
 plataforma à da personagem, o que produz o mesmo efeito. Quando o primeiro destes elementos for
 implementado, a personagem terá de distinguir as duas subidas.
 
-Um respawn que reutilize a mesma personagem, sem criar uma instância nova, tem de repor todos os
-contadores: as duas tolerâncias, o pedido guardado e o bloqueio do salto da parede. Caso contrário,
-um pedido feito antes do respawn pode produzir um salto depois dele.
+No respawn, a solução mais simples é criar uma instância nova da personagem. Reutilizar a mesma e
+repor os contadores não chega: o `is_on_floor()` e o `is_on_wall()` só se atualizam no
+`move_and_slide()` seguinte e, até lá, voltam a encher as tolerâncias. Com a personagem reposta no
+ar, premir a tecla de saltar logo a seguir produz um salto e, se a personagem tinha morrido
+encostada a uma parede, um salto da parede; com uma instância nova, não há salto em nenhum dos dois
+casos. Se o respawn vier a reutilizar a personagem, deve ser um método do player, com um teste que
+cubra estes dois casos.
 
 ### Decisões técnicas
 

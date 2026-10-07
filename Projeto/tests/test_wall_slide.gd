@@ -1,8 +1,10 @@
 # Checks the wall slide (ADR 0010). Against a wall it pushed into, the player falls no faster than
 # Wall Slide Speed from the frame after it reaches the wall, and keeps sliding after letting go of
 # the direction. A jump along the wall peaks at Jump Height and slides after the peak, even after
-# letting go of the direction in the air. Touching a wall without ever pushing into it, pushing away
-# from it, and running away from it on the floor all work as without a wall.
+# letting go of the direction in the air, and the fall after that peak speeds up as without a wall
+# until it reaches Wall Slide Speed. Touching a wall without ever pushing into it, pushing away from
+# it, from the slide or while only touching it, and running away from it on the floor all work as
+# without a wall.
 # Run from the repository root; the exit code is 0 on pass and 1 on fail:
 # godot --headless --fixed-fps 60 --path Projeto --script res://tests/test_wall_slide.gd
 extends "res://tests/support/player_test.gd"
@@ -39,8 +41,10 @@ func _initialize() -> void:
 	results.append(await _pushing_into_the_wall_slides_at_wall_slide_speed())
 	results.append(await _letting_go_on_the_wall_keeps_sliding())
 	results.append(await _letting_go_in_a_jump_along_the_wall_slides_after_the_peak())
+	results.append(await _below_wall_slide_speed_the_fall_speeds_up_as_without_a_wall())
 	results.append(await _pushing_away_from_the_wall_falls_as_without_it())
 	results.append(await _touching_the_wall_without_pushing_falls_as_without_it())
+	results.append(await _pushing_away_while_touching_the_wall_never_brakes())
 	results.append(await _jumping_along_the_wall_peaks_at_jump_height())
 	results.append(await _running_away_from_the_wall_on_the_floor_steps_as_on_the_floor())
 	finish(results)
@@ -86,6 +90,37 @@ func _letting_go_in_a_jump_along_the_wall_slides_after_the_peak() -> bool:
 			"Letting go of the direction in a jump along the wall, after the peak")
 
 
+## The brake is a cap, not a set speed: after the peak of a jump along the wall, slower than Wall
+## Slide Speed, the fall speeds up by one frame of Fall Gravity at a time, as without a wall, until
+## it reaches Wall Slide Speed.
+func _below_wall_slide_speed_the_fall_speeds_up_as_without_a_wall() -> bool:
+	var player: Player = await _spawn_against_the_wall_on_the_floor()
+	if player == null:
+		return report(false, "Falling after the peak along the wall: never stood against the wall")
+	Input.action_press(&"jump")
+	var rose: bool = await _wait_until_rising(player)
+	await _wait_until_falling(player)
+	var slide_speed: float = player.stats.wall_slide_speed
+	var step: float = player.stats.fall_gravity / Engine.physics_ticks_per_second
+	var speeds: Array[float] = [player.velocity.y]
+	while speeds[-1] < slide_speed - SPEED_TOLERANCE and speeds.size() < MAX_FRAMES:
+		await physics_frame
+		speeds.append(player.velocity.y)
+	Input.action_release(&"jump")
+	Input.action_release(&"move_left")
+	var passed: bool = rose and speeds[0] < slide_speed - SPEED_TOLERANCE
+	var texts: PackedStringArray = []
+	for i: int in speeds.size():
+		texts.append("%.1f" % speeds[i])
+		if i > 0:
+			var expected: float = minf(speeds[i - 1] + step, slide_speed)
+			passed = passed and absf(speeds[i] - expected) <= SPEED_TOLERANCE
+	await _remove(player)
+	return report(passed,
+			"After the peak along the wall: falls %s px/s, Fall Gravity per frame %.1f px/s%s"
+			% [", ".join(texts), step, _got_going_note(rose)])
+
+
 ## Pushing away takes the player off the wall, and it falls as without a wall again, up to the top
 ## falling speed.
 func _pushing_away_from_the_wall_falls_as_without_it() -> bool:
@@ -108,6 +143,24 @@ func _touching_the_wall_without_pushing_falls_as_without_it() -> bool:
 	var fall: FallResult = await _fall_until_the_floor(player)
 	return await _report_fall_as_without_a_wall(player, touching, fall,
 			"Touching the wall without pushing into it")
+
+
+## Pushing away is no push into the wall, even while touching it: falling at the top falling speed
+## against a wall it never pushed into, a push away from it keeps that speed, with no brake on any
+## frame.
+func _pushing_away_while_touching_the_wall_never_brakes() -> bool:
+	var what: String = "Pushing away while touching the wall"
+	var player: Player = _spawn_near_the_wall(0.0, START_HEIGHT)
+	var at_top_speed: bool = await _wait_until_at_top_falling_speed(player)
+	var touching: bool = at_top_speed and player.is_on_wall()
+	Input.action_press(&"move_right")
+	var slowest: float = await _slowest_fall_until_the_floor(player)
+	Input.action_release(&"move_right")
+	var top_speed: float = player.stats.max_fall_speed
+	await _remove(player)
+	return report(touching and absf(slowest - top_speed) <= SPEED_TOLERANCE,
+			"%s: slowest fall %.1f px/s, Max Fall Speed %.1f px/s%s"
+			% [what, slowest, top_speed, _got_going_note(touching)])
 
 
 ## The brake only acts on the way down: a full jump along the wall, pushing into it all the way,
@@ -217,6 +270,27 @@ func _fall_until_the_floor(player: Player) -> FallResult:
 		fall.fastest = maxf(fall.fastest, player.velocity.y)
 		fall.last = player.velocity.y
 	return fall
+
+
+## Waits until the player falls at the top falling speed. False if it never does.
+func _wait_until_at_top_falling_speed(player: Player) -> bool:
+	for _frame: int in MAX_FRAMES:
+		await physics_frame
+		if absf(player.velocity.y - player.stats.max_fall_speed) <= SPEED_TOLERANCE:
+			return true
+	return false
+
+
+## Follows the player down until it lands, for the slowest falling speed on the way; INF if it lands
+## at once.
+func _slowest_fall_until_the_floor(player: Player) -> float:
+	var slowest: float = INF
+	for _frame: int in MAX_FRAMES:
+		await physics_frame
+		if player.is_on_floor():
+			break
+		slowest = minf(slowest, player.velocity.y)
+	return slowest
 
 
 ## How high the feet go above floor_y before the player lands again, in px; 0 if it never leaves

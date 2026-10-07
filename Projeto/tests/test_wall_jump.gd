@@ -1,10 +1,11 @@
 # Checks the wall jump (ADR 0010). In the air against a wall, pushing into it or not, Jump kicks the
 # player away from the wall at top running speed and as high as a full jump from the floor, and then
 # the run does nothing for Wall Jump Lock Time, or until a landing. Against a wall the jump is the
-# wall's, even with coyote frames left; one press makes one jump, and a press kept a little before
-# touching the wall still kicks. So does a press for Coyote Time's frames after leaving the wall,
-# and no longer; a kick or a landing uses that tolerance up. A single wall cannot be climbed, even
-# with the best input, and a narrow chimney can, pressing only Jump.
+# wall's, even with coyote frames left, but on the floor it is the floor's, even after landing from
+# a slide; one press makes one jump, and a press kept a little before touching the wall still kicks.
+# So does a press for Coyote Time's frames after leaving the wall, and no longer; a kick or a
+# landing uses that tolerance up. A single wall cannot be climbed, even with the best input, and a
+# narrow chimney can, pressing only Jump.
 # Run from the repository root; the exit code is 0 on pass and 1 on fail:
 # godot --headless --fixed-fps 60 --path Projeto --script res://tests/test_wall_jump.gd
 extends "res://tests/support/player_test.gd"
@@ -68,6 +69,7 @@ func _initialize() -> void:
 	results.append(await _a_press_one_frame_too_late_does_not_kick())
 	results.append(await _a_new_press_right_after_a_kick_does_not_kick_again())
 	results.append(await _landing_ends_the_walls_tolerance())
+	results.append(await _after_landing_from_a_slide_the_jump_is_the_floors())
 	results.append(await _a_single_wall_cannot_be_climbed_even_with_the_best_input())
 	results.append(await _a_narrow_chimney_is_climbed_pressing_only_jump())
 	finish(results)
@@ -322,6 +324,31 @@ func _landing_ends_the_walls_tolerance() -> bool:
 			"%s: %s at %.1f px/s sideways, expected 0.0 px/s, as off the floor%s"
 			% [what, "jumped" if jumped else "no jump", speed,
 			_note(stood_away, "never stood away from the wall")])
+
+
+## The floor comes before the wall, also when the player lands while sliding: still pushing into
+## the wall on the floor, a press is the floor's jump, straight up along the wall, and not a kick
+## off it.
+func _after_landing_from_a_slide_the_jump_is_the_floors() -> bool:
+	var what: String = "Jumping after landing from a slide, still pushing into the wall"
+	var wall: StaticBody2D = _make_wall_on(LEFT)
+	var floor_body: StaticBody2D = make_platform(WALL_FACE - WALL_THICKNESS, FLOOR_RIGHT)
+	var player: Player = spawn_player(Vector2(_x_near(LEFT, 0.0), -KICK_HEIGHT))
+	Input.action_press(_into(LEFT))
+	var touched: bool = await _wait_until_on_wall(player)
+	var slid: bool = touched and not player.is_on_floor()
+	var landed: bool = await wait_until_on_floor(player)
+	await _wait_frames(SETTLE_FRAMES)
+	var pushing_on_the_floor: bool = slid and landed and player.is_on_wall()
+	Input.action_press(&"jump")
+	var jumped: bool = not is_nan(await _wait_for_jump(player, WATCH_FRAMES))
+	var speed: float = player.velocity.x
+	_release_all()
+	await _remove([player, wall, floor_body])
+	return report(pushing_on_the_floor and jumped and is_zero_approx(speed),
+			"%s: %s at %.1f px/s sideways, expected 0.0 px/s, as off the floor%s"
+			% [what, "jumped" if jumped else "no jump", speed,
+			_note(pushing_on_the_floor, "never slid onto the floor against the wall")])
 
 
 ## A single wall cannot be climbed, even with the best input (_best_input): each kick takes off
