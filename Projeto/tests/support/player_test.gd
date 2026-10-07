@@ -37,6 +37,19 @@ func make_platform(left: float, right: float, top: float = 0.0) -> StaticBody2D:
 	return platform
 
 
+## A wall from x = left to x = right, and from y = top down to y = bottom, already in the scene.
+func make_wall(left: float, right: float, top: float, bottom: float = 0.0) -> StaticBody2D:
+	var shape: RectangleShape2D = RectangleShape2D.new()
+	shape.size = Vector2(right - left, bottom - top)
+	var collision: CollisionShape2D = CollisionShape2D.new()
+	collision.shape = shape
+	var wall: StaticBody2D = StaticBody2D.new()
+	wall.position = Vector2((left + right) / 2.0, (top + bottom) / 2.0)
+	wall.add_child(collision)
+	root.add_child(wall)
+	return wall
+
+
 ## A player at the given spot with its own copy of Stats, so a case can change values in memory
 ## without touching the .tres or the other cases.
 func spawn_player(at: Vector2) -> Player:

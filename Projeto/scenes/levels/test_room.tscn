@@ -11,6 +11,9 @@ size = Vector2(64, 1080)
 [sub_resource type="RectangleShape2D" id="RectangleShape2D_platform"]
 size = Vector2(480, 120)
 
+[sub_resource type="RectangleShape2D" id="RectangleShape2D_pillar"]
+size = Vector2(64, 560)
+
 [node name="TestRoom" type="Node2D" unique_id=1111842025]
 
 [node name="Floor" type="StaticBody2D" parent="." unique_id=725780737]
@@ -56,6 +59,17 @@ shape = SubResource("RectangleShape2D_platform")
 [node name="Placeholder" type="Polygon2D" parent="Platform"]
 color = Color(0.15, 0.13, 0.18, 1)
 polygon = PackedVector2Array(-240, -60, 240, -60, 240, 60, -240, 60)
+
+[node name="ChimneyPillar" type="StaticBody2D" parent="."]
+position = Vector2(216, 590)
+collision_mask = 0
+
+[node name="CollisionShape2D" type="CollisionShape2D" parent="ChimneyPillar"]
+shape = SubResource("RectangleShape2D_pillar")
+
+[node name="Placeholder" type="Polygon2D" parent="ChimneyPillar"]
+color = Color(0.15, 0.13, 0.18, 1)
+polygon = PackedVector2Array(-32, -280, 32, -280, 32, 280, -32, 280)
 
 [node name="Player" parent="." unique_id=1512336293 instance=ExtResource("1_player")]
 position = Vector2(960, 600)

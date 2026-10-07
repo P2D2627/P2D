@@ -45,8 +45,32 @@ const GAP_PRECISION: float = 1.0
 const FALL_DEPTH: float = 200.0
 ## Frames in the air count from 1, the first frame off the floor; 0 is the last frame on it.
 const LAST_FLOOR_FRAME: int = 0
+## Walls have their face at x = 0 and stand left of it, this thick, from WALL_REACH px above the
+## height they are made for to WALL_REACH px below it: past where any measure goes.
+const WALL_THICKNESS: float = 200.0
+const WALL_REACH: float = 5000.0
+## How far from a wall's face the player starts, in px: a push into the wall reaches it on the first
+## frame.
+const WALL_GAP: float = 1.0
+## How much faster than on the frame before the player must go up to count as jumping, in px/s, as
+## in the tests. A jump adds over 1300.
+const JUMP_KICK: float = 1.0
+## The first frame in the air a kick in the corner is tried on: Jump stays held for the first frame
+## in the air, is let go for one frame and pressed again, and that press counts PRESS_DELAY_FRAMES
+## frames later.
+const FIRST_KICK_FRAME: int = PRESS_DELAY_FRAMES + 2
+## The chimney search starts between these widths, wall face to wall face, in px: the first is the
+## test room's, which test_wall_jump.gd climbs pressing only Jump, and the second is never climbed.
+const NARROW_CHIMNEY: float = 120.0
+const HOPELESS_CHIMNEY: float = 2000.0
+## How close, in px, the chimney search gets to the widest chimney climbed.
+const CHIMNEY_PRECISION: float = 1.0
+## Kicks a climb follows, as in test_wall_jump.gd.
+const CLIMB_KICKS: int = 4
 
 var _failed: bool = false
+## Frames in a row the player has touched a wall, for _tap_late.
+var _frames_on_wall: int = 0
 
 
 func _initialize() -> void:
@@ -71,19 +95,43 @@ func _initialize() -> void:
 	await _measure_widest_gap("Widest gap with the jump on the last frame of Coyote Time "
 			+ "(%d frames late)" % coyote_frames, coyote_frames)
 	near_ledge.queue_free()
+	var wall: StaticBody2D = _make_wall(AIR_SPAWN_POSITION.y)
+	root.add_child(wall)
+	await _measure_wall_slide()
+	await _measure_kick()
+	await _measure_chimneys()
+	await _measure_single_wall()
+	wall.queue_free()
+	var corner_floor: StaticBody2D = _make_platform(-GROUND_HALF_WIDTH, GROUND_HALF_WIDTH)
+	var corner_wall: StaticBody2D = _make_wall(0.0)
+	root.add_child(corner_floor)
+	root.add_child(corner_wall)
+	await _measure_corner()
+	corner_floor.queue_free()
+	corner_wall.queue_free()
 	quit(1 if _failed else 0)
+
+
+## A box from x = left to x = right and from y = top down to y = bottom.
+func _make_box(left: float, right: float, top: float, bottom: float) -> StaticBody2D:
+	var shape: RectangleShape2D = RectangleShape2D.new()
+	shape.size = Vector2(right - left, bottom - top)
+	var collision: CollisionShape2D = CollisionShape2D.new()
+	collision.shape = shape
+	var box: StaticBody2D = StaticBody2D.new()
+	box.position = Vector2((left + right) / 2.0, (top + bottom) / 2.0)
+	box.add_child(collision)
+	return box
 
 
 ## A platform from x = left to x = right, with its top edge at y = 0.
 func _make_platform(left: float, right: float) -> StaticBody2D:
-	var shape: RectangleShape2D = RectangleShape2D.new()
-	shape.size = Vector2(right - left, GROUND_THICKNESS)
-	var collision: CollisionShape2D = CollisionShape2D.new()
-	collision.shape = shape
-	var platform: StaticBody2D = StaticBody2D.new()
-	platform.position = Vector2((left + right) / 2.0, GROUND_THICKNESS / 2.0)
-	platform.add_child(collision)
-	return platform
+	return _make_box(left, right, 0.0, GROUND_THICKNESS)
+
+
+## A wall with its face at x = 0, standing left of it, around the height y.
+func _make_wall(y: float) -> StaticBody2D:
+	return _make_box(-WALL_THICKNESS, 0.0, y - WALL_REACH, y + WALL_REACH)
 
 
 func _spawn_on_floor(at: Vector2) -> Player:
@@ -104,6 +152,16 @@ func _spawn(at: Vector2) -> Player:
 	var player: Player = PLAYER_SCENE.instantiate() as Player
 	player.position = at
 	root.add_child(player)
+	return player
+
+
+## A player in the air with the left side of its body gap px from a wall's face at x = 0, at the
+## height y. Waits one physics frame, so the player is already falling.
+func _spawn_by_the_wall(y: float, gap: float = WALL_GAP) -> Player:
+	var player: Player = PLAYER_SCENE.instantiate() as Player
+	player.position = Vector2(_half_width(player) + gap, y)
+	root.add_child(player)
+	await physics_frame
 	return player
 
 
@@ -288,6 +346,305 @@ func _late_jump(run_up: Vector2, press_frame: int) -> LateJumpResult:
 	return result
 
 
+## The slide: falling at top speed by the wall, the player pushes into it. Prints the falling speed
+## before the push and from the frame after the first touch, and the time the slide takes to go
+## down one body height.
+func _measure_wall_slide() -> void:
+	var player: Player = await _spawn_by_the_wall(AIR_SPAWN_POSITION.y)
+	for _frame: int in MAX_FRAMES:
+		if player.velocity.y >= player.stats.max_fall_speed:
+			break
+		await physics_frame
+	var falling_speed: float = player.velocity.y
+	Input.action_press(&"move_left")
+	if not await _wait_until_on_wall(player):
+		_fail("the player never got to the wall")
+	await physics_frame
+	var sliding_speed: float = player.velocity.y
+	var body_height: float = _body_size(player).y
+	var start_y: float = player.position.y
+	var frames: int = 0
+	while player.position.y - start_y < body_height and frames < MAX_FRAMES:
+		await physics_frame
+		frames += 1
+	Input.action_release(&"move_left")
+	print(("Wall slide: falling at %.1f px/s, then %.1f px/s from the frame after touching the "
+			+ "wall; one body height (%.0f px) slid in %s")
+			% [falling_speed, sliding_speed, body_height, _frames_text(frames)])
+	player.queue_free()
+
+
+## A kick off the wall from a slide down it, with Jump held and the run held away from the wall from
+## the kick on. Prints, from the take-off, how high the kick peaks, after how long and how far from
+## the wall, how far the lock carries the player, and how far from the wall it is when it is back at
+## the take-off height.
+func _measure_kick() -> void:
+	var player: Player = await _spawn_by_the_wall(AIR_SPAWN_POSITION.y)
+	Input.action_press(&"move_left")
+	if not await _wait_until_on_wall(player):
+		_fail("the player never got to the wall")
+	await physics_frame
+	Input.action_press(&"jump")
+	var take_off: Vector2 = player.position
+	var previous_speed: float = player.velocity.y
+	var kicked: bool = false
+	for _frame: int in MAX_FRAMES:
+		take_off = player.position
+		await physics_frame
+		if _is_jump(previous_speed, player.velocity.y):
+			kicked = true
+			break
+		previous_speed = player.velocity.y
+	Input.action_release(&"move_left")
+	Input.action_press(&"move_right")
+	var half_width: float = _half_width(player)
+	var lock_frames: int = player.stats.get_wall_jump_lock_frames()
+	# Frames count from 1, the frame of the kick, which has already run.
+	var frames: int = 1
+	var lock_px: float = player.position.x - take_off.x
+	var peak: Vector2 = player.position
+	var peak_frame: int = frames
+	while kicked and player.position.y < take_off.y and frames < MAX_FRAMES:
+		await physics_frame
+		frames += 1
+		if frames == lock_frames:
+			lock_px = player.position.x - take_off.x
+		if player.position.y < peak.y:
+			peak = player.position
+			peak_frame = frames
+	Input.action_release(&"move_right")
+	Input.action_release(&"jump")
+	if not kicked:
+		_fail("the player never kicked off the wall")
+	print(("Kick off a slide, Jump held, run held away: peak %.1f px above the take-off after %s, "
+			+ "%.1f px from the wall; the lock carries it %.1f px in %s; back at the take-off "
+			+ "height %.1f px from the wall")
+			% [take_off.y - peak.y, _frames_text(peak_frame), peak.x - half_width, lock_px,
+			_frames_text(lock_frames), player.position.x - half_width])
+	player.queue_free()
+
+
+## Chimneys between the wall and a second one facing it: the widest climbed pressing only Jump on
+## touching a wall, and a little late, how much each kick climbs in the narrow one, and the widest
+## climbed with the best input.
+func _measure_chimneys() -> void:
+	var narrow: Array[float] = await _chimney_take_offs(NARROW_CHIMNEY, _tap_on_touch)
+	var widest_tapping: float = await _widest_chimney(_tap_on_touch)
+	var widest_late: float = await _widest_chimney(_tap_late)
+	var widest_best: float = await _widest_chimney(_best_chimney_input)
+	print(("Chimney, pressing only Jump on touching a wall: widest climbed %.0f px wall to wall; "
+			+ "%.0f px wide, each kick climbs %s")
+			% [widest_tapping, NARROW_CHIMNEY, _range_text(_climbs_per_kick(narrow), "%.1f")])
+	print(("Chimney, pressing only Jump %d frames after touching a wall: widest climbed %.0f px "
+			+ "wall to wall") % [STATS.get_coyote_frames(), widest_late])
+	print("Chimney, best input: widest climbed %.0f px wall to wall" % widest_best)
+
+
+## A single wall, with the best input for climbing it: the run held into the wall all along, and
+## Jump as in _hold_up_press_down. Prints how much lower each kick takes off than the one before.
+func _measure_single_wall() -> void:
+	var player: Player = await _spawn_by_the_wall(AIR_SPAWN_POSITION.y, 0.0)
+	Input.action_press(&"move_left")
+	var take_offs: Array[float] = await _take_offs(player, _hold_up_press_down)
+	_release_all()
+	player.queue_free()
+	var drops: Array[float] = []
+	for climb: float in _climbs_per_kick(take_offs):
+		drops.append(-climb)
+	print("Single wall, best input: each kick takes off %s lower than the one before"
+			% _range_text(drops, "%.1f"))
+
+
+## Widest chimney, wall face to wall face, that drive climbs, in px. Each try halves the range
+## between a width that was climbed and one that was not, as the gap search does.
+func _widest_chimney(drive: Callable) -> float:
+	var climbed: float = NARROW_CHIMNEY
+	var not_climbed: float = HOPELESS_CHIMNEY
+	if not _climbs(await _chimney_take_offs(climbed, drive)):
+		_fail("a chimney %.0f px wide was not climbed" % climbed)
+	while not_climbed - climbed > CHIMNEY_PRECISION:
+		var middle: float = (climbed + not_climbed) / 2.0
+		if _climbs(await _chimney_take_offs(middle, drive)):
+			climbed = middle
+		else:
+			not_climbed = middle
+	return climbed
+
+
+## The take-offs of CLIMB_KICKS kicks with drive, starting against the wall, in a chimney width px
+## wide, wall face to wall face, between the wall and a second one facing it.
+func _chimney_take_offs(width: float, drive: Callable) -> Array[float]:
+	_frames_on_wall = 0
+	var y: float = AIR_SPAWN_POSITION.y
+	var other_wall: StaticBody2D = _make_box(width, width + WALL_THICKNESS, y - WALL_REACH,
+			y + WALL_REACH)
+	root.add_child(other_wall)
+	var player: Player = await _spawn_by_the_wall(y, 0.0)
+	var take_offs: Array[float] = await _take_offs(player, drive)
+	_release_all()
+	player.queue_free()
+	other_wall.queue_free()
+	return take_offs
+
+
+## Calls drive(player) before every frame until the player has made CLIMB_KICKS jumps, or
+## MAX_FRAMES go by, and returns the height each jump took off from, in px above the start.
+func _take_offs(player: Player, drive: Callable) -> Array[float]:
+	var start_y: float = player.position.y
+	var take_offs: Array[float] = []
+	var previous_speed: float = player.velocity.y
+	for _frame: int in MAX_FRAMES:
+		drive.call(player)
+		var take_off_y: float = player.position.y
+		await physics_frame
+		if _is_jump(previous_speed, player.velocity.y):
+			take_offs.append(start_y - take_off_y)
+			if take_offs.size() == CLIMB_KICKS:
+				break
+		previous_speed = player.velocity.y
+	return take_offs
+
+
+## True if take_offs holds CLIMB_KICKS jumps and each took off higher than the one before.
+func _climbs(take_offs: Array[float]) -> bool:
+	if take_offs.size() < CLIMB_KICKS:
+		return false
+	for climb: float in _climbs_per_kick(take_offs):
+		if climb <= 0.0:
+			return false
+	return true
+
+
+## How much higher each take-off is than the one before, in px.
+func _climbs_per_kick(take_offs: Array[float]) -> Array[float]:
+	var climbs: Array[float] = []
+	for i: int in range(1, take_offs.size()):
+		climbs.append(take_offs[i] - take_offs[i - 1])
+	return climbs
+
+
+## Jump pressed while the player touches a wall and let go while it is off the walls, with no
+## direction: one press per wall, as a person taps, as in test_wall_jump.gd.
+func _tap_on_touch(player: Player) -> void:
+	if player.is_on_wall():
+		Input.action_press(&"jump")
+	else:
+		Input.action_release(&"jump")
+
+
+## As _tap_on_touch, but Jump is pressed only once the player has touched a wall for Coyote Time's
+## frames in a row: a person tapping a little late.
+func _tap_late(player: Player) -> void:
+	_frames_on_wall = _frames_on_wall + 1 if player.is_on_wall() else 0
+	if _frames_on_wall > STATS.get_coyote_frames():
+		Input.action_press(&"jump")
+	else:
+		Input.action_release(&"jump")
+
+
+## Jump for the best climb, as in test_wall_jump.gd: held on the way up, for full jumps, and pressed
+## again every other frame on the way down, so a fresh press is always kept for the moment the
+## player gets to a wall.
+func _hold_up_press_down(player: Player) -> void:
+	if player.velocity.y < 0.0 or not Input.is_action_pressed(&"jump"):
+		Input.action_press(&"jump")
+	else:
+		Input.action_release(&"jump")
+
+
+## The best climb up a chimney: Jump as in _hold_up_press_down, and the run held toward the wall the
+## player flies to, so it gets there as soon as it can.
+func _best_chimney_input(player: Player) -> void:
+	_hold_up_press_down(player)
+	if player.velocity.x > 0.0:
+		Input.action_release(&"move_left")
+		Input.action_press(&"move_right")
+	elif player.velocity.x < 0.0:
+		Input.action_release(&"move_right")
+		Input.action_press(&"move_left")
+
+
+## The corner: on the floor against the wall, a full jump up along it, then a kick off it. The kick
+## is tried on every frame in the air from FIRST_KICK_FRAME on, until the player lands before it.
+## Prints the highest peak above the floor, the frame in the air its kick came on, how far from the
+## wall that peak is, and the lowest peak with the kick up to Coyote Time's frames off that frame.
+func _measure_corner() -> void:
+	var tries: Array[CornerResult] = []
+	for kick_frame: int in range(FIRST_KICK_FRAME, MAX_FRAMES):
+		var corner: CornerResult = await _corner_try(kick_frame)
+		if not corner.kicked:
+			break
+		tries.append(corner)
+	if tries.is_empty():
+		_fail("the player never kicked off the wall in the corner")
+		return
+	var best: CornerResult = tries[0]
+	for corner: CornerResult in tries:
+		if corner.peak_px > best.peak_px:
+			best = corner
+	var off_frames: int = STATS.get_coyote_frames()
+	var lowest_near_best: float = best.peak_px
+	for corner: CornerResult in tries:
+		if absi(corner.kick_frame - best.kick_frame) <= off_frames:
+			lowest_near_best = minf(lowest_near_best, corner.peak_px)
+	print(("Corner, a full jump up along the wall and a kick off it, Jump held, run held away: "
+			+ "highest peak %.1f px above the floor, kicking on frame %d in the air, %.1f px from "
+			+ "the wall; with the kick up to %d frames off that frame, at least %.1f px")
+			% [best.peak_px, best.kick_frame, best.peak_from_wall_px, off_frames, lowest_near_best])
+
+
+## One try in the corner: standing against the wall, a full jump up along it, pushing into the wall,
+## then Jump let go for a frame and pressed again to count on air frame kick_frame. From the kick
+## on, the run is held away from the wall, until the peak. The result says if the kick came before
+## the landing.
+func _corner_try(kick_frame: int) -> CornerResult:
+	var result: CornerResult = CornerResult.new()
+	var player: Player = await _spawn_by_the_wall(FLOOR_SPAWN_POSITION.y)
+	if not await _wait_until_on_floor(player):
+		_fail("the player never landed by the wall")
+	Input.action_press(&"move_left")
+	if not await _wait_until_on_wall(player):
+		_fail("the player never got to the wall")
+	Input.action_press(&"jump")
+	var floor_y: float = player.position.y
+	var previous_speed: float = player.velocity.y
+	var air_frames: int = 0
+	for _frame: int in MAX_FRAMES:
+		if air_frames == kick_frame - PRESS_DELAY_FRAMES - 1:
+			Input.action_release(&"jump")
+		elif air_frames == kick_frame - PRESS_DELAY_FRAMES:
+			Input.action_press(&"jump")
+		await physics_frame
+		if player.is_on_floor():
+			if air_frames > 0:
+				break
+			floor_y = player.position.y
+			continue
+		air_frames += 1
+		# Frame 1 in the air is the jump off the floor; a jump after it is the kick.
+		if air_frames > 1 and _is_jump(previous_speed, player.velocity.y):
+			result.kicked = true
+			result.kick_frame = air_frames
+			break
+		previous_speed = player.velocity.y
+	Input.action_release(&"move_left")
+	if result.kicked:
+		Input.action_press(&"move_right")
+		var peak: Vector2 = player.position
+		for _frame: int in MAX_FRAMES:
+			if player.velocity.y >= 0.0:
+				break
+			await physics_frame
+			if player.position.y < peak.y:
+				peak = player.position
+		Input.action_release(&"move_right")
+		result.peak_px = floor_y - peak.y
+		result.peak_from_wall_px = peak.x - _half_width(player)
+	Input.action_release(&"jump")
+	player.queue_free()
+	return result
+
+
 ## RUN_UP_POSITION and the spots behind it, RUN_UP_STEP px apart, over one frame of top speed.
 func _run_up_spots() -> Array[Vector2]:
 	var px_per_frame: float = STATS.max_run_speed / Engine.physics_ticks_per_second
@@ -312,10 +669,15 @@ func _range_text(values: Array[float], number_format: String) -> String:
 	return "%s to %s px" % [lowest, highest]
 
 
-## Half the width of the player's collision box, read from its scene.
-func _half_width(player: Player) -> float:
+## The size of the player's collision box, read from its scene.
+func _body_size(player: Player) -> Vector2:
 	var collision: CollisionShape2D = player.get_node(^"CollisionShape2D") as CollisionShape2D
-	return (collision.shape as RectangleShape2D).size.x / 2.0
+	return (collision.shape as RectangleShape2D).size
+
+
+## Half the width of the player's collision box.
+func _half_width(player: Player) -> float:
+	return _body_size(player).x / 2.0
 
 
 ## Runs right from run_up without jumping and returns the frame of the run on which the player is
@@ -380,6 +742,25 @@ func _wait_until_on_floor(player: Player) -> bool:
 	return false
 
 
+func _wait_until_on_wall(player: Player) -> bool:
+	for _frame: int in MAX_FRAMES:
+		await physics_frame
+		if player.is_on_wall():
+			return true
+	return false
+
+
+## True if the player goes up, and faster than on the frame before, which only a jump does, as in
+## the tests.
+func _is_jump(previous_speed: float, speed: float) -> bool:
+	return speed < 0.0 and speed < previous_speed - JUMP_KICK
+
+
+func _release_all() -> void:
+	for action: StringName in [&"move_left", &"move_right", &"jump"]:
+		Input.action_release(action)
+
+
 func _frames_text(frames: int) -> String:
 	return "%d frames (%.2f s)" % [frames, float(frames) / Engine.physics_ticks_per_second]
 
@@ -404,3 +785,12 @@ class LateJumpResult:
 	var depth_px: float = 0.0
 	var past_px: float = 0.0
 	var peak_px: float = 0.0
+
+
+## What _corner_try measures: whether the kick came before the landing, the frame in the air it came
+## on, and the peak after it, in px above the floor and from the wall.
+class CornerResult:
+	var kicked: bool = false
+	var kick_frame: int = 0
+	var peak_px: float = 0.0
+	var peak_from_wall_px: float = 0.0

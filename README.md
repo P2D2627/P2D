@@ -8,9 +8,9 @@ Um homem que se considera tão justo como Job acorda no inferno e tem de subir s
 pecado capital, sem poder atacar. Cada demónio oferece-lhe um atalho, e o jogo regista o que ele
 aceita.
 
-> **Estado:** a personagem jogável já anda, salta e tem controlo no ar, e o salto tolera pedidos
-> ligeiramente fora de tempo. Existe apenas uma sala de teste: ainda não há níveis, câmara, arte nem
-> som.
+> **Estado:** a personagem jogável já anda, salta e tem controlo no ar, desliza nas paredes e salta
+> delas, e o salto tolera pedidos ligeiramente fora de tempo. Existe apenas uma sala de teste: ainda
+> não há níveis, câmara, arte nem som.
 
 Este documento tem duas partes. A primeira descreve, para toda a equipa, o que já pode ser
 experimentado e as medidas que servem o desenho de níveis. A segunda, "Para quem programa",
@@ -22,13 +22,16 @@ documenta a organização técnica do projeto.
 2. No Project Manager, importar `Projeto/project.godot`. O projeto Godot encontra-se na subpasta
    `Projeto/`, e não na raiz do repositório.
 3. Abrir `scenes/levels/test_room.tscn` e premir F6. A sala tem um bloco elevado, com duas bordas,
-   para experimentar os saltos a partir de uma borda. A tecla F5 abre a cena principal, que ainda
-   está vazia.
+   para experimentar os saltos a partir de uma borda, e uma chaminé de 120 px entre a parede
+   esquerda e um pilar suspenso, por baixo do qual se entra a andar. A tecla F5 abre a cena
+   principal, que ainda está vazia.
 
 | Ação | Teclado | Comando |
 |---|---|---|
 | Andar | A / D ou setas | stick esquerdo |
 | Saltar | Espaço | A / Cross |
+| Deslizar numa parede | no ar, A / D ou setas contra a parede | stick esquerdo contra a parede |
+| Saltar de uma parede | no ar, Espaço encostado à parede | A / Cross encostado à parede |
 
 ## Mecânicas implementadas
 
@@ -91,6 +94,32 @@ caminhar no ar. Por isso, o último salto aceite parte 13 px abaixo da borda e s
 dela, menos 13 px do que um salto dado na borda. Os dois tempos são provisórios e serão afinados
 quando existirem câmara e níveis.
 
+### Paredes
+
+No ar, encostada a uma parede, a personagem pode deslizar e saltar da parede.
+
+O deslize começa quando o jogador empurra a personagem contra a parede e mantém-se sem que a
+direção continue premida. Termina quando o jogador empurra para o lado oposto, salta, chega ao chão
+ou a parede acaba. Na descida, a velocidade passa de imediato a 350 px/s, um quarto da velocidade
+máxima de queda, e a personagem desce uma altura do corpo em 0,28 s; na subida, não há travão.
+Dispensar a direção premida durante o deslize segue as Game Accessibility Guidelines (s.d.-a), que
+recomendam não obrigar o jogador a manter teclas premidas.
+
+O salto da parede é dado com a tecla de saltar sempre que a personagem toca numa parede no ar,
+empurrando-a ou não. A personagem sai para o lado oposto à parede, à velocidade máxima da corrida e
+com a altura de um salto completo (240 px). Como a direção do salto é sempre a de afastamento da
+parede, numa chaminé basta premir a tecla de saltar, o que mantém os controlos simples (Game
+Accessibility Guidelines, s.d.-b). Durante 0,2 s após o salto, a corrida não responde, e a
+personagem afasta-se 144 px da parede. É este bloqueio que impede a subida de uma parede isolada:
+mesmo com a melhor combinação de teclas, cada salto devolve a personagem à mesma parede 96 px mais
+abaixo. Entre duas paredes próximas, numa chaminé, a subida não tem limite; na chaminé da sala de
+teste, com 120 px de largura, cada salto sobe 90 px premindo apenas a tecla de saltar. A regra de
+que uma parede isolada não se sobe aguarda a confirmação do grupo.
+
+Tal como na borda de uma plataforma, existe uma tolerância: durante 0,07 s depois de largar uma
+parede, a tecla de saltar ainda produz o salto da parede. Os valores do deslize e do bloqueio são
+provisórios e serão afinados quando existirem câmara e níveis.
+
 ## Medidas para o desenho de níveis
 
 | Medida | Valor | Em dimensões da personagem |
@@ -105,11 +134,21 @@ quando existirem câmara e níveis.
 | Distância de travagem no chão | 48 px | 1 largura |
 | Distância de travagem no ar | 71 px | 1,5 larguras |
 | Queda até à velocidade máxima | 143 px | 1,5 alturas |
+| Altura máxima de um salto completo junto a uma parede seguido de um salto da parede | 475 px | 4,9 alturas |
+| Distância à parede no ponto mais alto desse salto, com a direção para fora | 252 px | 5,3 larguras |
+| Distância de um salto da parede, com a direção para fora, até voltar à altura de partida | 444 px | 9,3 larguras |
+| Chaminé mais larga que se sobe premindo apenas a tecla de saltar ao tocar na parede | 222 px | 4,6 larguras |
+| Chaminé mais larga que se sobe premindo a tecla 0,07 s depois de tocar na parede | 178 px | 3,7 larguras |
+| Chaminé mais larga que se sobe com a melhor combinação de teclas | 480 px | 10 larguras |
+| Subida por salto numa chaminé de 120 px, premindo apenas a tecla de saltar | 90 px | quase 1 altura |
+| Descida por salto numa parede isolada, com a melhor combinação de teclas | 96 px | 1 altura |
+| Tempo de deslize por cada altura do corpo | 0,28 s | |
 
 - Os vãos máximos variam alguns píxeis com o ponto de onde a corrida começa, porque a física avança
   em passos de 1/60 s; foram medidos a partir de 12 pontos de partida, e a tabela dá o menor e o
   maior valor.
-- Uma plataforma a 240 px só é alcançável com um salto completo. Os níveis devem deixar margem.
+- Longe de paredes, uma plataforma a 240 px só é alcançável com um salto completo. Os níveis devem
+  deixar margem.
 - A personagem ainda consegue saltar com parte do corpo fora da plataforma, e os vãos medidos já
   contam com isso.
 - A tolerância de borda é uma margem para o jogador, e não alcance para o nível. Um vão que deva ser
@@ -119,8 +158,24 @@ quando existirem câmara e níveis.
   (531 px) mais uma largura do corpo.
 - Se uma opção de acessibilidade vier a alargar a tolerância de borda, o limite dos vãos
   intransponíveis terá de subir: com 0,2 s, o máximo permitido no Inspector, o vão chega aos 559 px.
-- O wall jump e a câmara ainda não existem, e os valores serão afinados. Após cada afinação, as
-  medidas voltam a ser obtidas com o `measure_movement.gd` (ver "Testes e medidas").
+- As medidas das paredes não dependem do ponto de partida, porque cada salto da parede define as
+  duas velocidades da personagem.
+- Uma parede que a personagem consiga tocar durante um salto aumenta a altura alcançável. Uma
+  plataforma que deva ser sempre alcançável com a ajuda de uma parede não deve ficar a mais de
+  379 px acima do ponto de partida: a altura medida (475 px) menos uma altura do corpo. Com o salto
+  da parede dado até 0,07 s fora do melhor momento, a personagem ainda chega aos 462 px. Uma
+  plataforma que deva ser inalcançável, havendo uma parede ao alcance de um salto, deve ficar a pelo
+  menos 571 px: a altura medida mais uma altura do corpo.
+- Uma chaminé que deva ser sempre subida não deve passar de 174 px de largura: a maior largura
+  medida premindo apenas a tecla de saltar (222 px) menos uma largura do corpo. Premir a tecla
+  0,07 s depois de tocar na parede reduz essa largura para 178 px, valor que a margem cobre. Uma
+  chaminé que não deva ser subida deve medir pelo menos 528 px: a maior largura medida com a melhor
+  combinação de teclas (480 px) mais uma largura do corpo. Entre 174 e 528 px, a subida depende da
+  perícia do jogador, pelo que estas larguras devem ficar fora do caminho obrigatório, reservadas a
+  desafios opcionais.
+- Uma parede isolada não se sobe, qualquer que seja a sua altura.
+- A câmara ainda não existe, e os valores serão afinados. Após cada afinação, as medidas voltam a
+  ser obtidas com o `measure_movement.gd` (ver "Testes e medidas").
 - Os níveis podem vir a ser construídos com tiles ou com cenário pintado. Quando o tamanho do tile
   for definido, estas medidas serão convertidas em tiles.
 
@@ -141,11 +196,19 @@ do Godot e edita-se no Inspector. As alterações aplicam-se à personagem em to
 | Jump Height | 240 px | a altura do salto completo |
 | Time To Peak | 0,35 s | o tempo até ao ponto mais alto do salto |
 | Min Jump Height | 80 px | a altura do salto mínimo; um toque sobe alguns px acima deste valor |
-| Coyote Time | 0,07 s | o tempo, depois de sair de uma plataforma sem saltar, durante o qual o salto ainda é aceite (0 desliga) |
+| Coyote Time | 0,07 s | o tempo, depois de sair de uma plataforma sem saltar ou de largar uma parede, durante o qual o salto ainda é aceite (0 desliga) |
 | Jump Buffer Time | 0,07 s | o tempo durante o qual um salto pedido no ar fica guardado à espera de ser possível (0 desliga) |
+| Wall Slide Speed | 350 px/s | a velocidade máxima de descida no deslize; a subida ao longo da parede não é travada |
+| Wall Jump Lock Time | 0,2 s | o tempo, depois de um salto da parede, durante o qual a corrida não responde; com 0,15 s ou menos, uma parede isolada passa a poder ser subida |
 
 ## Referências
 
+- Game Accessibility Guidelines. (s.d.-a). *Avoid / provide alternatives to requiring buttons to be
+  held down*. https://gameaccessibilityguidelines.com/avoid-provide-alternatives-to-requiring-buttons-to-be-held-down/
+- Game Accessibility Guidelines. (s.d.-b). *Ensure controls are as simple as possible, or provide a
+  simpler alternative*. https://gameaccessibilityguidelines.com/ensure-controls-are-as-simple-as-possible-or-provide-a-simpler-alternative/
+- Nystrom, R. (2014). *Game Programming Patterns* (capítulo "State"). Edição de autor.
+  https://gameprogrammingpatterns.com/state.html
 - Pittman, K. (2016). *Math for Game Programmers: Building A Better Jump*. Game Developers
   Conference. https://www.gdcvault.com/play/1023559/Math-for-Game-Programmers-Building
 
@@ -185,6 +248,8 @@ godot --headless --fixed-fps 60 --path Projeto --script res://tests/test_air_con
 godot --headless --fixed-fps 60 --path Projeto --script res://tests/test_player_movement_stats.gd
 godot --headless --fixed-fps 60 --path Projeto --script res://tests/test_coyote_time.gd
 godot --headless --fixed-fps 60 --path Projeto --script res://tests/test_jump_buffer.gd
+godot --headless --fixed-fps 60 --path Projeto --script res://tests/test_wall_slide.gd
+godot --headless --fixed-fps 60 --path Projeto --script res://tests/test_wall_jump.gd
 ```
 
 Os testes mais recentes estendem `tests/support/player_test.gd`, que reúne a preparação comum:
@@ -208,6 +273,18 @@ chão. Está na camada `player` e colide com `world` e `one_way_platform`. Os va
 recurso `PlayerMovementStats` (`scripts/player_movement_stats.gd`), guardado em
 `resources/player_movement_stats.tres`.
 
+A lógica organiza-se numa máquina de estados com três estados, definida por um `enum` no
+`player.gd`: no chão (`ON_FLOOR`), no ar (`IN_AIR`) e na parede (`ON_WALL`). Cada estado tem a sua
+função de física, e o estado só muda em `_update_state()`, no início de cada passo de física, a
+partir do resultado do último `move_and_slide()`. O chão tem prioridade. Para entrar no estado da
+parede é preciso empurrar a personagem contra ela, mas para permanecer nele não, pelo que o estado
+termina quando a personagem deixa de tocar na parede ou aterra. Preferiu-se o `enum` a um nó por
+estado (padrão State) porque os três estados partilham a gravidade, a corrida e os contadores.
+Segue-se a ordem proposta por Nystrom (2014): primeiro o `enum`, e o padrão State quando um estado
+passar a ter dados que só nele fazem sentido, como agarrar bordas. As animações vão depender do
+estado e da velocidade; as que tocam uma só vez (início do salto, aterragem, salto da parede) vão
+ser disparadas por sinais.
+
 - O salto define-se pelo Jump Height e pelo Time To Peak, as grandezas com que se afina, e a
   gravidade e a velocidade inicial calculam-se a partir delas (Pittman, 2016). O tempo arredonda-se
   a passos de física inteiros e a velocidade inicial leva uma correção de meio passo, para que o
@@ -227,12 +304,29 @@ recurso `PlayerMovementStats` (`scripts/player_movement_stats.gd`), guardado em
   que decide o salto.
 - O `is_on_floor()` reflete o último `move_and_slide()`. Por isso, o passo da descolagem ainda usa
   o controlo do chão, e o da aterragem ainda usa o do ar; o `test_air_control.gd` verifica-o.
+- A parede deteta-se com `is_on_wall()` e `get_wall_normal()`, também a partir do último
+  `move_and_slide()`. A normal indica o lado da parede e, por isso, a direção do salto da parede.
+- O deslize não altera a gravidade: no estado da parede, a velocidade de descida é limitada ao Wall
+  Slide Speed em cada passo, e a subida não é afetada.
+- O salto da parede reutiliza o salto do chão, com a mesma altura, e acrescenta a velocidade máxima
+  da corrida no sentido oposto à última parede tocada. Não é um estado: um contador de bloqueio
+  anula o controlo da corrida durante o Wall Jump Lock Time, e é esse bloqueio que impede a subida
+  de uma parede isolada. O `test_wall_jump.gd` verifica-o.
+- A tolerância de parede é um contador como o da tolerância de borda, com o mesmo tempo (Coyote
+  Time). Enche-se em cada passo no ar em que a personagem toca numa parede, guardando o lado dela,
+  e esvazia-se nos passos seguintes. Quando as duas tolerâncias estão ativas, prevalece o salto da
+  parede. Qualquer salto esvazia as tolerâncias e o pedido guardado, pelo que cada pedido continua
+  a produzir um único salto.
 
 Molas, empurrões para cima e plataformas que sobem exigem cuidado. A subir sem o botão de saltar
 premido, a personagem trava como num salto curto, mesmo que a subida não resulte de um salto. Ao
 sair de uma plataforma em movimento, o `CharacterBody2D` soma por omissão a velocidade da
 plataforma à da personagem, o que produz o mesmo efeito. Quando o primeiro destes elementos for
 implementado, a personagem terá de distinguir as duas subidas.
+
+Um respawn que reutilize a mesma personagem, sem criar uma instância nova, tem de repor todos os
+contadores: as duas tolerâncias, o pedido guardado e o bloqueio do salto da parede. Caso contrário,
+um pedido feito antes do respawn pode produzir um salto depois dele.
 
 ### Decisões técnicas
 

@@ -34,6 +34,14 @@ extends Resource
 ## Rounded to whole physics frames; 0 keeps the press for its own frame only.
 @export_range(0.0, 0.2, 0.01, "suffix:s") var jump_buffer_time: float = 0.07
 
+@export_group("Wall")
+## Top falling speed while sliding down a wall, in px/s. Going up along a wall is not slowed.
+@export_range(0.0, 2000.0, 10.0, "suffix:px/s") var wall_slide_speed: float = 350.0
+## Seconds after a wall jump in which the run does nothing, so the jump carries the player away from
+## the wall. Too short, and the player gets back to the same wall higher up, which climbs a single
+## wall; test_wall_jump.gd checks that it cannot. Rounded to whole physics frames.
+@export_range(0.0, 0.5, 0.01, "suffix:s") var wall_jump_lock_time: float = 0.2
+
 
 ## Upward speed when leaving the floor, in px/s. Comes from jump_height and time_to_peak.
 func get_jump_velocity() -> float:
@@ -60,6 +68,11 @@ func get_coyote_frames() -> int:
 ## jump_buffer_time in whole physics frames, rounded to the nearest one.
 func get_jump_buffer_frames() -> int:
 	return roundi(jump_buffer_time * Engine.physics_ticks_per_second)
+
+
+## wall_jump_lock_time in whole physics frames, rounded to the nearest one.
+func get_wall_jump_lock_frames() -> int:
+	return roundi(wall_jump_lock_time * Engine.physics_ticks_per_second)
 
 
 ## time_to_peak rounded to the nearest whole physics frame, at least one. The half-frame correction
