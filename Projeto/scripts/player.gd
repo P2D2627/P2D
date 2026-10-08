@@ -1,6 +1,16 @@
 class_name Player
 extends CharacterBody2D
 
+## A jump off the floor, or off the air a moment after leaving it. late_frames is how many physics
+## frames after leaving the floor it came (0 on the floor), and buffered_frames how many frames the
+## press of Jump waited for it (0 when the press counts on the jump's own frame).
+signal jumped(late_frames: int, buffered_frames: int)
+## A jump off a wall, touched or left a moment ago. late_frames counts from leaving the wall (0 while
+## touching it), and buffered_frames as in jumped. A wall jump emits only this signal. A function
+## connected to either signal takes both values, or is connected with unbind(2); one that takes
+## neither is not called, and the engine logs an error.
+signal wall_jumped(late_frames: int, buffered_frames: int)
+
 ## Where the player is. Each state runs its own physics, and only _update_state() changes it.
 enum State { ON_FLOOR, IN_AIR, ON_WALL }
 
@@ -39,6 +49,12 @@ func _physics_process(delta: float) -> void:
 	move_and_slide()
 
 
+## Where the player is, for what shows or follows it, such as the debug overlay and, later, the
+## animations. It only reads: _update_state() is still the one place that changes the state.
+func get_state() -> State:
+	return _state
+
+
 ## Changes the state from what the last move_and_slide() found, so the take-off frame still runs
 ## as on the floor and the landing frame as in the air. The floor comes first. Getting on a wall
 ## takes a push into it, from the air or from the floor; staying on it does not, so the player
@@ -71,7 +87,7 @@ func _physics_on_floor(delta: float) -> void:
 	_wall_jump_lock_frames_left = 0
 	_keep_jump_press()
 	if _jump_buffer_frames_left > 0:
-		_jump(delta)
+		_jump(delta, 0)
 	_apply_run(delta, 1.0)
 
 
@@ -86,7 +102,7 @@ func _physics_in_air(delta: float) -> void:
 	if _jump_buffer_frames_left > 0 and _wall_coyote_frames_left > 0:
 		_wall_jump(delta)
 	elif _jump_buffer_frames_left > 0 and _coyote_frames_left > 0:
-		_jump(delta)
+		_jump(delta, _frames_off_the_floor())
 	else:
 		_run_down_counters()
 	_apply_run(delta, _air_control())
@@ -151,9 +167,29 @@ func _run_down_counters() -> void:
 		_wall_jump_lock_frames_left -= 1
 
 
+## A jump off the floor, late_frames after leaving it (0 on it). Says so with jumped, reading how
+## long the press waited before the take-off uses it up.
+func _jump(delta: float, late_frames: int) -> void:
+	var buffered_frames: int = _frames_the_press_waited()
+	_take_off(delta)
+	jumped.emit(late_frames, buffered_frames)
+
+
+## Jumps as from the floor, and also away from the last wall touched at top running speed. The
+## run then does nothing for wall_jump_lock_time, so the jump carries the player away from the
+## wall; that lock is what keeps a single wall from being climbed. Says so with wall_jumped only.
+func _wall_jump(delta: float) -> void:
+	var late_frames: int = _frames_off_the_wall()
+	var buffered_frames: int = _frames_the_press_waited()
+	_take_off(delta)
+	velocity.x = _away_from_last_wall * stats.max_run_speed
+	_wall_jump_lock_frames_left = stats.get_wall_jump_lock_frames()
+	wall_jumped.emit(late_frames, buffered_frames)
+
+
 ## Uses the kept press and both kinds of coyote frames up, so one press makes one jump and a later
 ## press in the air waits for a landing or a wall. Then leaves at the take-off speed.
-func _jump(delta: float) -> void:
+func _take_off(delta: float) -> void:
 	_jump_buffer_frames_left = 0
 	_coyote_frames_left = 0
 	_wall_coyote_frames_left = 0
@@ -163,13 +199,22 @@ func _jump(delta: float) -> void:
 	velocity.y = -(stats.get_jump_velocity() - half_frame_of_gravity)
 
 
-## Jumps as from the floor, and also away from the last wall touched at top running speed. The
-## run then does nothing for wall_jump_lock_time, so the jump carries the player away from the
-## wall; that lock is what keeps a single wall from being climbed.
-func _wall_jump(delta: float) -> void:
-	_jump(delta)
-	velocity.x = _away_from_last_wall * stats.max_run_speed
-	_wall_jump_lock_frames_left = stats.get_wall_jump_lock_frames()
+## How many physics frames ago the player left the floor, while coyote frames are left. The floor
+## fills them up to Coyote Time's frames, so the first frame in the air gives 1.
+func _frames_off_the_floor() -> int:
+	return stats.get_coyote_frames() + 1 - _coyote_frames_left
+
+
+## How many physics frames ago the player last touched a wall, while the wall's coyote frames are
+## left. A touch fills them up to one more than Coyote Time's, so a frame touching it gives 0.
+func _frames_off_the_wall() -> int:
+	return stats.get_coyote_frames() + 1 - _wall_coyote_frames_left
+
+
+## How many physics frames the kept press of Jump has waited. A press fills the buffer up to one
+## more than Jump Buffer's frames, so the frame of the press itself gives 0.
+func _frames_the_press_waited() -> int:
+	return stats.get_jump_buffer_frames() + 1 - _jump_buffer_frames_left
 
 
 ## The share of the floor's run control kept off the floor: none while a wall jump's lock lasts,

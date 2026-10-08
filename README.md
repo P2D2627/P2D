@@ -24,7 +24,8 @@ documenta a organização técnica do projeto.
 3. Abrir `scenes/levels/test_room.tscn` e premir F6. A sala tem um bloco elevado, com duas bordas,
    para experimentar os saltos a partir de uma borda, e uma chaminé de 120 px entre a parede
    esquerda e um pilar suspenso, por baixo do qual se entra a andar. A tecla F5 abre a cena
-   principal, que ainda está vazia.
+   principal, que ainda está vazia. Durante o jogo, a tecla F3 mostra e esconde o texto de
+   depuração descrito em "Overlay de depuração".
 
 | Ação | Teclado | Comando |
 |---|---|---|
@@ -32,6 +33,7 @@ documenta a organização técnica do projeto.
 | Saltar | Espaço | A / Cross |
 | Deslizar numa parede | no ar, A / D ou setas contra a parede | stick esquerdo contra a parede |
 | Saltar de uma parede | no ar, Espaço encostado à parede | A / Cross encostado à parede |
+| Mostrar e esconder o texto de depuração | F3 | — |
 
 ## Mecânicas implementadas
 
@@ -235,6 +237,7 @@ do Godot e edita-se no Inspector. As alterações aplicam-se à personagem em to
     ├── scenes/        cenas do jogo
     │   ├── levels/    salas e níveis
     │   ├── actors/    jogador, inimigos, NPCs
+    │   ├── debug/     overlay de depuração
     │   └── ui/        menus e HUD
     ├── scripts/
     │   └── components/  componentes reutilizáveis (HealthComponent, Hitbox, Hurtbox…)
@@ -260,6 +263,8 @@ godot --headless --fixed-fps 60 --path Projeto --script res://tests/test_coyote_
 godot --headless --fixed-fps 60 --path Projeto --script res://tests/test_jump_buffer.gd
 godot --headless --fixed-fps 60 --path Projeto --script res://tests/test_wall_slide.gd
 godot --headless --fixed-fps 60 --path Projeto --script res://tests/test_wall_jump.gd
+godot --headless --fixed-fps 60 --path Projeto --script res://tests/test_jump_signals.gd
+godot --headless --fixed-fps 60 --path Projeto --script res://tests/test_debug_overlay.gd
 ```
 
 Os testes mais recentes estendem `tests/support/player_test.gd`, que reúne a preparação comum:
@@ -293,7 +298,8 @@ estado (padrão State) porque os três estados partilham a gravidade, a corrida 
 Segue-se a ordem proposta por Nystrom (2014): primeiro o `enum`, e o padrão State quando um estado
 passar a ter dados que só nele fazem sentido, como agarrar bordas. As animações vão depender do
 estado e da velocidade; as que tocam uma só vez (início do salto, aterragem, salto da parede) vão
-ser disparadas por sinais.
+ser disparadas por sinais. Os sinais do salto já existem; o da aterragem será acrescentado com o
+primeiro sistema que precise dele.
 
 - O salto define-se pelo Jump Height e pelo Time To Peak, as grandezas com que se afina, e a
   gravidade e a velocidade inicial calculam-se a partir delas (Pittman, 2016). O tempo arredonda-se
@@ -327,6 +333,14 @@ ser disparadas por sinais.
   e esvazia-se nos passos seguintes. Quando as duas tolerâncias estão ativas, prevalece o salto da
   parede. Qualquer salto esvazia as tolerâncias e o pedido guardado, pelo que cada pedido continua
   a produzir um único salto.
+- A personagem emite um sinal em cada salto: `jumped` no salto do chão, incluindo os que usam as
+  tolerâncias, e `wall_jumped` no salto da parede, que não emite o primeiro. Ambos enviam dois
+  valores: os passos de física decorridos desde que a personagem deixou o chão ou a parede (0 se
+  ainda lá estava) e os passos em que o pedido de salto esteve guardado (0 se foi feito no próprio
+  passo do salto). Uma função ligada a estes sinais tem de receber os dois valores, ou ser ligada
+  com `.unbind(2)`; caso contrário, o Godot regista um erro e não a chama. O estado atual lê-se
+  com `get_state()`, que não permite alterá-lo. O `test_jump_signals.gd` verifica os sinais nos
+  limites das duas tolerâncias.
 
 Molas, empurrões para cima e plataformas que sobem exigem cuidado. A subir sem o botão de saltar
 premido, a personagem trava como num salto curto, mesmo que a subida não resulte de um salto. Ao
@@ -379,6 +393,7 @@ teclado, e não pela letra impressa, pelo que o WASD se mantém num teclado AZER
 | `jump` | Espaço | A / Cross |
 | `interact` | E | B / Circle |
 | `pause` | Escape | Start |
+| `toggle_debug_overlay` | F3 | — |
 
 #### Camadas de colisão
 
@@ -395,6 +410,22 @@ sempre o nome, e nunca o número no código.
 
 A separação entre *hitbox* (o que causa dano) e *hurtbox* (o que recebe dano) permite que um ataque
 atravesse um inimigo sem o empurrar e, se for desejado, que os inimigos se atinjam entre si.
+
+#### Overlay de depuração
+
+Para afinar o movimento durante o jogo, a sala de teste mostra no canto superior esquerdo os FPS e
+o passo de processamento e o de física mais lentos do último segundo, valores que o Godot só
+atualiza uma vez por segundo, pelo que um único frame lento permanece visível durante um segundo.
+Mostra também o estado e a velocidade da personagem e, depois de cada salto, o tipo de salto, as
+tolerâncias usadas, em passos de física, e a altura atingida. Um salto completo mostra
+240 px, o mesmo valor que os testes medem. A tecla F3 mostra e esconde o texto.
+
+O overlay é uma cena própria, `scenes/debug/debug_overlay.tscn`, num `CanvasLayer`, pelo que não se
+desloca com a câmara. Recebe a personagem pelo Inspector e lê-a sem que ela dependa dele, pelo que
+a personagem é testada e exportada sem o overlay. Continua ativo com o jogo em pausa e, nas
+exportações de release, remove-se a si próprio. O `test_debug_overlay.gd` verifica o
+comportamento nas versões de depuração; a remoção na versão de release só poderá ser confirmada
+na primeira exportação.
 
 ### Convenções de código
 

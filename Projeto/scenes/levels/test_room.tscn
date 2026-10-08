@@ -1,6 +1,7 @@
 [gd_scene format=3 uid="uid://7xjklfuak1yt"]
 
 [ext_resource type="PackedScene" uid="uid://b1g88pca2y1w4" path="res://scenes/actors/player.tscn" id="1_player"]
+[ext_resource type="PackedScene" path="res://scenes/debug/debug_overlay.tscn" id="2_debug_overlay"]
 
 [sub_resource type="RectangleShape2D" id="RectangleShape2D_floor"]
 size = Vector2(1920, 80)
@@ -73,3 +74,6 @@ polygon = PackedVector2Array(-32, -280, 32, -280, 32, 280, -32, 280)
 
 [node name="Player" parent="." unique_id=1512336293 instance=ExtResource("1_player")]
 position = Vector2(960, 600)
+
+[node name="DebugOverlay" parent="." node_paths=PackedStringArray("player") instance=ExtResource("2_debug_overlay")]
+player = NodePath("../Player")
