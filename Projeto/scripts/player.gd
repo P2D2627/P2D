@@ -10,6 +10,10 @@ signal jumped(late_frames: int, buffered_frames: int)
 ## connected to either signal takes both values, or is connected with unbind(2); one that takes
 ## neither is not called, and the engine logs an error.
 signal wall_jumped(late_frames: int, buffered_frames: int)
+## Back on the floor after the air or a wall. Emitted when the state turns to ON_FLOOR, so the state
+## is already ON_FLOOR for whoever hears it; that is on the physics frame after the one that touched
+## the floor. The camera uses it to reframe on the new floor.
+signal landed
 
 ## Where the player is. Each state runs its own physics, and only _update_state() changes it.
 enum State { ON_FLOOR, IN_AIR, ON_WALL }
@@ -61,7 +65,10 @@ func get_state() -> State:
 ## leaves it when it no longer touches it, or lands.
 func _update_state() -> void:
 	if is_on_floor():
+		var was_off_the_floor: bool = _state != State.ON_FLOOR
 		_state = State.ON_FLOOR
+		if was_off_the_floor:
+			landed.emit()
 		return
 	match _state:
 		State.ON_FLOOR, State.IN_AIR:

@@ -9,8 +9,8 @@ pecado capital, sem poder atacar. Cada demónio oferece-lhe um atalho, e o jogo 
 aceita.
 
 > **Estado:** a personagem jogável já anda, salta e tem controlo no ar, desliza nas paredes e salta
-> delas, e o salto tolera pedidos ligeiramente fora de tempo. Existe apenas uma sala de teste: ainda
-> não há níveis, câmara, arte nem som.
+> delas, e o salto tolera pedidos ligeiramente fora de tempo. Existe apenas uma sala de teste, maior
+> do que o ecrã, com a câmara do jogo, descrita em "Câmara": ainda não há níveis, arte nem som.
 
 Este documento tem duas partes. A primeira descreve, para toda a equipa, o que já pode ser
 experimentado e as medidas que servem o desenho de níveis. A segunda, "Para quem programa",
@@ -23,8 +23,10 @@ documenta a organização técnica do projeto.
    `Projeto/`, e não na raiz do repositório.
 3. Abrir `scenes/levels/test_room.tscn` e premir F6. A sala tem um bloco elevado, com duas bordas,
    para experimentar os saltos a partir de uma borda, e uma chaminé de 120 px entre a parede
-   esquerda e um pilar suspenso, por baixo do qual se entra a andar. A tecla F5 abre a cena
-   principal, que ainda está vazia. Durante o jogo, a tecla F3 mostra e esconde o texto de
+   esquerda e um pilar suspenso, por baixo do qual se entra a andar. A sala é maior do que o ecrã,
+   e a câmara segue a personagem desde o início. Para a direita há uma corrida longa, uma escada de quatro degraus de 200 px, uma segunda chaminé
+   de 120 px junto à parede direita e, no topo desta, uma passagem que termina numa queda de 1500 px.
+   A tecla F5 abre a cena principal, que ainda está vazia. Durante o jogo, a tecla F3 mostra e esconde o texto de
    depuração descrito em "Overlay de depuração".
 
 | Ação | Teclado | Comando |
@@ -75,7 +77,7 @@ correspondente no chão. Ao largar a direção a meio de um salto em corrida, a 
 
 O controlo aéreo permite corrigir um salto mal calculado. O jogo avalia o jogador pelas escolhas
 que faz, e mortes causadas pelos controlos levariam a aceitar atalhos por frustração. O valor de
-70 % é provisório e será afinado quando existirem câmara e níveis.
+70 % é provisório e será afinado com a câmara e nos níveis.
 
 ### Tolerâncias do salto
 
@@ -94,7 +96,7 @@ reage mais devagar.
 Durante a tolerância de borda, a gravidade continua a atuar, para que a personagem não pareça
 caminhar no ar. Por isso, o último salto aceite parte 13 px abaixo da borda e sobe 227 px acima
 dela, menos 13 px do que um salto dado na borda. Os dois tempos são provisórios e serão afinados
-quando existirem câmara e níveis.
+com a câmara e nos níveis.
 
 ### Paredes
 
@@ -122,7 +124,7 @@ que uma parede isolada não se sobe por saltos da parede aguarda a confirmação
 
 Tal como na borda de uma plataforma, existe uma tolerância: durante 0,07 s depois de largar uma
 parede, a tecla de saltar ainda produz o salto da parede. Os valores do deslize e do bloqueio são
-provisórios e serão afinados quando existirem câmara e níveis.
+provisórios e serão afinados com a câmara e nos níveis.
 
 ## Medidas para o desenho de níveis
 
@@ -186,10 +188,61 @@ provisórios e serão afinados quando existirem câmara e níveis.
 - Uma parede isolada não se sobe por saltos da parede, qualquer que seja a sua altura: cada
   salto devolve a personagem à parede 96 px mais abaixo. O topo dessa parede alcança-se como o de
   uma plataforma, com um salto normal; uma parede de 200 px, por exemplo, sobe-se assim.
-- A câmara ainda não existe, e os valores serão afinados. Após cada afinação, as medidas voltam a
-  ser obtidas com o `measure_movement.gd` (ver "Testes e medidas").
+- Os valores ainda serão afinados, com a câmara e depois nos níveis. Após cada afinação, as medidas
+  voltam a ser obtidas com o `measure_movement.gd` (ver "Testes e medidas").
 - Os níveis podem vir a ser construídos com tiles ou com cenário pintado. Quando o tamanho do tile
   for definido, estas medidas serão convertidas em tiles.
+
+## Câmara
+
+A câmara segue a personagem com técnicas descritas por Keren (2015), escolhidas para as situações
+deste jogo: a corrida, as chaminés, as subidas e as quedas. As medidas foram obtidas nos testes, a
+60 passos de física por segundo, num ecrã de 1920×1080.
+
+| Técnica | Comportamento | Medida |
+|---|---|---|
+| Janela | a câmara só se desloca quando a personagem sai de um retângulo à volta do ponto que segue: 64 px para cada lado, 250 px acima e nenhum abaixo | um salto completo (240 px) e o balanço numa chaminé de 120 px (72 px) não movem a câmara |
+| Suavização | em cada passo, a câmara percorre uma fração da distância que falta, independente da frequência de imagem | 95 % da distância em 0,5 s |
+| Antecipação | a câmara mostra 300 px a mais do lado para onde a personagem corre e só troca de lado depois de a personagem recuar 180 px a partir do ponto mais afastado | em corrida, 1,5 s de percurso visível à frente; a troca de lado conclui-se em cerca de 1,2 s, sem ultrapassar a posição final |
+| Reenquadramento | ao pousar num chão mais alto, a câmara centra-se nesse chão | numa escada de degraus de 200 px, a câmara sobe um degrau de cada vez |
+| Olhar para baixo | numa queda superior a um salto completo, a câmara mostra 400 px a mais abaixo da personagem | à velocidade máxima de queda, 0,51 s de queda visível abaixo dos pés |
+| Zonas | enquanto a personagem está numa zona de câmara, o ecrã não mostra nada para lá dela | a correr para uma borda ou a cair para o fundo de uma zona, o ecrã para na borda; junto a uma parede, acompanha a inversão de sentido em 0,32 s |
+| Passagem entre zonas | ao mudar de zona, a câmara desloca-se no máximo a 2000 px/s | uma passagem que desloca a câmara 900 px demora cerca de meio segundo |
+
+As zonas de câmara definem-se na cena de cada nível (ver "Câmara" em "Para quem programa"). Cada
+zona é formada por um ou mais retângulos, e enquanto a personagem estiver dentro de um deles o ecrã
+fica limitado à caixa que os envolve. As zonas de um nível devem cobrir todo o espaço jogável sem se
+sobreporem. Uma zona do tamanho do ecrã fixa a câmara. A sala de teste tem uma única zona, do
+tamanho da sala, para que a câmara siga a personagem em todo o lado.
+
+O desenho dos níveis deve ter em conta três consequências deste comportamento:
+
+- A fronteira entre uma zona fixa e uma zona em que a câmara segue a personagem deve ficar numa
+  porta, num poço ou numa queda, e não no chão onde se anda. A passagem desloca a câmara até 900 px,
+  e uma personagem que andasse para trás e para a frente sobre a fronteira faria a câmara ir e vir.
+- Uma zona mais estreita do que o ecrã deixa ver a zona vizinha. Os ecrãs mais largos (21:9) mostram
+  2520 px: nesses ecrãs, uma zona fixa de 1920 px mostra 600 px da zona ao
+  lado.
+- Em chaminés com mais de 228 px, a antecipação muda de lado a cada salto da parede, porque o
+  balanço da personagem ultrapassa os 180 px do limiar. Estas chaminés já ficam fora do caminho
+  obrigatório (ver "Medidas para o desenho de níveis").
+
+Os valores da câmara estão no ficheiro `camera_stats.tres`, em `Projeto/resources/`, e editam-se no
+Inspector do Godot, como os do movimento.
+
+| Campo no Inspector | Valor atual | O que controla |
+|---|---|---|
+| Window Half Width | 64 px | a largura da janela para cada lado do ponto seguido |
+| Window Up | 250 px | a altura da janela acima do ponto seguido; o salto completo e 10 px de margem |
+| Window Down | 0 px | a altura da janela abaixo do ponto seguido; com 0, a câmara acompanha logo qualquer descida |
+| Follow Sharpness | 6 /s | a rapidez da suavização |
+| Look Ahead Distance | 300 px | a distância da antecipação |
+| Turn Threshold | 180 px | o recuo necessário para a antecipação trocar de lado; acima dos 174 px de balanço na chaminé mais larga que se sobe apenas com o salto |
+| Look Ahead Sharpness | 4 /s | a rapidez da troca de lado |
+| Look Down Threshold | 250 px | a queda, abaixo do último chão, a partir da qual a câmara olha para baixo |
+| Look Down Distance | 400 px | a distância do olhar para baixo |
+| Look Down Sharpness | 10 /s | a rapidez com que a câmara olha para baixo e regressa |
+| Zone Change Speed | 2000 px/s | a velocidade máxima da câmara ao passar para outra zona; acima da velocidade máxima de queda (1400 px/s), para nunca perder a personagem |
 
 ## Afinação do movimento
 
@@ -219,6 +272,8 @@ do Godot e edita-se no Inspector. As alterações aplicam-se à personagem em to
   held down*. https://gameaccessibilityguidelines.com/avoid-provide-alternatives-to-requiring-buttons-to-be-held-down/
 - Game Accessibility Guidelines. (s.d.-b). *Ensure controls are as simple as possible, or provide a
   simpler alternative*. https://gameaccessibilityguidelines.com/ensure-controls-are-as-simple-as-possible-or-provide-a-simpler-alternative/
+- Keren, I. (2015, 11 de maio). *Scroll Back: The Theory and Practice of Cameras in Side-Scrollers*.
+  Game Developer. https://www.gamedeveloper.com/design/scroll-back-the-theory-and-practice-of-cameras-in-side-scrollers
 - Nystrom, R. (2014). *Game Programming Patterns* (capítulo "State"). Edição de autor.
   https://gameprogrammingpatterns.com/state.html
 - Pittman, K. (2016). *Math for Game Programmers: Building A Better Jump*. Game Developers
@@ -237,6 +292,7 @@ do Godot e edita-se no Inspector. As alterações aplicam-se à personagem em to
     ├── scenes/        cenas do jogo
     │   ├── levels/    salas e níveis
     │   ├── actors/    jogador, inimigos, NPCs
+    │   ├── camera/    câmara do jogo
     │   ├── debug/     overlay de depuração
     │   └── ui/        menus e HUD
     ├── scripts/
@@ -265,6 +321,12 @@ godot --headless --fixed-fps 60 --path Projeto --script res://tests/test_wall_sl
 godot --headless --fixed-fps 60 --path Projeto --script res://tests/test_wall_jump.gd
 godot --headless --fixed-fps 60 --path Projeto --script res://tests/test_jump_signals.gd
 godot --headless --fixed-fps 60 --path Projeto --script res://tests/test_debug_overlay.gd
+godot --headless --fixed-fps 60 --path Projeto --script res://tests/test_game_camera.gd
+godot --headless --fixed-fps 60 --path Projeto --script res://tests/test_camera_window.gd
+godot --headless --fixed-fps 60 --path Projeto --script res://tests/test_camera_look_ahead.gd
+godot --headless --fixed-fps 60 --path Projeto --script res://tests/test_camera_vertical.gd
+godot --headless --fixed-fps 60 --path Projeto --script res://tests/test_landed_signal.gd
+godot --headless --fixed-fps 60 --path Projeto --script res://tests/test_camera_zones.gd
 ```
 
 Os testes mais recentes estendem `tests/support/player_test.gd`, que reúne a preparação comum:
@@ -341,6 +403,11 @@ primeiro sistema que precise dele.
   com `.unbind(2)`; caso contrário, o Godot regista um erro e não a chama. O estado atual lê-se
   com `get_state()`, que não permite alterá-lo. O `test_jump_signals.gd` verifica os sinais nos
   limites das duas tolerâncias.
+- A personagem emite `landed`, sem valores, cada vez que volta ao chão depois do ar ou de uma
+  parede. O sinal surge quando o estado passa a `ON_FLOOR`, no passo de física a seguir ao do
+  contacto, pelo que quem o recebe já encontra esse estado. A câmara usa-o para reenquadrar; a
+  altura da queda será acrescentada quando existir dano de queda. O `test_landed_signal.gd`
+  verifica-o depois de uma queda, de um salto, de uma borda e de uma parede.
 
 Molas, empurrões para cima e plataformas que sobem exigem cuidado. A subir sem o botão de saltar
 premido, a personagem trava como num salto curto, mesmo que a subida não resulte de um salto. Ao
@@ -379,6 +446,30 @@ simplifica o dimensionamento de sprites e cenários. O modo de stretch é `canva
 `expand`: em ecrãs com outra proporção mostra-se mais ou menos mundo na horizontal, sem barras
 pretas, o que serve os telemóveis (16:9, 19.5:9, 20:9).
 
+#### Physics interpolation
+
+A física do jogo corre 60 vezes por segundo, e o ecrã é desenhado à frequência do monitor, que pode
+ser superior (120 Hz ou 144 Hz, por exemplo). Sem compensação, um monitor de 144 Hz mostra frames em
+que nada se deslocou, e o movimento parece aos solavancos, sobretudo quando a câmara segue a
+personagem. Com a *physics interpolation* ativa (Project Settings ▸ Physics ▸ Common), cada objeto é
+desenhado numa posição intermédia entre os dois últimos passos de física, e o movimento fica contínuo
+a qualquer frequência. Em troca, a imagem fica atrasada até um passo de física (16,7 ms). A física em
+si não muda: os testes e as medidas do movimento dão os mesmos resultados com e sem interpolação.
+
+Desta opção resultam duas regras:
+
+- Um nó que se desloca deve fazê-lo em `_physics_process()`. Um nó deslocado em `_process()` treme,
+  a menos que a interpolação seja desligada nesse nó (`physics_interpolation_mode`).
+- Um teletransporte, como o regresso da personagem a um ponto de partida, termina com
+  `reset_physics_interpolation()`. Sem isso, o objeto é desenhado a atravessar o espaço entre as duas
+  posições.
+
+A `Camera2D` passa a ser processada no passo de física, e o Godot emite um aviso se ela estiver
+configurada para o modo Idle. Pela mesma razão, a suavização própria da `Camera2D` (Position
+Smoothing) não é usada: com a interpolação ativa, é aplicada mais do que uma vez por passo de física,
+e o mesmo valor deixa a câmara a 81 px da personagem em corrida, contra 144 px sem interpolação. A
+câmara do jogo faz a sua própria suavização, uma vez por passo.
+
 #### Input: ações nomeadas com teclas físicas
 
 Nenhum script lê teclas diretamente. Todo o input passa pelo Input Map, com `Input.get_axis()` e
@@ -411,6 +502,10 @@ sempre o nome, e nunca o número no código.
 A separação entre *hitbox* (o que causa dano) e *hurtbox* (o que recebe dano) permite que um ataque
 atravesse um inimigo sem o empurrar e, se for desejado, que os inimigos se atinjam entre si.
 
+A camada `camera_bounds` é a das zonas de câmara (`CameraZone`): retângulos que limitam o que o ecrã
+mostra enquanto a personagem está dentro deles. As zonas não detetam colisões; a câmara lê-lhes a
+geometria, e a camada serve para as identificar e desenhar no editor.
+
 #### Overlay de depuração
 
 Para afinar o movimento durante o jogo, a sala de teste mostra no canto superior esquerdo os FPS e
@@ -418,7 +513,9 @@ o passo de processamento e o de física mais lentos do último segundo, valores 
 atualiza uma vez por segundo, pelo que um único frame lento permanece visível durante um segundo.
 Mostra também o estado e a velocidade da personagem e, depois de cada salto, o tipo de salto, as
 tolerâncias usadas, em passos de física, e a altura atingida. Um salto completo mostra
-240 px, o mesmo valor que os testes medem. A tecla F3 mostra e esconde o texto.
+240 px, o mesmo valor que os testes medem. Com a câmara ligada, mostra ainda a zona de câmara em que
+a personagem está e as distâncias atuais da antecipação e do olhar para baixo. A tecla F3 mostra e
+esconde o texto.
 
 O overlay é uma cena própria, `scenes/debug/debug_overlay.tscn`, num `CanvasLayer`, pelo que não se
 desloca com a câmara. Recebe a personagem pelo Inspector e lê-a sem que ela dependa dele, pelo que
@@ -426,6 +523,36 @@ a personagem é testada e exportada sem o overlay. Continua ativo com o jogo em 
 exportações de release, remove-se a si próprio. O `test_debug_overlay.gd` verifica o
 comportamento nas versões de depuração; a remoção na versão de release só poderá ser confirmada
 na primeira exportação.
+
+#### Câmara
+
+A câmara (`scenes/camera/game_camera.tscn`, script `GameCamera`) é uma `Camera2D` colocada ao lado
+da personagem, na cena do nível, e não dentro da cena da personagem. Recebe a personagem pelo
+Inspector e lê-a sem que ela dependa da câmara; o nível pode assim parar a câmara numa cena
+cinemática sem alterar a personagem. É processada no passo de física e depois da personagem
+(Physics Priority 1), pelo que lê a posição do próprio passo. Os valores estão num `Resource`,
+`CameraStats`.
+
+A suavização é feita pelo script, e não pela `Camera2D` (ver "Physics interpolation"). O seguimento
+usa uma suavização exponencial, com o peso `1 - exp(-k·Δt)`, e as deslocações da antecipação usam a
+solução exata de uma mola criticamente amortecida, que regressa à posição de equilíbrio o mais
+depressa possível sem oscilar. Em ambos os casos, o resultado não depende da duração do passo de
+física. A personagem emite o sinal `landed`, que a câmara usa para reenquadrar ao aterrar.
+
+As zonas (`CameraZone`, uma `Area2D` na camada `camera_bounds`) são lidas pela geometria das suas
+formas retangulares, com a transformação completa (uma zona escalada tem o retângulo que o editor
+mostra), e não por sinais de física, cuja ordem não é controlada. As formas desativadas não contam, e
+uma forma rodada é ignorada com um erro. A câmara limita ao intervalo que a zona permite o ponto para
+onde se dirige e também a posição final: o seguimento e a antecipação atrasam-se cada um em relação
+ao seu alvo, e sem este segundo limite a soma ultrapassava a borda em até 120 px. Ao mudar de zona,
+cada passo do seguimento fica limitado pela Zone Change Speed até a câmara chegar ao novo intervalo.
+A câmara considera as zonas que estão dentro da cena do seu nível, incluindo as de subcenas, e ignora
+as que estão sob um nó a ser removido, o que evita usar as zonas de um nível a ser descarregado; se
+existirem zonas mas nenhuma pertencer ao seu nível, emite um aviso.
+
+Os testes `test_game_camera.gd`, `test_camera_window.gd`, `test_camera_look_ahead.gd`,
+`test_camera_vertical.gd`, `test_camera_zones.gd` e `test_landed_signal.gd` verificam estes
+comportamentos.
 
 ### Convenções de código
 
@@ -438,7 +565,8 @@ na primeira exportação.
 - Valores de balanceamento em `@export` ou em `Resource`, e nunca como constantes no meio da lógica.
 - Nomes em inglês; `snake_case` para ficheiros, funções e variáveis; `PascalCase` para classes e
   nós.
-- Física e movimento em `_physics_process()`; elementos visuais em `_process()`.
+- Física e movimento em `_physics_process()`, incluindo qualquer deslocação de um nó. Em
+  `_process()` fica apenas o que não altera posições, como texto e cores (ver Physics interpolation).
 
 ### Git
 

@@ -14,6 +14,9 @@ const MS_PER_SECOND: float = 1000.0
 ## The player whose state, velocity and jumps the text shows. Without one, the text has only the
 ## frame rate and frame times.
 @export var player: Player
+## The camera whose zone, look ahead and look down the text shows. Without one, there is no camera
+## line.
+@export var camera: GameCamera
 
 ## The last jump, as text, kept until the next one: what it jumped off and the tolerance frames it
 ## used. Empty until the first jump.
@@ -45,13 +48,15 @@ func _unhandled_input(event: InputEvent) -> void:
 
 ## Rewrites the text on every frame while it shows, with new strings each time, which only debug
 ## builds pay for. Each section is its own function. The player's sections need a player that still
-## exists: none may be linked, or it may have been freed.
+## exists, and the camera's a camera: none may be linked, or it may have been freed.
 func _process(_delta: float) -> void:
 	var text: String = _performance_section()
 	if is_instance_valid(player):
 		text += "\n" + _player_section()
-		if not _last_jump.is_empty():
-			text += "\n" + _jump_section()
+	if is_instance_valid(camera):
+		text += "\n" + _camera_section()
+	if is_instance_valid(player) and not _last_jump.is_empty():
+		text += "\n" + _jump_section()
 	_label.text = text
 
 
@@ -88,6 +93,12 @@ func _performance_section() -> String:
 func _player_section() -> String:
 	return "state %s   velocity (%+.0f, %+.0f) px/s" % [
 			Player.State.find_key(player.get_state()), player.velocity.x, player.velocity.y]
+
+
+## The camera zone the player is in, or none, and how far the camera leads ahead and down, in px.
+func _camera_section() -> String:
+	return "camera zone %s   look ahead %+.0f px   look down %+.0f px" % [
+			camera.get_zone_name(), camera.get_look_ahead(), camera.get_look_down()]
 
 
 ## The last jump and its peak, in px above where it took off. The peak grows while the jump rises

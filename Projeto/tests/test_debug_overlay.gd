@@ -5,7 +5,9 @@
 # times; with one, a second line follows its state and velocity, and goes away when the player is
 # freed. After the first jump, a third line says what the last jump was, from the player's jump
 # signals, and how high it went: a full jump peaks at Jump Height. A player freed in the middle of
-# a jump stops the overlay following it. With Start Visible off, the overlay starts hidden. That it
+# a jump stops the overlay following it. With Start Visible off, the overlay starts hidden. In the
+# test room the overlay is linked to the camera too, and a camera line shows the zone the player is
+# in and the camera's look ahead and look down. That it
 # frees itself outside debug builds can only be checked on a release export.
 # Run from the repository root; the exit code is 0 on pass and 1 on fail:
 # godot --headless --fixed-fps 60 --path Projeto --script res://tests/test_debug_overlay.gd
@@ -17,6 +19,14 @@ const PERFORMANCE_LINE: String = (
 		"(?m)^\\d+ FPS   worst process \\d+\\.\\d{2} ms   worst physics \\d+\\.\\d{2} ms$")
 const PLAYER_LINE: String = "(?m)^state (\\w+)   velocity \\(([+-]\\d+), ([+-]\\d+)\\) px/s$"
 const JUMP_LINE: String = "(?m)^jump off (.+)   peak (-?\\d+) px$"
+const CAMERA_LINE: String = (
+		"(?m)^camera zone (\\S+)   look ahead ([+-]\\d+) px   look down ([+-]\\d+) px$")
+## A spot on the test room's floor, right of the first screen.
+const FLOOR_SPOT: Vector2 = Vector2(3000.0, 998.0)
+## Physics frames for the room's camera to settle after the player moves: 3 s.
+const CAMERA_SETTLE_FRAMES: int = 180
+## How far a camera value in the text may be from the camera's, in px: the text rounds to whole px.
+const CAMERA_TOLERANCE: float = 1.0
 ## Frames to wait before reading the text, which the overlay writes in _process.
 const TEXT_FRAMES: int = 2
 ## The floor of the case that runs and jumps goes from -FLOOR_HALF_WIDTH to FLOOR_HALF_WIDTH.
@@ -51,6 +61,7 @@ func _initialize() -> void:
 	results.append(await _a_full_jump_shows_its_peak_at_jump_height())
 	results.append(await _the_jump_line_says_what_each_jump_was_and_keeps_it())
 	results.append(await _a_player_freed_mid_jump_stops_the_following())
+	results.append(await _the_camera_line_follows_the_room_s_camera())
 	finish(results)
 
 
@@ -289,6 +300,34 @@ func _a_player_freed_mid_jump_stops_the_following() -> bool:
 			% [following, stopped, text])
 
 
+## In the test room the overlay is linked to the room's camera too, and a camera line shows what the
+## camera gives: the zone the player is in, the look ahead and the look down. The line matches the
+## camera at the start, and again with the player moved along the floor and the camera settled
+## there, leading ahead.
+func _the_camera_line_follows_the_room_s_camera() -> bool:
+	var room: Node = TEST_ROOM_SCENE.instantiate()
+	root.add_child(room)
+	var overlay: DebugOverlay = _find_overlay(room)
+	var camera: GameCamera = room.get_node(^"GameCamera") as GameCamera
+	var player: Player = room.get_node(^"Player") as Player
+	var linked: bool = overlay.get(&"camera") == camera
+	await _wait_process_frames(TEXT_FRAMES)
+	var at_start: CameraLine = _read_camera_line(overlay)
+	var start_right: bool = at_start.is_like(camera.get_zone_name(), camera.get_look_ahead(),
+			camera.get_look_down(), CAMERA_TOLERANCE)
+	player.global_position = FLOOR_SPOT
+	player.reset_physics_interpolation()
+	await _wait_physics_frames(CAMERA_SETTLE_FRAMES)
+	await _wait_process_frames(TEXT_FRAMES)
+	var after_the_move: CameraLine = _read_camera_line(overlay)
+	var moved_right: bool = after_the_move.is_like(camera.get_zone_name(), camera.get_look_ahead(),
+			camera.get_look_down(), CAMERA_TOLERANCE)
+	await _remove(room)
+	return report(linked and start_right and moved_right,
+			"Camera line: linked %s; at the start \"%s\"; after the move \"%s\""
+			% [linked, at_start.text, after_the_move.text])
+
+
 ## An overlay on its own, linked to linked_player if one is given, in the scene, after a frame. The
 ## frame matters: _initialize runs before the root is in the tree, so a node added then only gets
 ## its _ready once _initialize yields.
@@ -331,6 +370,18 @@ func _read_player_line(overlay: DebugOverlay) -> PlayerLine:
 		line.text = found.get_string()
 		line.state = found.get_string(1)
 		line.velocity = Vector2(found.get_string(2).to_float(), found.get_string(3).to_float())
+	return line
+
+
+func _read_camera_line(overlay: DebugOverlay) -> CameraLine:
+	var line: CameraLine = CameraLine.new()
+	var found: RegExMatch = RegEx.create_from_string(CAMERA_LINE).search(_text(overlay))
+	if found != null:
+		line.found = true
+		line.text = found.get_string()
+		line.zone = found.get_string(1)
+		line.look_ahead = found.get_string(2).to_float()
+		line.look_down = found.get_string(3).to_float()
 	return line
 
 
@@ -384,3 +435,20 @@ class PlayerLine:
 		return (found and state == expected_state
 				and absf(velocity.x - expected_velocity.x) <= tolerance
 				and absf(velocity.y - expected_velocity.y) <= tolerance)
+
+
+## What the camera's line of the text says. found is false if the text has no such line.
+class CameraLine:
+	var found: bool = false
+	var text: String = ""
+	var zone: String = ""
+	var look_ahead: float = 0.0
+	var look_down: float = 0.0
+
+	## True if the line is there, naming this zone, with a look ahead and a look down within
+	## tolerance of these.
+	func is_like(expected_zone: String, expected_look_ahead: float, expected_look_down: float,
+			tolerance: float) -> bool:
+		return (found and zone == expected_zone
+				and absf(look_ahead - expected_look_ahead) <= tolerance
+				and absf(look_down - expected_look_down) <= tolerance)
