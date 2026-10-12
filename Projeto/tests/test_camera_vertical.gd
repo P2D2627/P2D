@@ -11,7 +11,7 @@
 # godot --headless --fixed-fps 60 --path Projeto --script res://tests/test_camera_vertical.gd
 extends "res://tests/support/player_test.gd"
 
-const CAMERA_SCENE: PackedScene = preload("res://scenes/camera/game_camera.tscn")
+const CAMERA_SCENE: PackedScene = preload("res://camera/game_camera.tscn")
 ## The least fall, in seconds, the screen must show below the player's feet at top falling speed.
 const SECONDS_BELOW: float = 0.5
 ## A smoothing so fast that one step closes the whole distance, to see the camera's moves on their own.
@@ -59,6 +59,11 @@ func _initialize() -> void:
 	# Nodes added before the first frame only get _ready on it, and the cases need the camera ready
 	# as soon as it is added.
 	await process_frame
+	# Without a window the root is 64 × 64 px, and the Expand aspect makes that a 1920 × 1920 screen.
+	# The game's screen size takes effect on the next frame.
+	root.size = Vector2i(int(ProjectSettings.get_setting("display/window/size/viewport_width")),
+			int(ProjectSettings.get_setting("display/window/size/viewport_height")))
+	await process_frame
 	var results: Array[bool] = []
 	results.append(_the_values_meet_their_criteria())
 	results.append(await _landing_higher_reframes_on_the_new_floor())
@@ -74,7 +79,7 @@ func _initialize() -> void:
 ## least 0.5 s of fall below the feet: half the screen, plus the look down, minus what the smoothing
 ## leaves behind.
 func _the_values_meet_their_criteria() -> bool:
-	var stats: CameraStats = load("res://resources/camera_stats.tres") as CameraStats
+	var stats: CameraStats = load("res://camera/camera_stats.tres") as CameraStats
 	var player: Player = PLAYER_SCENE.instantiate() as Player
 	var jump_height: float = player.stats.jump_height
 	var fall_speed: float = player.stats.max_fall_speed

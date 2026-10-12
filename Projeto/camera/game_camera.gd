@@ -69,7 +69,10 @@ func _ready() -> void:
 
 ## The camera is the smoothed focus plus the lead. The smoothing follows the focus only, so the
 ## swing of the lead keeps the shape of the spring. Both head for points inside the range the
-## screen's centre may take in the zone, and their sum is kept there too.
+## screen's centre may take in the zone, and their sum is kept there too. The lead counts from the
+## focus itself, not from where the range holds the focus: next to an edge of the level the range
+## already keeps the screen away from the player, and a lead on top of that would push the player
+## off the screen.
 func _physics_process(delta: float) -> void:
 	if not is_instance_valid(player):
 		set_physics_process(false)
@@ -83,8 +86,8 @@ func _physics_process(delta: float) -> void:
 	_zone = zone
 	var centres: Rect2 = _centre_range()
 	var focus_target: Vector2 = _focus.clamp(centres.position, centres.end)
-	var lead_target: Vector2 = (focus_target + _lead_target()).clamp(centres.position, centres.end)
-	_swing_lead(lead_target - focus_target, delta)
+	var screen_target: Vector2 = (_focus + _lead_target()).clamp(centres.position, centres.end)
+	_swing_lead(screen_target - focus_target, delta)
 	followed += _follow_step(focus_target - followed, delta)
 	_keep_in_range(followed, centres)
 	global_position = followed + _lead

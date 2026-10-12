@@ -21,7 +21,7 @@ documenta a organização técnica do projeto.
 1. Instalar o Godot 4.7.x, versão standard (não a versão .NET).
 2. No Project Manager, importar `Projeto/project.godot`. O projeto Godot encontra-se na subpasta
    `Projeto/`, e não na raiz do repositório.
-3. Abrir `scenes/levels/test_room.tscn` e premir F6. A sala tem um bloco elevado, com duas bordas,
+3. Abrir `levels/test_room.tscn` e premir F6. A sala tem um bloco elevado, com duas bordas,
    para experimentar os saltos a partir de uma borda, e uma chaminé de 120 px entre a parede
    esquerda e um pilar suspenso, por baixo do qual se entra a andar. A sala é maior do que o ecrã,
    e a câmara segue a personagem desde o início. Para a direita há uma corrida longa, uma escada de quatro degraus de 200 px, uma segunda chaminé
@@ -206,7 +206,7 @@ deste jogo: a corrida, as chaminés, as subidas e as quedas. As medidas foram ob
 | Antecipação | a câmara mostra 300 px a mais do lado para onde a personagem corre e só troca de lado depois de a personagem recuar 180 px a partir do ponto mais afastado | em corrida, 1,5 s de percurso visível à frente; a troca de lado conclui-se em cerca de 1,2 s, sem ultrapassar a posição final |
 | Reenquadramento | ao pousar num chão mais alto, a câmara centra-se nesse chão | numa escada de degraus de 200 px, a câmara sobe um degrau de cada vez |
 | Olhar para baixo | numa queda superior a um salto completo, a câmara mostra 400 px a mais abaixo da personagem | à velocidade máxima de queda, 0,51 s de queda visível abaixo dos pés |
-| Zonas | enquanto a personagem está numa zona de câmara, o ecrã não mostra nada para lá dela | a correr para uma borda ou a cair para o fundo de uma zona, o ecrã para na borda; junto a uma parede, acompanha a inversão de sentido em 0,32 s |
+| Zonas | enquanto a personagem está numa zona de câmara, o ecrã não mostra nada para lá dela | a correr para uma borda ou a cair para o fundo de uma zona, o ecrã para na borda; junto a uma parede, depois de uma inversão de sentido, o ecrã só se desloca quando a personagem se afasta o suficiente para precisar da antecipação (a partir de 200 px da parede, 0,9 s depois da inversão) |
 | Passagem entre zonas | ao mudar de zona, a câmara desloca-se no máximo a 2000 px/s | uma passagem que desloca a câmara 900 px demora cerca de meio segundo |
 
 As zonas de câmara definem-se na cena de cada nível (ver "Câmara" em "Para quem programa"). Cada
@@ -215,7 +215,7 @@ fica limitado à caixa que os envolve. As zonas de um nível devem cobrir todo o
 sobreporem. Uma zona do tamanho do ecrã fixa a câmara. A sala de teste tem uma única zona, do
 tamanho da sala, para que a câmara siga a personagem em todo o lado.
 
-O desenho dos níveis deve ter em conta três consequências deste comportamento:
+O desenho dos níveis deve ter em conta quatro consequências deste comportamento:
 
 - A fronteira entre uma zona fixa e uma zona em que a câmara segue a personagem deve ficar numa
   porta, num poço ou numa queda, e não no chão onde se anda. A passagem desloca a câmara até 900 px,
@@ -226,8 +226,12 @@ O desenho dos níveis deve ter em conta três consequências deste comportamento
 - Em chaminés com mais de 228 px, a antecipação muda de lado a cada salto da parede, porque o
   balanço da personagem ultrapassa os 180 px do limiar. Estas chaminés já ficam fora do caminho
   obrigatório (ver "Medidas para o desenho de níveis").
+- A zona escolhe-se pela posição dos pés da personagem. Até isso ser corrigido, a fronteira entre
+  duas zonas empilhadas deve ficar pelo menos uma altura da personagem (96 px) acima de qualquer chão:
+  com os pés logo abaixo da fronteira e a zona de baixo do tamanho do ecrã, a cabeça fica fora do
+  ecrã, até 86 px.
 
-Os valores da câmara estão no ficheiro `camera_stats.tres`, em `Projeto/resources/`, e editam-se no
+Os valores da câmara estão no ficheiro `camera_stats.tres`, em `Projeto/camera/`, e editam-se no
 Inspector do Godot, como os do movimento.
 
 | Campo no Inspector | Valor atual | O que controla |
@@ -247,7 +251,7 @@ Inspector do Godot, como os do movimento.
 ## Afinação do movimento
 
 Os valores do movimento estão reunidos no ficheiro `player_movement_stats.tres`, na pasta
-`resources/` do projeto Godot (`Projeto/resources/` no repositório). Abre-se no painel FileSystem
+`player/` do projeto Godot (`Projeto/player/` no repositório). Abre-se no painel FileSystem
 do Godot e edita-se no Inspector. As alterações aplicam-se à personagem em todas as cenas.
 
 | Campo no Inspector | Valor atual | O que controla |
@@ -274,8 +278,8 @@ do Godot e edita-se no Inspector. As alterações aplicam-se à personagem em to
   simpler alternative*. https://gameaccessibilityguidelines.com/ensure-controls-are-as-simple-as-possible-or-provide-a-simpler-alternative/
 - Keren, I. (2015, 11 de maio). *Scroll Back: The Theory and Practice of Cameras in Side-Scrollers*.
   Game Developer. https://www.gamedeveloper.com/design/scroll-back-the-theory-and-practice-of-cameras-in-side-scrollers
-- Nystrom, R. (2014). *Game Programming Patterns* (capítulo "State"). Edição de autor.
-  https://gameprogrammingpatterns.com/state.html
+- Nystrom, R. (2014). *Game Programming Patterns*. Edição de autor.
+  https://gameprogrammingpatterns.com/
 - Pittman, K. (2016). *Math for Game Programmers: Building A Better Jump*. Game Developers
   Conference. https://www.gdcvault.com/play/1023559/Math-for-Game-Programmers-Building
 
@@ -289,19 +293,39 @@ do Godot e edita-se no Inspector. As alterações aplicam-se à personagem em to
 ├── README.md
 └── Projeto/           raiz do projeto Godot
     ├── project.godot
-    ├── scenes/        cenas do jogo
-    │   ├── levels/    salas e níveis
-    │   ├── actors/    jogador, inimigos, NPCs
-    │   ├── camera/    câmara do jogo
-    │   ├── debug/     overlay de depuração
-    │   └── ui/        menus e HUD
-    ├── scripts/
-    │   └── components/  componentes reutilizáveis (HealthComponent, Hitbox, Hurtbox…)
-    ├── resources/     ficheiros .tres de dados e balanceamento
+    ├── main.tscn      cena principal
+    ├── player/        personagem: cena, script e valores do movimento
+    ├── camera/        câmara do jogo e zonas de câmara
+    ├── debug/         overlay de depuração
+    ├── levels/        salas e níveis
+    ├── ui/            menus e HUD
+    ├── components/    componentes usados por mais de um sistema (HealthComponent, Hitbox, Hurtbox…)
     ├── tests/         testes e medidas que correm sem janela
     │   └── support/   preparação comum aos testes
     └── assets/        sprites, audio, fonts
 ```
+
+O projeto organiza-se por sistema: cada pasta reúne a cena, os scripts e os ficheiros de dados
+(`.tres`) de uma parte do jogo, que se encontram assim num único local. É a organização que a
+documentação do Godot descreve como a mais comum, com os recursos junto das cenas que os usam
+([Project organization](https://docs.godotengine.org/en/stable/tutorials/best_practices/project_organization.html)).
+Um sistema novo, como um demónio ou um menu, recebe a sua pasta. Os ficheiros movem-se e
+renomeiam-se no painel FileSystem do editor, que atualiza as referências entre cenas e recursos; no
+fim, uma pesquisa pelo caminho antigo em todo o projeto confirma que nenhum script, incluindo os
+testes, ficou a apontar para ele.
+
+Para que a organização se mantenha à medida que o jogo cresce, seguem-se quatro regras:
+
+- `components/` recebe apenas o que dois ou mais sistemas usam; o resto fica na pasta do sistema a
+  que pertence.
+- O que é global e não pertence a nenhum sistema, como o estado do jogo, as opções gravadas ou o
+  áudio, fica numa pasta `core/`, criada quando surgir o primeiro desses serviços.
+- A arte e o som seguem uma única convenção, decidida com a primeira entrega: junto do sistema que
+  os usa, ou em `assets/` com as mesmas subpastas dos sistemas. As duas não se misturam.
+- Um sistema não acede ao interior de outro: comunica por sinais ou por uma referência atribuída no
+  Inspector, nunca por um caminho na árvore de nós.
+
+A pasta `tests/` fica à parte, para que a exportação a possa excluir de uma só vez.
 
 Na primeira abertura, o Godot gera a pasta `Projeto/.godot/` com a cache de importação. Esta pasta
 não é versionada e pode ser apagada sem perda de trabalho.
@@ -327,6 +351,8 @@ godot --headless --fixed-fps 60 --path Projeto --script res://tests/test_camera_
 godot --headless --fixed-fps 60 --path Projeto --script res://tests/test_camera_vertical.gd
 godot --headless --fixed-fps 60 --path Projeto --script res://tests/test_landed_signal.gd
 godot --headless --fixed-fps 60 --path Projeto --script res://tests/test_camera_zones.gd
+godot --headless --fixed-fps 60 --path Projeto --script res://tests/test_player_input.gd
+godot --headless --fixed-fps 60 --path Projeto --script res://tests/test_camera_keeps_player_on_screen.gd
 ```
 
 Os testes mais recentes estendem `tests/support/player_test.gd`, que reúne a preparação comum:
@@ -344,11 +370,23 @@ godot --headless --fixed-fps 60 --path Projeto --script res://tests/measure_move
 
 ### A personagem por dentro
 
-A cena é `scenes/actors/player.tscn`, com o script `scripts/player.gd`: um `CharacterBody2D` com uma
+A cena é `player/player.tscn`, com o script `player/player.gd`: um `CharacterBody2D` com uma
 caixa de colisão de 48 × 96 px e a origem nos pés, pelo que, num nível, a origem fica na linha do
 chão. Está na camada `player` e colide com `world` e `one_way_platform`. Os valores vêm de um
-recurso `PlayerMovementStats` (`scripts/player_movement_stats.gd`), guardado em
-`resources/player_movement_stats.tres`.
+recurso `PlayerMovementStats` (`player/player_movement_stats.gd`), guardado em
+`player/player_movement_stats.tres`.
+
+A personagem não lê o teclado diretamente. Um nó filho, `PlayerInput` (`player/player_input.gd`), é
+o único que lê as ações da personagem no Input Map, e responde em cada passo de física a três
+perguntas: a direção
+da corrida, se o botão de saltar acabou de ser premido e se continua premido. A personagem recebe
+este nó pelo Inspector, no campo Input. Uma inteligência artificial, uma cena animada ou um teste
+controlam a personagem colocando nesse campo outro nó que estenda `PlayerInput`, sem alterar o
+movimento. É o primeiro passo do padrão Component descrito por Nystrom (2014, capítulo
+"Component"), que separa a entrada do resto do objeto. Quando existirem, a pausa, o diálogo e a
+assistência de salto completo poderão atuar nesse único ponto. O `test_player_input.gd` verifica que, com um desses nós, a personagem corre,
+salta, completa o salto e se encosta à parede sem nenhuma tecla premida, e que as teclas deixam de
+ter efeito.
 
 A lógica organiza-se numa máquina de estados com três estados, definida por um `enum` no
 `player.gd`: no chão (`ON_FLOOR`), no ar (`IN_AIR`) e na parede (`ON_WALL`). Cada estado tem a sua
@@ -357,7 +395,7 @@ partir do resultado do último `move_and_slide()`. O chão tem prioridade. Para 
 parede é preciso empurrar a personagem contra ela, mas para permanecer nele não, pelo que o estado
 termina quando a personagem deixa de tocar na parede ou aterra. Preferiu-se o `enum` a um nó por
 estado (padrão State) porque os três estados partilham a gravidade, a corrida e os contadores.
-Segue-se a ordem proposta por Nystrom (2014): primeiro o `enum`, e o padrão State quando um estado
+Segue-se a ordem proposta por Nystrom (2014, capítulo "State"): primeiro o `enum`, e o padrão State quando um estado
 passar a ter dados que só nele fazem sentido, como agarrar bordas. As animações vão depender do
 estado e da velocidade; as que tocam uma só vez (início do salto, aterragem, salto da parede) vão
 ser disparadas por sinais. Os sinais do salto já existem; o da aterragem será acrescentado com o
@@ -517,7 +555,7 @@ tolerâncias usadas, em passos de física, e a altura atingida. Um salto complet
 a personagem está e as distâncias atuais da antecipação e do olhar para baixo. A tecla F3 mostra e
 esconde o texto.
 
-O overlay é uma cena própria, `scenes/debug/debug_overlay.tscn`, num `CanvasLayer`, pelo que não se
+O overlay é uma cena própria, `debug/debug_overlay.tscn`, num `CanvasLayer`, pelo que não se
 desloca com a câmara. Recebe a personagem pelo Inspector e lê-a sem que ela dependa dele, pelo que
 a personagem é testada e exportada sem o overlay. Continua ativo com o jogo em pausa e, nas
 exportações de release, remove-se a si próprio. O `test_debug_overlay.gd` verifica o
@@ -526,7 +564,7 @@ na primeira exportação.
 
 #### Câmara
 
-A câmara (`scenes/camera/game_camera.tscn`, script `GameCamera`) é uma `Camera2D` colocada ao lado
+A câmara (`camera/game_camera.tscn`, script `GameCamera`) é uma `Camera2D` colocada ao lado
 da personagem, na cena do nível, e não dentro da cena da personagem. Recebe a personagem pelo
 Inspector e lê-a sem que ela dependa da câmara; o nível pode assim parar a câmara numa cena
 cinemática sem alterar a personagem. É processada no passo de física e depois da personagem
@@ -544,7 +582,10 @@ formas retangulares, com a transformação completa (uma zona escalada tem o ret
 mostra), e não por sinais de física, cuja ordem não é controlada. As formas desativadas não contam, e
 uma forma rodada é ignorada com um erro. A câmara limita ao intervalo que a zona permite o ponto para
 onde se dirige e também a posição final: o seguimento e a antecipação atrasam-se cada um em relação
-ao seu alvo, e sem este segundo limite a soma ultrapassava a borda em até 120 px. Ao mudar de zona,
+ao seu alvo, e sem este segundo limite a soma ultrapassava a borda em até 120 px. A antecipação
+conta a partir do foco, e não do ponto onde o limite segura o ecrã: junto a uma borda, o limite já
+afasta o ecrã da personagem, e uma antecipação somada a esse ponto podia deixar a personagem fora do
+ecrã, até ao valor da Look Ahead Distance, enquanto não recuasse o Turn Threshold. Ao mudar de zona,
 cada passo do seguimento fica limitado pela Zone Change Speed até a câmara chegar ao novo intervalo.
 A câmara considera as zonas que estão dentro da cena do seu nível, incluindo as de subcenas, e ignora
 as que estão sob um nó a ser removido, o que evita usar as zonas de um nível a ser descarregado; se
@@ -552,7 +593,15 @@ existirem zonas mas nenhuma pertencer ao seu nível, emite um aviso.
 
 Os testes `test_game_camera.gd`, `test_camera_window.gd`, `test_camera_look_ahead.gd`,
 `test_camera_vertical.gd`, `test_camera_zones.gd` e `test_landed_signal.gd` verificam estes
-comportamentos.
+comportamentos. O `test_camera_keeps_player_on_screen.gd` verifica que, numa sala com uma só zona, o
+corpo da personagem fica inteiro no ecrã: junto às duas paredes, numa queda junto ao teto e em jogo
+com comandos aleatórios, sempre os mesmos em cada execução, que tem de chegar perto das duas paredes.
+Com várias zonas há dois casos conhecidos em que o corpo sai do ecrã, ambos anteriores a esta
+correção: na passagem entre duas zonas encostadas sem parede, até 16 px durante 2 passos, e com os pés
+logo abaixo do limite superior de uma zona com outra por cima, até 86 px, porque a zona se escolhe pela
+posição dos pés. Sem janela, o Godot cria uma janela de 64 × 64 px, e o
+modo de proporção Expand transforma-a num ecrã de 1920 × 1920; por isso, os testes da câmara fixam o
+ecrã em 1920 × 1080 antes de começar.
 
 ### Convenções de código
 

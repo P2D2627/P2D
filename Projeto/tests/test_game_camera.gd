@@ -11,8 +11,8 @@
 # godot --headless --fixed-fps 60 --path Projeto --script res://tests/test_game_camera.gd
 extends "res://tests/support/player_test.gd"
 
-const TEST_ROOM_SCENE: PackedScene = preload("res://scenes/levels/test_room.tscn")
-const CAMERA_SCENE: PackedScene = preload("res://scenes/camera/game_camera.tscn")
+const TEST_ROOM_SCENE: PackedScene = preload("res://levels/test_room.tscn")
+const CAMERA_SCENE: PackedScene = preload("res://camera/game_camera.tscn")
 ## Physics frames the player runs right in the following case: one second.
 const RUN_FRAMES: int = 60
 ## How far the player must get in that second for the case to mean something, in px.
@@ -40,6 +40,13 @@ const FLOOR_SPAWN_HEIGHT: float = -2.0
 
 
 func _initialize() -> void:
+	# Without a window the root is 64 × 64 px, and the Expand aspect makes that a 1920 × 1920 screen.
+	# A size set before the first frame is undone when the window starts, and a new size takes
+	# effect on the next frame.
+	await process_frame
+	root.size = Vector2i(int(ProjectSettings.get_setting("display/window/size/viewport_width")),
+			int(ProjectSettings.get_setting("display/window/size/viewport_height")))
+	await process_frame
 	var results: Array[bool] = []
 	results.append(await _the_test_room_has_the_camera_on_its_player())
 	results.append(await _the_camera_starts_where_it_settles())

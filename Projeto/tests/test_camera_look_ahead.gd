@@ -11,7 +11,7 @@
 # godot --headless --fixed-fps 60 --path Projeto --script res://tests/test_camera_look_ahead.gd
 extends "res://tests/support/player_test.gd"
 
-const CAMERA_SCENE: PackedScene = preload("res://scenes/camera/game_camera.tscn")
+const CAMERA_SCENE: PackedScene = preload("res://camera/game_camera.tscn")
 ## The least run, in seconds, the screen must show ahead of the player at full run.
 const SECONDS_AHEAD: float = 1.5
 ## The widest chimney climbed pressing only Jump on touching a wall, wall face to wall face, in px,
@@ -56,6 +56,11 @@ func _initialize() -> void:
 	# Nodes added before the first frame only get _ready on it, and the cases that call the camera by
 	# hand need it ready, with its turn reference set, as soon as it is added.
 	await process_frame
+	# Without a window the root is 64 × 64 px, and the Expand aspect makes that a 1920 × 1920 screen.
+	# The game's screen size takes effect on the next frame.
+	root.size = Vector2i(int(ProjectSettings.get_setting("display/window/size/viewport_width")),
+			int(ProjectSettings.get_setting("display/window/size/viewport_height")))
+	await process_frame
 	var results: Array[bool] = []
 	results.append(_the_values_meet_their_criteria())
 	results.append(await _before_the_player_commits_there_is_no_lead())
@@ -72,7 +77,7 @@ func _initialize() -> void:
 ## the look ahead, minus what the window and the smoothing leave behind. And the turn threshold is
 ## wider than what the player crosses in the widest chimney climbed tapping Jump.
 func _the_values_meet_their_criteria() -> bool:
-	var stats: CameraStats = load("res://resources/camera_stats.tres") as CameraStats
+	var stats: CameraStats = load("res://camera/camera_stats.tres") as CameraStats
 	var player: Player = PLAYER_SCENE.instantiate() as Player
 	var run_speed: float = player.stats.max_run_speed
 	var chimney_sway: float = WIDEST_TAPPED_CHIMNEY - body_size(player).x

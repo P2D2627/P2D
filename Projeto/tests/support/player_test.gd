@@ -3,7 +3,7 @@
 # extends "res://tests/support/player_test.gd"
 extends SceneTree
 
-const PLAYER_SCENE: PackedScene = preload("res://scenes/actors/player.tscn")
+const PLAYER_SCENE: PackedScene = preload("res://player/player.tscn")
 ## Physics frames to wait for anything before giving up.
 const MAX_FRAMES: int = 600
 const PLATFORM_THICKNESS: float = 100.0

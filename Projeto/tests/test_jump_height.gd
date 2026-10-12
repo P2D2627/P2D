@@ -5,7 +5,7 @@
 # godot --headless --fixed-fps 60 --path Projeto --script res://tests/test_jump_height.gd
 extends SceneTree
 
-const PLAYER_SCENE: PackedScene = preload("res://scenes/actors/player.tscn")
+const PLAYER_SCENE: PackedScene = preload("res://player/player.tscn")
 ## How far a measured peak may miss its target, in px.
 const TOLERANCE: float = 1.0
 ## Physics frames to wait for each phase (landing, then the jump) before giving up.
