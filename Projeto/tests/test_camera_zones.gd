@@ -16,8 +16,8 @@
 # godot --headless --fixed-fps 60 --path Projeto --script res://tests/test_camera_zones.gd
 extends "res://tests/support/player_test.gd"
 
-const TEST_ROOM_SCENE: PackedScene = preload("res://scenes/levels/test_room.tscn")
-const CAMERA_SCENE: PackedScene = preload("res://scenes/camera/game_camera.tscn")
+const TEST_ROOM_SCENE: PackedScene = preload("res://levels/test_room.tscn")
+const CAMERA_SCENE: PackedScene = preload("res://camera/game_camera.tscn")
 ## A smoothing so fast that one step closes the whole distance, to see where the camera heads.
 const INSTANT_SHARPNESS: float = 1.0e6
 ## How close two positions must be to count as the same, in px.

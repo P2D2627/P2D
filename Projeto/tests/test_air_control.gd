@@ -6,7 +6,7 @@
 # godot --headless --fixed-fps 60 --path Projeto --script res://tests/test_air_control.gd
 extends SceneTree
 
-const PLAYER_SCENE: PackedScene = preload("res://scenes/actors/player.tscn")
+const PLAYER_SCENE: PackedScene = preload("res://player/player.tscn")
 ## Float error allowed when rounding an expected frame count up: 6.000001 frames counts as 6.
 const ROUNDING_SLACK: float = 0.001
 ## How far a measured speed change may miss its target, in px/s. Speeds are stored as 32-bit floats.

@@ -9,8 +9,8 @@
 # godot --headless --fixed-fps 60 --path Projeto --script res://tests/test_camera_window.gd
 extends "res://tests/support/player_test.gd"
 
-const TEST_ROOM_SCENE: PackedScene = preload("res://scenes/levels/test_room.tscn")
-const CAMERA_SCENE: PackedScene = preload("res://scenes/camera/game_camera.tscn")
+const TEST_ROOM_SCENE: PackedScene = preload("res://levels/test_room.tscn")
+const CAMERA_SCENE: PackedScene = preload("res://camera/game_camera.tscn")
 ## The width of the test room's chimneys, wall face to wall face, in px.
 const CHIMNEY_WIDTH: float = 120.0
 ## A smoothing so fast that one step closes the whole distance, to see where the focus is.
@@ -72,7 +72,7 @@ func _the_room_camera_has_its_stats_and_the_godot_smoothing_off() -> bool:
 ## The window is at least as tall above the focus as a full jump, and at least as wide as the
 ## distance the player crosses in a 120 px chimney.
 func _the_window_holds_a_full_jump_and_a_chimney() -> bool:
-	var stats: CameraStats = load("res://resources/camera_stats.tres") as CameraStats
+	var stats: CameraStats = load("res://camera/camera_stats.tres") as CameraStats
 	var player: Player = PLAYER_SCENE.instantiate() as Player
 	var jump_height: float = player.stats.jump_height
 	var chimney_sway: float = CHIMNEY_WIDTH - body_size(player).x

@@ -20,6 +20,9 @@ enum State { ON_FLOOR, IN_AIR, ON_WALL }
 
 ## Movement values. Every player that uses the same file shares them.
 @export var stats: PlayerMovementStats
+## Where the run and the jump come from. The scene's own PlayerInput reads the keyboard; an AI, a
+## cutscene or a test can put another PlayerInput here.
+@export var input: PlayerInput
 
 ## In the air until the first move_and_slide() finds the floor.
 var _state: State = State.IN_AIR
@@ -37,6 +40,7 @@ var _wall_jump_lock_frames_left: int = 0
 
 func _ready() -> void:
 	assert(stats != null, "Player: assign a PlayerMovementStats resource to Stats.")
+	assert(input != null, "Player: assign a PlayerInput node to Input.")
 	assert(stats.min_jump_height <= stats.jump_height,
 			"Player: Min Jump Height is above Jump Height in Stats, so every jump is a full jump.")
 
@@ -82,7 +86,7 @@ func _update_state() -> void:
 func _is_pushing_into_a_wall() -> bool:
 	if not is_on_wall():
 		return false
-	var direction: float = signf(Input.get_axis(&"move_left", &"move_right"))
+	var direction: float = input.get_run_direction()
 	return direction != 0.0 and direction == -signf(get_wall_normal().x)
 
 
@@ -139,7 +143,7 @@ func _apply_gravity(delta: float) -> void:
 func _current_gravity() -> float:
 	if velocity.y >= 0.0:
 		return stats.fall_gravity
-	if Input.is_action_pressed(&"jump"):
+	if input.is_jump_held():
 		return stats.get_rise_gravity()
 	return stats.get_jump_cut_gravity()
 
@@ -147,7 +151,7 @@ func _current_gravity() -> float:
 ## Keeps a press of Jump on its own frame and for Jump Buffer's frames after it, so a press made a
 ## little before the player can jump still jumps.
 func _keep_jump_press() -> void:
-	if Input.is_action_just_pressed(&"jump"):
+	if input.is_jump_just_pressed():
 		# One frame for the press itself, then Jump Buffer's frames.
 		_jump_buffer_frames_left = stats.get_jump_buffer_frames() + 1
 
@@ -233,7 +237,7 @@ func _air_control() -> float:
 ## Speeds up and slows down with the times in Stats. control is the share of the floor's
 ## acceleration and braking that is kept: 1 on the floor, _air_control() off it.
 func _apply_run(delta: float, control: float) -> void:
-	var direction: float = signf(Input.get_axis(&"move_left", &"move_right"))
+	var direction: float = input.get_run_direction()
 	var ramp_time: float = stats.time_to_max_speed if direction != 0.0 else stats.time_to_stop
 	var target_speed: float = direction * stats.max_run_speed
 	var step: float = stats.max_run_speed / ramp_time * control * delta

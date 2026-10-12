@@ -13,8 +13,8 @@
 # godot --headless --fixed-fps 60 --path Projeto --script res://tests/test_debug_overlay.gd
 extends "res://tests/support/player_test.gd"
 
-const TEST_ROOM_SCENE: PackedScene = preload("res://scenes/levels/test_room.tscn")
-const OVERLAY_SCENE: PackedScene = preload("res://scenes/debug/debug_overlay.tscn")
+const TEST_ROOM_SCENE: PackedScene = preload("res://levels/test_room.tscn")
+const OVERLAY_SCENE: PackedScene = preload("res://debug/debug_overlay.tscn")
 const PERFORMANCE_LINE: String = (
 		"(?m)^\\d+ FPS   worst process \\d+\\.\\d{2} ms   worst physics \\d+\\.\\d{2} ms$")
 const PLAYER_LINE: String = "(?m)^state (\\w+)   velocity \\(([+-]\\d+), ([+-]\\d+)\\) px/s$"

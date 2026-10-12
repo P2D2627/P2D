@@ -9,7 +9,7 @@
 extends "res://tests/support/player_test.gd"
 
 ## Only read, for the heights the cases expect; each player changes its own copy.
-const STATS: PlayerMovementStats = preload("res://resources/player_movement_stats.tres")
+const STATS: PlayerMovementStats = preload("res://player/player_movement_stats.tres")
 ## Jump Buffer for the cases, set in memory only: 0.07 s is 4.2 physics frames at 60 per second,
 ## which rounds to 4.
 const BUFFER_TIME: float = 0.07

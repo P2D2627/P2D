@@ -21,7 +21,7 @@ documenta a organização técnica do projeto.
 1. Instalar o Godot 4.7.x, versão standard (não a versão .NET).
 2. No Project Manager, importar `Projeto/project.godot`. O projeto Godot encontra-se na subpasta
    `Projeto/`, e não na raiz do repositório.
-3. Abrir `scenes/levels/test_room.tscn` e premir F6. A sala tem um bloco elevado, com duas bordas,
+3. Abrir `levels/test_room.tscn` e premir F6. A sala tem um bloco elevado, com duas bordas,
    para experimentar os saltos a partir de uma borda, e uma chaminé de 120 px entre a parede
    esquerda e um pilar suspenso, por baixo do qual se entra a andar. A sala é maior do que o ecrã,
    e a câmara segue a personagem desde o início. Para a direita há uma corrida longa, uma escada de quatro degraus de 200 px, uma segunda chaminé
@@ -227,7 +227,7 @@ O desenho dos níveis deve ter em conta três consequências deste comportamento
   balanço da personagem ultrapassa os 180 px do limiar. Estas chaminés já ficam fora do caminho
   obrigatório (ver "Medidas para o desenho de níveis").
 
-Os valores da câmara estão no ficheiro `camera_stats.tres`, em `Projeto/resources/`, e editam-se no
+Os valores da câmara estão no ficheiro `camera_stats.tres`, em `Projeto/camera/`, e editam-se no
 Inspector do Godot, como os do movimento.
 
 | Campo no Inspector | Valor atual | O que controla |
@@ -247,7 +247,7 @@ Inspector do Godot, como os do movimento.
 ## Afinação do movimento
 
 Os valores do movimento estão reunidos no ficheiro `player_movement_stats.tres`, na pasta
-`resources/` do projeto Godot (`Projeto/resources/` no repositório). Abre-se no painel FileSystem
+`player/` do projeto Godot (`Projeto/player/` no repositório). Abre-se no painel FileSystem
 do Godot e edita-se no Inspector. As alterações aplicam-se à personagem em todas as cenas.
 
 | Campo no Inspector | Valor atual | O que controla |
@@ -274,8 +274,8 @@ do Godot e edita-se no Inspector. As alterações aplicam-se à personagem em to
   simpler alternative*. https://gameaccessibilityguidelines.com/ensure-controls-are-as-simple-as-possible-or-provide-a-simpler-alternative/
 - Keren, I. (2015, 11 de maio). *Scroll Back: The Theory and Practice of Cameras in Side-Scrollers*.
   Game Developer. https://www.gamedeveloper.com/design/scroll-back-the-theory-and-practice-of-cameras-in-side-scrollers
-- Nystrom, R. (2014). *Game Programming Patterns* (capítulo "State"). Edição de autor.
-  https://gameprogrammingpatterns.com/state.html
+- Nystrom, R. (2014). *Game Programming Patterns*. Edição de autor.
+  https://gameprogrammingpatterns.com/
 - Pittman, K. (2016). *Math for Game Programmers: Building A Better Jump*. Game Developers
   Conference. https://www.gdcvault.com/play/1023559/Math-for-Game-Programmers-Building
 
@@ -289,19 +289,39 @@ do Godot e edita-se no Inspector. As alterações aplicam-se à personagem em to
 ├── README.md
 └── Projeto/           raiz do projeto Godot
     ├── project.godot
-    ├── scenes/        cenas do jogo
-    │   ├── levels/    salas e níveis
-    │   ├── actors/    jogador, inimigos, NPCs
-    │   ├── camera/    câmara do jogo
-    │   ├── debug/     overlay de depuração
-    │   └── ui/        menus e HUD
-    ├── scripts/
-    │   └── components/  componentes reutilizáveis (HealthComponent, Hitbox, Hurtbox…)
-    ├── resources/     ficheiros .tres de dados e balanceamento
+    ├── main.tscn      cena principal
+    ├── player/        personagem: cena, script e valores do movimento
+    ├── camera/        câmara do jogo e zonas de câmara
+    ├── debug/         overlay de depuração
+    ├── levels/        salas e níveis
+    ├── ui/            menus e HUD
+    ├── components/    componentes usados por mais de um sistema (HealthComponent, Hitbox, Hurtbox…)
     ├── tests/         testes e medidas que correm sem janela
     │   └── support/   preparação comum aos testes
     └── assets/        sprites, audio, fonts
 ```
+
+O projeto organiza-se por sistema: cada pasta reúne a cena, os scripts e os ficheiros de dados
+(`.tres`) de uma parte do jogo, que se encontram assim num único local. É a organização que a
+documentação do Godot descreve como a mais comum, com os recursos junto das cenas que os usam
+([Project organization](https://docs.godotengine.org/en/stable/tutorials/best_practices/project_organization.html)).
+Um sistema novo, como um demónio ou um menu, recebe a sua pasta. Os ficheiros movem-se e
+renomeiam-se no painel FileSystem do editor, que atualiza as referências entre cenas e recursos; no
+fim, uma pesquisa pelo caminho antigo em todo o projeto confirma que nenhum script, incluindo os
+testes, ficou a apontar para ele.
+
+Para que a organização se mantenha à medida que o jogo cresce, seguem-se quatro regras:
+
+- `components/` recebe apenas o que dois ou mais sistemas usam; o resto fica na pasta do sistema a
+  que pertence.
+- O que é global e não pertence a nenhum sistema, como o estado do jogo, as opções gravadas ou o
+  áudio, fica numa pasta `core/`, criada quando surgir o primeiro desses serviços.
+- A arte e o som seguem uma única convenção, decidida com a primeira entrega: junto do sistema que
+  os usa, ou em `assets/` com as mesmas subpastas dos sistemas. As duas não se misturam.
+- Um sistema não acede ao interior de outro: comunica por sinais ou por uma referência atribuída no
+  Inspector, nunca por um caminho na árvore de nós.
+
+A pasta `tests/` fica à parte, para que a exportação a possa excluir de uma só vez.
 
 Na primeira abertura, o Godot gera a pasta `Projeto/.godot/` com a cache de importação. Esta pasta
 não é versionada e pode ser apagada sem perda de trabalho.
@@ -327,6 +347,7 @@ godot --headless --fixed-fps 60 --path Projeto --script res://tests/test_camera_
 godot --headless --fixed-fps 60 --path Projeto --script res://tests/test_camera_vertical.gd
 godot --headless --fixed-fps 60 --path Projeto --script res://tests/test_landed_signal.gd
 godot --headless --fixed-fps 60 --path Projeto --script res://tests/test_camera_zones.gd
+godot --headless --fixed-fps 60 --path Projeto --script res://tests/test_player_input.gd
 ```
 
 Os testes mais recentes estendem `tests/support/player_test.gd`, que reúne a preparação comum:
@@ -344,11 +365,23 @@ godot --headless --fixed-fps 60 --path Projeto --script res://tests/measure_move
 
 ### A personagem por dentro
 
-A cena é `scenes/actors/player.tscn`, com o script `scripts/player.gd`: um `CharacterBody2D` com uma
+A cena é `player/player.tscn`, com o script `player/player.gd`: um `CharacterBody2D` com uma
 caixa de colisão de 48 × 96 px e a origem nos pés, pelo que, num nível, a origem fica na linha do
 chão. Está na camada `player` e colide com `world` e `one_way_platform`. Os valores vêm de um
-recurso `PlayerMovementStats` (`scripts/player_movement_stats.gd`), guardado em
-`resources/player_movement_stats.tres`.
+recurso `PlayerMovementStats` (`player/player_movement_stats.gd`), guardado em
+`player/player_movement_stats.tres`.
+
+A personagem não lê o teclado diretamente. Um nó filho, `PlayerInput` (`player/player_input.gd`), é
+o único que lê as ações da personagem no Input Map, e responde em cada passo de física a três
+perguntas: a direção
+da corrida, se o botão de saltar acabou de ser premido e se continua premido. A personagem recebe
+este nó pelo Inspector, no campo Input. Uma inteligência artificial, uma cena animada ou um teste
+controlam a personagem colocando nesse campo outro nó que estenda `PlayerInput`, sem alterar o
+movimento. É o primeiro passo do padrão Component descrito por Nystrom (2014, capítulo
+"Component"), que separa a entrada do resto do objeto. Quando existirem, a pausa, o diálogo e a
+assistência de salto completo poderão atuar nesse único ponto. O `test_player_input.gd` verifica que, com um desses nós, a personagem corre,
+salta, completa o salto e se encosta à parede sem nenhuma tecla premida, e que as teclas deixam de
+ter efeito.
 
 A lógica organiza-se numa máquina de estados com três estados, definida por um `enum` no
 `player.gd`: no chão (`ON_FLOOR`), no ar (`IN_AIR`) e na parede (`ON_WALL`). Cada estado tem a sua
@@ -357,7 +390,7 @@ partir do resultado do último `move_and_slide()`. O chão tem prioridade. Para 
 parede é preciso empurrar a personagem contra ela, mas para permanecer nele não, pelo que o estado
 termina quando a personagem deixa de tocar na parede ou aterra. Preferiu-se o `enum` a um nó por
 estado (padrão State) porque os três estados partilham a gravidade, a corrida e os contadores.
-Segue-se a ordem proposta por Nystrom (2014): primeiro o `enum`, e o padrão State quando um estado
+Segue-se a ordem proposta por Nystrom (2014, capítulo "State"): primeiro o `enum`, e o padrão State quando um estado
 passar a ter dados que só nele fazem sentido, como agarrar bordas. As animações vão depender do
 estado e da velocidade; as que tocam uma só vez (início do salto, aterragem, salto da parede) vão
 ser disparadas por sinais. Os sinais do salto já existem; o da aterragem será acrescentado com o
@@ -517,7 +550,7 @@ tolerâncias usadas, em passos de física, e a altura atingida. Um salto complet
 a personagem está e as distâncias atuais da antecipação e do olhar para baixo. A tecla F3 mostra e
 esconde o texto.
 
-O overlay é uma cena própria, `scenes/debug/debug_overlay.tscn`, num `CanvasLayer`, pelo que não se
+O overlay é uma cena própria, `debug/debug_overlay.tscn`, num `CanvasLayer`, pelo que não se
 desloca com a câmara. Recebe a personagem pelo Inspector e lê-a sem que ela dependa dele, pelo que
 a personagem é testada e exportada sem o overlay. Continua ativo com o jogo em pausa e, nas
 exportações de release, remove-se a si próprio. O `test_debug_overlay.gd` verifica o
@@ -526,7 +559,7 @@ na primeira exportação.
 
 #### Câmara
 
-A câmara (`scenes/camera/game_camera.tscn`, script `GameCamera`) é uma `Camera2D` colocada ao lado
+A câmara (`camera/game_camera.tscn`, script `GameCamera`) é uma `Camera2D` colocada ao lado
 da personagem, na cena do nível, e não dentro da cena da personagem. Recebe a personagem pelo
 Inspector e lê-a sem que ela dependa da câmara; o nível pode assim parar a câmara numa cena
 cinemática sem alterar a personagem. É processada no passo de física e depois da personagem

@@ -11,8 +11,8 @@
 # godot --headless --fixed-fps 60 --path Projeto --script res://tests/test_game_camera.gd
 extends "res://tests/support/player_test.gd"
 
-const TEST_ROOM_SCENE: PackedScene = preload("res://scenes/levels/test_room.tscn")
-const CAMERA_SCENE: PackedScene = preload("res://scenes/camera/game_camera.tscn")
+const TEST_ROOM_SCENE: PackedScene = preload("res://levels/test_room.tscn")
+const CAMERA_SCENE: PackedScene = preload("res://camera/game_camera.tscn")
 ## Physics frames the player runs right in the following case: one second.
 const RUN_FRAMES: int = 60
 ## How far the player must get in that second for the case to mean something, in px.
