@@ -9,8 +9,9 @@ pecado capital, sem poder atacar. Cada demónio oferece-lhe um atalho, e o jogo 
 aceita.
 
 > **Estado:** a personagem jogável já anda, salta e tem controlo no ar, desliza nas paredes e salta
-> delas, e o salto tolera pedidos ligeiramente fora de tempo. Existe apenas uma sala de teste, maior
-> do que o ecrã, com a câmara do jogo, descrita em "Câmara": ainda não há níveis, arte nem som.
+> delas, e o salto tolera pedidos ligeiramente fora de tempo. O jogo abre num menu principal, que dá
+> acesso à sala de teste e a um esboço do nível 1, e tem pausa e opções gravadas. A câmara do jogo
+> está descrita em "Câmara". Ainda não há arte nem som.
 
 Este documento tem duas partes. A primeira descreve, para toda a equipa, o que já pode ser
 experimentado e as medidas que servem o desenho de níveis. A segunda, "Para quem programa",
@@ -21,13 +22,15 @@ documenta a organização técnica do projeto.
 1. Instalar o Godot 4.7.x, versão standard (não a versão .NET).
 2. No Project Manager, importar `Projeto/project.godot`. O projeto Godot encontra-se na subpasta
    `Projeto/`, e não na raiz do repositório.
-3. Abrir `levels/test_room.tscn` e premir F6. A sala tem um bloco elevado, com duas bordas,
-   para experimentar os saltos a partir de uma borda, e uma chaminé de 120 px entre a parede
-   esquerda e um pilar suspenso, por baixo do qual se entra a andar. A sala é maior do que o ecrã,
-   e a câmara segue a personagem desde o início. Para a direita há uma corrida longa, uma escada de quatro degraus de 200 px, uma segunda chaminé
-   de 120 px junto à parede direita e, no topo desta, uma passagem que termina numa queda de 1500 px.
-   A tecla F5 abre a cena principal, que ainda está vazia. Durante o jogo, a tecla F3 mostra e esconde o texto de
-   depuração descrito em "Overlay de depuração".
+3. Premir F5. O jogo abre no menu principal: Play mostra a lista de níveis, Options abre as opções
+   e Quit fecha o jogo. Uma cena aberta com F6 corre sozinha, sem menus nem pausa.
+4. A sala de teste tem um bloco elevado, com duas bordas, para experimentar os saltos a partir de
+   uma borda, e uma chaminé de 120 px entre a parede esquerda e um pilar suspenso, por baixo do qual
+   se entra a andar. A sala é maior do que o ecrã, e a câmara segue a personagem desde o início. Para
+   a direita há uma corrida longa, uma escada de quatro degraus de 200 px, uma segunda chaminé de
+   120 px junto à parede direita e, no topo desta, uma passagem que termina numa queda de 1500 px.
+   Durante o jogo, a tecla F3 mostra e esconde o texto de depuração descrito em "Overlay de
+   depuração".
 
 | Ação | Teclado | Comando |
 |---|---|---|
@@ -35,6 +38,9 @@ documenta a organização técnica do projeto.
 | Saltar | Espaço | A / Cross |
 | Deslizar numa parede | no ar, A / D ou setas contra a parede | stick esquerdo contra a parede |
 | Saltar de uma parede | no ar, Espaço encostado à parede | A / Cross encostado à parede |
+| Pausar e retomar | Esc | Start |
+| Confirmar nos menus | Enter / Espaço | A / Cross |
+| Voltar nos menus | Esc | B / Circle |
 | Mostrar e esconder o texto de depuração | F3 | — |
 
 ## Mecânicas implementadas
@@ -293,12 +299,14 @@ do Godot e edita-se no Inspector. As alterações aplicam-se à personagem em to
 ├── README.md
 └── Projeto/           raiz do projeto Godot
     ├── project.godot
-    ├── main.tscn      cena principal
+    ├── main.tscn      cena principal: menus, pausa e o nível em jogo (script main.gd)
+    ├── default_bus_layout.tres   buses de áudio
+    ├── core/          serviços globais: as opções do jogador (autoload Settings)
     ├── player/        personagem: cena, script e valores do movimento
     ├── camera/        câmara do jogo e zonas de câmara
     ├── debug/         overlay de depuração
-    ├── levels/        salas e níveis
-    ├── ui/            menus e HUD
+    ├── levels/        salas, níveis e a entrada de cada nível na lista do menu (LevelEntry)
+    ├── ui/            menus, ecrã das opções e o tema comum (ui_theme.tres)
     ├── components/    componentes usados por mais de um sistema (HealthComponent, Hitbox, Hurtbox…)
     ├── tests/         testes e medidas que correm sem janela
     │   └── support/   preparação comum aos testes
@@ -327,6 +335,10 @@ Para que a organização se mantenha à medida que o jogo cresce, seguem-se quat
 
 A pasta `tests/` fica à parte, para que a exportação a possa excluir de uma só vez.
 
+Para um nível aparecer no Play, acrescenta-se à lista Levels do Main, no Inspector do `main.tscn`
+(Add Element › New LevelEntry, com o título e a cena). A ordem da lista é a dos botões. Um elemento
+deixado vazio, ou sem cena, fica fora do menu, com um aviso no Output.
+
 Na primeira abertura, o Godot gera a pasta `Projeto/.godot/` com a cache de importação. Esta pasta
 não é versionada e pode ser apagada sem perda de trabalho.
 
@@ -353,11 +365,21 @@ godot --headless --fixed-fps 60 --path Projeto --script res://tests/test_landed_
 godot --headless --fixed-fps 60 --path Projeto --script res://tests/test_camera_zones.gd
 godot --headless --fixed-fps 60 --path Projeto --script res://tests/test_player_input.gd
 godot --headless --fixed-fps 60 --path Projeto --script res://tests/test_camera_keeps_player_on_screen.gd
+godot --headless --fixed-fps 60 --path Projeto --script res://tests/test_main_flow.gd
+godot --headless --fixed-fps 60 --path Projeto --script res://tests/test_pause.gd
+godot --headless --fixed-fps 60 --path Projeto --script res://tests/test_settings.gd
+godot --headless --fixed-fps 60 --path Projeto --script res://tests/test_options.gd
 ```
 
 Os testes mais recentes estendem `tests/support/player_test.gd`, que reúne a preparação comum:
 plataformas, uma personagem com uma cópia própria dos valores do `.tres` e a escrita dos resultados.
 Esse ficheiro não é um teste e não se corre sozinho.
+
+Os testes dos menus estendem `tests/support/menu_test.gd`, que cria a cena principal e carrega em
+teclas e botões do comando como o jogador. Usam um ficheiro de opções próprio e terminam com duas
+verificações: o botão Quit não foi carregado e o ficheiro de opções do jogador ficou igual (texto e
+data de gravação). O caso do ficheiro estragado do `test_settings.gd` escreve um ERROR e um WARNING,
+ambos esperados.
 
 O `measure_movement.gd` não verifica resultados: imprime as medidas da secção "Medidas para o
 desenho de níveis", com os valores que estiverem no `.tres`. As medidas junto das bordas correm a
@@ -523,6 +545,11 @@ teclado, e não pela letra impressa, pelo que o WASD se mantém num teclado AZER
 | `interact` | E | B / Circle |
 | `pause` | Escape | Start |
 | `toggle_debug_overlay` | F3 | — |
+| `ui_accept` | Enter, Espaço | A / Cross |
+| `ui_cancel` | Escape | B / Circle |
+
+O `ui_accept` e o `ui_cancel` são ações que o Godot já traz para os menus; acrescentou-se-lhes o A e o
+B do comando, que não tinham.
 
 #### Camadas de colisão
 
@@ -602,6 +629,38 @@ logo abaixo do limite superior de uma zona com outra por cima, até 86 px, porqu
 posição dos pés. Sem janela, o Godot cria uma janela de 64 × 64 px, e o
 modo de proporção Expand transforma-a num ecrã de 1920 × 1920; por isso, os testes da câmara fixam o
 ecrã em 1920 × 1080 antes de começar.
+
+#### Menus, pausa e opções
+
+A cena principal fica carregada durante todo o jogo e contém o menu principal, o menu de pausa e um
+nó `LevelSlot`, onde entra o nível escolhido. Os menus apenas emitem sinais; é o `main.gd` que decide
+o que fazer. Por isso, um nível não precisa de incluir menus nem pausa.
+
+A pausa usa `get_tree().paused`. O Main corre sempre (Process Mode Always) e só o `LevelSlot` é
+Pausable: o nível para e o Main continua a receber o Esc. O overlay de depuração continua ativo, e o
+mesmo acontece a qualquer nó de um nível com Process Mode Always. Perder o foco da janela também pausa
+(Main › Pause On Focus Loss), opção que convém desligar quando se afinam valores pelo separador
+Remote do editor.
+
+O Espaço e o A servem para saltar e para confirmar nos menus, e o B para interagir e para voltar. Os
+botões do Godot disparam quando a tecla é largada, e o B fecha a pausa também ao ser largado. Isso
+não chega: num toque rápido, carregar e largar chegam no mesmo frame, e o Godot considera a ação
+acabada de carregar durante todo esse frame. Por isso o jogo retoma no frame seguinte ao da tecla que
+o retomou. Os testes confirmam que retomar com o Espaço, o A ou o B, também num toque rápido, não faz
+saltar nem interagir; com o jogo a retomar no próprio frame, a personagem saltava.
+
+As opções (volume dos buses Master, Music, SFX, Ambience e UI, ecrã inteiro, V-Sync e limite de FPS)
+estão no autoload `Settings`, o único do projeto, porque têm de estar aplicadas antes de qualquer
+cena. Gravam-se em `user://settings.cfg` (no Windows, `%APPDATA%\Godot\app_userdata\P2D\`), um
+ficheiro de texto legível, com número de versão. Um ficheiro em falta ou ilegível, ou com valores de
+tipo errado, fora do intervalo ou que não são números, dá os valores predefinidos. O limite de FPS só
+limita o desenho; a física mantém-se nos 60 passos por segundo. Os menus nunca alteram o áudio, a
+janela ou o motor diretamente: pedem a mudança ao `Settings`, que a aplica e grava. Com o jogo
+embutido no editor, o ecrã inteiro não se aplica (só a janela normal é suportada); experimenta-se com
+o jogo numa janela à parte ou numa exportação.
+
+O tamanho da letra e os espaços entre elementos estão num único tema, `ui/ui_theme.tres`, e nenhum
+nó define o seu próprio tamanho de letra: uma futura opção de tamanho do texto altera apenas o tema.
 
 ### Convenções de código
 
