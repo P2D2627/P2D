@@ -40,6 +40,13 @@ const FLOOR_SPAWN_HEIGHT: float = -2.0
 
 
 func _initialize() -> void:
+	# Without a window the root is 64 × 64 px, and the Expand aspect makes that a 1920 × 1920 screen.
+	# A size set before the first frame is undone when the window starts, and a new size takes
+	# effect on the next frame.
+	await process_frame
+	root.size = Vector2i(int(ProjectSettings.get_setting("display/window/size/viewport_width")),
+			int(ProjectSettings.get_setting("display/window/size/viewport_height")))
+	await process_frame
 	var results: Array[bool] = []
 	results.append(await _the_test_room_has_the_camera_on_its_player())
 	results.append(await _the_camera_starts_where_it_settles())

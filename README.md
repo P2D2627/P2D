@@ -206,7 +206,7 @@ deste jogo: a corrida, as chaminés, as subidas e as quedas. As medidas foram ob
 | Antecipação | a câmara mostra 300 px a mais do lado para onde a personagem corre e só troca de lado depois de a personagem recuar 180 px a partir do ponto mais afastado | em corrida, 1,5 s de percurso visível à frente; a troca de lado conclui-se em cerca de 1,2 s, sem ultrapassar a posição final |
 | Reenquadramento | ao pousar num chão mais alto, a câmara centra-se nesse chão | numa escada de degraus de 200 px, a câmara sobe um degrau de cada vez |
 | Olhar para baixo | numa queda superior a um salto completo, a câmara mostra 400 px a mais abaixo da personagem | à velocidade máxima de queda, 0,51 s de queda visível abaixo dos pés |
-| Zonas | enquanto a personagem está numa zona de câmara, o ecrã não mostra nada para lá dela | a correr para uma borda ou a cair para o fundo de uma zona, o ecrã para na borda; junto a uma parede, acompanha a inversão de sentido em 0,32 s |
+| Zonas | enquanto a personagem está numa zona de câmara, o ecrã não mostra nada para lá dela | a correr para uma borda ou a cair para o fundo de uma zona, o ecrã para na borda; junto a uma parede, depois de uma inversão de sentido, o ecrã só se desloca quando a personagem se afasta o suficiente para precisar da antecipação (a partir de 200 px da parede, 0,9 s depois da inversão) |
 | Passagem entre zonas | ao mudar de zona, a câmara desloca-se no máximo a 2000 px/s | uma passagem que desloca a câmara 900 px demora cerca de meio segundo |
 
 As zonas de câmara definem-se na cena de cada nível (ver "Câmara" em "Para quem programa"). Cada
@@ -215,7 +215,7 @@ fica limitado à caixa que os envolve. As zonas de um nível devem cobrir todo o
 sobreporem. Uma zona do tamanho do ecrã fixa a câmara. A sala de teste tem uma única zona, do
 tamanho da sala, para que a câmara siga a personagem em todo o lado.
 
-O desenho dos níveis deve ter em conta três consequências deste comportamento:
+O desenho dos níveis deve ter em conta quatro consequências deste comportamento:
 
 - A fronteira entre uma zona fixa e uma zona em que a câmara segue a personagem deve ficar numa
   porta, num poço ou numa queda, e não no chão onde se anda. A passagem desloca a câmara até 900 px,
@@ -226,6 +226,10 @@ O desenho dos níveis deve ter em conta três consequências deste comportamento
 - Em chaminés com mais de 228 px, a antecipação muda de lado a cada salto da parede, porque o
   balanço da personagem ultrapassa os 180 px do limiar. Estas chaminés já ficam fora do caminho
   obrigatório (ver "Medidas para o desenho de níveis").
+- A zona escolhe-se pela posição dos pés da personagem. Até isso ser corrigido, a fronteira entre
+  duas zonas empilhadas deve ficar pelo menos uma altura da personagem (96 px) acima de qualquer chão:
+  com os pés logo abaixo da fronteira e a zona de baixo do tamanho do ecrã, a cabeça fica fora do
+  ecrã, até 86 px.
 
 Os valores da câmara estão no ficheiro `camera_stats.tres`, em `Projeto/camera/`, e editam-se no
 Inspector do Godot, como os do movimento.
@@ -348,6 +352,7 @@ godot --headless --fixed-fps 60 --path Projeto --script res://tests/test_camera_
 godot --headless --fixed-fps 60 --path Projeto --script res://tests/test_landed_signal.gd
 godot --headless --fixed-fps 60 --path Projeto --script res://tests/test_camera_zones.gd
 godot --headless --fixed-fps 60 --path Projeto --script res://tests/test_player_input.gd
+godot --headless --fixed-fps 60 --path Projeto --script res://tests/test_camera_keeps_player_on_screen.gd
 ```
 
 Os testes mais recentes estendem `tests/support/player_test.gd`, que reúne a preparação comum:
@@ -577,7 +582,10 @@ formas retangulares, com a transformação completa (uma zona escalada tem o ret
 mostra), e não por sinais de física, cuja ordem não é controlada. As formas desativadas não contam, e
 uma forma rodada é ignorada com um erro. A câmara limita ao intervalo que a zona permite o ponto para
 onde se dirige e também a posição final: o seguimento e a antecipação atrasam-se cada um em relação
-ao seu alvo, e sem este segundo limite a soma ultrapassava a borda em até 120 px. Ao mudar de zona,
+ao seu alvo, e sem este segundo limite a soma ultrapassava a borda em até 120 px. A antecipação
+conta a partir do foco, e não do ponto onde o limite segura o ecrã: junto a uma borda, o limite já
+afasta o ecrã da personagem, e uma antecipação somada a esse ponto podia deixar a personagem fora do
+ecrã, até ao valor da Look Ahead Distance, enquanto não recuasse o Turn Threshold. Ao mudar de zona,
 cada passo do seguimento fica limitado pela Zone Change Speed até a câmara chegar ao novo intervalo.
 A câmara considera as zonas que estão dentro da cena do seu nível, incluindo as de subcenas, e ignora
 as que estão sob um nó a ser removido, o que evita usar as zonas de um nível a ser descarregado; se
@@ -585,7 +593,15 @@ existirem zonas mas nenhuma pertencer ao seu nível, emite um aviso.
 
 Os testes `test_game_camera.gd`, `test_camera_window.gd`, `test_camera_look_ahead.gd`,
 `test_camera_vertical.gd`, `test_camera_zones.gd` e `test_landed_signal.gd` verificam estes
-comportamentos.
+comportamentos. O `test_camera_keeps_player_on_screen.gd` verifica que, numa sala com uma só zona, o
+corpo da personagem fica inteiro no ecrã: junto às duas paredes, numa queda junto ao teto e em jogo
+com comandos aleatórios, sempre os mesmos em cada execução, que tem de chegar perto das duas paredes.
+Com várias zonas há dois casos conhecidos em que o corpo sai do ecrã, ambos anteriores a esta
+correção: na passagem entre duas zonas encostadas sem parede, até 16 px durante 2 passos, e com os pés
+logo abaixo do limite superior de uma zona com outra por cima, até 86 px, porque a zona se escolhe pela
+posição dos pés. Sem janela, o Godot cria uma janela de 64 × 64 px, e o
+modo de proporção Expand transforma-a num ecrã de 1920 × 1920; por isso, os testes da câmara fixam o
+ecrã em 1920 × 1080 antes de começar.
 
 ### Convenções de código
 

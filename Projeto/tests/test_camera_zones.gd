@@ -11,7 +11,8 @@
 # than Zone Change Speed. A zone in a sub-scene of the level counts, and the zones of a level being
 # freed do not. A scaled zone has the rectangle the editor shows, without its disabled shapes. The
 # screen size comes from the camera itself, as the engine takes it: in headless runs the window is
-# 64 × 64 and the stretch makes the screen 1920 × 1920.
+# 64 × 64 and the stretch would make the screen 1920 × 1920, so the test first gives the window the
+# game's screen size.
 # Run from the repository root; the exit code is 0 on pass and 1 on fail:
 # godot --headless --fixed-fps 60 --path Projeto --script res://tests/test_camera_zones.gd
 extends "res://tests/support/player_test.gd"
@@ -62,6 +63,11 @@ const FLOOR_SPAWN_HEIGHT: float = -2.0
 func _initialize() -> void:
 	# Nodes added before the first frame only get _ready on it, and the cases need the camera ready
 	# as soon as it is added.
+	await process_frame
+	# Without a window the root is 64 × 64 px, and the Expand aspect makes that a 1920 × 1920 screen.
+	# The game's screen size takes effect on the next frame.
+	root.size = Vector2i(int(ProjectSettings.get_setting("display/window/size/viewport_width")),
+			int(ProjectSettings.get_setting("display/window/size/viewport_height")))
 	await process_frame
 	var results: Array[bool] = []
 	results.append(await _a_zone_s_limits_are_the_box_around_its_rectangles())

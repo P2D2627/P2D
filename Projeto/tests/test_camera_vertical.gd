@@ -59,6 +59,11 @@ func _initialize() -> void:
 	# Nodes added before the first frame only get _ready on it, and the cases need the camera ready
 	# as soon as it is added.
 	await process_frame
+	# Without a window the root is 64 × 64 px, and the Expand aspect makes that a 1920 × 1920 screen.
+	# The game's screen size takes effect on the next frame.
+	root.size = Vector2i(int(ProjectSettings.get_setting("display/window/size/viewport_width")),
+			int(ProjectSettings.get_setting("display/window/size/viewport_height")))
+	await process_frame
 	var results: Array[bool] = []
 	results.append(_the_values_meet_their_criteria())
 	results.append(await _landing_higher_reframes_on_the_new_floor())

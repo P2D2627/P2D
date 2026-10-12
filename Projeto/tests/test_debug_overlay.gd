@@ -48,6 +48,13 @@ const KEY_REPEATS: int = 3
 
 
 func _initialize() -> void:
+	# Without a window the root is 64 × 64 px, and the Expand aspect makes that a 1920 × 1920 screen.
+	# A size set before the first frame is undone when the window starts, and a new size takes
+	# effect on the next frame.
+	await process_frame
+	root.size = Vector2i(int(ProjectSettings.get_setting("display/window/size/viewport_width")),
+			int(ProjectSettings.get_setting("display/window/size/viewport_height")))
+	await process_frame
 	var results: Array[bool] = []
 	results.append(_the_toggle_is_on_f3())
 	results.append(await _the_test_room_shows_the_overlay_from_the_start())
