@@ -1,0 +1,42 @@
+[gd_scene format=3]
+
+[ext_resource type="Script" path="res://crucifix/crucifix.gd" id="1_script"]
+[ext_resource type="Resource" path="res://crucifix/crucifix_stats.tres" id="2_stats"]
+
+[sub_resource type="Gradient" id="Gradient_light"]
+offsets = PackedFloat32Array(0, 1)
+colors = PackedColorArray(1, 1, 1, 1, 1, 1, 1, 0)
+
+[sub_resource type="GradientTexture2D" id="GradientTexture2D_light"]
+gradient = SubResource("Gradient_light")
+width = 256
+height = 256
+fill = 1
+fill_from = Vector2(0.5, 0.5)
+fill_to = Vector2(0.5, 0)
+
+[node name="Crucifix" type="Node2D"]
+script = ExtResource("1_script")
+stats = ExtResource("2_stats")
+
+[node name="RepelArea" type="Area2D" parent="."]
+unique_name_in_owner = true
+collision_layer = 0
+collision_mask = 1024
+monitorable = false
+
+[node name="RepelShape" type="CollisionShape2D" parent="RepelArea"]
+unique_name_in_owner = true
+
+[node name="Light" type="PointLight2D" parent="."]
+unique_name_in_owner = true
+enabled = false
+color = Color(1, 0.92, 0.7, 1)
+energy = 1.2
+texture = SubResource("GradientTexture2D_light")
+
+[node name="Placeholder" type="Polygon2D" parent="."]
+unique_name_in_owner = true
+visible = false
+color = Color(0.95, 0.85, 0.45, 1)
+polygon = PackedVector2Array(-3, -20, 3, -20, 3, -12, 10, -12, 10, -6, 3, -6, 3, 14, -3, 14, -3, -6, -10, -6, -10, -12, -3, -12)
