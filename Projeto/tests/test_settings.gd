@@ -6,8 +6,9 @@
 # F5. Each change is saved, with the file's version, and a new settings node reads the same values
 # back. A broken file gives the defaults. Values of the wrong type, out of range or not a number
 # (nan) are put right, and a frame rate cap the options do not offer turns into no cap. Reset brings
-# back the defaults and saves them. The tests use a settings node of their own, with a file of their
-# own, and never touch the player's file.
+# back the defaults and saves them. In the tests, a settings node on the player's file, the autoload
+# among them, keeps its options in memory: it neither reads nor writes that file. The tests use a
+# settings node of their own, with a file of their own, and never touch the player's file.
 # Run from the repository root; the exit code is 0 on pass and 1 on fail:
 # godot --headless --fixed-fps 60 --path Projeto --script res://tests/test_settings.gd
 extends "res://tests/support/player_test.gd"
@@ -28,6 +29,7 @@ func _initialize() -> void:
 	results.append(await _a_broken_file_gives_the_defaults())
 	results.append(await _wrong_values_in_the_file_are_put_right())
 	results.append(await _reset_brings_back_the_defaults_and_saves_them())
+	results.append(await _in_the_tests_the_players_file_is_neither_read_nor_written())
 	_delete_test_file()
 	finish(results)
 
@@ -173,6 +175,30 @@ func _reset_brings_back_the_defaults_and_saves_them() -> bool:
 
 
 ## A settings node of the tests' own, on the test file, in the tree, where it reads the file.
+## The autoload, and a new settings node left on the player's file, keep to memory in the tests:
+## both have no path, start from the defaults, and a change to either leaves the player's file as
+## it was, by its text and the time it was last written.
+func _in_the_tests_the_players_file_is_neither_read_nor_written() -> bool:
+	var before: Array = player_file_state()
+	var autoload: GameSettings = root.get_node_or_null(^"Settings") as GameSettings
+	var autoload_in_memory: bool = autoload != null and autoload.path.is_empty()
+	var settings: GameSettings = SETTINGS_SCRIPT.new() as GameSettings
+	root.add_child(settings)
+	await process_frame
+	var node_in_memory: bool = settings.path.is_empty() and _has_the_defaults(settings)
+	settings.set_volume(&"Music", 0.3)
+	settings.set_input_profile(InputProfiles.CUSTOM)
+	if autoload != null:
+		autoload.set_vsync(not autoload.is_vsync_on())
+		autoload.set_vsync(not autoload.is_vsync_on())
+	settings.queue_free()
+	await process_frame
+	var untouched: bool = player_file_state() == before
+	return report(autoload_in_memory and node_in_memory and untouched,
+			"In the tests: the autoload in memory %s, a new node on the player's file in memory and on the defaults %s, the player's file untouched %s"
+			% [autoload_in_memory, node_in_memory, untouched])
+
+
 func _new_settings() -> GameSettings:
 	var settings: GameSettings = SETTINGS_SCRIPT.new() as GameSettings
 	settings.path = TEST_PATH

@@ -31,13 +31,13 @@ func _initialize() -> void:
 func _the_main_menu_has_options_between_play_and_quit() -> bool:
 	var main: Node = await _new_main_with_defaults()
 	var order: PackedStringArray = []
-	var panel: Node = _main_menu_node(main, ^"%MainPanel")
+	var panel: Node = main_menu_node(main, ^"%MainPanel")
 	if panel != null:
 		for child: Node in panel.get_children():
 			if child is Button:
 				order.append((child as Button).text)
 	await tap(KEY_DOWN)
-	var selected: bool = _has_focus(_main_menu_node(main, ^"%OptionsButton"))
+	var selected: bool = has_focus(main_menu_node(main, ^"%OptionsButton"))
 	await remove_main(main)
 	return report(order == PackedStringArray(["Play", "Options", "Quit"]) and selected,
 			"The main menu's buttons %s, Options selected one below Play %s" % [order, selected])
@@ -50,13 +50,13 @@ func _options_opens_the_screen_on_the_first_volume() -> bool:
 	var main: Node = await _new_main_with_defaults()
 	DirAccess.remove_absolute(ProjectSettings.globalize_path(SETTINGS_TEST_PATH))
 	await tap(KEY_DOWN)
-	if _has_focus(_main_menu_node(main, ^"%OptionsButton")):
+	if has_focus(main_menu_node(main, ^"%OptionsButton")):
 		await tap(KEY_ENTER)
 	var options: Control = _options_in_the_main_menu(main)
 	var shown: bool = _shows(options)
-	var panel_hidden: bool = not _shows(_main_menu_node(main, ^"%MainPanel") as Control)
+	var panel_hidden: bool = not _shows(main_menu_node(main, ^"%MainPanel") as Control)
 	var sliders: Array[HSlider] = _sliders(options)
-	var first_selected: bool = not sliders.is_empty() and _has_focus(sliders[0])
+	var first_selected: bool = not sliders.is_empty() and has_focus(sliders[0])
 	var nothing_written: bool = not FileAccess.file_exists(SETTINGS_TEST_PATH)
 	await remove_main(main)
 	return report(shown and panel_hidden and sliders.size() == GameSettings.BUSES.size()
@@ -99,11 +99,11 @@ func _each_control_changes_settings() -> bool:
 	await tap(KEY_LEFT)
 	var volume_changed: bool = (is_equal_approx(settings.get_volume(&"Master"), 0.95)
 			and _value_label(master) == "95 %")
-	await _press_on(options, ^"%FullscreenCheck", KEY_ENTER)
+	await press_on(options, ^"%FullscreenCheck", KEY_ENTER)
 	var fullscreen_changed: bool = settings.is_fullscreen()
-	await _press_on(options, ^"%VSyncCheck", KEY_ENTER)
+	await press_on(options, ^"%VSyncCheck", KEY_ENTER)
 	var vsync_changed: bool = not settings.is_vsync_on()
-	await _press_on(options, ^"%FpsCapOption", KEY_ENTER)
+	await press_on(options, ^"%FpsCapOption", KEY_ENTER)
 	var list: OptionButton = null
 	if options != null:
 		list = options.get_node_or_null(^"%FpsCapOption") as OptionButton
@@ -125,7 +125,7 @@ func _reset_brings_back_the_defaults() -> bool:
 	settings.set_fps_cap(240)
 	await _open_options_in_the_main_menu(main)
 	var options: Control = _options_in_the_main_menu(main)
-	await _press_on(options, ^"%ResetButton", KEY_ENTER)
+	await press_on(options, ^"%ResetButton", KEY_ENTER)
 	var in_settings: bool = (settings.get_volume(&"SFX") == GameSettings.DEFAULT_VOLUME
 			and settings.is_fullscreen() == GameSettings.DEFAULT_FULLSCREEN
 			and settings.get_fps_cap() == GameSettings.DEFAULT_FPS_CAP)
@@ -152,14 +152,14 @@ func _back_esc_and_b_close_the_screen_onto_options() -> bool:
 		var options: Control = _options_in_the_main_menu(main)
 		match way:
 			"Back":
-				await _press_on(options, ^"%BackButton", KEY_ENTER)
+				await press_on(options, ^"%BackButton", KEY_ENTER)
 			"Esc":
 				await tap(KEY_ESCAPE)
 			"B":
 				await tap_joypad(JOY_BUTTON_B)
 		var closed: bool = (not _shows(options)
-				and _shows(_main_menu_node(main, ^"%MainPanel") as Control)
-				and _has_focus(_main_menu_node(main, ^"%OptionsButton")))
+				and _shows(main_menu_node(main, ^"%MainPanel") as Control)
+				and has_focus(main_menu_node(main, ^"%OptionsButton")))
 		all_right = all_right and closed
 		outcomes.append("%s %s" % [way, closed])
 	var stopped: bool = back_counter.presses == 0
@@ -181,7 +181,7 @@ func _in_the_pause_esc_and_b_go_back_to_the_pause() -> bool:
 	var all_right: bool = paused
 	for way: String in ["Esc", "B"]:
 		await tap(KEY_DOWN)
-		if not _has_focus(_pause_node(main, ^"%OptionsButton")):
+		if not has_focus(pause_node(main, ^"%OptionsButton")):
 			all_right = false
 			outcomes.append("%s: Options not below Resume" % way)
 			break
@@ -193,7 +193,7 @@ func _in_the_pause_esc_and_b_go_back_to_the_pause() -> bool:
 		else:
 			await tap_joypad(JOY_BUTTON_B)
 		var back: bool = (opened and paused and not _shows(options)
-				and _has_focus(_pause_node(main, ^"%OptionsButton")))
+				and has_focus(pause_node(main, ^"%OptionsButton")))
 		all_right = all_right and back
 		outcomes.append("%s %s" % [way, back])
 		await tap(KEY_UP)
@@ -211,13 +211,13 @@ func _a_pause_left_from_the_options_opens_on_its_own_panel() -> bool:
 	await tap(KEY_ENTER)
 	await tap(KEY_ENTER)
 	await tap(KEY_ESCAPE)
-	await _press_on(main.get_node_or_null(^"%PauseMenu"), ^"%OptionsButton", KEY_ENTER)
+	await press_on(main.get_node_or_null(^"%PauseMenu"), ^"%OptionsButton", KEY_ENTER)
 	var opened: bool = _shows(_options_in_the_pause(main))
 	await tap_joypad(JOY_BUTTON_START)
 	var resumed: bool = opened and not paused
 	await tap(KEY_ESCAPE)
 	var own_panel: bool = (paused and not _shows(_options_in_the_pause(main))
-			and _has_focus(_pause_node(main, ^"%ResumeButton")))
+			and has_focus(pause_node(main, ^"%ResumeButton")))
 	await remove_main(main)
 	return report(resumed and own_panel,
 			"Start from the screen resumes %s; the next pause opens on Resume %s"
@@ -245,35 +245,15 @@ func _new_main_with_defaults() -> Node:
 
 
 func _open_options_in_the_main_menu(main: Node) -> void:
-	await _press_on(main.get_node_or_null(^"%MainMenu"), ^"%OptionsButton", KEY_ENTER)
-
-
-## Gives the control at path, under owner_node, the focus, and taps the key on it. With no such
-## control it taps nothing, so the key never lands on another button, which could be Quit.
-func _press_on(owner_node: Node, path: NodePath, key: Key) -> void:
-	var control: Control = owner_node.get_node_or_null(path) as Control if owner_node else null
-	if control == null:
-		return
-	control.grab_focus()
-	await tap(key)
+	await press_on(main.get_node_or_null(^"%MainMenu"), ^"%OptionsButton", KEY_ENTER)
 
 
 func _options_in_the_main_menu(main: Node) -> Control:
-	return _main_menu_node(main, ^"%OptionsMenu") as Control
+	return main_menu_node(main, ^"%OptionsMenu") as Control
 
 
 func _options_in_the_pause(main: Node) -> Control:
-	return _pause_node(main, ^"%OptionsMenu") as Control
-
-
-func _main_menu_node(main: Node, path: NodePath) -> Node:
-	var menu: Node = main.get_node_or_null(^"%MainMenu")
-	return menu.get_node_or_null(path) if menu != null else null
-
-
-func _pause_node(main: Node, path: NodePath) -> Node:
-	var pause: Node = main.get_node_or_null(^"%PauseMenu")
-	return pause.get_node_or_null(path) if pause != null else null
+	return pause_node(main, ^"%OptionsMenu") as Control
 
 
 func _shows(control: Control) -> bool:
@@ -318,7 +298,3 @@ func _fps_cap_shown(options: Control) -> int:
 	if list == null or list.selected < 0:
 		return -1
 	return GameSettings.FPS_CAPS[list.selected]
-
-
-func _has_focus(control: Node) -> bool:
-	return control != null and root.gui_get_focus_owner() == control

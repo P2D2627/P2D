@@ -2,7 +2,8 @@ class_name OptionsMenu
 extends VBoxContainer
 
 ## The options screen, the same in the main menu and in the pause: a volume slider for each audio
-## bus, full screen, V-Sync, the frame rate limit, Reset and Back. It shows what the autoload
+## bus, full screen, V-Sync, the frame rate limit, Controls, Reset and Back. Controls swaps this
+## screen for the controls screen, and its Back swaps them again. It shows what the autoload
 ## Settings holds and hands every change straight to it; Settings applies and saves. Back, Esc or B
 ## close the screen and say so with closed, and the menu it is in shows its own panel again.
 
@@ -37,6 +38,9 @@ var _volume_texts: Dictionary[StringName, Label] = {}
 @onready var _fps_cap_option: OptionButton = %FpsCapOption
 @onready var _reset_button: Button = %ResetButton
 @onready var _back_button: Button = %BackButton
+@onready var _general: Control = %General
+@onready var _controls_button: Button = %ControlsButton
+@onready var _controls_menu: ControlsMenu = %ControlsMenu
 
 
 func _ready() -> void:
@@ -50,12 +54,15 @@ func _ready() -> void:
 	_fps_cap_option.item_selected.connect(_on_fps_cap_selected)
 	_reset_button.pressed.connect(_on_reset_pressed)
 	_back_button.pressed.connect(_close)
+	_controls_button.pressed.connect(_show_controls)
+	_controls_menu.closed.connect(_on_controls_closed)
 
 
 ## Esc or B closes the screen while it shows, and the event stops here: in the pause, that Esc goes
-## back to the pause instead of resuming the game.
+## back to the pause instead of resuming the game. While the controls screen shows, it handles its
+## own Esc, going back to this one.
 func _unhandled_input(event: InputEvent) -> void:
-	if is_visible_in_tree() and event.is_action_pressed(&"ui_cancel"):
+	if _general.is_visible_in_tree() and event.is_action_pressed(&"ui_cancel"):
 		_close()
 		get_viewport().set_input_as_handled()
 
@@ -63,6 +70,8 @@ func _unhandled_input(event: InputEvent) -> void:
 ## Shows the screen with what Settings holds, and the first volume selected.
 func open() -> void:
 	_show_settings()
+	_controls_menu.hide()
+	_general.show()
 	show()
 	_sliders[GameSettings.BUSES[0]].grab_focus()
 
@@ -70,6 +79,16 @@ func open() -> void:
 func _close() -> void:
 	hide()
 	closed.emit()
+
+
+func _show_controls() -> void:
+	_general.hide()
+	_controls_menu.open()
+
+
+func _on_controls_closed() -> void:
+	_general.show()
+	_controls_button.grab_focus()
 
 
 ## A row of the volumes grid: the bus's name, its slider and its volume in %.

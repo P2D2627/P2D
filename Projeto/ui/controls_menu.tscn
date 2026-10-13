@@ -1,0 +1,44 @@
+[gd_scene format=3]
+
+[ext_resource type="Script" path="res://ui/controls_menu.gd" id="1_script"]
+
+[node name="ControlsMenu" type="VBoxContainer"]
+visible = false
+script = ExtResource("1_script")
+
+[node name="Heading" type="Label" parent="."]
+layout_mode = 2
+text = "Controls"
+horizontal_alignment = 1
+
+[node name="ProfileRow" type="HBoxContainer" parent="."]
+layout_mode = 2
+
+[node name="ProfileLabel" type="Label" parent="ProfileRow"]
+layout_mode = 2
+size_flags_horizontal = 3
+text = "Profile"
+
+[node name="ProfileOption" type="OptionButton" parent="ProfileRow"]
+unique_name_in_owner = true
+layout_mode = 2
+
+[node name="Bindings" type="GridContainer" parent="."]
+unique_name_in_owner = true
+layout_mode = 2
+columns = 2
+
+[node name="GamepadNote" type="Label" parent="."]
+layout_mode = 2
+text = "The gamepad's buttons are the same in every profile."
+horizontal_alignment = 1
+
+[node name="ControlsResetButton" type="Button" parent="."]
+unique_name_in_owner = true
+layout_mode = 2
+text = "Reset custom controls"
+
+[node name="ControlsBackButton" type="Button" parent="."]
+unique_name_in_owner = true
+layout_mode = 2
+text = "Back"
