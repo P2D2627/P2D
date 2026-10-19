@@ -48,15 +48,15 @@ const RAMP_SHADER: Shader = preload("res://components/color_ramp.gdshader")
 @export var camera: Camera2D
 
 @export_group("Color")
-## The layer's colors, dark to light from left to right, which replace the grays of every piece in
-## the layer that has no material of its own (components/color_ramp.gdshader): a 256 × 1 PNG or a
-## GradientTexture1D. Without a ramp, the pieces keep the colors they were painted in.
+## The layer's colors, light on the left and black on the right, which replace the grays of every
+## piece in the layer that has no material of its own (components/color_ramp.gdshader): a 256 × 1
+## PNG or a GradientTexture1D. Without a ramp, the pieces keep the colors they were painted in.
 @export var ramp: Texture2D:
 	set(value):
 		ramp = value
 		if is_node_ready():
 			_paint_pieces()
-## On for a ramp painted the other way, light on the left and dark on the right.
+## On for a ramp painted the other way, black on the left and light on the right.
 @export var reverse_ramp: bool = false:
 	set(value):
 		reverse_ramp = value

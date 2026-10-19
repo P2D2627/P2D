@@ -8,7 +8,6 @@
 
 [node name="Far" parent="."]
 ramp = ExtResource("2_ramp_orange_dark")
-reverse_ramp = true
 
 [node name="Picture" type="Sprite2D" parent="Far"]
 texture = ExtResource("3_cave_background")
