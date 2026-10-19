@@ -324,10 +324,11 @@ perto da câmara. Muda-se no Inspector de cada camada, também com o jogo a corr
 Remote.
 
 As imagens do cenário pintam-se em cinzentos. Cada camada tem a sua rampa de cor (campo Ramp), que
-substitui os cinzentos pelas cores do nível: o quase preto toma a primeira cor da rampa e o quase
-branco a última. As camadas mais distantes levam rampas mais escuras e menos saturadas. Uma rampa é
-uma faixa PNG de 256 × 1 px, do escuro para o claro, ou um GradientTexture1D com as cores do nível;
-uma rampa desenhada do claro para o escuro usa-se com a opção Reverse Ramp. O Modulate de uma camada
+substitui os cinzentos pelas cores do nível: o quase branco toma a cor da ponta esquerda da rampa e
+o quase preto a da ponta direita. As camadas mais distantes levam rampas mais escuras e menos
+saturadas. Uma rampa é uma faixa PNG de 256 × 1 px, clara à esquerda e preta à direita, como a arte
+as pinta, ou um GradientTexture1D com as cores do nível; uma rampa desenhada ao contrário, preta à
+esquerda, usa-se com a opção Reverse Ramp. O Modulate de uma camada
 ou de uma peça continua a tingir o resultado, o que permite, por exemplo, escurecer uma camada
 distante. Uma peça pintada a cores fica numa camada sem rampa, ou com um material próprio, que a
 camada respeita.
@@ -855,7 +856,7 @@ movimento da câmara; a extensão acrescenta-lhe o que todas as camadas do jogo 
 O shader lê o cinzento de cada píxel e procura a cor correspondente na rampa; a cor do vértice, que
 traz o Modulate do nó, tinge o resultado, e o alfa da imagem mantém-se. Estes comportamentos só se
 observam com o renderer a desenhar, pelo que foram medidos numa janela, com o renderer Compatibility:
-um cinzento de 0,02 toma a primeira cor da rampa (98 % dessa cor), um de 0,98 a última, um píxel
+um cinzento de 0,02 toma a cor da ponta direita da rampa (98 % dessa cor), um de 0,98 a da esquerda, um píxel
 transparente deixa ver o que está atrás, e um Modulate de 50 % reduz a cor a metade (0,49).
 
 Ficaram de fora três alternativas. Repetir a imagem atual, que não foi pintada para se repetir,
