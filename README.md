@@ -301,6 +301,53 @@ Inspector do Godot, como os do movimento.
 | Look Down Sharpness | 10 /s | a rapidez com que a câmara olha para baixo e regressa |
 | Zone Change Speed | 2000 px/s | a velocidade máxima da câmara ao passar para outra zona; acima da velocidade máxima de queda (1400 px/s), para nunca perder a personagem |
 
+## Fundo em camadas
+
+O fundo de cada nível é formado por camadas a distâncias diferentes da câmara. Quanto mais distante a
+camada, mais devagar se desloca no ecrã (efeito de parallax), o que dá profundidade ao cenário sem
+desenhos adicionais. Na sala de teste, a camada distante desloca-se 0,25 px por cada pixel que a
+câmara percorre e cobre o ecrã em qualquer ponto da sala, tanto nos ecrãs 16:9 como nos 21:9.
+
+O fundo de cada nível parte do modelo `background/level_background.tscn`, que já contém as quatro
+camadas previstas, da mais distante para a mais próxima:
+
+| Camada | Scroll Scale | Conteúdo | Cobertura do ecrã (Cover) |
+|---|---|---|---|
+| Far | 0,25 | uma imagem: as paredes da gruta, o céu | FIT: a imagem é ampliada o necessário para cobrir o ecrã em todo o nível; REPEAT, se tiver sido pintada para se repetir sem costura |
+| Middle | 0,5 | peças soltas: rochas, torres | NONE: cada peça fica onde for colocada |
+| Near | 0,75 | peças soltas, entre a camada intermédia e o plano de jogo | NONE |
+| Front | 1,2 | peças escuras e desfocadas, à frente da personagem | NONE; é desenhada por cima do plano de jogo |
+
+A Scroll Scale é a fração do movimento da câmara que a camada acompanha: com 1, a camada move-se com
+o plano de jogo; com 0, fica parada no ecrã; acima de 1, passa mais depressa, como o que está mais
+perto da câmara. Muda-se no Inspector de cada camada, também com o jogo a correr, no separador
+Remote.
+
+As imagens do cenário pintam-se em cinzentos. Cada camada tem a sua rampa de cor (campo Ramp), que
+substitui os cinzentos pelas cores do nível: o quase preto toma a primeira cor da rampa e o quase
+branco a última. As camadas mais distantes levam rampas mais escuras e menos saturadas. Uma rampa é
+uma faixa PNG de 256 × 1 px, do escuro para o claro, ou um GradientTexture1D com as cores do nível;
+uma rampa desenhada do claro para o escuro usa-se com a opção Reverse Ramp. O Modulate de uma camada
+ou de uma peça continua a tingir o resultado, o que permite, por exemplo, escurecer uma camada
+distante. Uma peça pintada a cores fica numa camada sem rampa, ou com um material próprio, que a
+camada respeita.
+
+Para acrescentar arte nova ao fundo:
+
+1. Exportar o PNG em cinzentos, com fundo transparente, para `Projeto/assets/sprites/backgrounds/`.
+2. Abrir o fundo do nível, em `Projeto/background/`. Um nível novo cria o seu com Scene › New
+   Inherited Scene a partir de `level_background.tscn` e coloca-o como primeiro nó da cena do nível,
+   para ficar atrás de tudo; a sala de teste usa `test_room_background.tscn`.
+3. Arrastar o PNG para a camada da sua distância, onde passa a ser um Sprite2D.
+4. Escolher a rampa da camada no campo Ramp.
+5. Correr a cena do nível com F6 e confirmar a posição e as cores.
+
+Uma peça solta aparece no centro do ecrã, quando a câmara está centrada num ponto P do nível, se
+estiver colocada na sua camada na posição P × s + meio ecrã × (1 − s), em que s é a Scroll Scale da
+camada; no ecrã de 1920 × 1080, meio ecrã é (960, 540). Por exemplo, numa camada a 0,5, uma torre que
+deva aparecer com a câmara centrada em x = 4000 coloca-se em x = 4000 × 0,5 + 960 × 0,5 = 2480. O
+editor mostra as camadas sem este deslocamento, pelo que a posição final se confirma a jogar.
+
 ## Afinação do movimento
 
 Os valores do movimento estão reunidos no ficheiro `player_movement_stats.tres`, na pasta
@@ -369,6 +416,7 @@ são usados.
     ├── camera/        câmara do jogo e zonas de câmara
     ├── debug/         overlay de depuração
     ├── levels/        salas, níveis e a entrada de cada nível na lista do menu (LevelEntry)
+    ├── background/    fundo em camadas: as camadas (BackgroundLayer), o modelo e o fundo de cada nível
     ├── ui/            menus, ecrã das opções e o tema comum (ui_theme.tres)
     ├── components/    componentes usados por mais de um sistema (HealthComponent, Hitbox, Hurtbox…)
     ├── tests/         testes e medidas que correm sem janela
@@ -436,6 +484,7 @@ godot --headless --fixed-fps 60 --path Projeto --script res://tests/test_crucifi
 godot --headless --fixed-fps 60 --path Projeto --script res://tests/test_crucifix_menus.gd
 godot --headless --fixed-fps 60 --path Projeto --script res://tests/test_input_profiles.gd
 godot --headless --fixed-fps 60 --path Projeto --script res://tests/test_controls.gd
+godot --headless --fixed-fps 60 --path Projeto --script res://tests/test_background_layer.gd
 ```
 
 O `test_input_profiles.gd` escreve cinco ERROR, das tentativas de atribuir teclas inválidas, todos
@@ -477,6 +526,12 @@ caixa de colisão de 48 × 96 px e a origem nos pés, pelo que, num nível, a or
 chão. Está na camada `player` e colide com `world` e `one_way_platform`. Os valores vêm de um
 recurso `PlayerMovementStats` (`player/player_movement_stats.gd`), guardado em
 `player/player_movement_stats.tres`.
+
+O desenho é um `Sprite2D` com uma imagem provisória, feita a partir do desenho de conceito
+(`assets/sprites/player/player_concept.png`): uma célula de 192 × 192 px, com os pés na linha
+y = 184, ao centro, e o corpo do tamanho da caixa de colisão (43 × 96 px). O sprite fica em (0, −88),
+o que põe os pés na origem. As animações vão substituir esta imagem, com a mesma célula e a mesma
+linha dos pés.
 
 A personagem não lê o teclado diretamente. Um nó filho, `PlayerInput` (`player/player_input.gd`), é
 o único que lê as ações da personagem no Input Map, e responde em cada passo de física a cinco
@@ -774,6 +829,56 @@ logo abaixo do limite superior de uma zona com outra por cima, até 86 px, porqu
 posição dos pés. Sem janela, o Godot cria uma janela de 64 × 64 px, e o
 modo de proporção Expand transforma-a num ecrã de 1920 × 1920; por isso, os testes da câmara fixam o
 ecrã em 1920 × 1080 antes de começar.
+
+#### Fundo em camadas
+
+O fundo é feito de nós `BackgroundLayer` (`background/background_layer.gd`), uma extensão do
+`Parallax2D` do Godot, um por camada. O `Parallax2D` desloca a camada uma fração (Scroll Scale) do
+movimento da câmara; a extensão acrescenta-lhe o que todas as camadas do jogo precisam:
+
+- O modo de cobertura (Cover). Em FIT, a imagem é ampliada, sem deformar, até ao tamanho do ecrã
+  somado ao percurso da camada (o percurso da câmara dentro dos seus limites, menos o ecrã, vezes a
+  Scroll Scale), e começa no limite superior esquerdo da câmara. Na sala de teste (5824 × 2244 px), a
+  0,25, uma imagem de 1920 × 1080 é ampliada 1,508 vezes em 16:9 e 1,743 vezes em 21:9. Em REPEAT, a
+  imagem é ampliada até ao tamanho do ecrã, se for menor, e repete-se de imagem em imagem; o Repeat
+  Size do Godot ignora a escala, pelo que recebe o tamanho já ampliado. Em NONE, as peças ficam onde
+  foram colocadas. O cálculo repete-se quando a janela muda de tamanho e quando a Scroll Scale, o
+  modo, a câmara ou os limites da câmara mudam, também com o jogo a correr; enquanto não houver
+  câmara, a camada espera por ela. Em FIT e em REPEAT, a camada controla a posição, a escala e o
+  Centered da imagem e o seu próprio Repeat Size, e, em FIT, também o Scroll Offset: estes campos não
+  se acertam à mão.
+- A rampa de cor de cada camada (Ramp e Reverse Ramp). A camada cria um único material com o shader
+  `components/color_ramp.gdshader` e atribui-o a todas as peças sem material próprio, incluindo as
+  que entram depois; mudar a rampa muda todas as peças de uma vez, e retirá-la devolve-lhes as cores
+  originais.
+
+O shader lê o cinzento de cada píxel e procura a cor correspondente na rampa; a cor do vértice, que
+traz o Modulate do nó, tinge o resultado, e o alfa da imagem mantém-se. Estes comportamentos só se
+observam com o renderer a desenhar, pelo que foram medidos numa janela, com o renderer Compatibility:
+um cinzento de 0,02 toma a primeira cor da rampa (98 % dessa cor), um de 0,98 a última, um píxel
+transparente deixa ver o que está atrás, e um Modulate de 50 % reduz a cor a metade (0,49).
+
+Ficaram de fora três alternativas. Repetir a imagem atual, que não foi pintada para se repetir,
+deixaria as juntas visíveis. Um fundo parado não dá profundidade. Descrever o fundo num `Resource` e
+construí-lo ao arrancar combinaria com o modelo de nível previsto, mas as peças deixariam de se ver e
+posicionar no editor. O modelo `level_background.tscn` fixa as quatro camadas e as suas distâncias, e
+o fundo de cada nível herda-o (`test_room_background.tscn`, na sala de teste).
+
+O `Parallax2D` tem a physics interpolation desligada por omissão, porque segue a câmara, que já é
+interpolada. O modo FIT supõe uma câmara sem zoom, como a do jogo. O `test_background_layer.gd`
+verifica a cobertura nos quatro cantos dos limites e no centro, em 16:9 e em 21:9, a espera por uma
+câmara que chega depois da camada, a nova cobertura quando os limites da câmara crescem, a
+repetição, a rampa e a estrutura do modelo.
+
+A ordem de desenho segue uma convenção única, para que nenhuma peça fique por baixo ou por cima de
+outra por acaso:
+
+| Ordem | O que se desenha | Como |
+|---|---|---|
+| 1 | camadas Far, Middle e Near do fundo | primeiro nó da cena do nível, com Z Index 0 |
+| 2 | plano de jogo: tiles, peças, personagem, demónios | nós seguintes do nível, com Z Index 0 |
+| 3 | camada Front do fundo | Z Index 10 |
+| 4 | interface e overlay de depuração | `CanvasLayer`, por cima de tudo |
 
 #### Menus, pausa e opções
 
