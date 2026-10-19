@@ -23,6 +23,8 @@ enum State { ON_FLOOR, IN_AIR, ON_WALL }
 ## Where the run and the jump come from. The scene's own PlayerInput reads the keyboard; an AI, a
 ## cutscene or a test can put another PlayerInput here.
 @export var input: PlayerInput
+## The man's Soul Points (SP), the game's health. Whatever hurts or heals him reaches them here.
+@export var soul_points: SoulPoints
 
 ## In the air until the first move_and_slide() finds the floor.
 var _state: State = State.IN_AIR
@@ -49,6 +51,7 @@ var _jump_blocked: bool = false
 func _ready() -> void:
 	assert(stats != null, "Player: assign a PlayerMovementStats resource to Stats.")
 	assert(input != null, "Player: assign a PlayerInput node to Input.")
+	assert(soul_points != null, "Player: assign a SoulPoints node to Soul Points.")
 	assert(stats.min_jump_height <= stats.jump_height,
 			"Player: Min Jump Height is above Jump Height in Stats, so every jump is a full jump.")
 

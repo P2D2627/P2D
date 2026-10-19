@@ -3,14 +3,14 @@
 # with the arrows only, jumps with Space, raises the crucifix with Q, interacts with Ctrl and leaves
 # W, E, A, S and D free. Every profile keeps the gamepad's buttons. The custom profile starts as a
 # copy of the default one; remapping an action leaves it that one binding, and a binding another
-# action had swaps over, so no action is left without one. Reserved keys (Esc, F3), bindings not on
-# offer, and remapping outside the custom profile change nothing. The file keeps the profile by its
-# id and each binding as readable text, and both read back the same; a profile or bindings in the
-# file that are not on offer give the defaults. Every key and mouse button on offer reads back from
-# its name as itself. Reset brings the custom profile back to the default one, and the options' own
-# Reset leaves the controls alone. The tests use a settings node of their own, with a file of their
-# own, and never touch the player's file. Setting a binding that is not on offer prints an ERROR,
-# which is expected.
+# action had swaps over, so no action is left without one. Reserved keys (Esc, F3, F4), bindings
+# not on offer, and remapping outside the custom profile change nothing. The file keeps the profile
+# by its id and each binding as readable text, and both read back the same; a profile or bindings
+# in the file that are not on offer give the defaults. Every key and mouse button on offer reads
+# back from its name as itself. Reset brings the custom profile back to the default one, and the
+# options' own Reset leaves the controls alone. The tests use a settings node of their own, with a
+# file of their own, and never touch the player's file. Setting a binding that is not on offer
+# prints an ERROR, which is expected.
 # Run from the repository root; the exit code is 0 on pass and 1 on fail:
 # godot --headless --fixed-fps 60 --path Projeto --script res://tests/test_input_profiles.gd
 extends "res://tests/support/player_test.gd"
@@ -145,6 +145,7 @@ func _reserved_keys_and_remaps_outside_custom_change_nothing() -> bool:
 	settings.set_input_profile(InputProfiles.CUSTOM)
 	settings.set_custom_binding(&"jump", InputProfiles.key(KEY_ESCAPE))
 	settings.set_custom_binding(&"jump", InputProfiles.key(KEY_F3))
+	settings.set_custom_binding(&"jump", InputProfiles.key(KEY_F4))
 	settings.set_custom_binding(&"jump", "mouse:wheel")
 	settings.set_custom_binding(&"jump", "rubbish")
 	var not_on_offer: PackedStringArray = _differences({&"jump": [KEY_SPACE]})

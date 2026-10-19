@@ -23,7 +23,8 @@ signal cooldown_finished
 ## The crucifix is gone for good, after the first upgrade accepted. It leaves the game at the end of
 ## this frame.
 signal lost
-## SP the crucifix gives back on this physics frame.
+## SP the crucifix gives back on this physics frame. The player's scene connects it to the man's
+## SoulPoints.
 signal healed(amount: float)
 
 ## What the crucifix is doing. Only _physics_process() changes it.
@@ -210,10 +211,8 @@ func _repel(delta: float) -> void:
 			repellable.push_away_from(global_position, distance)
 
 
-## Gives back heal_per_second SP for every second the crucifix is up.
+## Gives back heal_per_second SP for every second the crucifix is up. The crucifix only says how
+## much: the player's scene connects healed to the man's SoulPoints, which heal.
 func _heal(delta: float) -> void:
-	# TODO: to be added once the SP system exists. Call the player's SoulPoints component here, for
-	# example player.soul_points.heal(amount), or connect healed to it. Until then, healed only says
-	# how much this frame gives back.
 	var amount: float = stats.heal_per_second * delta
 	healed.emit(amount)

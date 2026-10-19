@@ -4,16 +4,19 @@
 [ext_resource type="Resource" uid="uid://dgbdj7xih7ra7" path="res://player/player_movement_stats.tres" id="2_stats"]
 [ext_resource type="Script" uid="uid://bb8cwv6qx3yd" path="res://player/player_input.gd" id="3_input"]
 [ext_resource type="PackedScene" path="res://crucifix/crucifix.tscn" id="4_crucifix"]
+[ext_resource type="Script" path="res://player/soul_points.gd" id="5_soul_points"]
+[ext_resource type="Resource" path="res://player/soul_points_stats.tres" id="6_soul_points_stats"]
 
 [sub_resource type="RectangleShape2D" id="RectangleShape2D_player"]
 size = Vector2(48, 96)
 
-[node name="Player" type="CharacterBody2D" node_paths=PackedStringArray("input") unique_id=1108148048]
+[node name="Player" type="CharacterBody2D" node_paths=PackedStringArray("input", "soul_points") unique_id=1108148048]
 collision_layer = 2
 collision_mask = 257
 script = ExtResource("1_script")
 stats = ExtResource("2_stats")
 input = NodePath("PlayerInput")
+soul_points = NodePath("SoulPoints")
 
 [node name="CollisionShape2D" type="CollisionShape2D" parent="." unique_id=2146697779]
 position = Vector2(0, -48)
@@ -26,6 +29,12 @@ polygon = PackedVector2Array(-24, -96, 24, -96, 24, 0, -24, 0)
 [node name="PlayerInput" type="Node" parent="."]
 script = ExtResource("3_input")
 
+[node name="SoulPoints" type="Node" parent="."]
+script = ExtResource("5_soul_points")
+stats = ExtResource("6_soul_points_stats")
+
 [node name="Crucifix" parent="." node_paths=PackedStringArray("player") instance=ExtResource("4_crucifix")]
 position = Vector2(0, -60)
 player = NodePath("..")
+
+[connection signal="healed" from="Crucifix" to="SoulPoints" method="heal"]

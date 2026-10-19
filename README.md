@@ -30,7 +30,8 @@ documenta a organização técnica do projeto.
    a direita há uma corrida longa, uma escada de quatro degraus de 200 px, uma segunda chaminé de
    120 px junto à parede direita e, no topo desta, uma passagem que termina numa queda de 1500 px.
    Durante o jogo, a tecla F3 mostra e esconde o texto de depuração descrito em "Overlay de
-   depuração".
+   depuração", e a tecla F4 retira 10 SP à personagem, como um golpe, para experimentar a
+   regeneração descrita em "SP".
 
 Os controlos de teclado e rato escolhem-se em Options ▸ Controls, entre três perfis. O comando é
 igual em todos.
@@ -41,12 +42,12 @@ igual em todos.
 | Saltar | Espaço | Espaço | A / Cross |
 | Deslizar numa parede | no ar, A / D ou setas contra a parede | no ar, setas contra a parede | stick esquerdo contra a parede |
 | Saltar de uma parede | no ar, Espaço encostado à parede | no ar, Espaço encostado à parede | A / Cross encostado à parede |
-| Erguer o crucifixo | premir o botão esquerdo do rato no chão; fica erguido enquanto premido | premir Q no chão; fica erguido enquanto premido | premir R2 no chão; fica erguido enquanto premido |
+| Erguer o crucifixo | premir o botão esquerdo do rato no chão; fica erguido enquanto premido | premir Q no chão; fica erguido enquanto premido | premir RT / R2 no chão; fica erguido enquanto premido |
 | Interagir | E | Ctrl | B / Circle |
 
 O terceiro perfil, Custom, começa igual ao predefinido, e cada ação pode receber outra tecla ou
-botão do rato. O Esc e o F3 estão reservados. As teclas W, E, A, S e D do perfil das setas ficam
-livres para os upgrades.
+botão do rato. O Esc, o F3 e o F4 estão reservados. As teclas W, E, A, S e D do perfil das setas
+ficam livres para os upgrades.
 
 | Ação | Teclado | Comando |
 |---|---|---|
@@ -54,6 +55,7 @@ livres para os upgrades.
 | Confirmar nos menus | Enter / Espaço | A / Cross |
 | Voltar nos menus | Esc | B / Circle |
 | Mostrar e esconder o texto de depuração | F3 | — |
+| Retirar 10 SP à personagem (só na versão de depuração) | F4 | — |
 
 ## Mecânicas implementadas
 
@@ -146,13 +148,13 @@ provisórios e serão afinados com a câmara e nos níveis.
 
 ### Crucifixo
 
-O crucifixo é a única defesa do jogador que recusa upgrades. Ergue-se ao premir o botão esquerdo
-do rato ou o gatilho R2 com a personagem no chão e fica erguido enquanto o botão estiver premido,
-durante no máximo 5 s. Um toque dado até 0,1 s antes de aterrar ainda o ergue na aterragem, se o
-botão continuar premido, à semelhança da tolerância do salto. Baixa quando o botão é largado, quando
-a personagem sai do chão ou quando os 5 s terminam. Depois de cada uso, curto ou longo, há uma
-espera de 15 s até poder ser erguido de novo; um toque dado até 0,1 s antes do fim da espera também
-conta.
+Enquanto o jogador recusar os upgrades, o crucifixo é a sua única defesa. Ergue-se ao premir o
+botão esquerdo do rato ou o gatilho direito do comando (RT / R2) com a personagem no chão e fica
+erguido enquanto o botão estiver premido, durante no máximo 5 s. Um toque dado até 0,1 s antes de
+aterrar ainda o ergue na aterragem, se o botão continuar premido, à semelhança da tolerância do
+salto. Baixa quando o botão é largado, quando a personagem sai do chão ou quando os 5 s terminam.
+Depois de cada uso, curto ou longo, há uma espera de 15 s até poder ser erguido de novo; um toque
+dado até 0,1 s antes do fim da espera também conta.
 
 Só um toque dado durante o jogo ergue o crucifixo. Um botão que já vinha premido, da espera, do
 menu principal ou da pausa, não o ergue até ser largado e premido outra vez. Assim, o jogador
@@ -166,8 +168,7 @@ Erguido, o crucifixo:
   crucifixo baixa;
 - afasta os demónios e as almas perdidas: o que estiver a menos de 200 px é empurrado para fora
   desse raio a 1500 px/s, e o que estiver mais longe não se move;
-- cura 5 SP por segundo. O sistema de SP ainda não existe; o crucifixo já anuncia, em cada passo de
-  física, a quantidade que cura, e o SP só terá de a receber;
+- cura 5 SP por segundo, que se somam à regeneração (ver "SP");
 - acende uma luz quente cujo alcance mostra o raio do afastamento.
 
 A duração limitada e a espera fixa obrigam a escolher quando usar a única defesa: largar o botão
@@ -178,6 +179,30 @@ acessibilidade.
 
 O jogador tem o crucifixo desde o início e perde-o, de vez, ao aceitar o primeiro upgrade: nesse
 momento, o crucifixo baixa e sai do jogo. Os valores são provisórios e serão afinados em playtest.
+
+### SP
+
+Os SP (*Soul Points*, pontos de alma) são a vida da personagem. Começam no máximo, 100 SP, descem
+com o dano e nunca saem do intervalo entre 0 e o máximo. Com 25 SP ou menos, a personagem fica com
+o SP baixo, o momento a partir do qual o jogo a avisará do perigo. A 0, os SP acabam, e desde então
+nem o dano nem a cura os alteram. O máximo é um valor de dados e muda sem alterar código.
+
+Os SP recuperam sozinhos. Depois de cada golpe, a regeneração para durante 3 s, e um golpe dado
+nesse intervalo recomeça a contagem. Depois, a regeneração recomeça devagar, a 0,5 SP/s, e acelera
+em linha reta até 3 SP/s ao fim de 10 s, velocidade que mantém até encher. A cura do crucifixo
+soma-se à regeneração e não a faz recomeçar.
+
+A subida gradual prolonga o peso de cada golpe: logo a seguir, a personagem continua fraca durante
+alguns segundos, e quem evita o dano durante mais tempo recupera mais depressa. É também nesse
+momento que o crucifixo mais vale: nos 3 s de pausa cura 15 SP, e nos 3 s seguintes a regeneração
+dá 2,6 SP. Comparada com uma velocidade única de 2 SP/s, depois de um golpe que deixe 20 SP, a
+personagem sai do SP baixo mais tarde (7,65 s contra 5,50 s) e enche mais cedo (33,85 s contra
+43,02 s), contados desde o golpe. Estes valores foram medidos com o `measure_soul_points.gd` (ver
+"Testes e medidas"), que usa o componente do jogo.
+
+Ainda nada no jogo causa dano: os ataques chegam com os demónios. Até lá, a tecla F4 da versão de
+depuração faz de golpe. Os valores foram experimentados assim e são provisórios; o limiar do SP
+baixo e a pausa depois do dano serão afinados com os demónios.
 
 ## Medidas para o desenho de níveis
 
@@ -338,6 +363,19 @@ são usados.
 | Repel Speed | 1500 px/s | a velocidade a que são empurrados para fora desse raio |
 | Heal Per Second | 5 SP/s | a cura por cada segundo com o crucifixo erguido |
 
+Os valores dos SP estão no ficheiro `soul_points_stats.tres`, na pasta `player/`. O Max SP e o Low
+Threshold aplicam-se de imediato, também com o jogo a correr, quando são mudados no separador
+Remote; os restantes valores são lidos sempre que são usados.
+
+| Campo no Inspector | Valor atual | O que controla |
+|---|---|---|
+| Max SP | 100 SP | o máximo; a cura e a regeneração param aqui |
+| Low Threshold | 25 SP | o valor a partir do qual, inclusive, a personagem fica com o SP baixo |
+| Regen Delay | 3 s | a pausa da regeneração depois de cada golpe (0: sem pausa) |
+| Regen Start Per Second | 0,5 SP/s | a velocidade da regeneração quando recomeça |
+| Regen Top Per Second | 3 SP/s | a velocidade que a regeneração atinge no fim da subida e mantém depois |
+| Regen Ramp Time | 10 s | a duração da subida de uma velocidade à outra (0: começa logo na mais alta) |
+
 ## Referências
 
 - Game Accessibility Guidelines. (s.d.-a). *Avoid / provide alternatives to requiring buttons to be
@@ -364,13 +402,13 @@ são usados.
     ├── main.tscn      cena principal: menus, pausa e o nível em jogo (script main.gd)
     ├── default_bus_layout.tres   buses de áudio
     ├── core/          serviços globais: as opções do jogador (autoload Settings) e os perfis de controlos
-    ├── player/        personagem: cena, script e valores do movimento
+    ├── player/        personagem: cena, scripts, valores do movimento e SP
     ├── crucifix/      crucifixo: cena, script e valores
     ├── camera/        câmara do jogo e zonas de câmara
     ├── debug/         overlay de depuração
     ├── levels/        salas, níveis e a entrada de cada nível na lista do menu (LevelEntry)
     ├── ui/            menus, ecrã das opções e o tema comum (ui_theme.tres)
-    ├── components/    componentes usados por mais de um sistema (HealthComponent, Hitbox, Hurtbox…)
+    ├── components/    componentes usados por mais de um sistema (por agora, o Repellable)
     ├── tests/         testes e medidas que correm sem janela
     │   └── support/   preparação comum aos testes
     └── assets/        sprites, audio, fonts
@@ -436,10 +474,12 @@ godot --headless --fixed-fps 60 --path Projeto --script res://tests/test_crucifi
 godot --headless --fixed-fps 60 --path Projeto --script res://tests/test_crucifix_menus.gd
 godot --headless --fixed-fps 60 --path Projeto --script res://tests/test_input_profiles.gd
 godot --headless --fixed-fps 60 --path Projeto --script res://tests/test_controls.gd
+godot --headless --fixed-fps 60 --path Projeto --script res://tests/test_soul_points.gd
 ```
 
-O `test_input_profiles.gd` escreve cinco ERROR, das tentativas de atribuir teclas inválidas, todos
-esperados.
+O `test_input_profiles.gd` escreve seis ERROR, das tentativas de atribuir teclas inválidas, todos
+esperados. O `test_soul_points.gd` escreve quatro ERROR, das quantidades de dano e de cura
+inválidas, também esperados.
 
 Todos os scripts de testes e de medidas estendem `tests/support/base_test.gd`, diretamente ou
 através de outro ficheiro de suporte. Antes de o autoload `Settings` estar pronto, esse ficheiro
@@ -468,6 +508,24 @@ máxima, e imprimem o menor e o maior valor.
 
 ```
 godot --headless --fixed-fps 60 --path Projeto --script res://tests/measure_movement.gd
+```
+
+O `measure_crucifix_repel.gd` também não verifica resultados: mede quanto custa, num passo de
+física, a lista do que está dentro do raio do crucifixo, com 10, 50 e 200 demónios de substituição,
+em chamadas seguidas e no pior caso, e compara esse custo com o limite de 0,05 ms. Os números e a
+decisão estão em "Crucifixo: componentes e modificadores de movimento".
+
+```
+godot --headless --fixed-fps 60 --path Projeto --script res://tests/measure_crucifix_repel.gd
+```
+
+O `measure_soul_points.gd` também não verifica resultados: aplica um golpe que deixa a personagem
+com 20 SP e mede, com os valores do `soul_points_stats.tres` e com quatro regenerações de
+comparação, o tempo até sair do SP baixo e até encher, e os SP recuperados nos 3 s a seguir à
+pausa. Imprime também o que o crucifixo cura durante a pausa. Os números citados em "SP" vêm daqui.
+
+```
+godot --headless --fixed-fps 60 --path Projeto --script res://tests/measure_soul_points.gd
 ```
 
 ### A personagem por dentro
@@ -623,7 +681,7 @@ teclado, e não pela letra impressa, pelo que o WASD se mantém num teclado AZER
 | `move_up` / `move_down` | W / S, setas | stick esquerdo (eixo 1) |
 | `jump` | Espaço | A / Cross |
 | `interact` | E | B / Circle |
-| `crucifix` | botão esquerdo do rato | R2 (eixo 5) |
+| `crucifix` | botão esquerdo do rato | RT / R2 (eixo 5) |
 | `pause` | Escape | Start |
 | `toggle_debug_overlay` | F3 | — |
 | `ui_accept` | Enter, Espaço | A / Cross |
@@ -702,9 +760,46 @@ indústria:
   da luz, que assim mostra sempre a área onde o crucifixo atua, e o abrandamento ao seu
   modificador.
 
-O crucifixo comunica para fora apenas por sinais (`raised`, `lowered`, `cooldown_started`,
-`cooldown_finished`, `lost` e `healed`), que o HUD, o som e o futuro sistema de SP podem escutar.
-Perdido, emite `lost` e sai do jogo (`queue_free`); o HUD retira o ícone ao receber esse sinal.
+Com o resto do jogo, o crucifixo comunica por sinais (`raised`, `lowered`, `cooldown_started`,
+`cooldown_finished`, `lost` e `healed`), que o HUD e o som poderão escutar e que os SP já escutam
+(ver "SP: componente, dados e ligação ao crucifixo").
+Perdido, emite `lost` e sai do jogo (`queue_free`); o HUD retira o ícone ao receber esse sinal. A
+exceção é o afastamento: o crucifixo empurra os demónios e as almas chamando o componente
+`Repellable` de cada um (ver acima), sem conhecer os seus scripts.
+
+Com a personagem é diferente. O crucifixo recebe-a no Inspector (propriedade Player), lê o botão
+através do `PlayerInput` dela, pergunta-lhe se está no chão e coloca e retira o seu modificador.
+São chamadas de um nó filho para o pai, uma exceção à convenção "call down, signal up" (ver
+"Convenções de código"). A razão é que o crucifixo precisa, em cada passo de física, do botão e do
+estado da personagem, e um sinal serve para anunciar que algo aconteceu, não para pedir dados a cada
+passo. Com essa referência já necessária, colocar o modificador através de um sinal genérico ligado
+na cena seria um segundo caminho para a mesma ligação. A alternativa de a personagem escutar os
+sinais do crucifixo e aplicar ela própria o abrandamento obrigá-la-ia a conhecer o crucifixo e a ser
+alterada a cada novo efeito, que é o que os modificadores evitam. A ligação tem um só sentido, do
+crucifixo para a personagem, cujo código não usa o crucifixo, e é atribuída na cena, sem caminhos
+entre nós escritos no código.
+
+Enquanto está erguido, o crucifixo pede em cada passo de física a lista do que está dentro do raio,
+e o motor cria essa lista de novo a cada pedido. Em código que corre em cada passo, é boa prática não
+criar listas novas, porque criá-las e libertá-las tem um custo; a alternativa seria o crucifixo
+manter a sua própria lista, atualizada quando um demónio entra ou sai do raio. Antes de decidir,
+fixou-se um limite de 0,05 ms por passo (50 µs, ou milionésimas de segundo), 0,3 % de um passo de
+16,6 ms, e mediu-se o custo com o `measure_crucifix_repel.gd` (2026-10-19, três execuções). Os
+valores incluem criar e libertar a lista:
+
+| Demónios no raio | Muitas chamadas seguidas | Uma chamada por passo, no pior caso |
+|---|---|---|
+| 10 | 0,4 a 0,6 µs | 11 a 14 µs |
+| 50 | 1,2 a 1,7 µs | 16 a 19 µs |
+| 200 | 4,8 a 5,3 µs | 30 a 35 µs |
+
+Chamadas seguidas encontram os dados na memória rápida do processador (cache). No jogo, outros
+sistemas ocupam essa memória entre dois passos, e o pior caso, em que a memória rápida é ocupada
+por completo antes de cada chamada, mede esse efeito. Mesmo assim, com 50 demónios o custo fica
+cerca de 3 vezes abaixo do limite, e com 200 continua abaixo. Os valores foram medidos com o
+executável do editor do Godot, num só computador. Em GDScript, a lista é libertada assim que deixa
+de ser usada, sem as pausas de recolha de memória de outras linguagens. Manteve-se, por isso, a
+solução mais simples; se um nível juntar muitos mais demónios num só raio, a medida volta a correr.
 
 O `test_crucifix.gd` verifica os modificadores (a combinação, uma mudança com o modificador
 colocado, a fração da altura do salto e a da velocidade no salto da parede), o abrandamento, o
@@ -716,6 +811,46 @@ e o rato: com o botão premido durante a pausa e mantido ao retomar com Esc, com
 e com o botão premido desde o menu principal, o crucifixo não se ergue até o botão ser largado e
 premido de novo no jogo.
 
+#### SP: componente, dados e ligação ao crucifixo
+
+Os SP são um nó-componente, `SoulPoints` (`player/soul_points.gd`), filho da personagem, com os
+valores num `Resource`, `SoulPointsStats`, como o movimento e o crucifixo. A personagem recebe-o no
+Inspector (propriedade Soul Points), para que tudo o que a fere ou cura o encontre através dela.
+Separado da personagem, o componente testa-se sem ela e não acrescenta mais um sistema ao script da
+personagem, que já reúne o movimento. Um componente de vida genérico, partilhado com os demónios,
+ficou de lado: só se justifica quando um segundo sistema precisar dele, e os demónios ainda não
+existem.
+
+- **Sinais.** Num golpe, o componente emite `damaged`, `sp_changed`, `low_changed` e `depleted`, por
+  esta ordem; o `low_changed` só quando os SP passam o limiar, num sentido ou no outro, e o
+  `depleted` uma única vez. O `depleted` vem por último para que a barra e o som já tenham recebido
+  o valor final quando a morte começar. A barra, os sons, os avisos e a morte poderão escutá-los
+  sem que o componente conheça nenhum deles. Uma quantidade negativa, infinita ou indefinida
+  (NaN) é um erro e não altera nada.
+- **Regeneração no passo de física.** A pausa depois do dano e a subida da velocidade contam-se em
+  passos de física inteiros, como as tolerâncias do salto, para que os testes as verifiquem ao passo
+  exato. A velocidade de cada passo é uma interpolação linear entre a velocidade inicial e a final,
+  pela fração já decorrida do tempo de subida; essa conta pertence ao `SoulPointsStats`, e o
+  componente apenas conta os passos. Um golpe põe a contagem a zero; a cura não. Com o jogo em
+  pausa, a regeneração para com o nível.
+- **Valores afináveis com o jogo a correr.** O `SoulPointsStats` avisa quando o máximo ou o limiar
+  mudam, e o componente aplica-os de imediato: um máximo mais baixo do que os SP atuais desce-os
+  com ele.
+
+O crucifixo cura através de uma ligação na cena da personagem: em `player/player.tscn`, o sinal
+`healed` do crucifixo está ligado ao método `heal` dos SP. Nenhum dos dois scripts conhece o outro;
+quem os liga é a cena que os contém. A alternativa seria o crucifixo chamar os SP através da
+personagem, como já faz com o modificador, mas essa exceção à convenção "call down, signal up"
+justifica-se por o crucifixo ter de pedir dados à personagem em cada passo. A cura é algo que o
+crucifixo anuncia, e anunciar é o papel de um sinal.
+
+O `test_soul_points.gd` verifica o componente sem personagem: os limites de 0 e do máximo, os
+sinais e a sua ordem, o SP baixo, o fim dos SP, as quantidades inválidas, um máximo diferente só
+com dados, a pausa depois do dano, a subida da velocidade, a pausa do jogo e a velocidade que o
+overlay mostra. Os casos usam valores próprios, pelo que afinar o `.tres` não os altera. O
+`test_crucifix.gd` verifica que um segundo com o crucifixo erguido dá 5 SP à personagem, através da
+ligação da cena.
+
 #### Overlay de depuração
 
 Para afinar o movimento durante o jogo, a sala de teste mostra no canto superior esquerdo os FPS e
@@ -724,15 +859,24 @@ atualiza uma vez por segundo, pelo que um único frame lento permanece visível 
 Mostra também o estado e a velocidade da personagem e, depois de cada salto, o tipo de salto, as
 tolerâncias usadas, em passos de física, e a altura atingida. Um salto completo mostra
 240 px, o mesmo valor que os testes medem. Com a câmara ligada, mostra ainda a zona de câmara em que
-a personagem está e as distâncias atuais da antecipação e do olhar para baixo. A tecla F3 mostra e
-esconde o texto.
+a personagem está e as distâncias atuais da antecipação e do olhar para baixo. Mostra ainda os SP,
+a velocidade atual da regeneração e se os SP estão baixos ou acabaram. A tecla F3 mostra e esconde
+o texto.
+
+A tecla F4 retira à personagem o valor Debug Damage do overlay (10 SP, no Inspector), como um golpe,
+para experimentar a regeneração e os avisos antes de haver demónios. Cada toque conta uma vez,
+mesmo com a tecla premida, não atua com o jogo em pausa e funciona com o texto escondido. O overlay
+pode ferir a personagem diretamente porque não faz parte do jogo: é uma ferramenta de depuração,
+ligada à personagem num só sentido, e sai das exportações de release, pelo que nada no jogo depende
+dele. O F4 está reservado nos perfis de controlos, como o F3, porque uma ação do jogo atribuída a
+essa tecla feriria a personagem sempre que fosse usada nas versões de depuração.
 
 O overlay é uma cena própria, `debug/debug_overlay.tscn`, num `CanvasLayer`, pelo que não se
-desloca com a câmara. Recebe a personagem pelo Inspector e lê-a sem que ela dependa dele, pelo que
-a personagem é testada e exportada sem o overlay. Continua ativo com o jogo em pausa e, nas
-exportações de release, remove-se a si próprio. O `test_debug_overlay.gd` verifica o
-comportamento nas versões de depuração; a remoção na versão de release só poderá ser confirmada
-na primeira exportação.
+desloca com a câmara. Recebe a personagem pelo Inspector e lê-a, ou fere-a com o F4, sem que ela
+dependa dele, pelo que a personagem é testada e exportada sem o overlay. Continua ativo com o jogo
+em pausa e, nas exportações de release, remove-se a si próprio, e o F4 com ele. O
+`test_debug_overlay.gd` verifica o comportamento nas versões de depuração; a remoção na versão de
+release só poderá ser confirmada na primeira exportação.
 
 #### Câmara
 
@@ -847,7 +991,9 @@ nó define o seu próprio tamanho de letra: uma futura opção de tamanho do tex
 - Composição em vez de herança: comportamentos como vida, dano ou movimento vivem em nós-componente
   reutilizáveis, e não numa cadeia de subclasses.
 - "Call down, signal up": um nó pai pode chamar métodos dos filhos, e um filho comunica para cima
-  por sinal. Nunca `get_node("../..")`.
+  por sinal. Nunca `get_node("../..")`. No jogo, a única exceção é o crucifixo, explicada em
+  "Crucifixo: componentes e modificadores de movimento". Fora do jogo, o overlay de depuração fere
+  a personagem com o F4 (ver "Overlay de depuração").
 - Valores de balanceamento em `@export` ou em `Resource`, e nunca como constantes no meio da lógica.
 - Nomes em inglês; `snake_case` para ficheiros, funções e variáveis; `PascalCase` para classes e
   nós.
