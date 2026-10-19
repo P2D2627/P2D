@@ -3,7 +3,8 @@
 [ext_resource type="PackedScene" uid="uid://b1g88pca2y1w4" path="res://player/player.tscn" id="1_player"]
 [ext_resource type="PackedScene" path="res://debug/debug_overlay.tscn" id="2_debug_overlay"]
 [ext_resource type="PackedScene" path="res://camera/game_camera.tscn" id="3_game_camera"]
-[ext_resource type="Script" path="res://camera/camera_zone.gd" id="4_camera_zone"]
+[ext_resource type="Script" uid="uid://jatmkn5rjuk2" path="res://camera/camera_zone.gd" id="4_camera_zone"]
+[ext_resource type="PackedScene" path="res://background/test_room_background.tscn" id="5_test_room_background"]
 
 [sub_resource type="RectangleShape2D" id="RectangleShape2D_floor"]
 size = Vector2(5824, 80)
@@ -11,14 +12,14 @@ size = Vector2(5824, 80)
 [sub_resource type="RectangleShape2D" id="RectangleShape2D_wall"]
 size = Vector2(64, 2244)
 
+[sub_resource type="RectangleShape2D" id="RectangleShape2D_ceiling"]
+size = Vector2(5824, 64)
+
 [sub_resource type="RectangleShape2D" id="RectangleShape2D_platform"]
 size = Vector2(480, 120)
 
 [sub_resource type="RectangleShape2D" id="RectangleShape2D_pillar"]
 size = Vector2(64, 560)
-
-[sub_resource type="RectangleShape2D" id="RectangleShape2D_ceiling"]
-size = Vector2(5824, 64)
 
 [sub_resource type="RectangleShape2D" id="RectangleShape2D_step1"]
 size = Vector2(480, 200)
@@ -42,6 +43,8 @@ size = Vector2(3240, 80)
 size = Vector2(5824, 2244)
 
 [node name="TestRoom" type="Node2D" unique_id=1111842025]
+
+[node name="Background" parent="." unique_id=830455306 instance=ExtResource("5_test_room_background")]
 
 [node name="Floor" type="StaticBody2D" parent="." unique_id=725780737]
 position = Vector2(2912, 1040)
@@ -76,124 +79,124 @@ shape = SubResource("RectangleShape2D_wall")
 color = Color(0.15, 0.13, 0.18, 1)
 polygon = PackedVector2Array(-32, -1122, 32, -1122, 32, 1122, -32, 1122)
 
-[node name="Ceiling" type="StaticBody2D" parent="."]
+[node name="Ceiling" type="StaticBody2D" parent="." unique_id=2027181078]
 position = Vector2(2912, -1132)
 collision_mask = 0
 
-[node name="CollisionShape2D" type="CollisionShape2D" parent="Ceiling"]
+[node name="CollisionShape2D" type="CollisionShape2D" parent="Ceiling" unique_id=1813826886]
 shape = SubResource("RectangleShape2D_ceiling")
 
-[node name="Placeholder" type="Polygon2D" parent="Ceiling"]
+[node name="Placeholder" type="Polygon2D" parent="Ceiling" unique_id=1399388665]
 color = Color(0.15, 0.13, 0.18, 1)
 polygon = PackedVector2Array(-2912, -32, 2912, -32, 2912, 32, -2912, 32)
 
-[node name="Platform" type="StaticBody2D" parent="."]
+[node name="Platform" type="StaticBody2D" parent="." unique_id=449670702]
 position = Vector2(960, 940)
 collision_mask = 0
 
-[node name="CollisionShape2D" type="CollisionShape2D" parent="Platform"]
+[node name="CollisionShape2D" type="CollisionShape2D" parent="Platform" unique_id=569479083]
 shape = SubResource("RectangleShape2D_platform")
 
-[node name="Placeholder" type="Polygon2D" parent="Platform"]
+[node name="Placeholder" type="Polygon2D" parent="Platform" unique_id=713841260]
 color = Color(0.15, 0.13, 0.18, 1)
 polygon = PackedVector2Array(-240, -60, 240, -60, 240, 60, -240, 60)
 
-[node name="ChimneyPillar" type="StaticBody2D" parent="."]
+[node name="ChimneyPillar" type="StaticBody2D" parent="." unique_id=1719681218]
 position = Vector2(216, 590)
 collision_mask = 0
 
-[node name="CollisionShape2D" type="CollisionShape2D" parent="ChimneyPillar"]
+[node name="CollisionShape2D" type="CollisionShape2D" parent="ChimneyPillar" unique_id=903547524]
 shape = SubResource("RectangleShape2D_pillar")
 
-[node name="Placeholder" type="Polygon2D" parent="ChimneyPillar"]
+[node name="Placeholder" type="Polygon2D" parent="ChimneyPillar" unique_id=109229191]
 color = Color(0.15, 0.13, 0.18, 1)
 polygon = PackedVector2Array(-32, -280, 32, -280, 32, 280, -32, 280)
 
-[node name="Step1" type="StaticBody2D" parent="."]
+[node name="Step1" type="StaticBody2D" parent="." unique_id=552543245]
 position = Vector2(4080, 900)
 collision_mask = 0
 
-[node name="CollisionShape2D" type="CollisionShape2D" parent="Step1"]
+[node name="CollisionShape2D" type="CollisionShape2D" parent="Step1" unique_id=43240162]
 shape = SubResource("RectangleShape2D_step1")
 
-[node name="Placeholder" type="Polygon2D" parent="Step1"]
+[node name="Placeholder" type="Polygon2D" parent="Step1" unique_id=1925526024]
 color = Color(0.15, 0.13, 0.18, 1)
 polygon = PackedVector2Array(-240, -100, 240, -100, 240, 100, -240, 100)
 
-[node name="Step2" type="StaticBody2D" parent="."]
+[node name="Step2" type="StaticBody2D" parent="." unique_id=1351535433]
 position = Vector2(4560, 800)
 collision_mask = 0
 
-[node name="CollisionShape2D" type="CollisionShape2D" parent="Step2"]
+[node name="CollisionShape2D" type="CollisionShape2D" parent="Step2" unique_id=887879948]
 shape = SubResource("RectangleShape2D_step2")
 
-[node name="Placeholder" type="Polygon2D" parent="Step2"]
+[node name="Placeholder" type="Polygon2D" parent="Step2" unique_id=81855423]
 color = Color(0.15, 0.13, 0.18, 1)
 polygon = PackedVector2Array(-240, -200, 240, -200, 240, 200, -240, 200)
 
-[node name="Step3" type="StaticBody2D" parent="."]
+[node name="Step3" type="StaticBody2D" parent="." unique_id=711764687]
 position = Vector2(5040, 700)
 collision_mask = 0
 
-[node name="CollisionShape2D" type="CollisionShape2D" parent="Step3"]
+[node name="CollisionShape2D" type="CollisionShape2D" parent="Step3" unique_id=2016164581]
 shape = SubResource("RectangleShape2D_step3")
 
-[node name="Placeholder" type="Polygon2D" parent="Step3"]
+[node name="Placeholder" type="Polygon2D" parent="Step3" unique_id=1915437189]
 color = Color(0.15, 0.13, 0.18, 1)
 polygon = PackedVector2Array(-240, -300, 240, -300, 240, 300, -240, 300)
 
-[node name="Step4" type="StaticBody2D" parent="."]
+[node name="Step4" type="StaticBody2D" parent="." unique_id=2135875288]
 position = Vector2(5520, 600)
 collision_mask = 0
 
-[node name="CollisionShape2D" type="CollisionShape2D" parent="Step4"]
+[node name="CollisionShape2D" type="CollisionShape2D" parent="Step4" unique_id=626321863]
 shape = SubResource("RectangleShape2D_step4")
 
-[node name="Placeholder" type="Polygon2D" parent="Step4"]
+[node name="Placeholder" type="Polygon2D" parent="Step4" unique_id=864804915]
 color = Color(0.15, 0.13, 0.18, 1)
 polygon = PackedVector2Array(-240, -400, 240, -400, 240, 400, -240, 400)
 
-[node name="HighPillar" type="StaticBody2D" parent="."]
+[node name="HighPillar" type="StaticBody2D" parent="." unique_id=2049475116]
 position = Vector2(5608, -175)
 collision_mask = 0
 
-[node name="CollisionShape2D" type="CollisionShape2D" parent="HighPillar"]
+[node name="CollisionShape2D" type="CollisionShape2D" parent="HighPillar" unique_id=1374277666]
 shape = SubResource("RectangleShape2D_high_pillar")
 
-[node name="Placeholder" type="Polygon2D" parent="HighPillar"]
+[node name="Placeholder" type="Polygon2D" parent="HighPillar" unique_id=1114486400]
 color = Color(0.15, 0.13, 0.18, 1)
 polygon = PackedVector2Array(-32, -245, 32, -245, 32, 245, -32, 245)
 
-[node name="Walkway" type="StaticBody2D" parent="."]
+[node name="Walkway" type="StaticBody2D" parent="." unique_id=2056375555]
 position = Vector2(4020, -460)
 collision_mask = 0
 
-[node name="CollisionShape2D" type="CollisionShape2D" parent="Walkway"]
+[node name="CollisionShape2D" type="CollisionShape2D" parent="Walkway" unique_id=1511353162]
 shape = SubResource("RectangleShape2D_walkway")
 
-[node name="Placeholder" type="Polygon2D" parent="Walkway"]
+[node name="Placeholder" type="Polygon2D" parent="Walkway" unique_id=357530626]
 color = Color(0.15, 0.13, 0.18, 1)
 polygon = PackedVector2Array(-1620, -40, 1620, -40, 1620, 40, -1620, 40)
 
-[node name="OpenZone" type="Area2D" parent="."]
+[node name="OpenZone" type="Area2D" parent="." unique_id=1342640164]
 collision_layer = 512
 collision_mask = 0
 monitoring = false
 monitorable = false
 script = ExtResource("4_camera_zone")
 
-[node name="CollisionShape2D" type="CollisionShape2D" parent="OpenZone"]
+[node name="CollisionShape2D" type="CollisionShape2D" parent="OpenZone" unique_id=425954065]
 position = Vector2(2912, -42)
 shape = SubResource("RectangleShape2D_open_zone")
 
 [node name="Player" parent="." unique_id=1512336293 instance=ExtResource("1_player")]
 position = Vector2(960, 600)
 
-[node name="DebugOverlay" parent="." node_paths=PackedStringArray("player", "camera") instance=ExtResource("2_debug_overlay")]
+[node name="DebugOverlay" parent="." unique_id=1963797770 node_paths=PackedStringArray("player", "camera") instance=ExtResource("2_debug_overlay")]
 player = NodePath("../Player")
 camera = NodePath("../GameCamera")
 
-[node name="GameCamera" parent="." node_paths=PackedStringArray("player") instance=ExtResource("3_game_camera")]
+[node name="GameCamera" parent="." unique_id=1105774144 node_paths=PackedStringArray("player") instance=ExtResource("3_game_camera")]
 position = Vector2(960, 600)
 limit_left = 0
 limit_top = -1164

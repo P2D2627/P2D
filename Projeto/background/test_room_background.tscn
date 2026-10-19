@@ -1,0 +1,15 @@
+[gd_scene format=3]
+
+[ext_resource type="PackedScene" path="res://background/level_background.tscn" id="1_template"]
+[ext_resource type="Texture2D" uid="uid://cashexb0kevr7" path="res://assets/sprites/ramps/ramp_orange_dark.png" id="2_ramp_orange_dark"]
+[ext_resource type="Texture2D" uid="uid://x5yioqrq4ntp" path="res://assets/sprites/backgrounds/cave_background_gray.jpg" id="3_cave_background"]
+
+[node name="TestRoomBackground" instance=ExtResource("1_template")]
+
+[node name="Far" parent="."]
+ramp = ExtResource("2_ramp_orange_dark")
+reverse_ramp = true
+
+[node name="Picture" type="Sprite2D" parent="Far"]
+texture = ExtResource("3_cave_background")
+centered = false
