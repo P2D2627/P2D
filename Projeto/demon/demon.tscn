@@ -1,0 +1,65 @@
+[gd_scene format=3]
+
+[ext_resource type="Script" path="res://demon/demon.gd" id="1_script"]
+[ext_resource type="Resource" path="res://demon/lust_demon_stats.tres" id="2_stats"]
+[ext_resource type="Script" path="res://demon/demon_placeholder.gd" id="3_placeholder"]
+[ext_resource type="PackedScene" path="res://components/repellable.tscn" id="4_repellable"]
+
+[sub_resource type="RectangleShape2D" id="RectangleShape2D_body"]
+size = Vector2(48, 96)
+
+[sub_resource type="CircleShape2D" id="CircleShape2D_sight"]
+resource_local_to_scene = true
+radius = 480.0
+
+[node name="Demon" type="CharacterBody2D"]
+collision_layer = 4
+collision_mask = 257
+script = ExtResource("1_script")
+stats = ExtResource("2_stats")
+
+[node name="CollisionShape2D" type="CollisionShape2D" parent="."]
+position = Vector2(0, -48)
+shape = SubResource("RectangleShape2D_body")
+
+[node name="Placeholder" type="Polygon2D" parent="."]
+color = Color(0.55, 0.12, 0.18, 1)
+polygon = PackedVector2Array(-24, -96, 24, -96, 24, 0, -24, 0)
+script = ExtResource("3_placeholder")
+
+[node name="SightArea" type="Area2D" parent="."]
+unique_name_in_owner = true
+position = Vector2(0, -48)
+collision_layer = 0
+collision_mask = 2
+monitorable = false
+
+[node name="SightShape" type="CollisionShape2D" parent="SightArea"]
+unique_name_in_owner = true
+shape = SubResource("CircleShape2D_sight")
+
+[node name="LineOfSight" type="RayCast2D" parent="."]
+unique_name_in_owner = true
+position = Vector2(0, -48)
+enabled = false
+target_position = Vector2(0, 0)
+collision_mask = 1
+
+[node name="LedgeCheck" type="RayCast2D" parent="."]
+unique_name_in_owner = true
+position = Vector2(30, -1)
+enabled = false
+target_position = Vector2(0, 25)
+collision_mask = 257
+
+[node name="Repellable" parent="." node_paths=PackedStringArray("target") instance=ExtResource("4_repellable")]
+unique_name_in_owner = true
+target = NodePath("..")
+along_floor = true
+
+[node name="RepellableShape" type="CollisionShape2D" parent="Repellable"]
+position = Vector2(0, -48)
+shape = SubResource("RectangleShape2D_body")
+
+[connection signal="state_changed" from="." to="Placeholder" method="_on_demon_state_changed"]
+[connection signal="warning_started" from="." to="Placeholder" method="_on_demon_warning_started"]

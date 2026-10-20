@@ -4,6 +4,7 @@
 [ext_resource type="PackedScene" path="res://debug/debug_overlay.tscn" id="2_debug_overlay"]
 [ext_resource type="PackedScene" path="res://camera/game_camera.tscn" id="3_game_camera"]
 [ext_resource type="Script" path="res://camera/camera_zone.gd" id="4_camera_zone"]
+[ext_resource type="PackedScene" path="res://demon/demon.tscn" id="5_demon"]
 
 [sub_resource type="RectangleShape2D" id="RectangleShape2D_floor"]
 size = Vector2(5824, 80)
@@ -185,6 +186,12 @@ script = ExtResource("4_camera_zone")
 [node name="CollisionShape2D" type="CollisionShape2D" parent="OpenZone"]
 position = Vector2(2912, -42)
 shape = SubResource("RectangleShape2D_open_zone")
+
+[node name="FloorDemon" parent="." instance=ExtResource("5_demon")]
+position = Vector2(2400, 1000)
+
+[node name="WalkwayDemon" parent="." instance=ExtResource("5_demon")]
+position = Vector2(3600, -500)
 
 [node name="Player" parent="." unique_id=1512336293 instance=ExtResource("1_player")]
 position = Vector2(960, 600)
