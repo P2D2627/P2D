@@ -1,14 +1,15 @@
 # Checks Lust phase 3. The player starts on the start ledge. Both slides carry the player down with
 # no input: the hill's side to the left, the ramp under the rock ledge to the right. Dropping off the
 # pillar's top while holding left, the player slides down the wall beside it and lands on the hill;
-# the pit beside the pillar has spikes all across. In the crossing, Second, Lift and Ferry keep
-# looping with the player away, while First rests until the player stands on it; whenever the player
-# boards it, First reaches the middle at its normal speed and meets Second there. A player who jumps at each meeting crosses it: from
-# First to Second as they meet in the
-# middle, from Second up to Lift when Second is back at its end, from Lift to Ferry at the top; from
-# Ferry, back at its end, the player walks onto the ramp, slides down it and jumps from its end onto
-# the first new step. A player who stays on First falls when it flips, and one who stays on Second
-# sees Lift come back down beside it again and again. From the walkway after the
+# the pit beside the pillar has spikes all across. In the crossing, the four platforms keep looping
+# on one clock with the player away, First too, and each pair gets to its meeting together, neither
+# waiting for the other: First and Second in the middle, Second at the wall with Lift at the bottom,
+# Lift at the top with Ferry. A player who boards First at its end and jumps at each meeting crosses
+# it: from First to Second as they meet in the middle, from Second up to Lift when Second is back at
+# its end, from Lift to Ferry at the top; from Ferry, back at its end, the player walks onto the
+# ramp, slides down it and jumps from its end onto the first new step. A player who stays on First
+# falls when it flips, and one who stays on Second rides it back to the middle and sees Lift come
+# back down beside it again and again. From the walkway after the
 # new steps, the player walks into the chimney by the right wall, climbs it by wall jumps out through
 # the hole in the rock ledge and lands on the ledge. Every other chimney on the way can be climbed
 # too: the retry chimney by the left block, the shaft by the pillar up to the hole into the side
@@ -58,14 +59,12 @@ const EARLY_JUMP: float = 0.3
 const DROPPED_DEPTH: float = 2.0 * TILE
 ## Physics frames for a platform's rider sensor to see the player who just landed.
 const SENSOR_FRAMES: int = 2
-## How long the bot waits before standing on First, on each try, in s: First must meet Second
-## whatever the moment.
-const BOARDING_DELAYS: Array[float] = [0.0, 2.7, 5.9]
-## Room for two platforms side by side in the middle, in px: their centres are a platform apart.
-const PLATFORM_WIDTH: float = 192.0
-const MEETING_TOLERANCE: float = 1.0
-## One physics frame, in s: room for timing a trip.
-const FRAME_TIME: float = 1.0 / 60.0
+## How long after First and Second meet the watch of the meetings starts, in s: a moment when no
+## platform is arriving anywhere.
+const QUIET_AFTER_MEETING: float = 0.5
+## How far apart in time the two platforms of a meeting may get there, in s: a few frames, as each
+## eases in over its own distance.
+const ARRIVAL_TOLERANCE: float = 0.1
 ## Room for a platform's position at its rest, in px.
 const REST_TOLERANCE: float = 1.0
 ## Each chimney: its name, the spot at its bottom where the climb starts (in tiles, feet) and the
@@ -101,8 +100,8 @@ func _initialize() -> void:
 	results.append(await _slide_carries_the_player("ramp under the rock ledge", ON_THE_RAMP, 1.0))
 	results.append(await _dropping_off_the_pillar_holding_left_lands_on_the_hill())
 	results.append(await _pit_beside_the_pillar_hits_at_its_left_end())
-	results.append(await _crossing_loops_while_first_waits_for_the_player())
-	results.append(await _first_meets_second_whenever_the_player_boards())
+	results.append(await _crossing_loops_with_the_player_away())
+	results.append(await _each_pair_gets_to_its_meeting_together())
 	results.append(await _jumping_at_each_meeting_crosses_to_the_ramp_and_the_first_step())
 	results.append(await _staying_on_first_drops_the_player_when_it_flips())
 	results.append(await _missing_the_jump_to_lift_brings_it_back())
@@ -172,60 +171,70 @@ func _pit_beside_the_pillar_hits_at_its_left_end() -> bool:
 			% (hits[0] if hit else "nothing"))
 
 
-## Watching a whole loop with the player away: Second, Lift and Ferry move, First stays at its rest.
-func _crossing_loops_while_first_waits_for_the_player() -> bool:
+## Watching a whole loop with the player away: all four platforms move, First too, and each is back
+## where it was when the loop is over.
+func _crossing_loops_with_the_player_away() -> bool:
 	_stand_in.run_direction = 0.0
 	_teleport(ON_THE_HILL_SLIDE)
-	var moved: Dictionary = {_second: 0.0, _lift: 0.0, _ferry: 0.0}
-	var start: Dictionary = {}
-	for platform: CyclePlatform in moved:
-		start[platform] = platform.global_position
-	var first_stayed: bool = true
-	for _frame: int in ceili(_cycle.get_loop_time() * 60.0) + 60:
+	var platforms: Array[CyclePlatform] = [_first, _second, _lift, _ferry]
+	var start: Array[Vector2] = []
+	var moved: Array[float] = []
+	for platform: CyclePlatform in platforms:
+		start.append(platform.global_position)
+		moved.append(0.0)
+	for _frame: int in roundi(_cycle.get_loop_time() * 60.0):
 		await physics_frame
-		for platform: CyclePlatform in moved:
-			moved[platform] = maxf(moved[platform],
-					platform.global_position.distance_to(start[platform]))
-		first_stayed = first_stayed and _at(_first, _first.point_a) and not _cycle.is_first_out()
-	return report(moved[_second] > TILE and moved[_lift] > TILE and moved[_ferry] > TILE
-			and first_stayed,
-			"Crossing with the player away for a loop: Second, Lift and Ferry moved up to %.0f, %.0f and %.0f px; First stayed at its rest %s"
-			% [moved[_second], moved[_lift], moved[_ferry], first_stayed])
+		for i: int in platforms.size():
+			moved[i] = maxf(moved[i], platforms[i].global_position.distance_to(start[i]))
+	var all_moved: bool = true
+	var all_back: bool = true
+	var off_by: Array[float] = []
+	for i: int in platforms.size():
+		off_by.append(platforms[i].global_position.distance_to(start[i]))
+		all_moved = all_moved and moved[i] > TILE
+		all_back = all_back and off_by[i] <= REST_TOLERANCE
+	return report(all_moved and all_back,
+			"Crossing with the player away for a loop: First, Second, Lift and Ferry moved up to %s px and ended %s px from where they started"
+			% [moved, off_by])
 
 
-## Standing on First at different moments of the loop, First always gets to the middle in its
-## normal time, Approach Time, however long it then waits there, and meets Second: side by side, a
-## platform apart.
-func _first_meets_second_whenever_the_player_boards() -> bool:
-	var gaps: Array[float] = []
-	var trips: Array[float] = []
-	for delay: float in BOARDING_DELAYS:
-		await wait_until(func() -> bool: return not _cycle.is_first_out(), MAX_FRAMES * 3)
-		await wait_frames(roundi(delay * 60.0))
-		var meeting: float = await _board_first()
-		if meeting < 0.0:
-			return report(false, "First never set off with the player")
-		var set_off: float = _cycle.get_clock()
-		await wait_until(func() -> bool: return _at(_first, _first.point_b), MAX_FRAMES * 3)
-		trips.append(_cycle.get_clock() - set_off)
-		await _wait_for_time(meeting)
-		gaps.append(_second.global_position.x - _first.global_position.x)
-	var on_time: bool = true
-	for trip: float in trips:
-		on_time = on_time and trip <= _cycle.approach_time + FRAME_TIME
-	var met: bool = true
-	for gap: float in gaps:
-		met = met and absf(gap - PLATFORM_WIDTH) <= MEETING_TOLERANCE
-	return report(on_time and met, "First boarded %s s into waiting: got to the middle in %s s (Approach Time %.1f), Second's centre was %s px right of First's at the meeting, expected %.0f"
-			% [BOARDING_DELAYS, trips, _cycle.approach_time, gaps, PLATFORM_WIDTH])
+## Watching a loop from just after First and Second meet: each pair gets to its meeting together,
+## so neither waits for the other. First and Second in the middle, Second at the wall with Lift at
+## the bottom, Lift at the top with Ferry beside it.
+func _each_pair_gets_to_its_meeting_together() -> bool:
+	await _wait_for_time(_cycle.get_next_meeting(_cycle.get_clock()) + QUIET_AFTER_MEETING)
+	var ends: Array = [
+		[_first, _first.point_b], [_second, _second.point_b],
+		[_second, _second.point_a], [_lift, _lift.point_b],
+		[_lift, _lift.point_a], [_ferry, _ferry.point_b],
+	]
+	var arrivals: Array[float] = []
+	var was_there: Array[bool] = []
+	for end: Array in ends:
+		arrivals.append(-1.0)
+		was_there.append(_at(end[0], end[1]))
+	for _frame: int in roundi(_cycle.get_loop_time() * 60.0):
+		await physics_frame
+		for i: int in ends.size():
+			var there: bool = _at(ends[i][0], ends[i][1])
+			if there and not was_there[i] and arrivals[i] < 0.0:
+				arrivals[i] = _cycle.get_clock()
+			was_there[i] = there
+	var together: bool = true
+	var apart: Array[float] = []
+	for i: int in range(0, ends.size(), 2):
+		apart.append(absf(arrivals[i] - arrivals[i + 1]))
+		together = (together and arrivals[i] >= 0.0 and arrivals[i + 1] >= 0.0
+				and apart[-1] <= ARRIVAL_TOLERANCE)
+	return report(together,
+			"Meetings in a loop (First and Second in the middle, Second and Lift at the wall, Lift and Ferry at the top): arrived at %s s on the clock (-1 never), each pair %s s apart, at most %.1f"
+			% [arrivals, apart, ARRIVAL_TOLERANCE])
 
 
 func _jumping_at_each_meeting_crosses_to_the_ramp_and_the_first_step() -> bool:
-	var starts: Array[int] = [0]
-	_cycle.first_set_off.connect(func() -> void: starts[0] += 1)
 	var meeting: float = await _board_first()
 	if meeting < 0.0 or not await _wait_for_time(meeting - EARLY_JUMP):
-		return report(false, "First never set off with the player")
+		return report(false, "the player never stood on First at its end")
 	var on_second: bool = await _jump_onto(_second)
 	await _wait_for_time(_cycle.get_flip_after(meeting) + _cycle.flip_time)
 	var first_flipped: bool = absf(_first.rotation_degrees) >= 45.0
@@ -242,16 +251,15 @@ func _jumping_at_each_meeting_crosses_to_the_ramp_and_the_first_step() -> bool:
 		return _player.global_position.x >= RAMP_END_X - RAMP_JUMP_MARGIN)
 	var on_step: bool = await _jump_onto_the_first_step()
 	return report(on_second and first_flipped and on_lift and on_ferry and carried_back
-			and reached_the_end and on_step and starts[0] == 1,
-			"Crossing: onto Second %s (First flipped %s), onto Lift %s, onto Ferry %s, carried back %s, slid to the ramp's end %s, onto the first step %s, runs started %d"
-			% [on_second, first_flipped, on_lift, on_ferry, carried_back, reached_the_end, on_step,
-			starts[0]])
+			and reached_the_end and on_step,
+			"Crossing: onto Second %s (First flipped %s), onto Lift %s, onto Ferry %s, carried back %s, slid to the ramp's end %s, onto the first step %s"
+			% [on_second, first_flipped, on_lift, on_ferry, carried_back, reached_the_end, on_step])
 
 
 func _staying_on_first_drops_the_player_when_it_flips() -> bool:
 	var meeting: float = await _board_first()
 	if meeting < 0.0 or not await _wait_for_time(_cycle.get_flip_after(meeting) + _cycle.flip_time):
-		return report(false, "First never set off with the player again")
+		return report(false, "the player never stood on First at its end again")
 	var top_at_the_flip: float = _first.global_position.y - PLATFORM_HALF_HEIGHT
 	var dropped: bool = await wait_until(func() -> bool:
 		return _player.global_position.y > top_at_the_flip + DROPPED_DEPTH)
@@ -259,17 +267,23 @@ func _staying_on_first_drops_the_player_when_it_flips() -> bool:
 
 
 ## The bug: the crossing used to stop after one run, so a player who missed the jump from Second to
-## Lift stayed on Second for good. A player who stays on Second must see Lift come down beside it
-## again and again, and Ferry keep going to meet Lift.
+## Lift stayed on Second for good. A player who stays on Second must ride it back to the middle and
+## see Lift come down beside it again and again, and Ferry keep going to meet Lift.
 func _missing_the_jump_to_lift_brings_it_back() -> bool:
 	if not await _stand_on(_second):
 		return report(false, "the player never stood on Second")
+	var returns: int = 0
 	var lift_meetings: int = 0
 	var ferry_meetings: int = 0
+	var was_in_the_middle: bool = false
 	var lift_was_down: bool = false
 	var ferry_was_over: bool = false
 	for _frame: int in WATCH_FRAMES:
 		await physics_frame
+		var in_the_middle: bool = _at(_second, _second.point_b) and _second.has_rider()
+		if in_the_middle and not was_in_the_middle:
+			returns += 1
+		was_in_the_middle = in_the_middle
 		var lift_down: bool = (_at(_lift, _lift.point_b) and _at(_second, _second.point_a)
 				and _second.has_rider())
 		if lift_down and not lift_was_down:
@@ -279,9 +293,10 @@ func _missing_the_jump_to_lift_brings_it_back() -> bool:
 		if ferry_over and not ferry_was_over:
 			ferry_meetings += 1
 		ferry_was_over = ferry_over
-	return report(lift_meetings >= MIN_MEETINGS and ferry_meetings >= MIN_MEETINGS,
-			"Staying on Second for %d s: Lift came down beside it %d times and Ferry met Lift %d times, expected at least %d each"
-			% [WATCH_FRAMES / 60, lift_meetings, ferry_meetings, MIN_MEETINGS])
+	return report(returns >= MIN_MEETINGS and lift_meetings >= MIN_MEETINGS
+			and ferry_meetings >= MIN_MEETINGS,
+			"Staying on Second for %d s: it carried the player back to the middle %d times, Lift came down beside it %d times and Ferry met Lift %d times, expected at least %d each"
+			% [WATCH_FRAMES / 60, returns, lift_meetings, ferry_meetings, MIN_MEETINGS])
 
 
 func _at(platform: CyclePlatform, point: Marker2D) -> bool:
@@ -333,14 +348,14 @@ func _chimney_can_be_climbed(chimney: String, bottom: Vector2, top: float) -> bo
 			% [chimney, highest / TILE, top])
 
 
-## Waits for First to be back at its rest, stands on it and waits for it to set off. Returns when
-## First meets Second in the middle, or -1 if it never sets off.
+## Waits for First to be back at its end and stands on it. Returns when First next meets Second in
+## the middle, or -1 if the player never stood on it.
 func _board_first() -> float:
-	await wait_until(func() -> bool: return not _cycle.is_first_out(), MAX_FRAMES * 3)
+	if not await wait_until(func() -> bool: return _at(_first, _first.point_a), MAX_FRAMES * 3):
+		return -1.0
 	if not await _stand_on(_first):
 		return -1.0
-	await wait_until(func() -> bool: return _cycle.is_first_out())
-	return _cycle.get_first_meeting()
+	return _cycle.get_next_meeting(_cycle.get_clock())
 
 
 ## Puts the player just above platform and waits until the crossing has noticed it there.
