@@ -3,7 +3,7 @@
 # between the two; and holding Jump through the landing does not jump again.
 # Run from the repository root; the exit code is 0 on pass and 1 on fail:
 # godot --headless --fixed-fps 60 --path Projeto --script res://tests/test_jump_height.gd
-extends SceneTree
+extends "res://tests/support/base_test.gd"
 
 const PLAYER_SCENE: PackedScene = preload("res://player/player.tscn")
 ## How far a measured peak may miss its target, in px.

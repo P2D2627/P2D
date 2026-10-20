@@ -5,7 +5,7 @@
 # from every spot over one frame of top speed and print the smallest and largest result.
 # Run from the repository root:
 # godot --headless --fixed-fps 60 --path Projeto --script res://tests/measure_movement.gd
-extends SceneTree
+extends "res://tests/support/base_test.gd"
 
 const PLAYER_SCENE: PackedScene = preload("res://player/player.tscn")
 ## The player's Stats, the same resource its scene uses, read here before any player exists.

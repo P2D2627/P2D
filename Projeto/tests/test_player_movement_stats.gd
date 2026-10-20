@@ -1,7 +1,7 @@
 # Checks what PlayerMovementStats works out on its own, without a player or a scene.
 # Run from the repository root; the exit code is 0 on pass and 1 on fail:
 # godot --headless --fixed-fps 60 --path Projeto --script res://tests/test_player_movement_stats.gd
-extends SceneTree
+extends "res://tests/support/base_test.gd"
 
 ## Min Jump Height as a multiple of Jump Height for the too-high case; anything above 1 is too high.
 const TOO_HIGH_MIN_JUMP_RATIO: float = 1.25

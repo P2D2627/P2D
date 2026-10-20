@@ -4,7 +4,7 @@
 # frame and the air's through the landing frame; and at 0 nothing changes the speed in the air.
 # Run from the repository root; the exit code is 0 on pass and 1 on fail:
 # godot --headless --fixed-fps 60 --path Projeto --script res://tests/test_air_control.gd
-extends SceneTree
+extends "res://tests/support/base_test.gd"
 
 const PLAYER_SCENE: PackedScene = preload("res://player/player.tscn")
 ## Float error allowed when rounding an expected frame count up: 6.000001 frames counts as 6.

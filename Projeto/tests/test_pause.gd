@@ -46,7 +46,7 @@ func _esc_in_a_level_pauses_with_resume_selected() -> bool:
 	var main: Node = await new_main_in_a_level()
 	await tap(KEY_ESCAPE)
 	var shown: bool = _pause_shows(main)
-	var resume_selected: bool = _has_focus(_pause_node(main, ^"%ResumeButton"))
+	var resume_selected: bool = has_focus(pause_node(main, ^"%ResumeButton"))
 	var levels: int = levels_in(main)
 	var esc_stopped: bool = back_counter.presses == 0
 	var was_paused: bool = paused
@@ -105,12 +105,12 @@ func _main_menu_unpauses_takes_the_level_out_and_shows_play() -> bool:
 	await tap(KEY_ESCAPE)
 	await tap(KEY_DOWN)
 	await tap(KEY_DOWN)
-	var main_menu_reached: bool = _has_focus(_pause_node(main, ^"%MainMenuButton"))
+	var main_menu_reached: bool = has_focus(pause_node(main, ^"%MainMenuButton"))
 	await tap(KEY_ENTER)
 	var unpaused: bool = not paused and not _pause_shows(main)
 	var levels_after: int = levels_in(main)
 	var on_play: bool = (menu != null and menu.visible
-			and _has_focus(_main_menu_node(main, ^"%PlayButton")))
+			and has_focus(main_menu_node(main, ^"%PlayButton")))
 	await tap(KEY_ENTER)
 	await tap(KEY_ENTER)
 	var levels_again: int = levels_in(main)
@@ -154,12 +154,12 @@ func _losing_the_window_focus_pauses_only_in_a_level() -> bool:
 	main = await new_main_in_a_level()
 	_lose_focus()
 	var in_a_level: bool = (paused and _pause_shows(main)
-			and _has_focus(_pause_node(main, ^"%ResumeButton")))
+			and has_focus(pause_node(main, ^"%ResumeButton")))
 	await tap(KEY_DOWN)
 	await tap(KEY_DOWN)
 	_lose_focus()
 	await process_frame
-	var kept: bool = paused and _has_focus(_pause_node(main, ^"%MainMenuButton"))
+	var kept: bool = paused and has_focus(pause_node(main, ^"%MainMenuButton"))
 	await remove_main(main)
 	main = await new_main_in_a_level()
 	main.set(&"pause_on_focus_loss", false)
@@ -300,9 +300,8 @@ func _a_quick_tap_to_resume_neither_jumps_nor_interacts() -> bool:
 ## The level's player, once it stands on the floor, with its jumps counted from then on; null if
 ## there is none or it never lands.
 func _player_on_the_floor(main: Node) -> Player:
-	var level: Node = level_in(main)
-	var player: Player = level.get_node_or_null(^"Player") as Player if level != null else null
-	if player == null or not await wait_until_on_floor(player):
+	var player: Player = await player_on_the_floor(main)
+	if player == null:
 		return null
 	_jumps = 0
 	player.jumped.connect(_on_jumped)
@@ -316,22 +315,6 @@ func _on_jumped(_late_frames: int, _buffered_frames: int) -> void:
 func _pause_shows(main: Node) -> bool:
 	var pause: CanvasLayer = main.get_node_or_null(^"%PauseMenu") as CanvasLayer
 	return pause != null and pause.visible
-
-
-## A node of the pause's own scene, by its unique name; null if there is no pause or no such node.
-func _pause_node(main: Node, path: NodePath) -> Node:
-	var pause: Node = main.get_node_or_null(^"%PauseMenu")
-	return pause.get_node_or_null(path) if pause != null else null
-
-
-## The same in the main menu's scene.
-func _main_menu_node(main: Node, path: NodePath) -> Node:
-	var menu: Node = main.get_node_or_null(^"%MainMenu")
-	return menu.get_node_or_null(path) if menu != null else null
-
-
-func _has_focus(control: Node) -> bool:
-	return control != null and root.gui_get_focus_owner() == control
 
 
 func _nothing_selected() -> bool:

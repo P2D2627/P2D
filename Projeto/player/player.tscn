@@ -12,6 +12,7 @@
 [ext_resource type="AudioStream" path="res://assets/audio/soft_land.wav" id="10_soft_land"]
 [ext_resource type="AudioStream" path="res://assets/audio/hard_land.wav" id="11_hard_land"]
 [ext_resource type="AudioStream" path="res://assets/audio/hard_land_2.wav" id="12_hard_land_2"]
+[ext_resource type="PackedScene" path="res://crucifix/crucifix.tscn" id="4_crucifix"]
 
 [sub_resource type="RectangleShape2D" id="RectangleShape2D_player"]
 size = Vector2(48, 96)
@@ -59,3 +60,7 @@ bus = &"SFX"
 
 [node name="Land" type="AudioStreamPlayer2D" parent="PlayerSounds"]
 bus = &"SFX"
+
+[node name="Crucifix" parent="." node_paths=PackedStringArray("player") instance=ExtResource("4_crucifix")]
+position = Vector2(0, -60)
+player = NodePath("..")

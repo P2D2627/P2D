@@ -1,7 +1,8 @@
-# Shared setup for the menu tests: the main scene, keys and gamepad buttons pressed and let go as
-# the player does (also both in the same frame, as a quick tap arrives on a slow frame), the level
-# slot, the text sizes against the UI theme, and a counter of the Back presses and releases that
-# reach the rest of the game. It keeps the tests away from the player's settings and from quitting:
+# Shared setup for the menu tests: the main scene, keys, gamepad buttons and mouse buttons pressed
+# and let go as the player does (also both in the same frame, as a quick tap arrives on a slow
+# frame), the nodes of the main menu and the pause, the focus, the level slot and its player, the
+# text sizes against the UI theme, and a counter of the Back presses and releases that reach the
+# rest of the game. It keeps the tests away from the player's settings and from quitting:
 # the autoload Settings saves to a test file, and Quit, instead of closing the game, counts as a
 # failure. finish adds two checks: Quit was never pressed, and the player's settings file is as it
 # was, by its text and the time it was last written. A test extends this file instead of SceneTree,
@@ -20,7 +21,8 @@ const TAP_FRAMES: int = 2
 var settings: GameSettings
 ## Times Quit was pressed. A test never means to: in the game, Quit would end it with exit code 0.
 var _quit_presses: int = 0
-## The player's settings file when the first main scene was made, as _player_file_state gives it.
+## The player's settings file when the first main scene was made, as player_file_state() gives
+## it.
 var _player_file_before: Array = []
 
 
@@ -36,8 +38,8 @@ func finish(results: Array[bool]) -> void:
 	results.append(report(_quit_presses == 0, "Quit pressed during the test: %d times"
 			% _quit_presses))
 	if _player_file_before.is_empty():
-		_player_file_before = _player_file_state()
-	var same: bool = _player_file_state() == _player_file_before
+		_player_file_before = player_file_state()
+	var same: bool = player_file_state() == _player_file_before
 	results.append(report(same, "The player's settings file is as it was before the test %s"
 			% same))
 	if FileAccess.file_exists(SETTINGS_TEST_PATH):
@@ -52,7 +54,7 @@ func main_scene() -> PackedScene:
 		if root.get_node_or_null(^"Settings") == null:
 			await process_frame
 		settings = root.get_node_or_null(^"Settings") as GameSettings
-		_player_file_before = _player_file_state()
+		_player_file_before = player_file_state()
 		if settings != null:
 			settings.path = SETTINGS_TEST_PATH
 	return load(MAIN_SCENE_PATH) as PackedScene
@@ -179,13 +181,77 @@ func _on_quit_pressed() -> void:
 	_quit_presses += 1
 
 
-## Whether the player's settings file exists and, if it does, its text and the time it was last
-## written.
-func _player_file_state() -> Array:
-	var path: String = GameSettings.DEFAULT_PATH
-	if not FileAccess.file_exists(path):
-		return [false]
-	return [true, FileAccess.get_file_as_string(path), FileAccess.get_modified_time(path)]
+## A node of the main menu's own scene, by its unique name; null if there is no such node.
+func main_menu_node(main: Node, path: NodePath) -> Node:
+	var menu: Node = main.get_node_or_null(^"%MainMenu")
+	return menu.get_node_or_null(path) if menu != null else null
+
+
+## The same in the pause's scene.
+func pause_node(main: Node, path: NodePath) -> Node:
+	var pause: Node = main.get_node_or_null(^"%PauseMenu")
+	return pause.get_node_or_null(path) if pause != null else null
+
+
+func has_focus(control: Node) -> bool:
+	return control != null and root.gui_get_focus_owner() == control
+
+
+## Gives the control at path, under owner_node, the focus, and taps the key on it. With no such
+## control it taps nothing, so the key never lands on another button, which could be Quit.
+func press_on(owner_node: Node, path: NodePath, key: Key) -> void:
+	var control: Control = owner_node.get_node_or_null(path) as Control if owner_node else null
+	if control == null:
+		return
+	control.grab_focus()
+	await tap(key)
+
+
+## The player of the level in the main scene, once it stands on the floor; null if there is none or
+## it never lands.
+func player_on_the_floor(main: Node) -> Player:
+	var level: Node = level_in(main)
+	var player: Player = level.get_node_or_null(^"Player") as Player if level != null else null
+	if player == null or not await wait_until_on_floor(player):
+		return null
+	return player
+
+
+## The crucifix of the level's player, once the player stands on the floor; null if there is none.
+func crucifix_on_the_floor(main: Node) -> Crucifix:
+	var player: Player = await player_on_the_floor(main)
+	return player.get_node_or_null(^"Crucifix") as Crucifix if player != null else null
+
+
+## True if the crucifix goes up within frames physics frames; false if there is no crucifix.
+func crucifix_goes_up_within(crucifix: Crucifix, frames: int) -> bool:
+	if crucifix == null:
+		return false
+	return await wait_until(crucifix.is_raised, frames)
+
+
+## Half of a click: the mouse button goes down, or comes up, at the given spot on the screen.
+func press_mouse(button: MouseButton, pressed: bool, at: Vector2 = Vector2.ZERO) -> void:
+	Input.parse_input_event(mouse_event(button, pressed, at))
+	await _wait_tap_frames()
+
+
+## A click: the mouse button goes down and comes up again.
+func click(button: MouseButton, at: Vector2 = Vector2.ZERO) -> void:
+	await press_mouse(button, true, at)
+	await press_mouse(button, false, at)
+
+
+func mouse_event(button: MouseButton, pressed: bool,
+		at: Vector2 = Vector2.ZERO) -> InputEventMouseButton:
+	var event: InputEventMouseButton = InputEventMouseButton.new()
+	event.button_index = button
+	# A button's bit in the mask is its index minus one, as MouseButtonMask has it.
+	event.button_mask = (1 << (button - 1)) if pressed else 0
+	event.pressed = pressed
+	event.position = at
+	event.global_position = at
+	return event
 
 
 func _key_event(key: Key, pressed: bool) -> InputEventKey:

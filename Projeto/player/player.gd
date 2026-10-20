@@ -36,6 +36,14 @@ var _away_from_last_wall: float = 0.0
 var _jump_buffer_frames_left: int = 0
 ## Physics frames left in which the run does nothing after a wall jump.
 var _wall_jump_lock_frames_left: int = 0
+## What changes the movement now, by who put it there, such as &"crucifix".
+var _movement_modifiers: Dictionary[StringName, MovementModifier] = {}
+## Every modifier's speed_multiplier, multiplied together; 1 with none.
+var _speed_multiplier: float = 1.0
+## Every modifier's jump_height_multiplier, multiplied together; 1 with none.
+var _jump_height_multiplier: float = 1.0
+## True while any modifier blocks jumping.
+var _jump_blocked: bool = false
 
 
 func _ready() -> void:
@@ -61,6 +69,46 @@ func _physics_process(delta: float) -> void:
 ## animations. It only reads: _update_state() is still the one place that changes the state.
 func get_state() -> State:
 	return _state
+
+
+## Puts a change to the movement on the player under source, replacing the one source had. The
+## player never asks who put it: the crucifix and, later, the sloth level slow it the same way. It
+## listens to the modifier, so a value changed while it is on takes effect at once.
+func add_movement_modifier(source: StringName, modifier: MovementModifier) -> void:
+	assert(modifier != null, "Player: %s put no MovementModifier on the player." % source)
+	remove_movement_modifier(source)
+	_movement_modifiers[source] = modifier
+	if not modifier.changed.is_connected(_combine_movement_modifiers):
+		modifier.changed.connect(_combine_movement_modifiers)
+	_combine_movement_modifiers()
+
+
+## Takes source's change off the movement; nothing happens if source has none on. The player stops
+## listening to the modifier, unless another source put the same one on.
+func remove_movement_modifier(source: StringName) -> void:
+	var modifier: MovementModifier = _movement_modifiers.get(source)
+	if modifier == null:
+		return
+	_movement_modifiers.erase(source)
+	if (modifier not in _movement_modifiers.values()
+			and modifier.changed.is_connected(_combine_movement_modifiers)):
+		modifier.changed.disconnect(_combine_movement_modifiers)
+	_combine_movement_modifiers()
+
+
+## Share of the running speed kept by every modifier together: 1 with none.
+func get_speed_multiplier() -> float:
+	return _speed_multiplier
+
+
+## Share of the jump's height kept by every modifier together: 1 with none.
+func get_jump_height_multiplier() -> float:
+	return _jump_height_multiplier
+
+
+## True while any modifier stops the player from jumping.
+func is_jump_blocked() -> bool:
+	return _jump_blocked
 
 
 ## Changes the state from what the last move_and_slide() found, so the take-off frame still runs
@@ -149,8 +197,12 @@ func _current_gravity() -> float:
 
 
 ## Keeps a press of Jump on its own frame and for Jump Buffer's frames after it, so a press made a
-## little before the player can jump still jumps.
+## little before the player can jump still jumps. While a modifier blocks jumping, no press is kept,
+## and one kept from before is dropped, so lifting the block never jumps by itself.
 func _keep_jump_press() -> void:
+	if _jump_blocked:
+		_jump_buffer_frames_left = 0
+		return
 	if input.is_jump_just_pressed():
 		# One frame for the press itself, then Jump Buffer's frames.
 		_jump_buffer_frames_left = stats.get_jump_buffer_frames() + 1
@@ -186,20 +238,23 @@ func _jump(delta: float, late_frames: int) -> void:
 	jumped.emit(late_frames, buffered_frames)
 
 
-## Jumps as from the floor, and also away from the last wall touched at top running speed. The
-## run then does nothing for wall_jump_lock_time, so the jump carries the player away from the
-## wall; that lock is what keeps a single wall from being climbed. Says so with wall_jumped only.
+## Jumps as from the floor, and also away from the last wall touched at top running speed, as the
+## modifiers leave it. The run then does nothing for wall_jump_lock_time, so the jump carries the
+## player away from the wall; that lock is what keeps a single wall from being climbed. Says so
+## with wall_jumped only.
 func _wall_jump(delta: float) -> void:
 	var late_frames: int = _frames_off_the_wall()
 	var buffered_frames: int = _frames_the_press_waited()
 	_take_off(delta)
-	velocity.x = _away_from_last_wall * stats.max_run_speed
+	velocity.x = _away_from_last_wall * _top_run_speed()
 	_wall_jump_lock_frames_left = stats.get_wall_jump_lock_frames()
 	wall_jumped.emit(late_frames, buffered_frames)
 
 
 ## Uses the kept press and both kinds of coyote frames up, so one press makes one jump and a later
-## press in the air waits for a landing or a wall. Then leaves at the take-off speed.
+## press in the air waits for a landing or a wall. Then leaves at the take-off speed, which the
+## modifiers scale by the square root of their share of the height: with the same gravity, the
+## height goes with the square of the take-off speed.
 func _take_off(delta: float) -> void:
 	_jump_buffer_frames_left = 0
 	_coyote_frames_left = 0
@@ -207,7 +262,8 @@ func _take_off(delta: float) -> void:
 	# Physics moves the player at its speed at the start of each frame, which overshoots
 	# the peak. Half a frame of gravity off the take-off speed puts it on jump_height.
 	var half_frame_of_gravity: float = stats.get_rise_gravity() * delta / 2.0
-	velocity.y = -(stats.get_jump_velocity() - half_frame_of_gravity)
+	var jump_velocity: float = stats.get_jump_velocity() * sqrt(_jump_height_multiplier)
+	velocity.y = -(jump_velocity - half_frame_of_gravity)
 
 
 ## How many physics frames ago the player left the floor, while coyote frames are left. The floor
@@ -234,11 +290,30 @@ func _air_control() -> float:
 	return 0.0 if _wall_jump_lock_frames_left > 0 else stats.air_control
 
 
-## Speeds up and slows down with the times in Stats. control is the share of the floor's
-## acceleration and braking that is kept: 1 on the floor, _air_control() off it.
+## Speeds up and slows down with the times in Stats, up to the top speed the modifiers leave.
+## control is the share of the floor's acceleration and braking that is kept: 1 on the floor,
+## _air_control() off it.
 func _apply_run(delta: float, control: float) -> void:
 	var direction: float = input.get_run_direction()
 	var ramp_time: float = stats.time_to_max_speed if direction != 0.0 else stats.time_to_stop
-	var target_speed: float = direction * stats.max_run_speed
-	var step: float = stats.max_run_speed / ramp_time * control * delta
+	var top_speed: float = _top_run_speed()
+	var target_speed: float = direction * top_speed
+	var step: float = top_speed / ramp_time * control * delta
 	velocity.x = move_toward(velocity.x, target_speed, step)
+
+
+## Max Run Speed, as the modifiers leave it.
+func _top_run_speed() -> float:
+	return stats.max_run_speed * _speed_multiplier
+
+
+## Multiplies every modifier's shares together, and blocks jumping if any of them does, once per
+## change, when a modifier is put on, taken off or changed, instead of once per frame.
+func _combine_movement_modifiers() -> void:
+	_speed_multiplier = 1.0
+	_jump_height_multiplier = 1.0
+	_jump_blocked = false
+	for modifier: MovementModifier in _movement_modifiers.values():
+		_speed_multiplier *= modifier.speed_multiplier
+		_jump_height_multiplier *= modifier.jump_height_multiplier
+		_jump_blocked = _jump_blocked or modifier.blocks_jump

@@ -10,7 +10,7 @@ aceita.
 
 > **Estado:** a personagem jogável já anda, salta e tem controlo no ar, desliza nas paredes e salta
 > delas, e o salto tolera pedidos ligeiramente fora de tempo. O jogo abre num menu principal, que dá
-> acesso à sala de teste e a um esboço do nível 1, e tem pausa e opções gravadas. A câmara do jogo
+> acesso à sala de teste e ao blockout do nível 1, e tem pausa e opções gravadas. A câmara do jogo
 > está descrita em "Câmara". Ainda não há arte nem som.
 
 Este documento tem duas partes. A primeira descreve, para toda a equipa, o que já pode ser
@@ -31,13 +31,30 @@ documenta a organização técnica do projeto.
    120 px junto à parede direita e, no topo desta, uma passagem que termina numa queda de 1500 px.
    Durante o jogo, a tecla F3 mostra e esconde o texto de depuração descrito em "Overlay de
    depuração".
+5. O nível 1 em blockout (Play ▸ Level 1: Lust (blockout)) tem as fases 1 e 2, com tiles
+   provisórios de 48 px, cada uma na sua cena. A fase 1 sobe da esquerda para a direita e termina
+   numa sala com uma porta; ao atravessá-la, o ecrã escurece e a fase 2 começa no canto inferior
+   direito. Os retângulos amarelos assinalam os checkpoints provisórios e o verde a porta para a
+   fase seguinte. Cada fase também corre sozinha com F6.
+
+Os controlos de teclado e rato escolhem-se em Options ▸ Controls, entre três perfis. O comando é
+igual em todos.
+
+| Ação | Teclado e rato (predefinido) | Setas e QWEASD | Comando |
+|---|---|---|---|
+| Andar | A / D ou setas | setas | stick esquerdo |
+| Saltar | Espaço | Espaço | A / Cross |
+| Deslizar numa parede | no ar, A / D ou setas contra a parede | no ar, setas contra a parede | stick esquerdo contra a parede |
+| Saltar de uma parede | no ar, Espaço encostado à parede | no ar, Espaço encostado à parede | A / Cross encostado à parede |
+| Erguer o crucifixo | premir o botão esquerdo do rato no chão; fica erguido enquanto premido | premir Q no chão; fica erguido enquanto premido | premir R2 no chão; fica erguido enquanto premido |
+| Interagir | E | Ctrl | B / Circle |
+
+O terceiro perfil, Custom, começa igual ao predefinido, e cada ação pode receber outra tecla ou
+botão do rato. O Esc e o F3 estão reservados. As teclas W, E, A, S e D do perfil das setas ficam
+livres para os upgrades.
 
 | Ação | Teclado | Comando |
 |---|---|---|
-| Andar | A / D ou setas | stick esquerdo |
-| Saltar | Espaço | A / Cross |
-| Deslizar numa parede | no ar, A / D ou setas contra a parede | stick esquerdo contra a parede |
-| Saltar de uma parede | no ar, Espaço encostado à parede | A / Cross encostado à parede |
 | Pausar e retomar | Esc | Start |
 | Confirmar nos menus | Enter / Espaço | A / Cross |
 | Voltar nos menus | Esc | B / Circle |
@@ -131,6 +148,41 @@ que uma parede isolada não se sobe por saltos da parede aguarda a confirmação
 Tal como na borda de uma plataforma, existe uma tolerância: durante 0,07 s depois de largar uma
 parede, a tecla de saltar ainda produz o salto da parede. Os valores do deslize e do bloqueio são
 provisórios e serão afinados com a câmara e nos níveis.
+
+### Crucifixo
+
+O crucifixo é a única defesa do jogador que recusa upgrades. Ergue-se ao premir o botão esquerdo
+do rato ou o gatilho R2 com a personagem no chão e fica erguido enquanto o botão estiver premido,
+durante no máximo 5 s. Um toque dado até 0,1 s antes de aterrar ainda o ergue na aterragem, se o
+botão continuar premido, à semelhança da tolerância do salto. Baixa quando o botão é largado, quando
+a personagem sai do chão ou quando os 5 s terminam. Depois de cada uso, curto ou longo, há uma
+espera de 15 s até poder ser erguido de novo; um toque dado até 0,1 s antes do fim da espera também
+conta.
+
+Só um toque dado durante o jogo ergue o crucifixo. Um botão que já vinha premido, da espera, do
+menu principal ou da pausa, não o ergue até ser largado e premido outra vez. Assim, o jogador
+decide sempre o momento, e o clique do rato nos menus, que é o mesmo botão, nunca o ergue por
+engano. Durante a pausa, o tempo de uso para.
+
+Erguido, o crucifixo:
+
+- abranda a personagem: a velocidade máxima desce de 720 px/s para 180 px/s (25 %);
+- impede o salto. Um salto pedido com o crucifixo erguido é descartado, e não acontece quando o
+  crucifixo baixa;
+- afasta os demónios e as almas perdidas: o que estiver a menos de 200 px é empurrado para fora
+  desse raio a 1500 px/s, e o que estiver mais longe não se move;
+- cura 5 SP por segundo. O sistema de SP ainda não existe; o crucifixo já anuncia, em cada passo de
+  física, a quantidade que cura, e o SP só terá de a receber;
+- acende uma luz quente cujo alcance mostra o raio do afastamento.
+
+A duração limitada e a espera fixa obrigam a escolher quando usar a única defesa: largar o botão
+cedo não poupa tempo de espera. Ao contrário do deslize na parede, o crucifixo obriga a manter o
+botão premido: o esforço de o segurar faz parte da mecânica, e cada uso está limitado a 5 s. Uma
+opção para o erguer e baixar com toques, em vez de manter o botão premido, fica para as opções de
+acessibilidade.
+
+O jogador tem o crucifixo desde o início e perde-o, de vez, ao aceitar o primeiro upgrade: nesse
+momento, o crucifixo baixa e sai do jogo. Os valores são provisórios e serão afinados em playtest.
 
 ## Medidas para o desenho de níveis
 
@@ -276,6 +328,21 @@ do Godot e edita-se no Inspector. As alterações aplicam-se à personagem em to
 | Wall Slide Speed | 350 px/s | a velocidade máxima de descida no deslize; a subida ao longo da parede não é travada |
 | Wall Jump Lock Time | 0,2 s | o tempo, depois de um salto da parede, durante o qual a corrida não responde; com 0,15 s ou menos, uma parede isolada passa a poder ser subida |
 
+Os valores do crucifixo estão no ficheiro `crucifix_stats.tres`, na pasta `crucifix/`, e editam-se
+da mesma forma. O Speed Multiplier e o Repel Radius aplicam-se de imediato, também com o jogo a
+correr, quando são mudados no separador Remote do editor; os restantes valores são lidos sempre que
+são usados.
+
+| Campo no Inspector | Valor atual | O que controla |
+|---|---|---|
+| Speed Multiplier | 0,25 | a fração da velocidade máxima que se mantém com o crucifixo erguido |
+| Raise Buffer Time | 0,1 s | o tempo durante o qual um toque fica guardado enquanto o crucifixo não se pode erguer, como antes de aterrar ou no fim da espera (0 desliga) |
+| Max Use Time | 5 s | o tempo máximo de cada uso |
+| Cooldown Time | 15 s | a espera depois de cada uso, qualquer que tenha sido a sua duração |
+| Repel Radius | 200 px | a distância à qual os demónios e as almas perdidas são afastados, e o alcance da luz |
+| Repel Speed | 1500 px/s | a velocidade a que são empurrados para fora desse raio |
+| Heal Per Second | 5 SP/s | a cura por cada segundo com o crucifixo erguido |
+
 ## Referências
 
 - Game Accessibility Guidelines. (s.d.-a). *Avoid / provide alternatives to requiring buttons to be
@@ -301,8 +368,9 @@ do Godot e edita-se no Inspector. As alterações aplicam-se à personagem em to
     ├── project.godot
     ├── main.tscn      cena principal: menus, pausa e o nível em jogo (script main.gd)
     ├── default_bus_layout.tres   buses de áudio
-    ├── core/          serviços globais: as opções do jogador (autoload Settings)
+    ├── core/          serviços globais: as opções do jogador (autoload Settings) e os perfis de controlos
     ├── player/        personagem: cena, script e valores do movimento
+    ├── crucifix/      crucifixo: cena, script e valores
     ├── camera/        câmara do jogo e zonas de câmara
     ├── debug/         overlay de depuração
     ├── levels/        salas, níveis e a entrada de cada nível na lista do menu (LevelEntry)
@@ -367,19 +435,37 @@ godot --headless --fixed-fps 60 --path Projeto --script res://tests/test_player_
 godot --headless --fixed-fps 60 --path Projeto --script res://tests/test_camera_keeps_player_on_screen.gd
 godot --headless --fixed-fps 60 --path Projeto --script res://tests/test_main_flow.gd
 godot --headless --fixed-fps 60 --path Projeto --script res://tests/test_pause.gd
+godot --headless --fixed-fps 60 --path Projeto --script res://tests/test_phase_exit.gd
 godot --headless --fixed-fps 60 --path Projeto --script res://tests/test_settings.gd
 godot --headless --fixed-fps 60 --path Projeto --script res://tests/test_options.gd
+godot --headless --fixed-fps 60 --path Projeto --script res://tests/test_crucifix.gd
+godot --headless --fixed-fps 60 --path Projeto --script res://tests/test_crucifix_menus.gd
+godot --headless --fixed-fps 60 --path Projeto --script res://tests/test_input_profiles.gd
+godot --headless --fixed-fps 60 --path Projeto --script res://tests/test_controls.gd
 ```
 
-Os testes mais recentes estendem `tests/support/player_test.gd`, que reúne a preparação comum:
-plataformas, uma personagem com uma cópia própria dos valores do `.tres` e a escrita dos resultados.
-Esse ficheiro não é um teste e não se corre sozinho.
+O `test_input_profiles.gd` escreve cinco ERROR, das tentativas de atribuir teclas inválidas, todos
+esperados.
+
+Todos os scripts de testes e de medidas estendem `tests/support/base_test.gd`, diretamente ou
+através de outro ficheiro de suporte. Antes de o autoload `Settings` estar pronto, esse ficheiro
+diz-lhe para guardar as opções só em memória, a partir dos valores predefinidos, sem ler nem
+escrever o ficheiro de opções do jogador. Assim, os testes dão o mesmo resultado em qualquer
+computador, quaisquer que sejam as opções e os controlos escolhidos nele, e nunca alteram as opções
+do jogador.
+
+Os testes da personagem estendem `tests/support/player_test.gd`, que reúne a preparação comum:
+plataformas, uma personagem com uma cópia própria dos valores do `.tres`, um `PlayerInput` de
+substituição que a conduz sem teclas (`tests/support/stand_in_input.gd`), as esperas (pelo chão,
+por uma parede, por uma condição ou por um número de passos) e a escrita dos resultados. Esse
+ficheiro não é um teste e não se corre sozinho.
 
 Os testes dos menus estendem `tests/support/menu_test.gd`, que cria a cena principal e carrega em
-teclas e botões do comando como o jogador. Usam um ficheiro de opções próprio e terminam com duas
-verificações: o botão Quit não foi carregado e o ficheiro de opções do jogador ficou igual (texto e
-data de gravação). O caso do ficheiro estragado do `test_settings.gd` escreve um ERROR e um WARNING,
-ambos esperados.
+teclas, botões do comando e botões do rato como o jogador, e reúne o acesso aos nós dos menus, ao
+foco e à personagem do nível. Usam um ficheiro de opções próprio e terminam com duas verificações:
+o botão Quit não foi carregado e o ficheiro de opções do jogador ficou igual (texto e data de
+gravação). O caso do ficheiro estragado do `test_settings.gd` escreve um ERROR e um WARNING, ambos
+esperados.
 
 O `measure_movement.gd` não verifica resultados: imprime as medidas da secção "Medidas para o
 desenho de níveis", com os valores que estiverem no `.tres`. As medidas junto das bordas correm a
@@ -399,9 +485,9 @@ recurso `PlayerMovementStats` (`player/player_movement_stats.gd`), guardado em
 `player/player_movement_stats.tres`.
 
 A personagem não lê o teclado diretamente. Um nó filho, `PlayerInput` (`player/player_input.gd`), é
-o único que lê as ações da personagem no Input Map, e responde em cada passo de física a três
-perguntas: a direção
-da corrida, se o botão de saltar acabou de ser premido e se continua premido. A personagem recebe
+o único que lê as ações da personagem no Input Map, e responde em cada passo de física a cinco
+perguntas: a direção da corrida e, para os botões de saltar e do crucifixo, se acabaram de ser
+premidos e se continuam premidos. A personagem recebe
 este nó pelo Inspector, no campo Input. Uma inteligência artificial, uma cena animada ou um teste
 controlam a personagem colocando nesse campo outro nó que estenda `PlayerInput`, sem alterar o
 movimento. É o primeiro passo do padrão Component descrito por Nystrom (2014, capítulo
@@ -543,6 +629,7 @@ teclado, e não pela letra impressa, pelo que o WASD se mantém num teclado AZER
 | `move_up` / `move_down` | W / S, setas | stick esquerdo (eixo 1) |
 | `jump` | Espaço | A / Cross |
 | `interact` | E | B / Circle |
+| `crucifix` | botão esquerdo do rato | R2 (eixo 5) |
 | `pause` | Escape | Start |
 | `toggle_debug_overlay` | F3 | — |
 | `ui_accept` | Enter, Espaço | A / Cross |
@@ -550,6 +637,10 @@ teclado, e não pela letra impressa, pelo que o WASD se mantém num teclado AZER
 
 O `ui_accept` e o `ui_cancel` são ações que o Godot já traz para os menus; acrescentou-se-lhes o A e o
 B do comando, que não tinham.
+
+As teclas desta tabela são as do perfil de controlos predefinido. O jogador pode escolher outro
+perfil nas opções, e o `Settings` substitui, durante o jogo, as teclas e os botões do rato das ações
+de jogo (ver "Controlos: perfis e remapeamento").
 
 #### Camadas de colisão
 
@@ -563,6 +654,7 @@ sempre o nome, e nunca o número no código.
 | 3 | `enemy` | 8 | `interactable` |
 | 4 | `player_hitbox` | 9 | `one_way_platform` |
 | 5 | `enemy_hitbox` | 10 | `camera_bounds` |
+| | | 11 | `repellable` |
 
 A separação entre *hitbox* (o que causa dano) e *hurtbox* (o que recebe dano) permite que um ataque
 atravesse um inimigo sem o empurrar e, se for desejado, que os inimigos se atinjam entre si.
@@ -570,6 +662,65 @@ atravesse um inimigo sem o empurrar e, se for desejado, que os inimigos se atinj
 A camada `camera_bounds` é a das zonas de câmara (`CameraZone`): retângulos que limitam o que o ecrã
 mostra enquanto a personagem está dentro deles. As zonas não detetam colisões; a câmara lê-lhes a
 geometria, e a camada serve para as identificar e desenhar no editor.
+
+A camada `repellable` é a da cena `components/repellable.tscn`, que se coloca em tudo o que o
+crucifixo afasta. A camada está definida na cena, no Inspector, e não no código. O crucifixo procura
+apenas nessa camada, pelo que um demónio ou uma alma só é afastado se tiver o componente.
+
+#### Crucifixo: componentes e modificadores de movimento
+
+O crucifixo foi construído para não criar dependências entre sistemas, com padrões comuns na
+indústria:
+
+- **Componente** (Nystrom, 2014, capítulo "Component"). O crucifixo é uma cena própria
+  (`crucifix/crucifix.tscn`), filha da personagem. Lê o botão através do mesmo `PlayerInput` da
+  personagem, pelo que uma inteligência artificial, uma cena animada ou um teste também o controlam.
+- **Modificadores de movimento.** A personagem não sabe que o crucifixo existe. Aceita
+  modificadores (`MovementModifier`), cada um com uma fração da velocidade, uma fração da altura do
+  salto e a indicação de que impede o salto, guardados pelo nome de quem os colocou. As frações
+  multiplicam-se entre si, e basta um modificador para impedir o salto. O crucifixo coloca o seu ao
+  ser erguido e retira-o ao baixar. O nível da preguiça poderá abrandar a personagem da mesma forma,
+  e os dois efeitos acumulam-se. Preferiu-se esta solução a uma ligação direta da personagem ao
+  crucifixo, que obrigaria a alterar a personagem a cada novo efeito. Um modificador é um
+  `Resource`: avisa quando um dos seus valores muda (sinal `changed`), e a personagem, que o escuta
+  enquanto o tem, aplica a mudança de imediato. Também se pode criar no Inspector e gravar, por
+  exemplo para uma zona de um nível que abranda a personagem. A fração da altura do salto aplica-se
+  multiplicando a velocidade de partida pela sua raiz quadrada, porque, com a mesma gravidade, a
+  altura é proporcional ao quadrado dessa velocidade.
+- **Ativação ao premir, com tolerância.** O crucifixo ergue-se no passo em que o botão é premido
+  (`is_crucifix_just_pressed`) e mantém-se enquanto continua premido (`is_crucifix_held`), como é
+  habitual nas habilidades. Isto resolve, sem estado extra, os botões que já vinham premidos da
+  espera, do menu principal ou da pausa: nenhum deles é um toque novo. Para um toque dado um pouco
+  cedo não se perder, fica guardado durante o Raise Buffer Time, à semelhança da tolerância do
+  salto.
+- **Máquina de estados com tempos em passos de física.** O crucifixo tem três fases: pronto,
+  erguido e em espera (`READY`, `RAISED`, `COOLDOWN`). O tempo de uso, a espera e a tolerância
+  contam-se em passos de física inteiros, como as tolerâncias do salto, para que os testes os
+  verifiquem ao passo exato. Os sinais `cooldown_started` e `cooldown_finished`, e o tempo restante
+  de cada fase, servem o HUD.
+- **Componente `Repellable`** (`components/repellable.tscn`), à semelhança dos *hitboxes* e
+  *hurtboxes*. É uma `Area2D` que se coloca nos demónios e nas almas perdidas, com a camada
+  `repellable` definida na cena. O crucifixo empurra apenas o que tem este componente e não conhece
+  os scripts dos demónios nem das almas; estes recebem o sinal `repelled`, para reagir com uma
+  animação ou largar uma alma agarrada.
+- **Valores afináveis com o jogo a correr.** O `CrucifixStats` avisa quando o raio ou o
+  abrandamento mudam, e o crucifixo aplica-os de imediato: o raio à área de afastamento e ao alcance
+  da luz, que assim mostra sempre a área onde o crucifixo atua, e o abrandamento ao seu
+  modificador.
+
+O crucifixo comunica para fora apenas por sinais (`raised`, `lowered`, `cooldown_started`,
+`cooldown_finished`, `lost` e `healed`), que o HUD, o som e o futuro sistema de SP podem escutar.
+Perdido, emite `lost` e sai do jogo (`queue_free`); o HUD retira o ícone ao receber esse sinal.
+
+O `test_crucifix.gd` verifica os modificadores (a combinação, uma mudança com o modificador
+colocado, a fração da altura do salto e a da velocidade no salto da parede), o abrandamento, o
+bloqueio do salto, a tolerância antes de aterrar e antes do fim da espera, o toque dado demasiado
+cedo, a parede, a saída do chão, a duração máxima, a espera fixa, a pausa, a perda, a cura, o
+afastamento, a camada da cena `Repellable` e a afinação com o jogo a correr. Usa um demónio de
+substituição, porque os demónios ainda não existem. O `test_crucifix_menus.gd` usa a cena principal
+e o rato: com o botão premido durante a pausa e mantido ao retomar com Esc, com um clique no Resume
+e com o botão premido desde o menu principal, o crucifixo não se ergue até o botão ser largado e
+premido de novo no jogo.
 
 #### Overlay de depuração
 
@@ -636,6 +787,16 @@ A cena principal fica carregada durante todo o jogo e contém o menu principal, 
 nó `LevelSlot`, onde entra o nível escolhido. Os menus apenas emitem sinais; é o `main.gd` que decide
 o que fazer. Por isso, um nível não precisa de incluir menus nem pausa.
 
+Cada fase de um nível é uma cena própria, com a sua personagem e a sua câmara, e só a fase em curso
+está carregada. A passagem para a fase seguinte faz-se por uma área `PhaseExit`, que indica apenas o
+caminho do ficheiro da fase seguinte, e não a cena, para que carregar uma fase não carregue também a
+seguinte. Quando a personagem entra nessa área, o Main escurece o ecrã em 0,25 s
+(Main › Fade Time), congela a fase, carrega a seguinte noutro thread e, com o ecrã preto, troca uma
+pela outra e volta a clarear. As duas fases do nível 1 levaram, em conjunto, cerca de 0,1 s a
+carregar (medido a 2026-10-19), pelo que o carregamento termina antes de o ecrã ficar preto. Durante
+a passagem, o Esc não pausa. Uma fase aberta com F6 não tem o Main: a porta muda de cena diretamente,
+sem escurecer. O `test_phase_exit.gd` verifica as duas situações.
+
 A pausa usa `get_tree().paused`. O Main corre sempre (Process Mode Always) e só o `LevelSlot` é
 Pausable: o nível para e o Main continua a receber o Esc. O overlay de depuração continua ativo, e o
 mesmo acontece a qualquer nó de um nível com Process Mode Always. Perder o foco da janela também pausa
@@ -649,7 +810,8 @@ acabada de carregar durante todo esse frame. Por isso o jogo retoma no frame seg
 o retomou. Os testes confirmam que retomar com o Espaço, o A ou o B, também num toque rápido, não faz
 saltar nem interagir; com o jogo a retomar no próprio frame, a personagem saltava.
 
-As opções (volume dos buses Master, Music, SFX, Ambience e UI, ecrã inteiro, V-Sync e limite de FPS)
+As opções (volume dos buses Master, Music, SFX, Ambience e UI, ecrã inteiro, V-Sync, limite de FPS
+e controlos)
 estão no autoload `Settings`, o único do projeto, porque têm de estar aplicadas antes de qualquer
 cena. Gravam-se em `user://settings.cfg` (no Windows, `%APPDATA%\Godot\app_userdata\P2D\`), um
 ficheiro de texto legível, com número de versão. Um ficheiro em falta ou ilegível, ou com valores de
@@ -658,6 +820,38 @@ limita o desenho; a física mantém-se nos 60 passos por segundo. Os menus nunca
 janela ou o motor diretamente: pedem a mudança ao `Settings`, que a aplica e grava. Com o jogo
 embutido no editor, o ecrã inteiro não se aplica (só a janela normal é suportada); experimenta-se com
 o jogo numa janela à parte ou numa exportação.
+
+#### Controlos: perfis e remapeamento
+
+Os controlos seguem o modelo habitual nos jogos de PC: perfis predefinidos, um perfil personalizado
+e remapeamento por captura da tecla seguinte.
+
+- Os perfis só mudam o teclado e o rato das ações de jogo (andar, saltar, crucifixo, interagir). O
+  comando, a pausa, o overlay de depuração e as ações dos menus ficam como o `project.godot` os
+  define.
+- Cada tecla está definida num único sítio. O perfil predefinido é o Input Map do `project.godot`,
+  lido nas definições do projeto: uma tecla acrescentada em Project Settings ▸ Input Map passa a
+  fazer parte dele. O perfil das setas está definido uma só vez, em `core/input_profiles.gd`, e deixa
+  W, E, A, S e D livres para os upgrades. O Custom começa como cópia do predefinido.
+- O `Settings` guarda o perfil escolhido e as teclas do perfil personalizado e aplica-os ao Input
+  Map. Como nenhum script lê teclas diretamente, a personagem e o crucifixo não mudaram.
+- No ecrã Controls (`ui/controls_menu.gd`), carregar no botão de uma ação do perfil Custom faz o
+  ecrã esperar pela próxima tecla ou botão do rato. O Esc ou o B cancelam sem alterar nada. A espera
+  apanha a tecla antes de qualquer outro nó, pelo que o Esc não fecha a pausa.
+- Conflitos: se a tecla escolhida pertencia a outra ação, essa ação perde-a e, se ficar sem
+  nenhuma, recebe as teclas antigas da primeira (troca). Nenhuma ação fica sem tecla. Preferiu-se a
+  troca a um aviso de conflito, porque não deixa o jogador num estado em que uma ação não funciona.
+- O `settings.cfg` guarda o perfil pelo seu identificador (por exemplo `arrows_and_qweasd`) e cada
+  tecla como texto legível, com o nome da tecla ou do botão (por exemplo `key:Q`, `key:Ctrl` ou
+  `mouse:left`), e nunca como números nem como objetos do Godot. Assim, o ficheiro lê-se e corrige-se
+  à mão, acrescentar ou reordenar perfis não troca o perfil de quem já o tinha escolhido, e um
+  ficheiro alterado à mão não cria objetos arbitrários. Um perfil ou uma tecla inválidos dão os
+  valores predefinidos. O botão Reset to defaults das opções não mexe nos controlos; o ecrã Controls
+  tem o seu próprio Reset.
+- O `Settings` só altera uma ação no Input Map quando as teclas mudam: retirar uma tecla a uma ação
+  solta essa ação, o que largaria uma tecla que o jogador estivesse a premir.
+- Nos testes, o `Settings` guarda as opções só em memória e não lê nem escreve o ficheiro do
+  jogador (`GameSettings.ignore_player_file`, ver "Testes e medidas").
 
 O tamanho da letra e os espaços entre elementos estão num único tema, `ui/ui_theme.tres`, e nenhum
 nó define o seu próprio tamanho de letra: uma futura opção de tamanho do texto altera apenas o tema.

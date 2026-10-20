@@ -1,8 +1,13 @@
-# Shared setup for the player tests: platforms, a player with its own copy of Stats, waiting for
-# the landing, and printing PASS or FAIL. A test extends this file instead of SceneTree, with
+# Shared setup for the player tests: platforms, a player with its own copy of Stats, a stand-in
+# input to drive it, waiting for the landing, a wall or a number of frames, and printing PASS or
+# FAIL. It extends base_test.gd, so the autoload Settings keeps to its defaults. A test extends this
+# file instead of SceneTree, with
 # extends "res://tests/support/player_test.gd"
-extends SceneTree
+extends "res://tests/support/base_test.gd"
 
+## A PlayerInput a test drives by hand; see stand_in_input.gd. Not annotated, so it can be used as
+## a type.
+const StandInInput = preload("res://tests/support/stand_in_input.gd")
 const PLAYER_SCENE: PackedScene = preload("res://player/player.tscn")
 ## Physics frames to wait for anything before giving up.
 const MAX_FRAMES: int = 600
@@ -75,6 +80,59 @@ func wait_until_on_floor(player: Player) -> bool:
 		if player.is_on_floor():
 			return true
 	return false
+
+
+func wait_until_on_wall(player: Player) -> bool:
+	for _frame: int in MAX_FRAMES:
+		await physics_frame
+		if player.is_on_wall():
+			return true
+	return false
+
+
+## Waits a physics frame at a time, up to frames of them, until condition holds; false if it never
+## does.
+func wait_until(condition: Callable, frames: int = MAX_FRAMES) -> bool:
+	for _frame: int in frames:
+		await physics_frame
+		if condition.call():
+			return true
+	return false
+
+
+func wait_frames(frames: int) -> void:
+	for _frame: int in frames:
+		await physics_frame
+
+
+## Puts a stand-in in the player's input, as a child of the player, and hands it back.
+func put_a_stand_in(player: Player) -> StandInInput:
+	var stand_in: StandInInput = StandInInput.new()
+	player.add_child(stand_in)
+	player.input = stand_in
+	return stand_in
+
+
+## Takes the player out at the end of the frame, and waits for it.
+func remove_player(player: Player) -> void:
+	player.queue_free()
+	await physics_frame
+
+
+## How high the feet go above floor_y before the player lands again, in px; 0 if it never leaves
+## the floor.
+func peak_height(player: Player, floor_y: float) -> float:
+	var highest_y: float = floor_y
+	var left_floor: bool = false
+	for _frame: int in MAX_FRAMES:
+		await physics_frame
+		if player.is_on_floor():
+			if left_floor:
+				break
+			continue
+		left_floor = true
+		highest_y = minf(highest_y, player.position.y)
+	return floor_y - highest_y
 
 
 ## True if the player goes up, and faster than on the frame before, which only a jump does. A
