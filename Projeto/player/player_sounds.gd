@@ -27,9 +27,12 @@ signal land_played(hard: bool)
 @export var footstep: AudioStreamPlayer2D
 ## The step sounds. Each step picks one at random, never the same as the step before.
 @export var footstep_sounds: Array[AudioStream] = []
-## How far the player runs on the floor between two steps. The first step after standing still,
-## or after landing, comes at half this distance.
+## How far the player runs on the floor between two steps. The first step after a landing comes at
+## half this distance, so it does not crowd the landing's sound.
 @export_range(20.0, 1000.0, 10.0, "suffix:px") var step_distance: float = 220.0
+## How far the player runs from standing still before the first step. 0 plays it on the first frame
+## the player moves, so starting to run is heard at once.
+@export_range(0.0, 1000.0, 10.0, "suffix:px") var first_step_distance: float = 0.0
 ## How far each step's amplitude can move from the normal, either way: 0.01 is 1% up or down.
 @export_range(0.0, 0.5, 0.005) var footstep_volume_variation: float = 0.01
 
@@ -110,12 +113,16 @@ func _update_wall_slide() -> void:
 		wall_slide.stop()
 
 
-## Counts the distance run on the floor and plays a step every step_distance. Standing still or
-## leaving the floor starts the count again from half a step, so starting to run is heard quickly.
+## Counts the distance run on the floor and plays a step every step_distance. Standing still starts
+## the count again so the first step comes after first_step_distance; leaving the floor starts it
+## again from half a step, for the steps after the landing.
 func _update_footsteps(delta: float) -> void:
-	var running_speed: float = absf(player.velocity.x)
-	if player.get_state() != Player.State.ON_FLOOR or running_speed == 0.0:
+	if player.get_state() != Player.State.ON_FLOOR:
 		_distance_since_step = step_distance / 2.0
+		return
+	var running_speed: float = absf(player.velocity.x)
+	if running_speed == 0.0:
+		_distance_since_step = step_distance - first_step_distance
 		return
 	_distance_since_step += running_speed * delta
 	if _distance_since_step >= step_distance:

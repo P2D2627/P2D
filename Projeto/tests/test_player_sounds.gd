@@ -1,5 +1,6 @@
-# Checks the player's sounds. Running on the floor plays a step every Step Distance, the first at
-# half of it, and standing still or being in the air plays none. Each step is one of the three
+# Checks the player's sounds. Running on the floor plays a step every Step Distance, the first on
+# the frame the player starts to run from standing still, and standing still or being in the air
+# plays none. Each step is one of the three
 # sounds, never the same twice in a row, with its pitch and amplitude inside the variations set in
 # PlayerSounds. The wall slide sound plays while sliding down a wall and stops on landing. The sounds
 # come from where the player is, so they are heard anywhere in a level and not only near its origin.
@@ -25,6 +26,9 @@ const SLIDE_START: Vector2 = Vector2(WALL_FACE + 64.0, -1500.0)
 const RUN_FRAMES: int = 120
 ## Frames to stand still, or to fall, while no step may play.
 const QUIET_FRAMES: int = 60
+## Frames to stand on the floor before a run, so it starts from standing still and not from the
+## landing, whose first step comes at half a Step Distance.
+const STAND_FRAMES: int = 5
 ## Frames of a long run, to hear many steps and check all of them.
 const LONG_RUN_FRAMES: int = 600
 ## A step lands on the frame that crosses the distance, so the count may be one off the ideal.
@@ -48,6 +52,7 @@ func _initialize() -> void:
 	make_wall(WALL_FACE - WALL_THICKNESS, WALL_FACE, WALL_TOP)
 	make_platform(WALL_FACE - WALL_THICKNESS, FLOOR_RIGHT)
 	var results: Array[bool] = []
+	results.append(await _first_step_plays_as_running_starts())
 	results.append(await _running_steps_every_step_distance())
 	results.append(await _standing_still_and_falling_make_no_steps())
 	results.append(await _steps_vary_the_sound_pitch_and_amplitude())
@@ -62,7 +67,28 @@ func _initialize() -> void:
 	finish(results)
 
 
-## Over a run of d px, steps come at Step Distance / 2, then every Step Distance.
+## The bug: the first step came only after half a Step Distance, 0.2 s into the run, so starting
+## to run sounded late. From standing still, it plays on the first frame the player moves.
+func _first_step_plays_as_running_starts() -> bool:
+	var player: Player = await spawn_on_floor(RUN_START)
+	if player == null:
+		return report(false, "the player never landed to start running")
+	var steps: Array[int] = []
+	_sounds(player).footstep_played.connect(func(index: int) -> void: steps.append(index))
+	await _wait_frames(STAND_FRAMES)
+	Input.action_press(&"move_right")
+	# PlayerSounds runs after the player on the same frame, so the step is already in.
+	var moved: bool = await wait_until(func() -> bool: return player.velocity.x != 0.0)
+	var steps_on_the_first_frame: int = steps.size()
+	Input.action_release(&"move_right")
+	player.queue_free()
+	return report(moved and steps_on_the_first_frame == 1,
+			"Starting to run: %d step(s) on the first frame the player moves, expected 1"
+			% steps_on_the_first_frame)
+
+
+## Over a run of d px from standing still, the first step comes at First Step Distance, then one
+## every Step Distance.
 func _running_steps_every_step_distance() -> bool:
 	var player: Player = await spawn_on_floor(RUN_START)
 	if player == null:
@@ -70,12 +96,13 @@ func _running_steps_every_step_distance() -> bool:
 	var sounds: PlayerSounds = _sounds(player)
 	var steps: Array[int] = []
 	sounds.footstep_played.connect(func(index: int) -> void: steps.append(index))
+	await _wait_frames(STAND_FRAMES)
 	var start_x: float = player.position.x
 	Input.action_press(&"move_right")
 	await _wait_frames(RUN_FRAMES)
 	Input.action_release(&"move_right")
 	var distance: float = player.position.x - start_x
-	var expected: int = floori((distance - sounds.step_distance / 2.0) / sounds.step_distance) + 1
+	var expected: int = floori((distance - sounds.first_step_distance) / sounds.step_distance) + 1
 	player.queue_free()
 	return report(absi(steps.size() - expected) <= STEP_COUNT_TOLERANCE,
 			"Running %.0f px with Step Distance %.0f px: %d steps, expected %d"
