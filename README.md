@@ -10,7 +10,7 @@ aceita.
 
 > **Estado:** a personagem jogável já anda, salta e tem controlo no ar, desliza nas paredes e salta
 > delas, e o salto tolera pedidos ligeiramente fora de tempo. O jogo abre num menu principal, que dá
-> acesso à sala de teste e a um esboço do nível 1, e tem pausa e opções gravadas. A câmara do jogo
+> acesso à sala de teste e ao blockout do nível 1, e tem pausa e opções gravadas. A câmara do jogo
 > está descrita em "Câmara". Ainda não há arte nem som.
 
 Este documento tem duas partes. A primeira descreve, para toda a equipa, o que já pode ser
@@ -31,6 +31,11 @@ documenta a organização técnica do projeto.
    120 px junto à parede direita e, no topo desta, uma passagem que termina numa queda de 1500 px.
    Durante o jogo, a tecla F3 mostra e esconde o texto de depuração descrito em "Overlay de
    depuração".
+5. O nível 1 em blockout (Play ▸ Level 1: Lust (blockout)) tem as fases 1 e 2, com tiles
+   provisórios de 48 px, cada uma na sua cena. A fase 1 sobe da esquerda para a direita e termina
+   numa sala com uma porta; ao atravessá-la, o ecrã escurece e a fase 2 começa no canto inferior
+   direito. Os retângulos amarelos assinalam os checkpoints provisórios e o verde a porta para a
+   fase seguinte. Cada fase também corre sozinha com F6.
 
 Os controlos de teclado e rato escolhem-se em Options ▸ Controls, entre três perfis. O comando é
 igual em todos.
@@ -479,6 +484,7 @@ godot --headless --fixed-fps 60 --path Projeto --script res://tests/test_player_
 godot --headless --fixed-fps 60 --path Projeto --script res://tests/test_camera_keeps_player_on_screen.gd
 godot --headless --fixed-fps 60 --path Projeto --script res://tests/test_main_flow.gd
 godot --headless --fixed-fps 60 --path Projeto --script res://tests/test_pause.gd
+godot --headless --fixed-fps 60 --path Projeto --script res://tests/test_phase_exit.gd
 godot --headless --fixed-fps 60 --path Projeto --script res://tests/test_settings.gd
 godot --headless --fixed-fps 60 --path Projeto --script res://tests/test_options.gd
 godot --headless --fixed-fps 60 --path Projeto --script res://tests/test_crucifix.gd
@@ -886,6 +892,16 @@ outra por acaso:
 A cena principal fica carregada durante todo o jogo e contém o menu principal, o menu de pausa e um
 nó `LevelSlot`, onde entra o nível escolhido. Os menus apenas emitem sinais; é o `main.gd` que decide
 o que fazer. Por isso, um nível não precisa de incluir menus nem pausa.
+
+Cada fase de um nível é uma cena própria, com a sua personagem e a sua câmara, e só a fase em curso
+está carregada. A passagem para a fase seguinte faz-se por uma área `PhaseExit`, que indica apenas o
+caminho do ficheiro da fase seguinte, e não a cena, para que carregar uma fase não carregue também a
+seguinte. Quando a personagem entra nessa área, o Main escurece o ecrã em 0,25 s
+(Main › Fade Time), congela a fase, carrega a seguinte noutro thread e, com o ecrã preto, troca uma
+pela outra e volta a clarear. As duas fases do nível 1 levaram, em conjunto, cerca de 0,1 s a
+carregar (medido a 2026-10-19), pelo que o carregamento termina antes de o ecrã ficar preto. Durante
+a passagem, o Esc não pausa. Uma fase aberta com F6 não tem o Main: a porta muda de cena diretamente,
+sem escurecer. O `test_phase_exit.gd` verifica as duas situações.
 
 A pausa usa `get_tree().paused`. O Main corre sempre (Process Mode Always) e só o `LevelSlot` é
 Pausable: o nível para e o Main continua a receber o Esc. O overlay de depuração continua ativo, e o

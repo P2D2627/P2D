@@ -42,6 +42,9 @@ size = Vector2(3240, 80)
 [sub_resource type="RectangleShape2D" id="RectangleShape2D_open_zone"]
 size = Vector2(5824, 2244)
 
+[sub_resource type="RectangleShape2D" id="RectangleShape2D_one_way"]
+size = Vector2(240, 24)
+
 [node name="TestRoom" type="Node2D" unique_id=1111842025]
 
 [node name="Background" parent="." unique_id=830455306 instance=ExtResource("5_test_room_background")]
@@ -188,6 +191,19 @@ script = ExtResource("4_camera_zone")
 [node name="CollisionShape2D" type="CollisionShape2D" parent="OpenZone" unique_id=425954065]
 position = Vector2(2912, -42)
 shape = SubResource("RectangleShape2D_open_zone")
+
+[node name="OneWayPlatform" type="StaticBody2D" parent="." unique_id=325517482]
+position = Vector2(2400, 832)
+collision_layer = 256
+collision_mask = 0
+
+[node name="CollisionShape2D" type="CollisionShape2D" parent="OneWayPlatform" unique_id=195262063]
+shape = SubResource("RectangleShape2D_one_way")
+one_way_collision = true
+
+[node name="Placeholder" type="Polygon2D" parent="OneWayPlatform" unique_id=899347390]
+color = Color(0.36, 0.3, 0.42, 1)
+polygon = PackedVector2Array(-120, -12, 120, -12, 120, 12, -120, 12)
 
 [node name="Player" parent="." unique_id=1512336293 instance=ExtResource("1_player")]
 position = Vector2(960, 600)
