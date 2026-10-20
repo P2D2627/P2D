@@ -3,13 +3,49 @@
 [ext_resource type="Script" uid="uid://chjqb4otquy2l" path="res://player/player.gd" id="1_script"]
 [ext_resource type="Resource" uid="uid://dgbdj7xih7ra7" path="res://player/player_movement_stats.tres" id="2_stats"]
 [ext_resource type="Script" uid="uid://bb8cwv6qx3yd" path="res://player/player_input.gd" id="3_input"]
+[ext_resource type="Texture2D" uid="uid://d183o78hw2hf2" path="res://assets/sprites/player/main_character_idle.png" id="3_qjkh3"]
 [ext_resource type="PackedScene" path="res://crucifix/crucifix.tscn" id="4_crucifix"]
-[ext_resource type="Texture2D" uid="uid://bbx1qwuafnke3" path="res://assets/sprites/player/player_concept.png" id="5_sprite"]
 
 [sub_resource type="RectangleShape2D" id="RectangleShape2D_player"]
 size = Vector2(48, 96)
 
-[node name="Player" type="CharacterBody2D" node_paths=PackedStringArray("input") unique_id=1108148048]
+[sub_resource type="AtlasTexture" id="AtlasTexture_g6k8r"]
+atlas = ExtResource("3_qjkh3")
+region = Rect2(0, 0, 2080, 2080)
+
+[sub_resource type="AtlasTexture" id="AtlasTexture_boad6"]
+atlas = ExtResource("3_qjkh3")
+region = Rect2(2080, 0, 2080, 2080)
+
+[sub_resource type="AtlasTexture" id="AtlasTexture_rgyib"]
+atlas = ExtResource("3_qjkh3")
+region = Rect2(4160, 0, 2080, 2080)
+
+[sub_resource type="AtlasTexture" id="AtlasTexture_hg6s5"]
+atlas = ExtResource("3_qjkh3")
+region = Rect2(6240, 0, 2080, 2080)
+
+[sub_resource type="SpriteFrames" id="SpriteFrames_g4v7s"]
+animations = [{
+"frames": [{
+"duration": 1.0,
+"texture": SubResource("AtlasTexture_g6k8r")
+}, {
+"duration": 1.0,
+"texture": SubResource("AtlasTexture_boad6")
+}, {
+"duration": 1.0,
+"texture": SubResource("AtlasTexture_rgyib")
+}, {
+"duration": 1.0,
+"texture": SubResource("AtlasTexture_hg6s5")
+}],
+"loop": 1,
+"name": &"idle",
+"speed": 4.0
+}]
+
+[node name="Player" type="CharacterBody2D" unique_id=1108148048 node_paths=PackedStringArray("input")]
 collision_layer = 2
 collision_mask = 257
 script = ExtResource("1_script")
@@ -20,14 +56,18 @@ input = NodePath("PlayerInput")
 position = Vector2(0, -48)
 shape = SubResource("RectangleShape2D_player")
 
-[node name="Sprite" type="Sprite2D" parent="."]
+[node name="Sprite" type="AnimatedSprite2D" parent="." unique_id=1045081328]
 editor_description = "A 192 x 192 cell with the feet on its line y = 184, centred: at (0, -88) the feet sit on the player's origin, the bottom of the collision box."
-position = Vector2(0, -88)
-texture = ExtResource("5_sprite")
+position = Vector2(5.9604645e-08, -48)
+scale = Vector2(0.04951923, 0.04951923)
+sprite_frames = SubResource("SpriteFrames_g4v7s")
+animation = &"idle"
+autoplay = "idle"
+frame_progress = 0.7723723
 
-[node name="PlayerInput" type="Node" parent="."]
+[node name="PlayerInput" type="Node" parent="." unique_id=142086524]
 script = ExtResource("3_input")
 
-[node name="Crucifix" parent="." node_paths=PackedStringArray("player") instance=ExtResource("4_crucifix")]
+[node name="Crucifix" parent="." unique_id=1327693395 node_paths=PackedStringArray("player") instance=ExtResource("4_crucifix")]
 position = Vector2(0, -60)
 player = NodePath("..")

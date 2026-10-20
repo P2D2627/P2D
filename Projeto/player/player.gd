@@ -45,6 +45,9 @@ var _jump_height_multiplier: float = 1.0
 ## True while any modifier blocks jumping.
 var _jump_blocked: bool = false
 
+## The drawing faces left; it is mirrored while the player faces right.
+@onready var _sprite: AnimatedSprite2D = $Sprite
+
 
 func _ready() -> void:
 	assert(stats != null, "Player: assign a PlayerMovementStats resource to Stats.")
@@ -63,6 +66,7 @@ func _physics_process(delta: float) -> void:
 		State.ON_WALL:
 			_physics_on_wall(delta)
 	move_and_slide()
+	_update_facing()
 
 
 ## Where the player is, for what shows or follows it, such as the debug overlay and, later, the
@@ -128,6 +132,13 @@ func _update_state() -> void:
 		State.ON_WALL:
 			if not is_on_wall():
 				_state = State.IN_AIR
+
+
+## Turns the drawing to the last run direction; standing still keeps the last one.
+func _update_facing() -> void:
+	var direction: float = input.get_run_direction()
+	if direction != 0.0:
+		_sprite.flip_h = direction > 0.0
 
 
 ## True when the last move_and_slide() touched a wall and the run input points into it.
