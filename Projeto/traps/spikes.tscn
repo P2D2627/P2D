@@ -1,0 +1,20 @@
+[gd_scene format=3]
+
+[ext_resource type="Script" path="res://traps/hazard.gd" id="1_hazard"]
+
+[sub_resource type="RectangleShape2D" id="RectangleShape2D_spikes"]
+size = Vector2(88, 14)
+
+[node name="Spikes" type="Area2D"]
+collision_layer = 0
+collision_mask = 2
+monitorable = false
+script = ExtResource("1_hazard")
+
+[node name="CollisionShape2D" type="CollisionShape2D" parent="."]
+position = Vector2(0, -9)
+shape = SubResource("RectangleShape2D_spikes")
+
+[node name="Placeholder" type="Polygon2D" parent="."]
+color = Color(0.95, 0.55, 0.2, 1)
+polygon = PackedVector2Array(-48, 0, -36, -24, -24, 0, -12, -24, 0, 0, 12, -24, 24, 0, 36, -24, 48, 0)

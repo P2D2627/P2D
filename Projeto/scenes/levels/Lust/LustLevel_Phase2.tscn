@@ -5,12 +5,16 @@
 [ext_resource type="PackedScene" uid="uid://b1g88pca2y1w4" path="res://player/player.tscn" id="4_wgdd8"]
 [ext_resource type="PackedScene" path="res://camera/game_camera.tscn" id="7_s0b4w"]
 [ext_resource type="Script" uid="uid://jatmkn5rjuk2" path="res://camera/camera_zone.gd" id="cz_script"]
+[ext_resource type="Script" uid="uid://o6oxwfn4t80a" path="res://levels/phase_exit.gd" id="pe_script"]
 
 [sub_resource type="RectangleShape2D" id="RectangleShape2D_85wcm"]
 size = Vector2(96, 144)
 
 [sub_resource type="RectangleShape2D" id="RectangleShape2D_camera_zone"]
 size = Vector2(7680, 6240)
+
+[sub_resource type="RectangleShape2D" id="RectangleShape2D_phase_exit"]
+size = Vector2(96, 144)
 
 [node name="LustPhase2" type="Node2D" unique_id=2057066528]
 
@@ -60,6 +64,21 @@ script = ExtResource("cz_script")
 [node name="CollisionShape2D" type="CollisionShape2D" parent="Phase2Zone" unique_id=798687899]
 position = Vector2(3840, 3120)
 shape = SubResource("RectangleShape2D_camera_zone")
+
+[node name="PhaseExit" type="Area2D" parent="."]
+position = Vector2(264, 984)
+collision_layer = 0
+collision_mask = 2
+monitorable = false
+script = ExtResource("pe_script")
+next_scene_path = "res://scenes/levels/Lust/LustLevel_Phase3.tscn"
+
+[node name="CollisionShape2D" type="CollisionShape2D" parent="PhaseExit"]
+shape = SubResource("RectangleShape2D_phase_exit")
+
+[node name="Placeholder" type="Polygon2D" parent="PhaseExit"]
+color = Color(0.2, 0.9, 0.4, 0.35)
+polygon = PackedVector2Array(-48, -72, 48, -72, 48, 72, -48, 72)
 
 [node name="Player" parent="." unique_id=429836353 instance=ExtResource("4_wgdd8")]
 position = Vector2(7224, 6048)
