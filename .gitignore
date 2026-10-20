@@ -8,9 +8,6 @@ export.cfg
 export_credentials.cfg
 *.tmp
 
-#Claude ignores
-.claude/
-CLAUDE.md
 
 # Imported translations (automatically generated from CSV files)
 *.translation
