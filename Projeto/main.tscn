@@ -1,4 +1,4 @@
-[gd_scene format=3]
+[gd_scene format=3 uid="uid://dxdcrctncxxrr"]
 
 [ext_resource type="Script" path="res://main.gd" id="1_script"]
 [ext_resource type="Script" path="res://levels/level_entry.gd" id="2_level_entry"]
@@ -17,19 +17,19 @@ script = ExtResource("2_level_entry")
 title = "Level 1: Lust (blockout)"
 scene = ExtResource("7_lust_level")
 
-[node name="Main" type="Node"]
+[node name="Main" type="Node" unique_id=790412383]
 process_mode = 3
 script = ExtResource("1_script")
 levels = Array[ExtResource("2_level_entry")]([SubResource("Resource_test_room"), SubResource("Resource_lust_level")])
 
-[node name="LevelSlot" type="Node" parent="."]
+[node name="LevelSlot" type="Node" parent="." unique_id=719619568]
 unique_name_in_owner = true
 process_mode = 1
 
-[node name="MainMenu" parent="." instance=ExtResource("5_main_menu")]
+[node name="MainMenu" parent="." unique_id=211513513 instance=ExtResource("5_main_menu")]
 unique_name_in_owner = true
 
-[node name="PauseMenu" parent="." instance=ExtResource("6_pause_menu")]
+[node name="PauseMenu" parent="." unique_id=1573287944 instance=ExtResource("6_pause_menu")]
 unique_name_in_owner = true
 
 [node name="FadeLayer" type="CanvasLayer" parent="."]
