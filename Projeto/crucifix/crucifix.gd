@@ -16,8 +16,16 @@ extends Node2D
 
 ## The crucifix went up.
 signal raised
-## The crucifix went down. After a use, cooldown_started follows; when it is lost, lost does.
+## The crucifix went down. After a use, cooldown_started follows; when it is lost, lost does. When
+## the use ran out of time, ran_out comes just before.
 signal lowered
+## The use ran out of Max Use Time with Crucifix still held on the floor; lowered follows on the
+## same frame. Letting go or leaving the floor on that frame counts as that, and does not say this.
+signal ran_out
+## A press of Crucifix came during the cooldown, too early for the kept press to raise the crucifix
+## when the cooldown ends. Every upgrade with a cooldown says so with a signal of this name, so they
+## can share the sound of a refused press.
+signal refused
 ## The cooldown started; it lasts duration seconds.
 signal cooldown_started(duration: float)
 ## The cooldown is over: the crucifix goes up at the next press of Crucifix.
@@ -83,6 +91,8 @@ func _physics_process(delta: float) -> void:
 	if player.input.is_crucifix_just_pressed() and not is_blocked():
 		# One frame for the press itself, then Raise Buffer Time's frames.
 		_raise_buffer_frames_left = stats.get_raise_buffer_frames() + 1
+		if _phase == Phase.COOLDOWN and _cooldown_outlasts_a_press():
+			refused.emit()
 	var held: bool = player.input.is_crucifix_held()
 	match _phase:
 		Phase.READY:
@@ -166,7 +176,10 @@ func _physics_ready(held: bool) -> void:
 ## the cooldown. Otherwise it repels and heals.
 func _physics_raised(delta: float, held: bool) -> void:
 	_use_frames_left -= 1
-	if not held or not _is_on_floor() or _use_frames_left <= 0:
+	var on_floor: bool = _is_on_floor()
+	if held and on_floor and _use_frames_left <= 0:
+		ran_out.emit()
+	if not held or not on_floor or _use_frames_left <= 0:
 		_lower()
 		_start_cooldown()
 		return
@@ -180,6 +193,12 @@ func _physics_cooldown() -> void:
 		_cooldown_frames_left = 0
 		_phase = Phase.READY
 		cooldown_finished.emit()
+
+
+## True while the cooldown lasts longer than a press made now is kept, so that press will not raise
+## the crucifix when the cooldown ends. Read before this frame's count of the cooldown.
+func _cooldown_outlasts_a_press() -> bool:
+	return _cooldown_frames_left > stats.get_raise_buffer_frames()
 
 
 ## On the floor by both the player's state and the last move_and_slide(), so a jump taken on this
