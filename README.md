@@ -1358,6 +1358,11 @@ nó define o seu próprio tamanho de letra: uma futura opção de tamanho do tex
 - Recursos movem-se e renomeiam-se apenas no painel FileSystem do Godot, que atualiza as
   referências e os UIDs. O explorador de ficheiros do sistema não o faz.
 
+## Créditos
+
+- Dialogue Manager 4.1.0, de Nathan Hoad. Licença MIT. Plugin de diálogo, em
+  `Projeto/addons/dialogue_manager/`. https://github.com/nathanhoad/godot_dialogue_manager
+
 ## Licença
 
 Ver [LICENSE](LICENSE).

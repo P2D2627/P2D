@@ -1,0 +1,16 @@
+[remap]
+
+importer="dialogue_manager"
+importer_version=18
+type="Resource"
+uid="uid://c5exjpv8lmm2g"
+path="res://.godot/imported/greed.dialogue-1ad908756b2d49cc211cf1f1d1514980.tres"
+
+[deps]
+
+source_file="res://dialogue/greed.dialogue"
+dest_files=["res://.godot/imported/greed.dialogue-1ad908756b2d49cc211cf1f1d1514980.tres"]
+
+[params]
+
+defaults=true

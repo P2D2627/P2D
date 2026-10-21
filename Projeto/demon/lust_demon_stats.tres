@@ -1,31 +1,18 @@
-[gd_resource type="Resource" script_class="DemonStats" format=3]
+[gd_resource type="Resource" script_class="DemonStats" format=3 uid="uid://dje2bfy58t5xf"]
 
-[ext_resource type="Script" path="res://demon/demon_stats.gd" id="1_script"]
-[ext_resource type="Script" path="res://demon/demon_attack.gd" id="2_attack"]
+[ext_resource type="Script" uid="uid://5pjnqw8qfj0x" path="res://demon/demon_stats.gd" id="1_script"]
+[ext_resource type="Script" uid="uid://bghijfm4lswje" path="res://demon/demon_attack.gd" id="2_attack"]
 
 [sub_resource type="Resource" id="Resource_bite"]
 script = ExtResource("2_attack")
 animation = &"bite"
 keeps_chasing = true
 attack_range = 100.0
-max_height_difference = 24.0
 warning_time = 0.2
 recover_time = 0.3
-damage = 10.0
-knockback_distance = 150.0
-knockback_height = 40.0
-bite_time = 0.1
 
 [sub_resource type="Resource" id="Resource_lunge"]
 script = ExtResource("2_attack")
-attack_range = 360.0
-max_height_difference = 24.0
-warning_time = 0.35
-lunge_distance = 420.0
-lunge_min_distance = 200.0
-lunge_height = 32.0
-lunge_time_to_peak = 0.15
-recover_time = 0.35
 chance_per_second = 0.9
 damage = 20.0
 knockback_distance = 250.0
@@ -33,15 +20,9 @@ knockback_height = 70.0
 
 [resource]
 script = ExtResource("1_script")
-sight_distance = 480.0
-lose_distance = 720.0
-give_up_time = 1.5
-chase_speed = 560.0
 attacks = Array[ExtResource("2_attack")]([SubResource("Resource_bite"), SubResource("Resource_lunge")])
 retreat_distance = 130.0
-retreat_speed = 400.0
 pack_spacing = 24.0
 pack_variation = 0.1
 max_hesitation = 0.5
-repelled_time = 0.3
 stunned_time = 1.2
