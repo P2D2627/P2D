@@ -1,18 +1,19 @@
 # Prints what chasing demons cost on a physics frame. It puts 10, 50 and 200 demons of demon.tscn on
 # the floor, all inside Sight Distance of the man, who stands still with the crucifix down, so every
-# one of them chases and attacks him, over and over: the busiest a demon gets. They all start on the
-# same frame, so the ones near him start warning on the same frame too, and that is the worst frame.
-# Each cost is what the demons add to the same room with no demons, on average and on the worst
-# frame. The whole frame: the time from one physics frame to the next, which with --fixed-fps and no
-# window waits for nothing, so it takes in the physics server's step over the demons' bodies and
-# areas. The scripts, inside it: from a node that runs before every other node's _physics_process to
-# one that runs after them all, which takes in the demons' move_and_slide() and rays. The Physics
-# time monitor would not do: it keeps one value for many frames, and stays at 0 through the first
-# measures, which are over in less than a second. Before the measures, it prints the lunge of
-# lust_demon_stats.tres on flat floor and how its demons first attack a man standing still, and with
-# each measure, how many demons started their warning on its worst frame. It checks nothing: the
-# exit code is 1 only if the player never lands or a demon is not after the man when the measure
-# starts. The README quotes the result in the demon's section.
+# one of them chases him: one at a time bites or lunges, and while he blinks after the hit the
+# others wait at Retreat Distance (ADR 0025), the busiest a pack gets. Each part starts with a new
+# man, with full SP: the demons drain it, and a grab that killed him would hold him for good, since
+# only a Level starts the room over. Each cost is what the demons add to the same room with no
+# demons, on average and on the worst frame. The whole frame: the time from one physics frame to the
+# next, which with --fixed-fps and no window waits for nothing, so it takes in the physics server's
+# step over the demons' bodies and areas. The scripts, inside it: from a node that runs before every
+# other node's _physics_process to one that runs after them all, which takes in the demons'
+# move_and_slide() and rays. The Physics time monitor would not do: it keeps one value for many
+# frames, and stays at 0 through the first measures, which are over in less than a second. Before
+# the measures, it prints the lunge of lust_demon_stats.tres on flat floor and how its demons first
+# attack a man standing still, and with each measure, how many demons started their warning on its
+# worst frame. It checks nothing: the exit code is 1 only if the player never lands or a demon is
+# not after the man when the measure starts. The README quotes the result in the demon's section.
 # Run from the repository root:
 # godot --headless --fixed-fps 60 --path Projeto --script res://tests/measure_demon.gd
 extends "res://tests/support/player_test.gd"
@@ -83,19 +84,26 @@ var _warnings: int = 0
 
 func _initialize() -> void:
 	make_platform(-FLOOR_HALF_WIDTH, FLOOR_HALF_WIDTH)
-	var player: Player = await spawn_on_floor(FLOOR_START)
+	var player: Player = await _fresh_player(null)
 	if player == null:
-		printerr("The player never landed.")
-		quit(1)
 		return
 	await _print_lunge()
+	player = await _fresh_player(player)
+	if player == null:
+		return
 	await _print_attacks()
 	var first: Stamp = Stamp.new(FIRST)
 	var last: Stamp = Stamp.new(LAST)
 	root.add_child(first)
 	root.add_child(last)
+	player = await _fresh_player(player)
+	if player == null:
+		return
 	var empty: Cost = await _measure(first, last)
 	for count: int in DEMON_COUNTS:
+		player = await _fresh_player(player)
+		if player == null:
+			return
 		var demons: Array[Demon] = _spawn_demons(count)
 		await wait_frames(SETTLE_FRAMES)
 		if demons.any(func(demon: Demon) -> bool: return demon.get_state() == Demon.State.IDLE):
@@ -122,6 +130,20 @@ func _initialize() -> void:
 		await wait_frames(SETTLE_FRAMES)
 	await remove_player(player)
 	quit(0)
+
+
+## A new man landed on the floor, with full SP and no grab, in place of player, which goes; null if
+## he never lands, after saying so and quitting with 1. Each part of the measure starts with one:
+## the demons drain his SP, and once a grab kills him he stays held, since only a Level starts the
+## room over (ADR 0026).
+func _fresh_player(player: Player) -> Player:
+	if player != null:
+		await remove_player(player)
+	var fresh: Player = await spawn_on_floor(FLOOR_START)
+	if fresh == null:
+		printerr("The player never landed.")
+		quit(1)
+	return fresh
 
 
 ## count demons on the floor, every other one on each side of the man, from NEAREST to FARTHEST.
@@ -163,10 +185,12 @@ func _measure(first: Stamp, last: Stamp) -> Cost:
 
 
 ## Prints the attack of lust_demon_stats.tres the demon warns of first on flat floor, at the man
-## standing still, LUNGE_START away, with every attack's Chance Per Second at 1 for it, so it is the
-## lunge, at once: how high it rises and how far it lands from where it warned, with what the attack
-## asks of both at a man standing that far, and the time from take-off to the first physics frame
-## it stands on the floor again. The chances go back to the file's before the measures.
+## standing still, LUNGE_START away, with every attack's Chance Per Second at 1 and Max Hesitation
+## at 0 for it, so it is the lunge, at once, and not a bite after the demon ran in while it
+## hesitated: how high it rises and how far it lands from where it warned, with what the attack asks
+## of both at a man standing that far, and the time from take-off to the first physics frame it
+## stands on the floor again. It lands short of what it asked, against the man, where it stops (ADR
+## 0022). The chances and the hesitation go back to the file's before the measures.
 func _print_lunge() -> void:
 	var demon: Demon = DEMON_SCENE.instantiate() as Demon
 	demon.position = FLOOR_START + Vector2(-LUNGE_START, 0.0)
@@ -174,6 +198,8 @@ func _print_lunge() -> void:
 	for attack: DemonAttack in demon.stats.attacks:
 		chances.append(attack.chance_per_second)
 		attack.chance_per_second = 1.0
+	var hesitation: float = demon.stats.max_hesitation
+	demon.stats.max_hesitation = 0.0
 	var warned_of: Array[DemonAttack] = []
 	demon.warning_started.connect(func(attack: DemonAttack) -> void: warned_of.append(attack))
 	root.add_child(demon)
@@ -194,13 +220,15 @@ func _print_lunge() -> void:
 					demon.position.x - take_off.x, asked, seconds])
 	for index: int in chances.size():
 		demon.stats.attacks[index].chance_per_second = chances[index]
+	demon.stats.max_hesitation = hesitation
 	demon.queue_free()
 	await wait_frames(SETTLE_FRAMES)
 
 
 ## Prints how APPROACHES demons of lust_demon_stats.tres, put in together FARTHEST from the man
-## standing still, first attack him: for each attack, how many started with it, and the nearest and
-## farthest from him they did, which with a chance below 1 should spread over the attack's range.
+## standing still, first attack him: how many did in WATCHED_FRAMES, which is few, since the others
+## wait while he blinks after each hit (ADR 0025), and for each attack, how many started with it,
+## and the nearest and farthest from him they did.
 func _print_attacks() -> void:
 	var distances: Dictionary[StringName, Array] = {}
 	var demons: Array[Demon] = []
@@ -216,11 +244,14 @@ func _print_attacks() -> void:
 		demons.append(demon)
 	await wait_frames(WATCHED_FRAMES)
 	var lines: PackedStringArray = []
+	var attacked: int = 0
 	for animation: StringName in distances:
 		var from: Array = distances[animation]
+		attacked += from.size()
 		lines.append("%s %d, from %.0f to %.0f px" % [animation, from.size(), from.min(), from.max()])
-	print("First attacks of %d demons of lust_demon_stats.tres from %.0f px, at the man standing still: %s"
-			% [APPROACHES, FARTHEST, "; ".join(lines)])
+	print("First attacks of %d demons of lust_demon_stats.tres from %.0f px, at the man standing still: %d attacked in %.0f s, the others waited; %s"
+			% [APPROACHES, FARTHEST, attacked,
+					float(WATCHED_FRAMES) / Engine.physics_ticks_per_second, "; ".join(lines)])
 	for demon: Demon in demons:
 		demon.queue_free()
 	await wait_frames(SETTLE_FRAMES)

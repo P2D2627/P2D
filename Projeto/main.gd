@@ -54,22 +54,49 @@ func _notification(what: int) -> void:
 
 ## The level goes in before the menu hides, so a level that fails to load leaves the menu on screen.
 func _on_level_chosen(index: int) -> void:
-	_level_slot.add_child(_playable_levels[index].scene.instantiate())
+	_start_level(_playable_levels[index].scene)
 	_main_menu.hide()
+
+
+## A new copy of scene in the level slot. When it asks to start over, another new copy takes its
+## place at the end of that frame, so nothing of it runs after its own signal (ADR 0026). A level
+## without the Level script at its root can't ask, and the warning says so.
+func _start_level(scene: PackedScene) -> void:
+	var level: Node = scene.instantiate()
+	if level is Level:
+		(level as Level).restart_requested.connect(_restart_level.bind(level, scene),
+				CONNECT_DEFERRED)
+	else:
+		push_warning("Main: %s has no Level script at its root, so it never starts over."
+				% scene.resource_path)
+	_level_slot.add_child(level)
+
+
+## Only while level is still in the slot: had Main Menu taken it out on the same frame, a level
+## would come back behind the menu.
+func _restart_level(level: Node, scene: PackedScene) -> void:
+	if not is_instance_valid(level) or level.get_parent() != _level_slot:
+		return
+	_remove_level()
+	_start_level(scene)
 
 
 func _on_quit_requested() -> void:
 	get_tree().quit()
 
 
-## The level leaves the tree at once and is freed at the end of the frame, so a level chosen next
-## never shares a frame with it.
 func _on_main_menu_requested() -> void:
 	_resume()
+	_remove_level()
+	_main_menu.open()
+
+
+## The level leaves the tree at once and is freed at the end of the frame, so a level that comes
+## next never shares a frame with it.
+func _remove_level() -> void:
 	for level: Node in _level_slot.get_children():
 		_level_slot.remove_child(level)
 		level.queue_free()
-	_main_menu.open()
 
 
 func _pause() -> void:

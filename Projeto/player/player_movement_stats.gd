@@ -42,6 +42,18 @@ extends Resource
 ## wall; test_wall_jump.gd checks that it cannot. Rounded to whole physics frames.
 @export_range(0.0, 0.5, 0.01, "suffix:s") var wall_jump_lock_time: float = 0.2
 
+@export_group("Knockback")
+## Most seconds a hit's knockback takes the run and the jump away (ADR 0021). Landing gives them
+## back sooner: on flat floor, every demon attack's knockback lands within it, so it only ends one
+## in the air, such as off a ledge, and the player then gets Air Control back. Rounded to whole
+## physics frames.
+@export_range(0.0, 1.0, 0.01, "suffix:s") var knockback_max_time: float = 0.4
+## Speed across, in px/s, at which landing on a body the player can't stand on, such as a demon,
+## shoves him off it sideways, never up. He keeps it, with no run nor jump, until he lands on
+## something else, or for Knockback Max Time at most. Near top run speed, so it reads as a shove: from
+## right over a demon's middle he is off it in about 5 physics frames.
+@export_range(1.0, 2000.0, 10.0, "suffix:px/s") var knock_off_speed: float = 600.0
+
 
 ## Upward speed when leaving the floor, in px/s. Comes from jump_height and time_to_peak.
 func get_jump_velocity() -> float:
@@ -73,6 +85,26 @@ func get_jump_buffer_frames() -> int:
 ## wall_jump_lock_time in whole physics frames, rounded to the nearest one.
 func get_wall_jump_lock_frames() -> int:
 	return roundi(wall_jump_lock_time * Engine.physics_ticks_per_second)
+
+
+## knockback_max_time in whole physics frames, rounded to the nearest one.
+func get_knockback_max_frames() -> int:
+	return roundi(knockback_max_time * Engine.physics_ticks_per_second)
+
+
+## The velocity, going right, of a knockback that throws the player height px up and lands him
+## distance px away on flat floor. It goes up and down with Fall Gravity alone, so it is quicker and
+## heavier than a jump, letting go of Jump never cuts it short, and the arc is one curve, which
+## lands where it was aimed, while the fall stays under Max Fall Speed. As with a jump, half a frame
+## of gravity comes off the upward speed to keep the peak on height; the speed across is worked out
+## for half a frame more in the air, since the floor stops the player from none to one frame late.
+func get_knockback_velocity(distance: float, height: float) -> Vector2:
+	assert(height > 0.0, "PlayerMovementStats: a knockback must throw the player up.")
+	assert(fall_gravity > 0.0, "PlayerMovementStats: a knockback needs Fall Gravity above 0.")
+	var rise_speed: float = sqrt(2.0 * fall_gravity * height)
+	var frame_time: float = 1.0 / Engine.physics_ticks_per_second
+	var time_in_air: float = 2.0 * rise_speed / fall_gravity + frame_time / 2.0
+	return Vector2(distance / time_in_air, -(rise_speed - fall_gravity * frame_time / 2.0))
 
 
 ## time_to_peak rounded to the nearest whole physics frame, at least one. The half-frame correction

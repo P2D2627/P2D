@@ -57,6 +57,18 @@ const LEAST_WARNING_FRAMES: int = 1
 ## but not foreseen.
 @export_range(0.0, 1.0, 0.05) var chance_per_second: float = 1.0
 
+@export_group("Hit")
+## SP the attack takes from the man when it lands (ADR 0021). Provisional: the group decides.
+@export_range(0.0, 100.0, 0.5, "suffix:SP") var damage: float = 10.0
+## How far, in px along the floor away from the demon, the attack throws the man when it lands.
+@export_range(0.0, 1000.0, 10.0, "suffix:px") var knockback_distance: float = 150.0
+## How high, in px, the attack throws the man when it lands. At least 1: the knockback lasts until
+## he lands, so it always throws him up.
+@export_range(1.0, 200.0, 1.0, "suffix:px") var knockback_height: float = 40.0
+## With Keeps Chasing, seconds the bite can land, from the end of its warning: the moment it bites.
+## 0, it never lands. A lunge can land from take-off until it lands, and does not use it.
+@export_range(0.0, 1.0, 0.01, "suffix:s") var bite_time: float = 0.1
+
 
 ## warning_time in whole physics frames, rounded to the nearest one, and never fewer than the one
 ## frame the demon always warns for, so the aim counts the warning the demon shows.
@@ -73,6 +85,11 @@ func get_chance_in(delta: float) -> float:
 ## recover_time in whole physics frames, rounded to the nearest one.
 func get_recover_frames() -> int:
 	return roundi(recover_time * Engine.physics_ticks_per_second)
+
+
+## bite_time in whole physics frames, rounded to the nearest one.
+func get_bite_frames() -> int:
+	return roundi(bite_time * Engine.physics_ticks_per_second)
 
 
 ## Downward acceleration during the lunge, in px/s², the same for every lunge of the attack. Comes
