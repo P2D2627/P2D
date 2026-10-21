@@ -2,17 +2,17 @@
 # others', a value changed while it is on takes effect at once, a share of the jump's height lowers
 # the full jump and a share of the speed slows the wall jump. The crucifix's action is the left
 # mouse button and R2. A press of Crucifix on the floor raises it, through the player's own input or
-# a stand-in; up, it slows the run by Crucifix Stats, stops every jump, lights up and heals, and
-# letting go gives the full movement back with no jump left over. A press a moment before landing
-# raises it on landing; one made long before raises nothing until Crucifix is pressed again. It
-# never goes up on a wall, and leaving the floor lowers it. A use lasts at most Max Use Time, every
-# use is followed by the whole Cooldown Time, Crucifix held through both raises nothing, a press
-# just before the cooldown ends raises it then, and the pause stops the use. Lost, it goes down,
-# says so once and leaves the game, also from the cooldown. It pushes a Repellable inside its radius
-# out of it while one outside stays put, and the Repellable scene is on the layer the crucifix looks
-# on. A new radius or slowdown in Stats takes effect at once. No demon exists yet, so a bare
-# CharacterBody2D with a Repellable stands in for one. The timing cases use short times on their own
-# copy of Crucifix Stats, so they do not wait 20 s each.
+# a stand-in; up, it slows the run by Crucifix Stats, stops every jump, lights up and heals the
+# man's SP, and letting go gives the full movement back with no jump left over. A press a moment
+# before landing raises it on landing; one made long before raises nothing until Crucifix is pressed
+# again. It never goes up on a wall, and leaving the floor lowers it. A use lasts at most Max Use
+# Time, every use is followed by the whole Cooldown Time, Crucifix held through both raises nothing,
+# a press just before the cooldown ends raises it then, and the pause stops the use. Lost, it goes
+# down, says so once and leaves the game, also from the cooldown. It pushes a Repellable inside its
+# radius out of it while one outside stays put, and the Repellable scene is on the layer the
+# crucifix looks on. A new radius or slowdown in Stats takes effect at once. No demon exists yet, so
+# a bare CharacterBody2D with a Repellable stands in for one. The timing cases use short times on
+# their own copy of Crucifix Stats, so they do not wait 20 s each.
 # Run from the repository root; the exit code is 0 on pass and 1 on fail:
 # godot --headless --fixed-fps 60 --path Projeto --script res://tests/test_crucifix.gd
 extends "res://tests/support/player_test.gd"
@@ -46,6 +46,8 @@ const BUFFER_MARGIN_FRAMES: int = 2
 const HEIGHT_TOLERANCE: float = 3.0
 ## How far the healing of one second may be from Heal Per Second, in SP.
 const HEAL_TOLERANCE: float = 0.01
+## SP the man loses before the case where the crucifix heals him, so he has room to heal.
+const HIT_DAMAGE: float = 30.0
 ## Radius of the stand-in demon's Repellable, in px.
 const DEMON_RADIUS: float = 16.0
 ## Where the near stand-in demon starts, from the crucifix: well inside the radius.
@@ -102,6 +104,7 @@ func _initialize() -> void:
 	results.append(await _lost_it_goes_down_says_so_once_and_leaves_the_game())
 	results.append(await _lost_during_the_cooldown_it_also_leaves_the_game())
 	results.append(await _one_second_up_heals_heal_per_second())
+	results.append(await _one_second_up_gives_the_man_heal_per_second_sp())
 	results.append(await _it_pushes_a_repellable_inside_out_and_leaves_one_outside())
 	results.append(_the_repellable_scene_is_on_the_layer_the_crucifix_looks_on())
 	results.append(await _a_new_radius_or_slowdown_in_stats_takes_effect_at_once())
@@ -592,6 +595,33 @@ func _one_second_up_heals_heal_per_second() -> bool:
 	return report(calls[0] >= frames and absf(per_second - expected) <= HEAL_TOLERANCE,
 			"Healing: %.3f SP per second over %d frames, Heal Per Second %.3f SP"
 			% [per_second, calls[0], expected])
+
+
+## The player's scene links healed to the man's SoulPoints, so after a hit a second with the
+## crucifix up gives him Heal Per Second SP. His own regeneration is off in a copy of his stats, so
+## only the crucifix heals him, whatever Regen Delay is.
+func _one_second_up_gives_the_man_heal_per_second_sp() -> bool:
+	var player: Player = await spawn_on_floor(FLOOR_START)
+	if player == null:
+		return report(false, "Healing the SP: the player never landed")
+	var crucifix: Crucifix = _crucifix_of(player)
+	var soul_points: SoulPoints = player.soul_points
+	soul_points.stats = soul_points.stats.duplicate() as SoulPointsStats
+	soul_points.stats.regen_start_per_second = 0.0
+	soul_points.stats.regen_top_per_second = 0.0
+	soul_points.take_damage(HIT_DAMAGE)
+	var stand_in: StandInInput = put_a_stand_in(player)
+	stand_in.crucifix_held = true
+	await wait_frames(SETTLE_FRAMES)
+	var before: float = soul_points.get_sp()
+	await wait_frames(Engine.physics_ticks_per_second)
+	var gained: float = soul_points.get_sp() - before
+	var was_raised: bool = crucifix.is_raised()
+	var expected: float = crucifix.stats.heal_per_second
+	await remove_player(player)
+	return report(was_raised and absf(gained - expected) <= HEAL_TOLERANCE,
+			"Healing the SP: %.3f SP in a second, crucifix up %s, Heal Per Second %.3f SP"
+			% [gained, was_raised, expected])
 
 
 ## With the crucifix up, a stand-in demon inside the radius is pushed until it is out of it, and

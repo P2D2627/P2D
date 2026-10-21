@@ -4,6 +4,8 @@
 [ext_resource type="PackedScene" path="res://debug/debug_overlay.tscn" id="2_debug_overlay"]
 [ext_resource type="PackedScene" path="res://camera/game_camera.tscn" id="3_game_camera"]
 [ext_resource type="Script" uid="uid://jatmkn5rjuk2" path="res://camera/camera_zone.gd" id="4_camera_zone"]
+[ext_resource type="PackedScene" path="res://demon/demon.tscn" id="5_demon"]
+[ext_resource type="Script" path="res://levels/level.gd" id="6_level"]
 
 [sub_resource type="RectangleShape2D" id="RectangleShape2D_floor"]
 size = Vector2(5824, 80)
@@ -44,7 +46,9 @@ size = Vector2(5824, 2244)
 [sub_resource type="RectangleShape2D" id="RectangleShape2D_one_way"]
 size = Vector2(240, 24)
 
-[node name="TestRoom" type="Node2D" unique_id=1111842025]
+[node name="TestRoom" type="Node2D" node_paths=PackedStringArray("player") unique_id=1111842025]
+script = ExtResource("6_level")
+player = NodePath("Player")
 
 [node name="Floor" type="StaticBody2D" parent="." unique_id=725780737]
 position = Vector2(2912, 1040)
@@ -188,6 +192,18 @@ script = ExtResource("4_camera_zone")
 [node name="CollisionShape2D" type="CollisionShape2D" parent="OpenZone" unique_id=515425625]
 position = Vector2(2912, -42)
 shape = SubResource("RectangleShape2D_open_zone")
+
+[node name="FloorDemon" parent="." instance=ExtResource("5_demon")]
+position = Vector2(2400, 1000)
+
+[node name="WalkwayDemon" parent="." instance=ExtResource("5_demon")]
+position = Vector2(3600, -500)
+
+[node name="FloorDemon2" parent="." instance=ExtResource("5_demon")]
+position = Vector2(2800, 1000)
+
+[node name="LeftFloorDemon" parent="." instance=ExtResource("5_demon")]
+position = Vector2(480, 1000)
 
 [node name="OneWayPlatform" type="StaticBody2D" parent="." unique_id=325517482]
 position = Vector2(2400, 832)

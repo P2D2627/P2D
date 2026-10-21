@@ -1,0 +1,16 @@
+[remap]
+
+importer="dialogue_manager"
+importer_version=18
+type="Resource"
+uid="uid://dl7tmfn2og07i"
+path="res://.godot/imported/gluttony.dialogue-b829cb4f5152b3ce0149ab237c95b399.tres"
+
+[deps]
+
+source_file="res://dialogue/gluttony.dialogue"
+dest_files=["res://.godot/imported/gluttony.dialogue-b829cb4f5152b3ce0149ab237c95b399.tres"]
+
+[params]
+
+defaults=true

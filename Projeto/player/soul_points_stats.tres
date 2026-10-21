@@ -1,0 +1,12 @@
+[gd_resource type="Resource" script_class="SoulPointsStats" format=3]
+
+[ext_resource type="Script" path="res://player/soul_points_stats.gd" id="1_script"]
+
+[resource]
+script = ExtResource("1_script")
+max_sp = 100.0
+low_threshold = 25.0
+regen_delay = 3.0
+regen_start_per_second = 0.5
+regen_top_per_second = 3.0
+regen_ramp_time = 10.0

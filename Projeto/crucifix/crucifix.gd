@@ -6,8 +6,10 @@ extends Node2D
 ## before landing, still raises it then (Raise Buffer Time). Only a press made in the game counts:
 ## Crucifix held down since a menu, the pause or the cooldown raises nothing until it is pressed
 ## again. Letting go, leaving the floor or running out of time lowers it, and every use, long or
-## short, is followed by the same Cooldown Time. While up, it slows the player down, stops it from
-## jumping, pushes every Repellable inside its radius out of it, heals and lights up its radius.
+## short, is followed by the same Cooldown Time. Something else, such as the grab, can keep it down
+## with block(), without the crucifix knowing what it is. While up, it slows the player down, stops
+## it from jumping, pushes every Repellable inside its radius out of it, heals and lights up its
+## radius.
 ## Lost for good, it leaves the game. It goes as a child of the player and reads the player's own
 ## PlayerInput, so an AI, a cutscene or a test drives it too. The player does not know it exists:
 ## the crucifix changes it through a MovementModifier.
@@ -31,7 +33,8 @@ signal cooldown_finished
 ## The crucifix is gone for good, after the first upgrade accepted. It leaves the game at the end of
 ## this frame.
 signal lost
-## SP the crucifix gives back on this physics frame.
+## SP the crucifix gives back on this physics frame. The player's scene connects it to the man's
+## SoulPoints.
 signal healed(amount: float)
 
 ## What the crucifix is doing. Only _physics_process() changes it.
@@ -62,6 +65,8 @@ var _cooldown_frames_left: int = 0
 ## Physics frames left in which a press of Crucifix is kept, waiting for a moment the crucifix can
 ## go up.
 var _raise_buffer_frames_left: int = 0
+## Who keeps the crucifix down, such as the grab: while anyone does, it can't go up.
+var _blockers: Array[StringName] = []
 ## The crucifix's change to the player's movement while it is up: slower, and no jumping. The same
 ## one for the crucifix's whole life, so a new Speed Multiplier reaches the player at once, even
 ## while the crucifix is up.
@@ -83,7 +88,7 @@ func _ready() -> void:
 ## Runs after the player's own physics, as its child, so it reads the state of this frame. The
 ## slowdown and the jump block it puts on the player take effect from the next frame.
 func _physics_process(delta: float) -> void:
-	if player.input.is_crucifix_just_pressed():
+	if player.input.is_crucifix_just_pressed() and not is_blocked():
 		# One frame for the press itself, then Raise Buffer Time's frames.
 		_raise_buffer_frames_left = stats.get_raise_buffer_frames() + 1
 		if _phase == Phase.COOLDOWN and _cooldown_outlasts_a_press():
@@ -110,6 +115,32 @@ func get_phase() -> Phase:
 
 func is_raised() -> bool:
 	return _phase == Phase.RAISED
+
+
+## Keeps the crucifix down for source, such as the grab, until unblock() with the same source. If
+## it is up, it goes down and the cooldown starts, as after any use. While any source keeps it down,
+## a press of Crucifix is not kept, so Crucifix held since then raises nothing until it is pressed
+## again. Blocking twice for the same source is the same as once. After lose(), it does nothing.
+func block(source: StringName) -> void:
+	if is_queued_for_deletion():
+		return
+	if source not in _blockers:
+		_blockers.append(source)
+	_raise_buffer_frames_left = 0
+	if _phase == Phase.RAISED:
+		_lower()
+		_start_cooldown()
+
+
+## Lets the crucifix go up again for source. It stays down while another source keeps it there,
+## and nothing happens if source kept nothing down.
+func unblock(source: StringName) -> void:
+	_blockers.erase(source)
+
+
+## True while any source keeps the crucifix down.
+func is_blocked() -> bool:
+	return not _blockers.is_empty()
 
 
 ## Seconds left in the current use; 0 unless the crucifix is up. For the HUD.
@@ -229,10 +260,8 @@ func _repel(delta: float) -> void:
 			repellable.push_away_from(global_position, distance)
 
 
-## Gives back heal_per_second SP for every second the crucifix is up.
+## Gives back heal_per_second SP for every second the crucifix is up. The crucifix only says how
+## much: the player's scene connects healed to the man's SoulPoints, which heal.
 func _heal(delta: float) -> void:
-	# TODO: to be added once the SP system exists. Call the player's SoulPoints component here, for
-	# example player.soul_points.heal(amount), or connect healed to it. Until then, healed only says
-	# how much this frame gives back.
 	var amount: float = stats.heal_per_second * delta
 	healed.emit(amount)

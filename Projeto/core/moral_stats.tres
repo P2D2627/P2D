@@ -1,0 +1,23 @@
+[gd_resource type="Resource" script_class="MoralStats" format=3]
+
+[ext_resource type="Script" path="res://core/moral_stats.gd" id="1_script"]
+
+[resource]
+script = ExtResource("1_script")
+temptation_points = Dictionary[StringName, float]({
+&"charm": 1.0,
+&"claim": 1.0,
+&"gluttony_shortcut": 1.0,
+&"greed_toll_1": 0.4,
+&"greed_toll_2": 0.4,
+&"greed_toll_3": 0.4,
+&"lust_shortcut": 1.0,
+&"stomach": 1.0
+})
+unknown_temptation_points = 1.0
+arrogant_answer_points = 0.15
+listening_grace = 3.0
+listening_points_per_second = 0.1
+most_listening_points = 0.5
+stage_1_points = 1.0
+stage_2_points = 3.0

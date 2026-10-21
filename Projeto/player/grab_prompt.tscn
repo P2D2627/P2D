@@ -1,0 +1,32 @@
+[gd_scene format=3]
+
+[ext_resource type="Script" path="res://player/grab_prompt.gd" id="1_script"]
+[ext_resource type="Theme" path="res://ui/ui_theme.tres" id="2_theme"]
+
+[node name="GrabPrompt" type="VBoxContainer"]
+visible = false
+offset_left = -150.0
+offset_top = -210.0
+offset_right = 150.0
+offset_bottom = -120.0
+mouse_filter = 2
+theme = ExtResource("2_theme")
+alignment = 1
+script = ExtResource("1_script")
+
+[node name="Label" type="Label" parent="."]
+unique_name_in_owner = true
+layout_mode = 2
+theme_override_colors/font_outline_color = Color(0, 0, 0, 1)
+theme_override_constants/outline_size = 8
+text = "Press Jump!"
+horizontal_alignment = 1
+
+[node name="Bar" type="ProgressBar" parent="."]
+unique_name_in_owner = true
+custom_minimum_size = Vector2(0, 16)
+layout_mode = 2
+mouse_filter = 2
+max_value = 1.0
+step = 0.0
+show_percentage = false

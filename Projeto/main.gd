@@ -61,8 +61,31 @@ func _notification(what: int) -> void:
 
 ## The level goes in before the menu hides, so a level that fails to load leaves the menu on screen.
 func _on_level_chosen(index: int) -> void:
-	_add_level(_playable_levels[index].scene.instantiate())
+	_start_level(_playable_levels[index].scene)
 	_main_menu.hide()
+
+
+## A new copy of scene in the level slot. When it asks to start over, another new copy takes its
+## place at the end of that frame, so nothing of it runs after its own signal (ADR 0026). A level
+## without the Level script at its root can't ask, and the warning says so.
+func _start_level(scene: PackedScene) -> void:
+	var level: Node = scene.instantiate()
+	if level is Level:
+		(level as Level).restart_requested.connect(_restart_level.bind(level, scene),
+				CONNECT_DEFERRED)
+	else:
+		push_warning("Main: %s has no Level script at its root, so it never starts over."
+				% scene.resource_path)
+	_add_level(level)
+
+
+## Only while level is still in the slot: had Main Menu taken it out on the same frame, a level
+## would come back behind the menu.
+func _restart_level(level: Node, scene: PackedScene) -> void:
+	if not is_instance_valid(level) or level.get_parent() != _level_slot:
+		return
+	_clear_level()
+	_start_level(scene)
 
 
 ## The next phase starts loading on another thread as the screen goes black, and is usually loaded
@@ -84,7 +107,7 @@ func _on_phase_exit_reached(next_scene_path: String) -> void:
 		push_error("Main: the next phase, %s, is not a scene." % next_scene_path)
 	else:
 		_clear_level()
-		_add_level(next.instantiate())
+		_start_level(next)
 	_level_slot.process_mode = Node.PROCESS_MODE_PAUSABLE
 	await _fade_to(0.0)
 	_changing_phase = false

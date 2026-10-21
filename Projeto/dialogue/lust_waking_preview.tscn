@@ -1,0 +1,9 @@
+[gd_scene load_steps=3 format=3]
+
+[ext_resource type="PackedScene" uid="uid://73jm5qjy52vq" path="res://addons/dialogue_manager/example_balloon/example_balloon.tscn" id="1_balloon"]
+[ext_resource type="Resource" uid="uid://cpsgq8t821mct" path="res://dialogue/lust.dialogue" id="2_lust"]
+
+[node name="LustWakingPreview" instance=ExtResource("1_balloon")]
+dialogue_resource = ExtResource("2_lust")
+start_from_cue = "waking"
+auto_start = true
