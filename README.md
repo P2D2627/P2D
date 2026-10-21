@@ -512,7 +512,7 @@ Remote; os restantes valores são lidos sempre que são usados.
     ├── project.godot
     ├── main.tscn      cena principal: menus, pausa e o nível em jogo (script main.gd)
     ├── default_bus_layout.tres   buses de áudio
-    ├── core/          serviços globais: as opções do jogador (autoload Settings) e os perfis de controlos
+    ├── core/          serviços globais: as opções do jogador (autoload Settings), o registo moral (autoload Moral) e os perfis de controlos
     ├── player/        personagem: cena, scripts, valores do movimento, SP e agarrão
     ├── crucifix/      crucifixo: cena, script e valores
     ├── demon/         demónios que perseguem: cena, scripts e os valores de cada nível
@@ -602,11 +602,15 @@ godot --headless --fixed-fps 60 --path Projeto --script res://tests/test_grab_es
 godot --headless --fixed-fps 60 --path Projeto --script res://tests/test_crucifix_block.gd
 godot --headless --fixed-fps 60 --path Projeto --script res://tests/test_sinking_drawing.gd
 godot --headless --fixed-fps 60 --path Projeto --script res://tests/test_level_restart.gd
+godot --headless --fixed-fps 60 --path Projeto --script res://tests/test_moral_record.gd
+godot --headless --fixed-fps 60 --path Projeto --script res://tests/test_moral_dialogue.gd
 ```
 
 O `test_input_profiles.gd` escreve seis ERROR, das tentativas de atribuir teclas inválidas, todos
 esperados. O `test_soul_points.gd` escreve quatro ERROR, das quantidades de dano e de cura
-inválidas, também esperados.
+inválidas, também esperados. O `test_moral_record.gd` escreve seis WARNING, de uma tentação
+desconhecida (aceite e consultada), de um tom desconhecido e de três tempos de escuta inválidos,
+igualmente esperados.
 
 Todos os scripts de testes e de medidas estendem `tests/support/base_test.gd`, diretamente ou
 através de outro ficheiro de suporte. Antes de o autoload `Settings` estar pronto, esse ficheiro
@@ -1304,7 +1308,7 @@ saltar nem interagir; com o jogo a retomar no próprio frame, a personagem salta
 
 As opções (volume dos buses Master, Music, SFX, Ambience e UI, ecrã inteiro, V-Sync, limite de FPS
 e controlos)
-estão no autoload `Settings`, o único do projeto, porque têm de estar aplicadas antes de qualquer
+estão no autoload `Settings`, porque têm de estar aplicadas antes de qualquer
 cena. Gravam-se em `user://settings.cfg` (no Windows, `%APPDATA%\Godot\app_userdata\P2D\`), um
 ficheiro de texto legível, com número de versão. Um ficheiro em falta ou ilegível, ou com valores de
 tipo errado, fora do intervalo ou que não são números, dá os valores predefinidos. O limite de FPS só
@@ -1347,6 +1351,43 @@ e remapeamento por captura da tecla seguinte.
 
 O tamanho da letra e os espaços entre elementos estão num único tema, `ui/ui_theme.tres`, e nenhum
 nó define o seu próprio tamanho de letra: uma futura opção de tamanho do texto altera apenas o tema.
+
+#### Registo moral: escondido, uma soma e dois limiares
+
+O jogo julga o homem pela forma como se joga, sem o mostrar. O autoload `Moral` guarda esse registo
+num único sítio, e nada no ecrã o lê. As falas (ficheiros `.dialogue`) e as ofertas dos demónios
+comunicam com ele apenas por seis nomes: aceitar uma tentação, o tom de uma resposta (humilde ou
+arrogante), o tempo que o homem ouviu uma proposta antes de a recusar, se já aceitou uma dada
+tentação, o estádio atual e o aviso de que o estádio mudou.
+
+Tudo o que o homem faz soma pontos a um único total. Uma tentação aceite soma o valor indicado para
+ela, contando uma só vez, mesmo que volte a ser aceite. Cada portagem roubada no nível 3 vale menos
+do que um atalho, porque esse nível tem três. Uma resposta arrogante soma pouco. Ouvir uma proposta
+só conta a partir de alguns segundos, e cada proposta tem um máximo; ouvida outra vez, por exemplo
+depois de recomeçar a fase, conta apenas a escuta mais longa. Dois limiares transformam o total no
+estádio 0, 1 ou 2, que escolhe a variante das falas do homem: quanto mais alto, pior ele fala.
+Cada resposta conta sempre que é dada. Por isso, uma conversa com respostas não se repete quando a
+fase recomeça; essa regra pertence ao estado do jogo (`GameState`), que guarda as conversas já
+ouvidas, e não ao registo moral.
+
+Uma resposta humilde fica contada, mas não retira pontos, e o total nunca desce. Se descontasse, o
+jogador poderia aprender por tentativa e erro a "limpar" a fala com respostas humildes, e o registo
+deixaria de medir o que o jogador escolhe. A soma única foi preferida a contar apenas as tentações,
+que ignoraria a soberba nas respostas, e a ter um limiar por categoria, que daria seis valores
+difíceis de afinar e de explicar.
+
+| Valor (`core/moral_stats.tres`) | Referência |
+|---|---|
+| Atalho ou dom de um demónio | 1 ponto |
+| Cada portagem roubada | 0,4 pontos |
+| Resposta arrogante | 0,15 pontos |
+| Ouvir uma proposta | 0,1 pontos por segundo além de 3 s, até 0,5 por proposta |
+| Estádio 1 / estádio 2 | a partir de 1 / de 3 pontos |
+
+São valores de referência, a afinar em jogo. Com eles, um atalho basta para a fala piorar, e as
+três portagens juntas pesam pouco mais do que um atalho. As regras estão numa classe sem nós
+(`MoralRecord`), testada isoladamente; o autoload limita-se a disponibilizá-la. O `reset()` limpa o
+registo para um jogo novo; a gravação fica para quando houver saves.
 
 ### Convenções de código
 
