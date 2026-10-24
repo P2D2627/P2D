@@ -3,6 +3,7 @@
 [ext_resource type="Script" uid="uid://chjqb4otquy2l" path="res://player/player.gd" id="1_script"]
 [ext_resource type="Resource" uid="uid://dgbdj7xih7ra7" path="res://player/player_movement_stats.tres" id="2_stats"]
 [ext_resource type="Script" uid="uid://bb8cwv6qx3yd" path="res://player/player_input.gd" id="3_input"]
+[ext_resource type="Texture2D" uid="uid://d183o78hw2hf2" path="res://assets/sprites/player/main_character_idle.png" id="3_qjkh3"]
 [ext_resource type="Script" path="res://player/player_sounds.gd" id="4_sounds"]
 [ext_resource type="AudioStream" path="res://assets/audio/wall_slide.wav" id="5_wall_slide"]
 [ext_resource type="AudioStream" path="res://assets/audio/footstep_1.wav" id="6_footstep_1"]
@@ -26,6 +27,42 @@
 [sub_resource type="RectangleShape2D" id="RectangleShape2D_player"]
 size = Vector2(48, 96)
 
+[sub_resource type="AtlasTexture" id="AtlasTexture_g6k8r"]
+atlas = ExtResource("3_qjkh3")
+region = Rect2(0, 0, 2080, 2080)
+
+[sub_resource type="AtlasTexture" id="AtlasTexture_boad6"]
+atlas = ExtResource("3_qjkh3")
+region = Rect2(2080, 0, 2080, 2080)
+
+[sub_resource type="AtlasTexture" id="AtlasTexture_rgyib"]
+atlas = ExtResource("3_qjkh3")
+region = Rect2(4160, 0, 2080, 2080)
+
+[sub_resource type="AtlasTexture" id="AtlasTexture_hg6s5"]
+atlas = ExtResource("3_qjkh3")
+region = Rect2(6240, 0, 2080, 2080)
+
+[sub_resource type="SpriteFrames" id="SpriteFrames_g4v7s"]
+animations = [{
+"frames": [{
+"duration": 1.0,
+"texture": SubResource("AtlasTexture_g6k8r")
+}, {
+"duration": 1.0,
+"texture": SubResource("AtlasTexture_boad6")
+}, {
+"duration": 1.0,
+"texture": SubResource("AtlasTexture_rgyib")
+}, {
+"duration": 1.0,
+"texture": SubResource("AtlasTexture_hg6s5")
+}],
+"loop": 1,
+"name": &"idle",
+"speed": 4.0
+}]
+
 [node name="Player" type="CharacterBody2D" node_paths=PackedStringArray("input", "soul_points") unique_id=1108148048]
 process_physics_priority = -1
 collision_layer = 2
@@ -40,11 +77,16 @@ knock_off_layers = 4
 position = Vector2(0, -48)
 shape = SubResource("RectangleShape2D_player")
 
-[node name="Placeholder" type="Polygon2D" parent="." unique_id=2110606164]
-color = Color(0.85, 0.78, 0.62, 1)
-polygon = PackedVector2Array(-24, -96, 24, -96, 24, 0, -24, 0)
+[node name="Sprite" type="AnimatedSprite2D" parent="." unique_id=1045081328]
+editor_description = "A 192 x 192 cell with the feet on its line y = 184. Offset puts the feet on the node's own y = 0, at the player's origin, the bottom of the collision box: SinkingDrawing cuts what passes below that line."
+offset = Vector2(0, -953.333)
+scale = Vector2(0.04951923, 0.04951923)
+sprite_frames = SubResource("SpriteFrames_g4v7s")
+animation = &"idle"
+autoplay = "idle"
+frame_progress = 0.7723723
 
-[node name="PlayerInput" type="Node" parent="."]
+[node name="PlayerInput" type="Node" parent="." unique_id=142086524]
 script = ExtResource("3_input")
 
 [node name="SoulPoints" type="Node" parent="."]
@@ -95,11 +137,12 @@ hurtbox = NodePath("../Hurtbox")
 [node name="InvulnerabilityBlink" type="Node" parent="." node_paths=PackedStringArray("hurtbox", "drawing")]
 script = ExtResource("9_blink")
 hurtbox = NodePath("../Hurtbox")
-drawing = NodePath("../Placeholder")
+drawing = NodePath("../Sprite")
 
 [node name="SinkingDrawing" type="Node" parent="." node_paths=PackedStringArray("drawing")]
 script = ExtResource("13_sinking_drawing")
-drawing = NodePath("../Placeholder")
+drawing = NodePath("../Sprite")
+depth = 1939.0
 
 [node name="GrabEscape" type="Node" parent="." node_paths=PackedStringArray("player", "hit_reaction", "hurtbox")]
 script = ExtResource("10_grab_escape")

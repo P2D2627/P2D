@@ -678,7 +678,7 @@ func _his_drawing_sinks_with_the_time_and_is_back_as_he_breaks_free() -> bool:
 	var escape: GrabEscape = _escape_of(man)
 	_use_short_time_to_die(escape)
 	var full: float = (man.get_node(^"SinkingDrawing") as SinkingDrawing).depth
-	var drawing: Node2D = man.get_node(^"Placeholder") as Node2D
+	var drawing: Node2D = man.get_node(^"Sprite") as Node2D
 	var depth_on_free: Array[float] = []
 	escape.broke_free.connect(func() -> void: depth_on_free.append(_sink_depth_of(man)))
 	var start: Vector2 = man.position
@@ -842,7 +842,7 @@ func _signals_of(escape: GrabEscape) -> Array[StringName]:
 
 ## Px the man's drawing is down now, as its shader has it.
 func _sink_depth_of(man: Player) -> float:
-	var drawing: CanvasItem = man.get_node(^"Placeholder") as CanvasItem
+	var drawing: CanvasItem = man.get_node(^"Sprite") as CanvasItem
 	return float((drawing.material as ShaderMaterial).get_shader_parameter(
 			SinkingDrawing.DEPTH_PARAMETER))
 

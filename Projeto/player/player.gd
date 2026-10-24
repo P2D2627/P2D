@@ -66,6 +66,9 @@ var _floor_body: CollisionObject2D = null
 ## floor he is in the air, never on a wall.
 var _held_still: bool = false
 
+## The drawing faces left; it is mirrored while the player faces right.
+@onready var _sprite: AnimatedSprite2D = $Sprite
+
 
 func _ready() -> void:
 	assert(stats != null, "Player: assign a PlayerMovementStats resource to Stats.")
@@ -94,6 +97,7 @@ func _physics_process(delta: float) -> void:
 			State.ON_WALL:
 				_physics_on_wall(delta)
 	move_and_slide()
+	_update_facing()
 
 
 ## Where the player is, for what shows or follows it, such as the debug overlay and, later, the
@@ -198,6 +202,11 @@ func _update_state() -> void:
 				_state = State.IN_AIR
 
 
+## Turns the drawing to the last run direction; standing still keeps the last one.
+func _update_facing() -> void:
+	var direction: float = input.get_run_direction()
+	if direction != 0.0:
+		_sprite.flip_h = direction > 0.0
 ## On every frame he stands on a body on Knock Off Layers, shoves the player off it: along its top
 ## at Knock Off Speed, as a knockback that lasts until he lands on something else. The shove goes to
 ## the side of the body he is on, to the right from right over its middle, and keeps that way onto

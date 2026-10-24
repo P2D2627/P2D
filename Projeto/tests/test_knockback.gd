@@ -379,7 +379,7 @@ func _the_man_s_hurtbox_is_his_body_and_is_wired() -> bool:
 			and hurtbox_shape.position == body.position
 			and (hurtbox_shape.shape as RectangleShape2D).size == body_size(man))
 	var wired: bool = (reaction.player == man and reaction.hurtbox == hurtbox
-			and blink.hurtbox == hurtbox and blink.drawing == man.get_node(^"Placeholder"))
+			and blink.hurtbox == hurtbox and blink.drawing == man.get_node(^"Sprite"))
 	await remove_player(man)
 	return report(same_box and wired,
 			"Scene: the Hurtbox is the body's box %s; HitReaction and the blink on this man's nodes %s"
