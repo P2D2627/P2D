@@ -41,7 +41,7 @@ size = Vector2(3063, 689)
 size = Vector2(735, 2698)
 
 [sub_resource type="RectangleShape2D" id="RectangleShape2D_zone09_1"]
-size = Vector2(3695.5, 1352.5)
+size = Vector2(3593, 1352.5)
 
 [sub_resource type="RectangleShape2D" id="RectangleShape2D_zone10_1"]
 size = Vector2(5131, 768)
@@ -297,11 +297,11 @@ position = Vector2(1830.5, 4965.75)
 shape = SubResource("RectangleShape2D_zone09_1")
 
 [node name="Shape2" type="CollisionShape2D" parent="CameraZones/Zone09" unique_id=547584005]
-position = Vector2(1865.75, 3744)
+position = Vector2(1814.5, 3744)
 shape = SubResource("RectangleShape2D_zone09_1")
 
 [node name="Shape3" type="CollisionShape2D" parent="CameraZones/Zone09" unique_id=1340649906]
-position = Vector2(1896, 2302.5)
+position = Vector2(1790, 2311)
 shape = SubResource("RectangleShape2D_zone09_1")
 
 [node name="Zone10" type="Area2D" parent="CameraZones" unique_id=2025443351]
@@ -656,7 +656,10 @@ lift = NodePath("../Lift")
 ferry = NodePath("../Ferry")
 
 [node name="Player" parent="." unique_id=1860362972 instance=ExtResource("3_player")]
+process_physics_priority = 0
 position = Vector2(7237, 5282)
+collision_mask = 257
+knock_off_layers = 0
 
 [node name="DebugOverlay" parent="." unique_id=1866004166 node_paths=PackedStringArray("player", "camera") instance=ExtResource("2_debug")]
 player = NodePath("../Player")

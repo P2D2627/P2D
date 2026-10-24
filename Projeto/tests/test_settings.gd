@@ -174,7 +174,6 @@ func _reset_brings_back_the_defaults_and_saves_them() -> bool:
 			"Reset: every option its default %s, applied %s, saved %s" % [values, applied, saved])
 
 
-## A settings node of the tests' own, on the test file, in the tree, where it reads the file.
 ## The autoload, and a new settings node left on the player's file, keep to memory in the tests:
 ## both have no path, start from the defaults, and a change to either leaves the player's file as
 ## it was, by its text and the time it was last written.
@@ -199,6 +198,7 @@ func _in_the_tests_the_players_file_is_neither_read_nor_written() -> bool:
 			% [autoload_in_memory, node_in_memory, untouched])
 
 
+## A settings node of the tests' own, on the test file, in the tree, where it reads the file.
 func _new_settings() -> GameSettings:
 	var settings: GameSettings = SETTINGS_SCRIPT.new() as GameSettings
 	settings.path = TEST_PATH

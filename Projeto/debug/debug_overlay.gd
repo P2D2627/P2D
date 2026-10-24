@@ -2,16 +2,20 @@ class_name DebugOverlay
 extends CanvasLayer
 
 ## Text in a corner of the screen with the numbers that help tune the game while playing. The
-## Toggle Debug Overlay action shows and hides it. Outside debug builds it frees itself, so a
-## release export never shows it. Its scene sets the process mode to Always, so it keeps working
-## while the game is paused.
+## Toggle Debug Overlay action shows and hides it, and Debug Damage hurts the player. Outside debug
+## builds it frees itself, so a release export never shows it and nothing hurts through it. Its
+## scene sets the process mode to Always, so it keeps working while the game is paused.
 
 const TOGGLE_ACTION: StringName = &"toggle_debug_overlay"
+const DAMAGE_ACTION: StringName = &"debug_damage"
 const MS_PER_SECOND: float = 1000.0
 
 ## Whether the text shows when the scene starts.
 @export var start_visible: bool = true
-## The player whose state, velocity and jumps the text shows. Without one, the text has only the
+## SP a press of Debug Damage takes from the player, as a hit would, so the regeneration and the
+## warnings can be tried before anything in the game hurts.
+@export_range(0.0, 100.0, 1.0, "suffix:SP") var debug_damage: float = 10.0
+## The player whose state, velocity, SP and jumps the text shows. Without one, the text has only the
 ## frame rate and frame times.
 @export var player: Player
 ## The camera whose zone, look ahead and look down the text shows. Without one, there is no camera
@@ -44,6 +48,9 @@ func _unhandled_input(event: InputEvent) -> void:
 	if event.is_action_pressed(TOGGLE_ACTION):
 		_set_shown(not visible)
 		get_viewport().set_input_as_handled()
+	elif event.is_action_pressed(DAMAGE_ACTION):
+		_hurt_player()
+		get_viewport().set_input_as_handled()
 
 
 ## Rewrites the text on every frame while it shows, with new strings each time, which only debug
@@ -53,6 +60,8 @@ func _process(_delta: float) -> void:
 	var text: String = _performance_section()
 	if is_instance_valid(player):
 		text += "\n" + _player_section()
+	if is_instance_valid(player) and is_instance_valid(player.soul_points):
+		text += "\n" + _soul_points_section()
 	if is_instance_valid(camera):
 		text += "\n" + _camera_section()
 	if is_instance_valid(player) and not _last_jump.is_empty():
@@ -69,6 +78,14 @@ func _physics_process(_delta: float) -> void:
 	_peak_y = minf(_peak_y, player.global_position.y)
 	if player.velocity.y >= 0.0:
 		set_physics_process(false)
+
+
+## Takes Debug Damage SP from the player, as a hit would, unless the game is paused. Works with the
+## text hidden too.
+func _hurt_player() -> void:
+	if get_tree().paused or not is_instance_valid(player) or not is_instance_valid(player.soul_points):
+		return
+	player.soul_points.take_damage(debug_damage)
 
 
 ## While hidden, _process does not run, so the text costs nothing per frame. Jumps are still
@@ -93,6 +110,19 @@ func _performance_section() -> String:
 func _player_section() -> String:
 	return "state %s   velocity (%+.0f, %+.0f) px/s" % [
 			Player.State.find_key(player.get_state()), player.velocity.x, player.velocity.y]
+
+
+## The man's SP out of Max SP, with a tenth so regeneration shows, the speed regeneration gives, so
+## its ramp shows, and whether it is low or has run out.
+func _soul_points_section() -> String:
+	var soul_points: SoulPoints = player.soul_points
+	var status: String = ""
+	if soul_points.is_depleted():
+		status = "   run out"
+	elif soul_points.is_low():
+		status = "   low"
+	return "SP %.1f / %.0f   regen %.1f SP/s%s" % [soul_points.get_sp(),
+			soul_points.get_max_sp(), soul_points.get_regen_rate(), status]
 
 
 ## The camera zone the player is in, or none, and how far the camera leads ahead and down, in px.

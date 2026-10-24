@@ -1,0 +1,16 @@
+[remap]
+
+importer="dialogue_manager"
+importer_version=18
+type="Resource"
+uid="uid://cpsgq8t821mct"
+path="res://.godot/imported/lust.dialogue-1507a74da618f224a914628f9482f305.tres"
+
+[deps]
+
+source_file="res://dialogue/lust.dialogue"
+dest_files=["res://.godot/imported/lust.dialogue-1507a74da618f224a914628f9482f305.tres"]
+
+[params]
+
+defaults=true

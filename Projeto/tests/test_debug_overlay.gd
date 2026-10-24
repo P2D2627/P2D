@@ -3,12 +3,15 @@
 # processing, F3 again brings both back, and holding F3 toggles only once. While the game is paused,
 # F3 and the text keep working. Without a player, the text is the frame rate and the two worst step
 # times; with one, a second line follows its state and velocity, and goes away when the player is
-# freed. After the first jump, a third line says what the last jump was, from the player's jump
-# signals, and how high it went: a full jump peaks at Jump Height. A player freed in the middle of
-# a jump stops the overlay following it. With Start Visible off, the overlay starts hidden. In the
-# test room the overlay is linked to the camera too, and a camera line shows the zone the player is
-# in and the camera's look ahead and look down. That it
-# frees itself outside debug builds can only be checked on a release export.
+# freed. A third line shows the man's SP out of Max SP, the speed regeneration gives, and whether it
+# is low or has run out. Debug Damage is on F4: a press takes Debug Damage SP from the player once,
+# even held down, and nothing while the game is paused; it works with the text hidden too. After
+# the first jump, one more line says what the last jump was, from the player's jump signals, and
+# how high it went: a full jump peaks at Jump Height. A player freed in the middle of a jump stops
+# the overlay following it. With Start Visible off, the overlay starts hidden. In the test room the
+# overlay is linked to the camera too, and a camera line shows the zone the player is in and the
+# camera's look ahead and look down. That it frees itself outside debug builds can only be checked
+# on a release export.
 # Run from the repository root; the exit code is 0 on pass and 1 on fail:
 # godot --headless --fixed-fps 60 --path Projeto --script res://tests/test_debug_overlay.gd
 extends "res://tests/support/player_test.gd"
@@ -19,6 +22,8 @@ const PERFORMANCE_LINE: String = (
 		"(?m)^\\d+ FPS   worst process \\d+\\.\\d{2} ms   worst physics \\d+\\.\\d{2} ms$")
 const PLAYER_LINE: String = "(?m)^state (\\w+)   velocity \\(([+-]\\d+), ([+-]\\d+)\\) px/s$"
 const JUMP_LINE: String = "(?m)^jump off (.+)   peak (-?\\d+) px$"
+const SP_LINE: String = "(?m)^SP .*$"
+const REGEN_IN_SP_LINE: String = "(?m)^SP .*   regen (\\d+\\.\\d) SP/s"
 const CAMERA_LINE: String = (
 		"(?m)^camera zone (\\S+)   look ahead ([+-]\\d+) px   look down ([+-]\\d+) px$")
 ## A spot on the test room's floor, right of the first screen.
@@ -41,10 +46,19 @@ const SPEED_TOLERANCE: float = 1.0
 const FULL_JUMP_FRAMES: int = 60
 ## Physics frames the jump line must stay unchanged after the last jump.
 const LATCH_FRAMES: int = 30
-## Lines in the text with a player and no jump yet: the frame rate's and the player's.
-const LINES_BEFORE_ANY_JUMP: int = 2
+## Lines in the text with a player and no jump yet: the frame rate's, the player's and the SP's.
+const LINES_BEFORE_ANY_JUMP: int = 3
 ## Repeats the keyboard sends while F3 is held down, in the held-key case.
 const KEY_REPEATS: int = 3
+## The SP values of the SP line case, set on its own copy of the stats so the .tres can change.
+const SP_MAX: float = 100.0
+const SP_LOW_THRESHOLD: float = 25.0
+## The hits of the SP line case: the first leaves 20 SP, below Low Threshold; the second runs out.
+const SP_FIRST_HIT: float = 80.0
+const SP_SECOND_HIT: float = 100.0
+## The pause after a hit and the single regeneration speed of the case of the speed in the SP line.
+const SP_SHORT_PAUSE: float = 0.5
+const SP_TOP_RATE: float = 3.0
 
 
 func _initialize() -> void:
@@ -57,6 +71,7 @@ func _initialize() -> void:
 	await process_frame
 	var results: Array[bool] = []
 	results.append(_the_toggle_is_on_f3())
+	results.append(_the_debug_damage_is_on_f4())
 	results.append(await _the_test_room_shows_the_overlay_from_the_start())
 	results.append(await _f3_hides_the_overlay_and_f3_again_shows_it())
 	results.append(await _holding_f3_toggles_only_once())
@@ -65,6 +80,10 @@ func _initialize() -> void:
 	results.append(await _with_start_visible_off_the_overlay_starts_hidden())
 	results.append(await _the_player_line_follows_the_player())
 	results.append(await _a_freed_player_leaves_only_the_performance_line())
+	results.append(await _the_sp_line_says_the_sp_and_whether_it_is_low_or_run_out())
+	results.append(await _the_sp_line_shows_the_regen_rate())
+	results.append(await _f4_takes_debug_damage_once_and_not_while_paused())
+	results.append(await _f4_works_with_the_text_hidden())
 	results.append(await _a_full_jump_shows_its_peak_at_jump_height())
 	results.append(await _the_jump_line_says_what_each_jump_was_and_keeps_it())
 	results.append(await _a_player_freed_mid_jump_stops_the_following())
@@ -74,16 +93,18 @@ func _initialize() -> void:
 
 ## Toggle Debug Overlay is in the Input Map, on F3.
 func _the_toggle_is_on_f3() -> bool:
-	var keys: PackedStringArray = []
-	if InputMap.has_action(DebugOverlay.TOGGLE_ACTION):
-		for event: InputEvent in InputMap.action_get_events(DebugOverlay.TOGGLE_ACTION):
-			if event is InputEventKey:
-				keys.append(OS.get_keycode_string((event as InputEventKey).physical_keycode))
+	var keys: PackedStringArray = _keys_of(DebugOverlay.TOGGLE_ACTION)
 	return report(keys.has("F3"), "Toggle Debug Overlay keys: [%s]" % ", ".join(keys))
 
 
+func _the_debug_damage_is_on_f4() -> bool:
+	var keys: PackedStringArray = _keys_of(DebugOverlay.DAMAGE_ACTION)
+	return report(keys.has("F4"), "Debug Damage keys: [%s]" % ", ".join(keys))
+
+
 ## The test room has the overlay, shown and running from the start, with the process mode that
-## keeps it working while the game is paused, and linked to the room's player.
+## keeps it working while the game is paused, and linked to the room's player, whose SP line shows
+## next to the camera's.
 func _the_test_room_shows_the_overlay_from_the_start() -> bool:
 	var room: Node = TEST_ROOM_SCENE.instantiate()
 	root.add_child(room)
@@ -95,10 +116,14 @@ func _the_test_room_shows_the_overlay_from_the_start() -> bool:
 	var is_ready: bool = overlay.is_node_ready()
 	var always: bool = overlay.process_mode == Node.PROCESS_MODE_ALWAYS
 	var linked: bool = overlay.player != null and overlay.player == room.get_node_or_null(^"Player")
-	var passed: bool = (is_ready and overlay.visible and overlay.is_processing() and always
-			and linked)
-	var what: String = ("Test room: ready %s, shown %s, processing %s, Always %s, player linked %s"
-			% [is_ready, overlay.visible, overlay.is_processing(), always, linked])
+	var shown: bool = overlay.visible
+	var processing: bool = overlay.is_processing()
+	await _wait_process_frames(TEXT_FRAMES)
+	var sp_line: String = _sp_line(overlay)
+	var passed: bool = (is_ready and shown and processing and always and linked
+			and not sp_line.is_empty())
+	var what: String = ("Test room: ready %s, shown %s, processing %s, Always %s, player linked %s, "
+			+ "SP line \"%s\"") % [is_ready, shown, processing, always, linked, sp_line]
 	await _remove(room)
 	return report(passed, what)
 
@@ -183,6 +208,99 @@ func _a_freed_player_leaves_only_the_performance_line() -> bool:
 	await _remove(overlay)
 	return report(had_player_line and _is_only_the_performance_line(text),
 			"Freed player: player line before %s, text after \"%s\"" % [had_player_line, text])
+
+
+## The SP line shows the man's SP out of Max SP, then "low" once a hit leaves him at or below Low
+## Threshold, and "run out" once a hit takes them all. His regeneration is off in a copy of his
+## stats, so the SP stay where the hits leave them.
+func _the_sp_line_says_the_sp_and_whether_it_is_low_or_run_out() -> bool:
+	# No floor in this case: the player just falls while the text is read.
+	var player: Player = spawn_player(Vector2.ZERO)
+	var stats: SoulPointsStats = player.soul_points.stats.duplicate() as SoulPointsStats
+	stats.max_sp = SP_MAX
+	stats.low_threshold = SP_LOW_THRESHOLD
+	stats.regen_start_per_second = 0.0
+	stats.regen_top_per_second = 0.0
+	player.soul_points.stats = stats
+	var overlay: DebugOverlay = await _spawn_overlay(true, player)
+	await _wait_process_frames(TEXT_FRAMES)
+	var full: String = _sp_line(overlay)
+	player.soul_points.take_damage(SP_FIRST_HIT)
+	await _wait_process_frames(TEXT_FRAMES)
+	var low: String = _sp_line(overlay)
+	player.soul_points.take_damage(SP_SECOND_HIT)
+	await _wait_process_frames(TEXT_FRAMES)
+	var run_out: String = _sp_line(overlay)
+	await _remove(overlay)
+	await _remove(player)
+	var heard: Array[String] = [full, low, run_out]
+	var expected: Array[String] = ["SP 100.0 / 100   regen 0.0 SP/s",
+			"SP 20.0 / 100   regen 0.0 SP/s   low", "SP 0.0 / 100   regen 0.0 SP/s   run out"]
+	return report(heard == expected, "SP line: %s, expected %s" % [heard, expected])
+
+
+## The SP line shows the speed regeneration gives: none during the pause after a hit, and its speed
+## once it runs. The ramp of a copy of the stats is 0 s, so the speed does not change while the text
+## is read.
+func _the_sp_line_shows_the_regen_rate() -> bool:
+	var player: Player = spawn_player(Vector2.ZERO)
+	var stats: SoulPointsStats = player.soul_points.stats.duplicate() as SoulPointsStats
+	stats.regen_delay = SP_SHORT_PAUSE
+	stats.regen_top_per_second = SP_TOP_RATE
+	stats.regen_ramp_time = 0.0
+	player.soul_points.stats = stats
+	var overlay: DebugOverlay = await _spawn_overlay(true, player)
+	player.soul_points.take_damage(SP_FIRST_HIT)
+	await _wait_process_frames(TEXT_FRAMES)
+	var in_the_pause: String = _regen_in_sp_line(overlay)
+	await _wait_physics_frames(stats.get_regen_delay_frames())
+	await _wait_process_frames(TEXT_FRAMES)
+	var running: String = _regen_in_sp_line(overlay)
+	await _remove(overlay)
+	await _remove(player)
+	var expected_running: String = "%.1f" % SP_TOP_RATE
+	return report(in_the_pause == "0.0" and running == expected_running,
+			"Regeneration in the SP line: %s SP/s in the pause, %s SP/s after it, expected 0.0 and %s"
+			% [in_the_pause, running, expected_running])
+
+
+## A press of F4 takes Debug Damage SP from the player once, even held down with its repeats, and
+## nothing while the game is paused.
+func _f4_takes_debug_damage_once_and_not_while_paused() -> bool:
+	var player: Player = spawn_player(Vector2.ZERO)
+	var overlay: DebugOverlay = await _spawn_overlay(true, player)
+	var soul_points: SoulPoints = player.soul_points
+	var expected: float = soul_points.get_sp() - overlay.debug_damage
+	root.push_input(_key_event(KEY_F4, true, false))
+	for _repeat: int in KEY_REPEATS:
+		root.push_input(_key_event(KEY_F4, true, true))
+	root.push_input(_key_event(KEY_F4, false, false))
+	var after_a_press: float = soul_points.get_sp()
+	paused = true
+	_press_key(KEY_F4)
+	var after_a_paused_press: float = soul_points.get_sp()
+	paused = false
+	await _remove(overlay)
+	await _remove(player)
+	return report(after_a_press == expected and after_a_paused_press == expected,
+			"F4 held, with %d repeats: %.1f SP; F4 while paused: %.1f SP; expected %.1f"
+			% [KEY_REPEATS, after_a_press, after_a_paused_press, expected])
+
+
+## With the text hidden, F4 still takes Debug Damage SP from the player.
+func _f4_works_with_the_text_hidden() -> bool:
+	var player: Player = spawn_player(Vector2.ZERO)
+	var overlay: DebugOverlay = await _spawn_overlay(false, player)
+	var soul_points: SoulPoints = player.soul_points
+	var expected: float = soul_points.get_sp() - overlay.debug_damage
+	_press_key(KEY_F4)
+	var after_a_press: float = soul_points.get_sp()
+	var hidden: bool = not overlay.visible
+	await _remove(overlay)
+	await _remove(player)
+	return report(hidden and after_a_press == expected,
+			"F4 with the text hidden (hidden %s): %.1f SP, expected %.1f"
+			% [hidden, after_a_press, expected])
 
 
 ## A full jump from the floor, holding Jump: the jump line says it was on time, and once the player
@@ -373,6 +491,18 @@ func _jump_line(overlay: DebugOverlay) -> String:
 	return found.get_string() if found != null else ""
 
 
+## The SP line of the text, or "" if there is none.
+func _sp_line(overlay: DebugOverlay) -> String:
+	var found: RegExMatch = RegEx.create_from_string(SP_LINE).search(_text(overlay))
+	return found.get_string() if found != null else ""
+
+
+## The regeneration speed in the SP line, as text such as "1.5", or "" if there is none.
+func _regen_in_sp_line(overlay: DebugOverlay) -> String:
+	var found: RegExMatch = RegEx.create_from_string(REGEN_IN_SP_LINE).search(_text(overlay))
+	return found.get_string(1) if found != null else ""
+
+
 func _read_player_line(overlay: DebugOverlay) -> PlayerLine:
 	var line: PlayerLine = PlayerLine.new()
 	var found: RegExMatch = RegEx.create_from_string(PLAYER_LINE).search(_text(overlay))
@@ -398,18 +528,36 @@ func _read_camera_line(overlay: DebugOverlay) -> CameraLine:
 
 ## One press and release of F3, sent through the viewport as the keyboard would.
 func _press_f3() -> void:
-	root.push_input(_f3_event(true, false))
-	root.push_input(_f3_event(false, false))
+	_press_key(KEY_F3)
 
 
-## An F3 key event; echo marks the repeats the keyboard sends while a key is held down.
+func _press_key(keycode: Key) -> void:
+	root.push_input(_key_event(keycode, true, false))
+	root.push_input(_key_event(keycode, false, false))
+
+
 func _f3_event(pressed: bool, echo: bool) -> InputEventKey:
+	return _key_event(KEY_F3, pressed, echo)
+
+
+## A key event; echo marks the repeats the keyboard sends while a key is held down.
+func _key_event(keycode: Key, pressed: bool, echo: bool) -> InputEventKey:
 	var key: InputEventKey = InputEventKey.new()
-	key.keycode = KEY_F3
-	key.physical_keycode = KEY_F3
+	key.keycode = keycode
+	key.physical_keycode = keycode
 	key.pressed = pressed
 	key.echo = echo
 	return key
+
+
+## The keys of an action in the Input Map, by name, such as "F3"; none if the action is missing.
+func _keys_of(action: StringName) -> PackedStringArray:
+	var keys: PackedStringArray = []
+	if InputMap.has_action(action):
+		for event: InputEvent in InputMap.action_get_events(action):
+			if event is InputEventKey:
+				keys.append(OS.get_keycode_string((event as InputEventKey).physical_keycode))
+	return keys
 
 
 func _wait_until_at_top_run_speed(player: Player) -> void:

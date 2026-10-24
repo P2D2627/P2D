@@ -11,7 +11,9 @@ aceita.
 > **Estado:** a personagem jogável já anda, salta e tem controlo no ar, desliza nas paredes e salta
 > delas, e o salto tolera pedidos ligeiramente fora de tempo. O jogo abre num menu principal, que dá
 > acesso à sala de teste e ao blockout do nível 1, e tem pausa e opções gravadas. A câmara do jogo
-> está descrita em "Câmara". Ainda não há arte nem som.
+> está descrita em "Câmara". Na sala de teste, dois demónios perseguem a personagem, mordem-na e,
+> com o SP baixo, agarram-na; o crucifixo afasta-os, e quem morre recomeça a sala. Ainda não há
+> arte, e o som começou pela personagem e pelo crucifixo.
 
 Este documento tem duas partes. A primeira descreve, para toda a equipa, o que já pode ser
 experimentado e as medidas que servem o desenho de níveis. A segunda, "Para quem programa",
@@ -29,8 +31,10 @@ documenta a organização técnica do projeto.
    se entra a andar. A sala é maior do que o ecrã, e a câmara segue a personagem desde o início. Para
    a direita há uma corrida longa, uma escada de quatro degraus de 200 px, uma segunda chaminé de
    120 px junto à parede direita e, no topo desta, uma passagem que termina numa queda de 1500 px.
+   Há dois demónios, um no chão da corrida longa e outro na passagem do topo (ver "Demónios").
    Durante o jogo, a tecla F3 mostra e esconde o texto de depuração descrito em "Overlay de
-   depuração".
+   depuração", e a tecla F4 retira 10 SP à personagem, como um golpe, para experimentar a
+   regeneração descrita em "SP".
 5. O nível 1 em blockout (Play ▸ Level 1: Lust (blockout)) tem as fases 1 e 2, com tiles
    provisórios de 48 px, cada uma na sua cena. A fase 1 sobe da esquerda para a direita e termina
    numa sala com uma porta; ao atravessá-la, o ecrã escurece e a fase 2 começa no canto inferior
@@ -46,12 +50,13 @@ igual em todos.
 | Saltar | Espaço | Espaço | A / Cross |
 | Deslizar numa parede | no ar, A / D ou setas contra a parede | no ar, setas contra a parede | stick esquerdo contra a parede |
 | Saltar de uma parede | no ar, Espaço encostado à parede | no ar, Espaço encostado à parede | A / Cross encostado à parede |
-| Erguer o crucifixo | premir o botão esquerdo do rato no chão; fica erguido enquanto premido | premir Q no chão; fica erguido enquanto premido | premir R2 no chão; fica erguido enquanto premido |
+| Erguer o crucifixo | premir o botão esquerdo do rato no chão; fica erguido enquanto premido | premir Q no chão; fica erguido enquanto premido | premir RT / R2 no chão; fica erguido enquanto premido |
+| Soltar-se de um demónio | premir Espaço repetidamente | premir Espaço repetidamente | premir A / Cross repetidamente |
 | Interagir | E | Ctrl | B / Circle |
 
 O terceiro perfil, Custom, começa igual ao predefinido, e cada ação pode receber outra tecla ou
-botão do rato. O Esc e o F3 estão reservados. As teclas W, E, A, S e D do perfil das setas ficam
-livres para os upgrades.
+botão do rato. O Esc, o F3 e o F4 estão reservados. As teclas W, E, A, S e D do perfil das setas
+ficam livres para os upgrades.
 
 | Ação | Teclado | Comando |
 |---|---|---|
@@ -59,6 +64,7 @@ livres para os upgrades.
 | Confirmar nos menus | Enter / Espaço | A / Cross |
 | Voltar nos menus | Esc | B / Circle |
 | Mostrar e esconder o texto de depuração | F3 | — |
+| Retirar 10 SP à personagem (só na versão de depuração) | F4 | — |
 
 ## Mecânicas implementadas
 
@@ -151,13 +157,13 @@ provisórios e serão afinados com a câmara e nos níveis.
 
 ### Crucifixo
 
-O crucifixo é a única defesa do jogador que recusa upgrades. Ergue-se ao premir o botão esquerdo
-do rato ou o gatilho R2 com a personagem no chão e fica erguido enquanto o botão estiver premido,
-durante no máximo 5 s. Um toque dado até 0,1 s antes de aterrar ainda o ergue na aterragem, se o
-botão continuar premido, à semelhança da tolerância do salto. Baixa quando o botão é largado, quando
-a personagem sai do chão ou quando os 5 s terminam. Depois de cada uso, curto ou longo, há uma
-espera de 15 s até poder ser erguido de novo; um toque dado até 0,1 s antes do fim da espera também
-conta.
+Enquanto o jogador recusar os upgrades, o crucifixo é a sua única defesa. Ergue-se ao premir o
+botão esquerdo do rato ou o gatilho direito do comando (RT / R2) com a personagem no chão e fica
+erguido enquanto o botão estiver premido, durante no máximo 5 s. Um toque dado até 0,1 s antes de
+aterrar ainda o ergue na aterragem, se o botão continuar premido, à semelhança da tolerância do
+salto. Baixa quando o botão é largado, quando a personagem sai do chão ou quando os 5 s terminam.
+Depois de cada uso, curto ou longo, há uma espera de 15 s até poder ser erguido de novo; um toque
+dado até 0,1 s antes do fim da espera também conta.
 
 Só um toque dado durante o jogo ergue o crucifixo. Um botão que já vinha premido, da espera, do
 menu principal ou da pausa, não o ergue até ser largado e premido outra vez. Assim, o jogador
@@ -169,10 +175,12 @@ Erguido, o crucifixo:
 - abranda a personagem: a velocidade máxima desce de 720 px/s para 180 px/s (25 %);
 - impede o salto. Um salto pedido com o crucifixo erguido é descartado, e não acontece quando o
   crucifixo baixa;
-- afasta os demónios e as almas perdidas: o que estiver a menos de 200 px é empurrado para fora
-  desse raio a 1500 px/s, e o que estiver mais longe não se move;
-- cura 5 SP por segundo. O sistema de SP ainda não existe; o crucifixo já anuncia, em cada passo de
-  física, a quantidade que cura, e o SP só terá de a receber;
+- afasta os demónios e as almas perdidas que estiverem a menos de 200 px; o que estiver mais longe
+  não se move. As almas são empurradas para fora desse raio a 1500 px/s. Os demónios são atirados
+  para longe do crucifixo, cerca de 200 px com 40 px de altura, ou só na horizontal se estiverem no
+  ar, e ficam 0,3 s parados onde aterram. De muito perto, o empurrão soma-se ao arremesso enquanto
+  o demónio está no raio, e ele vai parar a cerca de 300 px;
+- cura 5 SP por segundo, que se somam à regeneração (ver "SP");
 - acende uma luz quente cujo alcance mostra o raio do afastamento.
 
 A duração limitada e a espera fixa obrigam a escolher quando usar a única defesa: largar o botão
@@ -183,6 +191,129 @@ acessibilidade.
 
 O jogador tem o crucifixo desde o início e perde-o, de vez, ao aceitar o primeiro upgrade: nesse
 momento, o crucifixo baixa e sai do jogo. Os valores são provisórios e serão afinados em playtest.
+
+### SP
+
+Os SP (*Soul Points*, pontos de alma) são a vida da personagem. Começam no máximo, 100 SP, descem
+com o dano e nunca saem do intervalo entre 0 e o máximo. Com 25 SP ou menos, a personagem fica com
+o SP baixo, o momento a partir do qual o jogo a avisará do perigo. A 0, os SP acabam, e desde então
+nem o dano nem a cura os alteram. O máximo é um valor de dados e muda sem alterar código.
+
+Os SP recuperam sozinhos. Depois de cada golpe, a regeneração para durante 3 s, e um golpe dado
+nesse intervalo recomeça a contagem. Depois, a regeneração recomeça devagar, a 0,5 SP/s, e acelera
+em linha reta até 3 SP/s ao fim de 10 s, velocidade que mantém até encher. A cura do crucifixo
+soma-se à regeneração e não a faz recomeçar.
+
+A subida gradual prolonga o peso de cada golpe: logo a seguir, a personagem continua fraca durante
+alguns segundos, e quem evita o dano durante mais tempo recupera mais depressa. É também nesse
+momento que o crucifixo mais vale: nos 3 s de pausa cura 15 SP, e nos 3 s seguintes a regeneração
+dá 2,6 SP. Comparada com uma velocidade única de 2 SP/s, depois de um golpe que deixe 20 SP, a
+personagem sai do SP baixo mais tarde (7,65 s contra 5,50 s) e enche mais cedo (33,85 s contra
+43,02 s), contados desde o golpe. Estes valores foram medidos com o `measure_soul_points.gd` (ver
+"Testes e medidas"), que usa o componente do jogo.
+
+As pancadas dos demónios tiram SP (ver "Pancada e agarrão"). A tecla F4 da versão de depuração
+continua a retirar 10 SP, para experimentar a regeneração sem demónios. Os valores são provisórios
+e afinam-se a jogar.
+
+### Demónios
+
+Os demónios do nível 1, o da luxúria, perseguem a personagem. Como ela não pode atacar, só pode
+fugir, erguer o crucifixo ou, se for agarrada, soltar-se. Cada demónio está sempre num destes
+estados:
+
+| Estado | O que o demónio faz |
+|---|---|
+| Parado | Espera onde o nível o colocou, até ver a personagem. |
+| Perseguir | Segue-a a cerca de 560 px/s, no chão onde está. A personagem corre a 720 px/s, pelo que fugir resulta, mas com pouca margem. |
+| Aviso | Antes de cada ataque, mostra qual vem, para que o jogador tenha tempo de reagir: antes da mordida, alarga-se e baixa durante 0,2 s, sem parar de correr; antes do salto, para e encolhe durante 0,35 s. |
+| Atirar-se | Salta para onde a personagem vai estar, entre 200 e 420 px, e fica 0,35 s parado onde aterra. |
+| Recuar | Depois de cada ataque, afasta-se de frente para a personagem, a cerca de 400 px/s, até ficar a cerca de 130 px dela, e volta a atacar. |
+| Agarrar | Segura a personagem até ela se soltar ou morrer (ver "Pancada e agarrão"). |
+| Atirado | Atirado pelo crucifixo, ou pela personagem quando esta se solta, voa até aterrar. |
+| Repelido | Depois de atirado pelo crucifixo, fica 0,3 s parado onde aterrou e volta a perseguir. |
+| Atordoado | Depois de atirado pela personagem ao soltar-se, fica 1,2 s no chão, achatado e mais escuro, e depois recua ou volta a perseguir. |
+
+O demónio vê a personagem a menos de 480 px, se não houver uma parede entre os dois, e continua a
+persegui-la para lá dessa distância. Desiste quando ela se afasta mais de 720 px ou quando uma
+parede a esconde durante 1,5 s, e fica parado onde estiver. Tem dois ataques, e só ataca a
+personagem praticamente à mesma altura (até 24 px de diferença):
+
+- **Mordida.** A menos de 100 px, morde a correr: continua a persegui-la durante o aviso e morde
+  onde está.
+- **Salto.** A menos de 360 px, salta às vezes: a probabilidade é de 90 % por cada segundo em que a
+  personagem está ao alcance, o que torna o salto legível, pelo aviso, mas não previsível. No início
+  do aviso, aponta para onde ela vai estar quando ele aterrar, se mantiver a velocidade, e não muda
+  de pontaria: mudar de ritmo ou de direção durante o aviso faz o salto falhar. Nunca salta para um
+  buraco, nem para uma personagem que, quando ele aterrar, já lhe terá passado.
+
+Em grupo, cada demónio decide sozinho, mas o conjunto lê-se como uma matilha:
+
+- um demónio atrás de outro fica a 24 px dele e ataca dali, saltando-lhe por cima. Os corpos dos
+  demónios não colidem entre si, para que não tremam nem se bloqueiem;
+- cada um persegue e recua ao seu ritmo, até 10 % acima ou abaixo dos valores, para que nunca se
+  movam em uníssono;
+- sempre que fica em condições de atacar, cada um espera um tempo sorteado entre 0 e 0,5 s, para
+  que não ataquem todos no mesmo instante;
+- enquanto a personagem pisca, depois de uma pancada, nenhum ataca, e todos esperam a cerca de
+  130 px. Esse segundo é a janela para fugir ou erguer o crucifixo. Em cinco execuções do
+  `measure_demon.gd`, com 40 demónios a aproximar-se da personagem parada, só 2 ou 3 atacaram nos
+  primeiros 2 s.
+
+Todos os saltos de um demónio caem com a mesma gravidade e com o mesmo ângulo, como um salto dado
+com menos força: um salto mais curto é mais baixo e mais rápido. O de 420 px sobe 32 px e dura
+cerca de 0,31 s, pela conta; o de 200 px, medido pelo `measure_demon.gd` contra a personagem
+parada, sobe 15,22 px (15,2 pela conta) e está de novo no chão 0,22 s depois de partir (ver "Salto
+calculado a partir do desenho"). Os valores são provisórios e afinam-se a jogar.
+
+É o desenho do nível que limita os demónios. Um demónio não sobe, não salta para cima e para à beira
+de um desnível. Como nenhum salto passa dos 32 px de altura, um degrau de 48 px, uma largura da
+personagem, trava-o, e uma plataforma dessa altura é um sítio seguro. Quem desenha um nível sabe
+assim até onde cada demónio chega, sem limites invisíveis. A exceção é o crucifixo, que pode
+atirar um demónio de uma borda abaixo: o demónio cai, fica no chão onde aterra e, se vir a
+personagem, persegue-a a partir daí. É uma mecânica: o jogador pode gastar o crucifixo para tirar
+um demónio do caminho, e os níveis podem oferecer-lhe bordas e buracos para onde o atirar.
+
+Os valores são os do demónio da luxúria, num ficheiro de dados (`demon/lust_demon_stats.tres`);
+mudam sem alterar código e são provisórios. O aviso é, por agora, um retângulo que muda de forma e
+de cor, com uma forma para cada ataque, à espera da arte e do som; a mordida precisa de uma animação
+e de um som próprios. O demónio do tutorial, que fala e não persegue, terá uma cena própria
+(ver "Demónio: estados, dados e famílias de personagens").
+
+### Pancada e agarrão
+
+Um demónio nunca mata com uma pancada: a morte vem sempre de um agarrão, a que o jogador pode
+resistir. Com o SP acima do baixo, a mordida tira 10 SP e o salto 20, e a pancada atira a
+personagem para trás e para cima (150 px e 40 px de altura na mordida, 250 px e 70 px no salto), sem
+controlo até aterrar. A seguir, a personagem fica 1 s invulnerável, a piscar.
+
+Com o SP baixo (25 SP ou menos), ou quando a pancada a deixaria a 0, o demónio agarra-a em vez de
+lhe tirar SP. Agarrada, a personagem para logo, não corre nem salta, e o crucifixo baixa; se for
+agarrada no ar, mesmo encostada a uma parede, cai a direito até ao chão. Solta-se premindo o salto
+repetidamente: 8 vezes, com um demónio. Um segundo demónio pode juntar-se a meio, e pede mais
+6. Com dois, o agarrão fica cheio: nenhuma pancada entra, e os outros demónios esperam a cerca de
+130 px. Se o jogador parar de premir, o progresso desce: ao fim de 0,25 s sem premir, perde metade
+da barra por segundo, pelo que quem prime 4 vezes por segundo não perde nada. Se não se soltar em
+3 s, a personagem morre, aparece "You died" e o nível recomeça 1,5 s depois.
+
+Durante o agarrão, a personagem e os demónios que a agarram afundam-se no chão, até 96 px, ao ritmo
+do tempo que passa: o jogador vê quanto tempo lhe resta sem olhar para um número. O afundar é só
+desenho, porque os corpos não se enterram, e por isso funciona em qualquer chão, mesmo numa
+plataforma fina. Por agora não tem som.
+
+Ao soltar-se, a personagem atira os demónios que a agarravam para longe (200 px, com 40 px de
+altura), e cada um fica 1,2 s atordoado no chão. É a janela para fugir, e vê-se no ecrã. A
+personagem fica ainda 1 s invulnerável, para não ser agarrada de novo logo a seguir.
+
+A personagem e os demónios não se atravessam: param encostados, também a meio de um salto. A
+personagem nunca fica de pé em cima de um demónio: é empurrada para o lado a 600 px/s, sem correr
+nem saltar até pisar outra coisa. Assim, a cabeça de um demónio, onde a mordida não chega, nunca é
+um sítio seguro.
+
+Os valores estão em `player/grab_stats.tres` (o agarrão), no ficheiro de dados dos demónios (o dano
+e os arremessos) e na cena da personagem (a invulnerabilidade), e são provisórios. Soltar-se
+mantendo o salto premido, em vez de o premir repetidamente, já existe no código e chega às opções
+numa tarefa seguinte, para quem não consegue premir depressa.
 
 ## Medidas para o desenho de níveis
 
@@ -470,6 +601,19 @@ são usados.
 | Repel Speed | 1500 px/s | a velocidade a que são empurrados para fora desse raio |
 | Heal Per Second | 5 SP/s | a cura por cada segundo com o crucifixo erguido |
 
+Os valores dos SP estão no ficheiro `soul_points_stats.tres`, na pasta `player/`. O Max SP e o Low
+Threshold aplicam-se de imediato, também com o jogo a correr, quando são mudados no separador
+Remote; os restantes valores são lidos sempre que são usados.
+
+| Campo no Inspector | Valor atual | O que controla |
+|---|---|---|
+| Max SP | 100 SP | o máximo; a cura e a regeneração param aqui |
+| Low Threshold | 25 SP | o valor a partir do qual, inclusive, a personagem fica com o SP baixo |
+| Regen Delay | 3 s | a pausa da regeneração depois de cada golpe (0: sem pausa) |
+| Regen Start Per Second | 0,5 SP/s | a velocidade da regeneração quando recomeça |
+| Regen Top Per Second | 3 SP/s | a velocidade que a regeneração atinge no fim da subida e mantém depois |
+| Regen Ramp Time | 10 s | a duração da subida de uma velocidade à outra (0: começa logo na mais alta) |
+
 ## Referências
 
 - Game Accessibility Guidelines. (s.d.-a). *Avoid / provide alternatives to requiring buttons to be
@@ -495,15 +639,16 @@ são usados.
     ├── project.godot
     ├── main.tscn      cena principal: menus, pausa e o nível em jogo (script main.gd)
     ├── default_bus_layout.tres   buses de áudio
-    ├── core/          serviços globais: as opções do jogador (autoload Settings) e os perfis de controlos
-    ├── player/        personagem: cena, script e valores do movimento
+    ├── core/          serviços globais: as opções do jogador (autoload Settings), o registo moral (autoload Moral) e os perfis de controlos
+    ├── player/        personagem: cena, scripts, valores do movimento, SP e agarrão
     ├── crucifix/      crucifixo: cena, script e valores
+    ├── demon/         demónios que perseguem: cena, scripts e os valores de cada nível
     ├── camera/        câmara do jogo e zonas de câmara
     ├── debug/         overlay de depuração
     ├── levels/        salas, níveis e a entrada de cada nível na lista do menu (LevelEntry)
     ├── background/    fundo em camadas: as camadas (BackgroundLayer), o modelo e o fundo de cada nível
     ├── ui/            menus, ecrã das opções e o tema comum (ui_theme.tres)
-    ├── components/    componentes usados por mais de um sistema (HealthComponent, Hitbox, Hurtbox…)
+    ├── components/    componentes usados por mais de um sistema: Repellable, Hitbox, Hurtbox e SinkingDrawing
     ├── tests/         testes e medidas que correm sem janela
     │   └── support/   preparação comum aos testes
     └── assets/        sprites, audio, fonts
@@ -534,6 +679,12 @@ A pasta `tests/` fica à parte, para que a exportação a possa excluir de uma s
 Para um nível aparecer no Play, acrescenta-se à lista Levels do Main, no Inspector do `main.tscn`
 (Add Element › New LevelEntry, com o título e a cena). A ordem da lista é a dos botões. Um elemento
 deixado vazio, ou sem cena, fica fora do menu, com um aviso no Output.
+
+O nó raiz de cada nível tem o script `levels/level.gd` (`Level`), com a personagem do nível no campo
+Player do Inspector. Quando a personagem morre, este script espera 1,5 s, para que a morte se veja,
+e recomeça o nível: no jogo, o Main troca-o por uma cópia nova da mesma cena; aberto com F6, o nível
+recarrega-se a si próprio. Uma cópia nova repõe a personagem, os demónios e a câmara como no início,
+sem que cada sistema precise de código para se repor. Um nível sem este script não recomeça.
 
 Na primeira abertura, o Godot gera a pasta `Projeto/.godot/` com a cache de importação. Esta pasta
 não é versionada e pode ser apagada sem perda de trabalho.
@@ -571,10 +722,24 @@ godot --headless --fixed-fps 60 --path Projeto --script res://tests/test_crucifi
 godot --headless --fixed-fps 60 --path Projeto --script res://tests/test_input_profiles.gd
 godot --headless --fixed-fps 60 --path Projeto --script res://tests/test_controls.gd
 godot --headless --fixed-fps 60 --path Projeto --script res://tests/test_background_layer.gd
+godot --headless --fixed-fps 60 --path Projeto --script res://tests/test_soul_points.gd
+godot --headless --fixed-fps 60 --path Projeto --script res://tests/test_demon.gd
+godot --headless --fixed-fps 60 --path Projeto --script res://tests/test_hit_boxes.gd
+godot --headless --fixed-fps 60 --path Projeto --script res://tests/test_knockback.gd
+godot --headless --fixed-fps 60 --path Projeto --script res://tests/test_grab_rules.gd
+godot --headless --fixed-fps 60 --path Projeto --script res://tests/test_grab_escape.gd
+godot --headless --fixed-fps 60 --path Projeto --script res://tests/test_crucifix_block.gd
+godot --headless --fixed-fps 60 --path Projeto --script res://tests/test_sinking_drawing.gd
+godot --headless --fixed-fps 60 --path Projeto --script res://tests/test_level_restart.gd
+godot --headless --fixed-fps 60 --path Projeto --script res://tests/test_moral_record.gd
+godot --headless --fixed-fps 60 --path Projeto --script res://tests/test_moral_dialogue.gd
 ```
 
-O `test_input_profiles.gd` escreve cinco ERROR, das tentativas de atribuir teclas inválidas, todos
-esperados.
+O `test_input_profiles.gd` escreve seis ERROR, das tentativas de atribuir teclas inválidas, todos
+esperados. O `test_soul_points.gd` escreve quatro ERROR, das quantidades de dano e de cura
+inválidas, também esperados. O `test_moral_record.gd` escreve seis WARNING, de uma tentação
+desconhecida (aceite e consultada), de um tom desconhecido e de três tempos de escuta inválidos,
+igualmente esperados.
 
 Todos os scripts de testes e de medidas estendem `tests/support/base_test.gd`, diretamente ou
 através de outro ficheiro de suporte. Antes de o autoload `Settings` estar pronto, esse ficheiro
@@ -605,11 +770,40 @@ máxima, e imprimem o menor e o maior valor.
 godot --headless --fixed-fps 60 --path Projeto --script res://tests/measure_movement.gd
 ```
 
+O `measure_crucifix_repel.gd` também não verifica resultados: mede quanto custa, num passo de
+física, a lista do que está dentro do raio do crucifixo, com 10, 50 e 200 demónios de substituição,
+em chamadas seguidas e no pior caso, e compara esse custo com o limite de 0,05 ms. Os números e a
+decisão estão em "Crucifixo: componentes e modificadores de movimento".
+
+```
+godot --headless --fixed-fps 60 --path Projeto --script res://tests/measure_crucifix_repel.gd
+```
+
+O `measure_soul_points.gd` também não verifica resultados: aplica um golpe que deixa a personagem
+com 20 SP e mede, com os valores do `soul_points_stats.tres` e com quatro regenerações de
+comparação, o tempo até sair do SP baixo e até encher, e os SP recuperados nos 3 s a seguir à
+pausa. Imprime também o que o crucifixo cura durante a pausa. Os números citados em "SP" vêm daqui.
+
+```
+godot --headless --fixed-fps 60 --path Projeto --script res://tests/measure_soul_points.gd
+```
+
+O `measure_demon.gd` também não verifica resultados: mede quanto acrescentam a cada passo de física
+10, 50 e 200 demónios a perseguir a personagem, em média e no pior passo, e compara o custo de 50 com
+os limites de 1,5 ms em média e 2 ms no pior passo. Cada parte começa com uma personagem nova, porque
+os demónios lhe gastam o SP e, sem um nível que recomece, uma personagem morta num agarrão ficava
+presa até ao fim. Os números e a decisão estão em "Demónio: estados,
+dados e famílias de personagens".
+
+```
+godot --headless --fixed-fps 60 --path Projeto --script res://tests/measure_demon.gd
+```
+
 ### A personagem por dentro
 
 A cena é `player/player.tscn`, com o script `player/player.gd`: um `CharacterBody2D` com uma
 caixa de colisão de 48 × 96 px e a origem nos pés, pelo que, num nível, a origem fica na linha do
-chão. Está na camada `player` e colide com `world` e `one_way_platform`. Os valores vêm de um
+chão. Está na camada `player` e colide com `world`, `one_way_platform` e `enemy`. Os valores vêm de um
 recurso `PlayerMovementStats` (`player/player_movement_stats.gd`), guardado em
 `player/player_movement_stats.tres`.
 
@@ -764,7 +958,7 @@ teclado, e não pela letra impressa, pelo que o WASD se mantém num teclado AZER
 | `move_up` / `move_down` | W / S, setas | stick esquerdo (eixo 1) |
 | `jump` | Espaço | A / Cross |
 | `interact` | E | B / Circle |
-| `crucifix` | botão esquerdo do rato | R2 (eixo 5) |
+| `crucifix` | botão esquerdo do rato | RT / R2 (eixo 5) |
 | `pause` | Escape | Start |
 | `toggle_debug_overlay` | F3 | — |
 | `ui_accept` | Enter, Espaço | A / Cross |
@@ -792,7 +986,10 @@ sempre o nome, e nunca o número no código.
 | | | 11 | `repellable` |
 
 A separação entre *hitbox* (o que causa dano) e *hurtbox* (o que recebe dano) permite que um ataque
-atravesse um inimigo sem o empurrar e, se for desejado, que os inimigos se atinjam entre si.
+atravesse um inimigo sem o empurrar e, se for desejado, que os inimigos se atinjam entre si. Hoje, a
+`Hitbox` dos demónios está em `enemy_hitbox` e não procura nada; a `Hurtbox` da personagem está em
+`player_hurtbox` e procura apenas em `enemy_hitbox`. Só quem recebe o golpe procura, pelo que cada
+golpe é detetado uma vez, de um só lado.
 
 A camada `camera_bounds` é a das zonas de câmara (`CameraZone`): retângulos que limitam o que o ecrã
 mostra enquanto a personagem está dentro deles. As zonas não detetam colisões; a câmara lê-lhes a
@@ -801,6 +998,13 @@ geometria, e a camada serve para as identificar e desenhar no editor.
 A camada `repellable` é a da cena `components/repellable.tscn`, que se coloca em tudo o que o
 crucifixo afasta. A camada está definida na cena, no Inspector, e não no código. O crucifixo procura
 apenas nessa camada, pelo que um demónio ou uma alma só é afastado se tiver o componente.
+
+A camada `enemy` é a do corpo dos demónios, que colide com `world`, `one_way_platform` e `player`.
+Os demónios atravessam-se uns aos outros, para que não tremam nem se bloqueiem. A personagem e os
+demónios não se atravessam: param encostados, e a personagem nunca fica de pé em cima de um
+demónio (ver "Pancada e agarrão"). Um demónio que caia de uma borda em cima da personagem, ou dois
+demónios dos dois lados, podem encurralá-la; é intencional, porque encostar a um demónio é ficar ao
+alcance da mordida, e vigia-se nos playtests.
 
 #### Crucifixo: componentes e modificadores de movimento
 
@@ -837,25 +1041,308 @@ indústria:
   *hurtboxes*. É uma `Area2D` que se coloca nos demónios e nas almas perdidas, com a camada
   `repellable` definida na cena. O crucifixo empurra apenas o que tem este componente e não conhece
   os scripts dos demónios nem das almas; estes recebem o sinal `repelled`, para reagir com uma
-  animação ou largar uma alma agarrada.
+  animação ou largar uma alma agarrada. Sem mais nada, o empurrão segue a linha do crucifixo à
+  posição do que empurra, que num demónio fica nos pés. A opção Along Floor, ligada nos demónios,
+  torna-o horizontal: o crucifixo está 60 px acima dos pés da personagem, e, para um demónio no mesmo
+  chão, aquela linha aponta para o chão. Como o movimento para no primeiro contacto, um demónio a
+  100 px da personagem só se afastava 16 px em 2 s, e um demónio por baixo dela não se movia
+  (medido). A opção fica desligada por omissão, para as almas, que voam. Nos demónios, o primeiro
+  `repelled` desencadeia também o arremesso (ver "Afastamento pelo crucifixo").
 - **Valores afináveis com o jogo a correr.** O `CrucifixStats` avisa quando o raio ou o
   abrandamento mudam, e o crucifixo aplica-os de imediato: o raio à área de afastamento e ao alcance
   da luz, que assim mostra sempre a área onde o crucifixo atua, e o abrandamento ao seu
   modificador.
 
-O crucifixo comunica para fora apenas por sinais (`raised`, `lowered`, `cooldown_started`,
-`cooldown_finished`, `lost` e `healed`), que o HUD, o som e o futuro sistema de SP podem escutar.
-Perdido, emite `lost` e sai do jogo (`queue_free`); o HUD retira o ícone ao receber esse sinal.
+Com o resto do jogo, o crucifixo comunica por sinais (`raised`, `lowered`, `cooldown_started`,
+`cooldown_finished`, `lost` e `healed`), que o HUD e o som poderão escutar e que os SP já escutam
+(ver "SP: componente, dados e ligação ao crucifixo").
+Perdido, emite `lost` e sai do jogo (`queue_free`); o HUD retira o ícone ao receber esse sinal. A
+exceção é o afastamento: o crucifixo empurra os demónios e as almas chamando o componente
+`Repellable` de cada um (ver acima), sem conhecer os seus scripts.
+
+Com a personagem é diferente. O crucifixo recebe-a no Inspector (propriedade Player), lê o botão
+através do `PlayerInput` dela, pergunta-lhe se está no chão e coloca e retira o seu modificador.
+São chamadas de um nó filho para o pai, uma exceção à convenção "call down, signal up" (ver
+"Convenções de código"). A razão é que o crucifixo precisa, em cada passo de física, do botão e do
+estado da personagem, e um sinal serve para anunciar que algo aconteceu, não para pedir dados a cada
+passo. Com essa referência já necessária, colocar o modificador através de um sinal genérico ligado
+na cena seria um segundo caminho para a mesma ligação. A alternativa de a personagem escutar os
+sinais do crucifixo e aplicar ela própria o abrandamento obrigá-la-ia a conhecer o crucifixo e a ser
+alterada a cada novo efeito, que é o que os modificadores evitam. A ligação tem um só sentido, do
+crucifixo para a personagem, cujo código não usa o crucifixo, e é atribuída na cena, sem caminhos
+entre nós escritos no código.
+
+Enquanto está erguido, o crucifixo pede em cada passo de física a lista do que está dentro do raio,
+e o motor cria essa lista de novo a cada pedido. Em código que corre em cada passo, é boa prática não
+criar listas novas, porque criá-las e libertá-las tem um custo; a alternativa seria o crucifixo
+manter a sua própria lista, atualizada quando um demónio entra ou sai do raio. Antes de decidir,
+fixou-se um limite de 0,05 ms por passo (50 µs, ou milionésimas de segundo), 0,3 % de um passo de
+16,6 ms, e mediu-se o custo com o `measure_crucifix_repel.gd` (2026-10-19, três execuções). Os
+valores incluem criar e libertar a lista:
+
+| Demónios no raio | Muitas chamadas seguidas | Uma chamada por passo, no pior caso |
+|---|---|---|
+| 10 | 0,4 a 0,6 µs | 11 a 14 µs |
+| 50 | 1,2 a 1,7 µs | 16 a 19 µs |
+| 200 | 4,8 a 5,3 µs | 30 a 35 µs |
+
+Chamadas seguidas encontram os dados na memória rápida do processador (cache). No jogo, outros
+sistemas ocupam essa memória entre dois passos, e o pior caso, em que a memória rápida é ocupada
+por completo antes de cada chamada, mede esse efeito. Mesmo assim, com 50 demónios o custo fica
+cerca de 3 vezes abaixo do limite, e com 200 continua abaixo. Os valores foram medidos com o
+executável do editor do Godot, num só computador. Em GDScript, a lista é libertada assim que deixa
+de ser usada, sem as pausas de recolha de memória de outras linguagens. Manteve-se, por isso, a
+solução mais simples; se um nível juntar muitos mais demónios num só raio, a medida volta a correr.
 
 O `test_crucifix.gd` verifica os modificadores (a combinação, uma mudança com o modificador
 colocado, a fração da altura do salto e a da velocidade no salto da parede), o abrandamento, o
 bloqueio do salto, a tolerância antes de aterrar e antes do fim da espera, o toque dado demasiado
 cedo, a parede, a saída do chão, a duração máxima, a espera fixa, a pausa, a perda, a cura, o
 afastamento, a camada da cena `Repellable` e a afinação com o jogo a correr. Usa um demónio de
-substituição, porque os demónios ainda não existem. O `test_crucifix_menus.gd` usa a cena principal
+substituição, que flutua à altura do crucifixo; o afastamento de um demónio no chão verifica-se no
+`test_demon.gd`, com o crucifixo da personagem. O `test_crucifix_menus.gd` usa a cena principal
 e o rato: com o botão premido durante a pausa e mantido ao retomar com Esc, com um clique no Resume
 e com o botão premido desde o menu principal, o crucifixo não se ergue até o botão ser largado e
 premido de novo no jogo.
+
+#### SP: componente, dados e ligação ao crucifixo
+
+Os SP são um nó-componente, `SoulPoints` (`player/soul_points.gd`), filho da personagem, com os
+valores num `Resource`, `SoulPointsStats`, como o movimento e o crucifixo. A personagem recebe-o no
+Inspector (propriedade Soul Points), para que tudo o que a fere ou cura o encontre através dela.
+Separado da personagem, o componente testa-se sem ela e não acrescenta mais um sistema ao script da
+personagem, que já reúne o movimento. Um componente de vida genérico, partilhado com os demónios,
+ficou de lado: só se justifica quando um segundo sistema precisar dele, e os demónios não têm vida,
+porque a personagem não ataca.
+
+- **Sinais.** Num golpe, o componente emite `damaged`, `sp_changed`, `low_changed` e `depleted`, por
+  esta ordem; o `low_changed` só quando os SP passam o limiar, num sentido ou no outro, e o
+  `depleted` uma única vez. O `depleted` vem por último para que a barra e o som já tenham recebido
+  o valor final quando a morte começar. A barra, os sons, os avisos e a morte poderão escutá-los
+  sem que o componente conheça nenhum deles. Uma quantidade negativa, infinita ou indefinida
+  (NaN) é um erro e não altera nada.
+- **Regeneração no passo de física.** A pausa depois do dano e a subida da velocidade contam-se em
+  passos de física inteiros, como as tolerâncias do salto, para que os testes as verifiquem ao passo
+  exato. A velocidade de cada passo é uma interpolação linear entre a velocidade inicial e a final,
+  pela fração já decorrida do tempo de subida; essa conta pertence ao `SoulPointsStats`, e o
+  componente apenas conta os passos. Um golpe põe a contagem a zero; a cura não. Com o jogo em
+  pausa, a regeneração para com o nível.
+- **Valores afináveis com o jogo a correr.** O `SoulPointsStats` avisa quando o máximo ou o limiar
+  mudam, e o componente aplica-os de imediato: um máximo mais baixo do que os SP atuais desce-os
+  com ele.
+
+O crucifixo cura através de uma ligação na cena da personagem: em `player/player.tscn`, o sinal
+`healed` do crucifixo está ligado ao método `heal` dos SP. Nenhum dos dois scripts conhece o outro;
+quem os liga é a cena que os contém. A alternativa seria o crucifixo chamar os SP através da
+personagem, como já faz com o modificador, mas essa exceção à convenção "call down, signal up"
+justifica-se por o crucifixo ter de pedir dados à personagem em cada passo. A cura é algo que o
+crucifixo anuncia, e anunciar é o papel de um sinal.
+
+O `test_soul_points.gd` verifica o componente sem personagem: os limites de 0 e do máximo, os
+sinais e a sua ordem, o SP baixo, o fim dos SP, as quantidades inválidas, um máximo diferente só
+com dados, a pausa depois do dano, a subida da velocidade, a pausa do jogo e a velocidade que o
+overlay mostra. Os casos usam valores próprios, pelo que afinar o `.tres` não os altera. O
+`test_crucifix.gd` verifica que um segundo com o crucifixo erguido dá 5 SP à personagem, através da
+ligação da cena.
+
+#### Demónio: estados, dados e famílias de personagens
+
+Todos os demónios que perseguem a personagem, em todos os níveis, usam uma só cena,
+`demon/demon.tscn`, com os valores num `Resource`, `DemonStats`, como o movimento, o crucifixo e os
+SP. Cada ataque é outro `Resource`, `DemonAttack`, e o `DemonStats` tem a lista dos ataques do
+demónio. Os do nível 1 estão em `demon/lust_demon_stats.tres`; os demónios de um nível novo são
+outro ficheiro com os mesmos campos, outros ataques e outra arte, sem código novo.
+
+As personagens dividem-se pelo que fazem, e não pela história: as que perseguem usam esta cena, e as
+que estão paradas e falam (o demónio do tutorial, as almas e os bosses) terão cenas próprias. O que
+as duas famílias partilham são componentes, como o `Repellable`, e não uma classe-mãe. Uma
+classe-mãe comum ficaria quase vazia e não serviria uma personagem das duas famílias, como uma alma
+que fala e que o crucifixo afasta. Pela mesma razão, o demónio do tutorial, que fala e não persegue,
+não é esta cena com a perseguição desligada.
+
+- **Máquina de estados num só script.** Os nove estados (`IDLE`, `CHASE`, `WARNING`, `LUNGE`,
+  `RETREAT`, `GRAB`, `THROWN`, `REPELLED` e `STUNNED`) são uma enumeração no `demon.gd`, o mesmo
+  padrão da personagem, que o grupo já conhece. A alternativa, um nó e um script por estado, pagaria já por estados que ainda não têm
+  design; justifica-se quando um pecado pedir estados que não caibam nestes.
+- **Ataques como dados.** Cada `DemonAttack` guarda o alcance, a diferença de altura, o aviso, as
+  distâncias, a antecipação (Lead), a altura e o tempo do salto, a recuperação, a probabilidade e a
+  animação. A ordem na lista é a prioridade: com a personagem ao alcance dos dois ataques, o demónio
+  usa o primeiro, a mordida. A mordida a correr é o mesmo `Resource` com o Keeps Chasing ligado, e
+  não uma subclasse: com dois ataques, um interruptor nos dados chega, e um ataque novo que caiba
+  nestes campos não pede código. Ao arrancar, o demónio confirma que a animação de cada ataque
+  existe na lista das animações da arte.
+- **Probabilidade por segundo.** O Chance Per Second é a probabilidade de o ataque começar em cada
+  segundo em que a personagem está ao alcance. Em cada passo de física, de Δt segundos, o demónio
+  sorteia com a probabilidade 1 − (1 − p)^Δt, o que dá a mesma probabilidade por segundo a qualquer
+  frequência de física. O `test_demon.gd` verifica-o a 60 e a 120 passos por segundo, na fórmula e
+  no sorteio do próprio demónio: com uma semente fixa e p = 0,5, o ataque começou em 48 % e em
+  49,7 % de 1000 segundos. Com probabilidade 1, todos os demónios saltavam à mesma distância e eram
+  fáceis de prever. Cada demónio tem o seu gerador de números aleatórios, com uma semente tirada do
+  gerador global, para que demónios colocados no mesmo passo não ataquem juntos.
+- **Pontaria.** No início do aviso, o demónio calcula onde a personagem vai estar quando ele
+  aterrar. Usa a velocidade dela, que mede pela diferença de posição em cada passo de física, e não
+  lendo o script da personagem: assim, uma plataforma que a transporte também conta, e o demónio
+  não depende dela. O Lead, de 0 a 1, diz quanto dessa velocidade conta. O tempo até aterrar
+  depende da distância do salto (ver o ponto seguinte), e a distância depende de onde ela vai estar
+  nesse momento; escrito em u, a raiz quadrada da distância, isto dá uma equação de segundo grau, e
+  a raiz positiva dá a distância. O salto fica entre 200 e 420 px, e não acontece se, quando o
+  demónio aterrar, ela estiver ao nível dele ou atrás. A pontaria fica fixa até ao fim, como a
+  direção. No `test_demon.gd`, com os valores do teste, o salto aterrou a 2,3 px de uma personagem
+  parada e a 3,0 px de uma que se afastava a 50 px/s.
+- **Sentidos.** O demónio vê a personagem com uma área circular, do raio do Sight Distance, e
+  confirma com um raio que nenhuma parede está entre os dois. Um segundo raio, curto e à frente dos
+  pés, procura o chão: deteta as bordas durante a perseguição e, antes do aviso, percorre o caminho
+  do salto de 24 em 24 px, meia largura da personagem, para que nenhum buraco escape. Percorre-o até
+  ao ponto mais distante onde o salto pode aterrar, a distância pedida mais meio passo de física
+  (ver o ponto seguinte). Quando a procura parava na distância pedida, um demónio com um salto
+  rápido (0,05 s até ao ponto mais alto) ia parar a 452,3 px, além do fim de um chão de 424 px, e
+  caía (medido no `test_demon.gd`, antes da correção).
+- **Salto calculado a partir do desenho.** O ficheiro de dados indica a altura e a distância do
+  salto mais longo e o tempo até ao ponto mais alto. O código calcula a partir deles a velocidade de
+  partida e uma gravidade própria do salto, o mesmo método do salto da personagem (Pittman, 2016).
+  Com a gravidade do projeto, a altura fixava a duração: o primeiro salto, de 40 px, durava 35
+  passos (0,58 s), lento demais para uma investida. Com uma gravidade própria, a altura e a rapidez
+  afinam-se em separado. Os saltos mais curtos usam a mesma gravidade e o mesmo ângulo: a altura
+  diminui na proporção da distância, e o tempo até ao ponto mais alto com a raiz quadrada dela (de
+  h = g·t²/2). Ficaram de lado duas alternativas: o mesmo tempo no ar para todos os saltos, em que
+  um salto de 200 px andava a 650 px/s, mais devagar do que a personagem corre, e a mesma velocidade
+  para todos, que obrigava a mudar a gravidade de salto para salto, e o demónio deixava de ter um
+  peso que o jogador aprende.
+  Medido pelo `measure_demon.gd` com os valores do nível 1, num salto de 200 px a uma personagem
+  parada: 15,22 px de altura (15,2 pela conta) e 0,217 s desde a partida até estar de novo no chão.
+  A distância já não se mede aí, porque o demónio para encostado à personagem, a cerca de 122 px; o
+  `test_demon.gd` verifica-a com a colisão entre os dois desligada. A física avança em passos inteiros, e o chão trava o demónio até um passo
+  depois de ele lá chegar. Por isso, a velocidade horizontal conta com meio passo a mais, e o salto
+  aterra até meio passo antes ou depois da distância pedida; neste salto, meio passo são cerca de
+  8 px, pela conta. Na subida, a velocidade leva uma correção de meio passo de gravidade: sem ela,
+  um salto de 40 px em 0,15 s subiria 44,44 px (medido no `test_demon.gd`).
+- **Lógica separada do aspeto.** O demónio só anuncia o que faz, pelos sinais `state_changed`,
+  `warning_started`, que diz que ataque vem, e `attack_landed`, quando a pancada acerta. A arte e o
+  som escutam-nos. Hoje, o retângulo
+  provisório (`demon_placeholder.gd`) muda de forma e de cor no aviso, por uma ligação feita na
+  cena, e sai quando a arte chegar. A forma, e não só a cor, distingue a mordida do salto, para
+  quem não distingue as cores.
+- **Afastamento pelo crucifixo.** O demónio tem o componente `Repellable` (ver "Crucifixo:
+  componentes e modificadores de movimento"). O toque do crucifixo erguido atira-o uma vez, em
+  qualquer estado, para longe do crucifixo, com os mesmos valores do arremesso de quando a
+  personagem se solta (o grupo Thrown do `DemonStats`); no ar, só na horizontal. Depois de aterrar,
+  fica parado durante o Repelled Time, contado nos seus próprios passos de física, pelo que uma
+  pausa não o encurta. Antes, o crucifixo empurrava-o enquanto estivesse no raio, e contar a
+  duração a partir do último empurrão obrigava a ter em conta a ordem pela qual os dois nós corriam
+  em cada passo; com um só toque, o demónio conta apenas os seus próprios passos. O arremesso nunca
+  sobe a meio de um salto: um empurrão a meio de um salto rápido chegou a levar o demónio
+  a 133,66 px de altura, acima dos degraus que o travam (medido no `test_demon.gd`, antes da
+  correção).
+- **Pancada e agarrão em componentes.** O ataque passa por dois componentes de `components/`: a
+  `Hitbox`, no demónio, na camada `enemy_hitbox`, ligada só enquanto o ataque pode acertar e com o
+  dano e o arremesso do ataque; e a `Hurtbox`, na personagem, na camada `player_hurtbox`, que é a
+  única que procura. Na personagem, o `HitReaction` decide entre tirar SP e agarrar, o `GrabEscape`
+  conduz o agarrão, as `GrabRules` contam os toques e o tempo, o `InvulnerabilityBlink` faz piscar o
+  desenho e o `GrabPrompt` mostra o que premir. As `GrabRules` não usam nós nem cenas, e por isso o
+  `test_grab_rules.gd` verifica-as sozinhas, a 60 e a 120 passos por segundo. O demónio não conhece
+  o código da personagem: um inimigo novo só precisa de uma `Hitbox`. Para a imobilizar, o
+  `GrabEscape` junta um modificador de movimento, o mesmo do crucifixo, que lhe tira a corrida e o
+  salto, a um `hold_still()` do `Player`, que lhe anula a velocidade horizontal e a subida, acaba o
+  voo de uma pancada, a tira de uma parede e impede que, de pé em cima de um demónio, seja empurrada
+  para o lado. O modificador sozinho não chegava: a travagem da corrida é proporcional à velocidade
+  máxima, e com a velocidade máxima a 0 a personagem agarrada continuava a 720 px/s (medido no
+  `test_grab_escape.gd`, antes da correção).
+- **Matilha sem coordenador.** Cada demónio decide sozinho, com uma área que encontra os outros
+  demónios à sua frente, um sorteio próprio da espera antes de atacar e velocidades próprias. Um nó
+  que distribuísse a vez de atacar garantia que nunca atacam dois ao mesmo tempo, mas tirava pressão
+  e mudava a dificuldade; fica para o caso de os playtests mostrarem que o sorteio não chega. Quando
+  o agarrão está cheio, a `Hurtbox` fecha-se, um estado separado da invulnerabilidade, para que
+  nenhuma pancada entre sem que a personagem pisque. O demónio guarda a `Hurtbox` da personagem ao
+  começar a persegui-la e não ataca enquanto ela não aceita pancadas.
+- **A personagem antes dos demónios.** No Godot, cada corpo vê os outros onde eles estavam no
+  início do passo. Com a personagem e o demónio a colidir, isso deixava o demónio entrar no espaço
+  que a personagem acabara de ocupar, e os dois tremiam 2 px a empurrar-se. A personagem tem por
+  isso uma prioridade de física mais baixa (Process Physics Priority −1), e move-se antes dos
+  demónios em cada passo.
+- **Afundar com um shader.** O afundar corta o desenho na linha dos pés, com um shader
+  (`components/sink.gdshader`) que o componente `SinkingDrawing` controla. Mover os corpos para
+  baixo exigia, em todos os níveis, um chão com pelo menos 96 px de espessura onde um demónio
+  agarra, e numa plataforma fina a personagem saía por baixo. O valor do shader não passa pela
+  physics interpolation, que só move posições, por isso o desenho volta ao sítio no próprio passo
+  em que a personagem se solta. Cada demónio tem o seu material, e um a afundar não afunda os
+  outros.
+- **Recomeçar a sala.** Quando a personagem morre, o nível é substituído por uma cópia nova da sua
+  cena (ver "Estrutura"). Repor cada sistema à mão (a personagem, os SP, os demónios, a câmara)
+  pedia código de reposição em todos eles, e cada sistema novo podia esquecê-lo; a cópia nova está
+  sempre como no início.
+
+Antes de decidir se a perseguição precisava de ser otimizada, fixaram-se dois limites para 50
+demónios a perseguir ao mesmo tempo, muitos mais do que um ecrã terá: um limite para a média por
+passo de física, um pouco acima do medido, para que um aumento de custo se note cedo, e 2 ms no pior
+passo, a parte de um passo de 16,6 ms que um sistema pode ocupar. Mede-se com o `measure_demon.gd`,
+com todos os demónios a ver a personagem parada e a persegui-la: um de cada vez ataca, e os outros
+esperam enquanto ela pisca, o caso mais exigente que o jogo permite. Cada parte da medida começa com
+uma personagem nova, com o SP cheio, para que nenhum agarrão a deixe presa a meio. O custo é o que
+os demónios acrescentam ao passo inteiro, incluindo o motor de física, numa sala sem eles. Com os
+valores atuais do nível 1, depois da pancada e do agarrão (2026-10-20 e 2026-10-21):
+
+| Demónios a perseguir | Média por passo | Pior passo | Execuções |
+|---|---|---|---|
+| 10 | 0,26 a 0,36 ms | 0,50 a 0,87 ms | 5 |
+| 50 | 1,15 a 1,32 ms | 2,20 a 2,67 ms | 5 |
+| 200 | 11,9 a 14,4 ms | 21,9 a 24,5 ms | 5 |
+
+Antes da pancada e do agarrão (sete execuções, no mesmo dia), 50 demónios acrescentavam 1,15 a
+1,20 ms em média e 1,38 a 1,76 ms no pior passo. A média quase não mudou, mas o pior passo subiu
+0,6 a 0,9 ms e passa agora os 2 ms. Nesse pior passo, nenhum demónio começa o aviso, ao contrário do
+que acontecia com os primeiros ataques (ver a seguir). A causa da subida ainda não foi medida no
+Profiler; o que a pancada e o agarrão acrescentaram a cada demónio foi a área que encontra os outros
+demónios, a `Hitbox` e a colisão com a personagem.
+
+Com os primeiros ataques (2026-10-19), em que todos os demónios saltavam à mesma distância, a média
+com 50 demónios era de 0,43 a 0,51 ms e o pior passo de 1,67 a 2,50 ms. O pior passo era aquele em
+que dezenas de demónios começavam o aviso juntos, procurando o chão ao longo do salto: em 4 de 5
+execuções, 36 dos 50. Com a probabilidade por segundo, os avisos espalham-se, e no pior passo
+começaram de 1 a 12. A média subiu porque os demónios passam agora quase todo o tempo a perseguir,
+em vez de parados no aviso e depois do salto. Numa medida à parte, com o método do
+`measure_demon.gd` e os ataques do `.tres` alterados (três execuções), 50 demónios a perseguir sem
+ataques acrescentaram 1,12 a 1,15 ms, com a mordida e o salto 1,15 a 1,19 ms, e 50 parados, longe
+da personagem, 0,49 a 0,50 ms. Um demónio a perseguir custa cerca de 23 µs por passo, com o
+movimento e os dois raios, e um parado cerca de 10 µs: o custo é a perseguição. Os ataques
+acrescentam cerca de 0,04 ms em média, dentro da variação entre execuções.
+
+Com esses ataques, decidiu-se aceitar o custo, porque o pior passo ficava abaixo dos 2 ms, e subir o
+limite da média de 1 para 1,5 ms, cerca de um quarto acima do medido: um limite que falha sempre
+deixa de avisar. Com a pancada e o agarrão, a média continua dentro desse limite, mas o pior passo
+já não fica abaixo dos 2 ms. Decidiu-se aceitá-lo até haver um nível para medir: 50 demónios a
+perseguir ao mesmo tempo são um teste de esforço, muito acima do que um ecrã terá, e o limite da
+média, que serve de alarme, continua cumprido. A causa da subida mede-se no Profiler antes do
+nível 1. Os 200 demónios a perseguir ao mesmo tempo ocupam quase um passo inteiro
+em média e passam-no no pior passo, pelo que um nível deve ter, no máximo, algumas dezenas a
+perseguir ao mesmo tempo. Quando o nível 1 tiver os seus demónios, mede-se o caso real. Se aí um
+passo ultrapassar os 2 ms, a resposta preparada é repartir o trabalho da perseguição: cada demónio
+confirma a linha de vista num passo em cada dois ou três, à vez. Os valores foram medidos com o
+executável do editor do Godot, num só computador, e o pior passo variou entre execuções: com 50
+demónios, de 2,20 a 2,67 ms, e com 200, de 21,9 a 24,5 ms.
+
+O `test_demon.gd` verifica, com a personagem e o crucifixo verdadeiros, a visão (a distância e as
+paredes), a perseguição e a desistência, a paragem nas bordas e nos degraus, o aviso e o seu tempo,
+a altura, a distância e a direção do salto, também num salto mais rápido e num de metade da
+distância, a recusa de saltar para um buraco, o tempo parado depois do salto, a pontaria (a uma
+personagem parada, a uma que se afasta, a uma que vem a correr na direção do demónio, e o cálculo
+sem física, também com uma personagem que vem tão depressa que nenhum salto a apanharia), os
+valores-limite de um ataque (uma distância mínima acima da máxima, um aviso de 0 s e os valores de
+origem de um ataque novo), a mordida a correr, a ordem da lista como prioridade (a mordida antes do
+salto, e o salto antes da mordida, que tem o alcance menor), a probabilidade por segundo a duas
+frequências de física, na fórmula e no sorteio do próprio demónio, o afastamento pelo crucifixo
+(com um demónio por baixo da personagem, um salto contra o crucifixo erguido e um salto rápido
+travado a subir), o tempo afastado com uma pausa pelo meio, a recusa de um salto rápido que pode
+aterrar depois do fim do chão, o arremesso de uma borda abaixo, o regresso ao estado parado de um
+demónio que nunca a viu, e as camadas de colisão. Com a pancada e o agarrão, verifica também a
+`Hitbox` (ligada só enquanto o ataque pode acertar, com o dano e o arremesso do ataque), a colisão
+com a personagem, o recuo depois de cada ataque, a distância entre demónios em matilha e o ritmo
+próprio de cada um, a espera sorteada antes de atacar, a espera enquanto a personagem pisca, o
+agarrão com um e com dois demónios, o terceiro que espera à distância, o arremesso quando a
+personagem se solta e o atordoamento. São 82 casos. Todos menos os quatro últimos usam valores
+próprios, pelo que afinar o `.tres` não os altera. Os quatro últimos leem o `.tres` do nível 1 e
+confirmam o que o desenho dos níveis assume: cada ataque com uma das animações da arte, os saltos e a diferença
+de altura para atacar abaixo de um tile (48 px), o Lose Distance acima do Sight Distance e a
+perseguição mais lenta do que a corrida da personagem.
 
 #### Overlay de depuração
 
@@ -865,15 +1352,24 @@ atualiza uma vez por segundo, pelo que um único frame lento permanece visível 
 Mostra também o estado e a velocidade da personagem e, depois de cada salto, o tipo de salto, as
 tolerâncias usadas, em passos de física, e a altura atingida. Um salto completo mostra
 240 px, o mesmo valor que os testes medem. Com a câmara ligada, mostra ainda a zona de câmara em que
-a personagem está e as distâncias atuais da antecipação e do olhar para baixo. A tecla F3 mostra e
-esconde o texto.
+a personagem está e as distâncias atuais da antecipação e do olhar para baixo. Mostra ainda os SP,
+a velocidade atual da regeneração e se os SP estão baixos ou acabaram. A tecla F3 mostra e esconde
+o texto.
+
+A tecla F4 retira à personagem o valor Debug Damage do overlay (10 SP, no Inspector), como um golpe,
+para experimentar a regeneração e os avisos antes de haver demónios. Cada toque conta uma vez,
+mesmo com a tecla premida, não atua com o jogo em pausa e funciona com o texto escondido. O overlay
+pode ferir a personagem diretamente porque não faz parte do jogo: é uma ferramenta de depuração,
+ligada à personagem num só sentido, e sai das exportações de release, pelo que nada no jogo depende
+dele. O F4 está reservado nos perfis de controlos, como o F3, porque uma ação do jogo atribuída a
+essa tecla feriria a personagem sempre que fosse usada nas versões de depuração.
 
 O overlay é uma cena própria, `debug/debug_overlay.tscn`, num `CanvasLayer`, pelo que não se
-desloca com a câmara. Recebe a personagem pelo Inspector e lê-a sem que ela dependa dele, pelo que
-a personagem é testada e exportada sem o overlay. Continua ativo com o jogo em pausa e, nas
-exportações de release, remove-se a si próprio. O `test_debug_overlay.gd` verifica o
-comportamento nas versões de depuração; a remoção na versão de release só poderá ser confirmada
-na primeira exportação.
+desloca com a câmara. Recebe a personagem pelo Inspector e lê-a, ou fere-a com o F4, sem que ela
+dependa dele, pelo que a personagem é testada e exportada sem o overlay. Continua ativo com o jogo
+em pausa e, nas exportações de release, remove-se a si próprio, e o F4 com ele. O
+`test_debug_overlay.gd` verifica o comportamento nas versões de depuração; a remoção na versão de
+release só poderá ser confirmada na primeira exportação.
 
 #### Câmara
 
@@ -1025,7 +1521,7 @@ saltar nem interagir; com o jogo a retomar no próprio frame, a personagem salta
 
 As opções (volume dos buses Master, Music, SFX, Ambience e UI, ecrã inteiro, V-Sync, limite de FPS
 e controlos)
-estão no autoload `Settings`, o único do projeto, porque têm de estar aplicadas antes de qualquer
+estão no autoload `Settings`, porque têm de estar aplicadas antes de qualquer
 cena. Gravam-se em `user://settings.cfg` (no Windows, `%APPDATA%\Godot\app_userdata\P2D\`), um
 ficheiro de texto legível, com número de versão. Um ficheiro em falta ou ilegível, ou com valores de
 tipo errado, fora do intervalo ou que não são números, dá os valores predefinidos. O limite de FPS só
@@ -1069,6 +1565,43 @@ e remapeamento por captura da tecla seguinte.
 O tamanho da letra e os espaços entre elementos estão num único tema, `ui/ui_theme.tres`, e nenhum
 nó define o seu próprio tamanho de letra: uma futura opção de tamanho do texto altera apenas o tema.
 
+#### Registo moral: escondido, uma soma e dois limiares
+
+O jogo julga o homem pela forma como se joga, sem o mostrar. O autoload `Moral` guarda esse registo
+num único sítio, e nada no ecrã o lê. As falas (ficheiros `.dialogue`) e as ofertas dos demónios
+comunicam com ele apenas por seis nomes: aceitar uma tentação, o tom de uma resposta (humilde ou
+arrogante), o tempo que o homem ouviu uma proposta antes de a recusar, se já aceitou uma dada
+tentação, o estádio atual e o aviso de que o estádio mudou.
+
+Tudo o que o homem faz soma pontos a um único total. Uma tentação aceite soma o valor indicado para
+ela, contando uma só vez, mesmo que volte a ser aceite. Cada portagem roubada no nível 3 vale menos
+do que um atalho, porque esse nível tem três. Uma resposta arrogante soma pouco. Ouvir uma proposta
+só conta a partir de alguns segundos, e cada proposta tem um máximo; ouvida outra vez, por exemplo
+depois de recomeçar a fase, conta apenas a escuta mais longa. Dois limiares transformam o total no
+estádio 0, 1 ou 2, que escolhe a variante das falas do homem: quanto mais alto, pior ele fala.
+Cada resposta conta sempre que é dada. Por isso, uma conversa com respostas não se repete quando a
+fase recomeça; essa regra pertence ao estado do jogo (`GameState`), que guarda as conversas já
+ouvidas, e não ao registo moral.
+
+Uma resposta humilde fica contada, mas não retira pontos, e o total nunca desce. Se descontasse, o
+jogador poderia aprender por tentativa e erro a "limpar" a fala com respostas humildes, e o registo
+deixaria de medir o que o jogador escolhe. A soma única foi preferida a contar apenas as tentações,
+que ignoraria a soberba nas respostas, e a ter um limiar por categoria, que daria seis valores
+difíceis de afinar e de explicar.
+
+| Valor (`core/moral_stats.tres`) | Referência |
+|---|---|
+| Atalho ou dom de um demónio | 1 ponto |
+| Cada portagem roubada | 0,4 pontos |
+| Resposta arrogante | 0,15 pontos |
+| Ouvir uma proposta | 0,1 pontos por segundo além de 3 s, até 0,5 por proposta |
+| Estádio 1 / estádio 2 | a partir de 1 / de 3 pontos |
+
+São valores de referência, a afinar em jogo. Com eles, um atalho basta para a fala piorar, e as
+três portagens juntas pesam pouco mais do que um atalho. As regras estão numa classe sem nós
+(`MoralRecord`), testada isoladamente; o autoload limita-se a disponibilizá-la. O `reset()` limpa o
+registo para um jogo novo; a gravação fica para quando houver saves.
+
 ### Convenções de código
 
 - GDScript com tipagem estática em variáveis, parâmetros e retornos. O código tipado gera bytecode
@@ -1076,7 +1609,9 @@ nó define o seu próprio tamanho de letra: uma futura opção de tamanho do tex
 - Composição em vez de herança: comportamentos como vida, dano ou movimento vivem em nós-componente
   reutilizáveis, e não numa cadeia de subclasses.
 - "Call down, signal up": um nó pai pode chamar métodos dos filhos, e um filho comunica para cima
-  por sinal. Nunca `get_node("../..")`.
+  por sinal. Nunca `get_node("../..")`. No jogo, a única exceção é o crucifixo, explicada em
+  "Crucifixo: componentes e modificadores de movimento". Fora do jogo, o overlay de depuração fere
+  a personagem com o F4 (ver "Overlay de depuração").
 - Valores de balanceamento em `@export` ou em `Resource`, e nunca como constantes no meio da lógica.
 - Nomes em inglês; `snake_case` para ficheiros, funções e variáveis; `PascalCase` para classes e
   nós.
@@ -1092,6 +1627,11 @@ nó define o seu próprio tamanho de letra: uma futura opção de tamanho do tex
   contém chaves de assinatura.
 - Recursos movem-se e renomeiam-se apenas no painel FileSystem do Godot, que atualiza as
   referências e os UIDs. O explorador de ficheiros do sistema não o faz.
+
+## Créditos
+
+- Dialogue Manager 4.1.0, de Nathan Hoad. Licença MIT. Plugin de diálogo, em
+  `Projeto/addons/dialogue_manager/`. https://github.com/nathanhoad/godot_dialogue_manager
 
 ## Licença
 

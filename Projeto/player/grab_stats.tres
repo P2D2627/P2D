@@ -1,0 +1,13 @@
+[gd_resource type="Resource" script_class="GrabStats" format=3]
+
+[ext_resource type="Script" path="res://player/grab_stats.gd" id="1_script"]
+
+[resource]
+script = ExtResource("1_script")
+time_to_die = 3.0
+presses_to_escape = 8
+extra_presses_per_demon = 6
+hold_time_to_escape = 1.2
+extra_hold_time_per_demon = 0.9
+drain_delay = 0.25
+drain_per_second = 0.5

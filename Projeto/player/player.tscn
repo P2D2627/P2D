@@ -4,7 +4,25 @@
 [ext_resource type="Resource" uid="uid://dgbdj7xih7ra7" path="res://player/player_movement_stats.tres" id="2_stats"]
 [ext_resource type="Script" uid="uid://bb8cwv6qx3yd" path="res://player/player_input.gd" id="3_input"]
 [ext_resource type="Texture2D" uid="uid://d183o78hw2hf2" path="res://assets/sprites/player/main_character_idle.png" id="3_qjkh3"]
+[ext_resource type="Script" path="res://player/player_sounds.gd" id="4_sounds"]
+[ext_resource type="AudioStream" path="res://assets/audio/wall_slide.wav" id="5_wall_slide"]
+[ext_resource type="AudioStream" path="res://assets/audio/footstep_1.wav" id="6_footstep_1"]
+[ext_resource type="AudioStream" path="res://assets/audio/footstep_2.wav" id="7_footstep_2"]
+[ext_resource type="AudioStream" path="res://assets/audio/footstep_3.wav" id="8_footstep_3"]
+[ext_resource type="AudioStream" path="res://assets/audio/player_jump.wav" id="9_jump"]
+[ext_resource type="AudioStream" path="res://assets/audio/soft_land.wav" id="10_soft_land"]
+[ext_resource type="AudioStream" path="res://assets/audio/hard_land.wav" id="11_hard_land"]
+[ext_resource type="AudioStream" path="res://assets/audio/hard_land_2.wav" id="12_hard_land_2"]
 [ext_resource type="PackedScene" path="res://crucifix/crucifix.tscn" id="4_crucifix"]
+[ext_resource type="Script" path="res://player/soul_points.gd" id="5_soul_points"]
+[ext_resource type="Resource" path="res://player/soul_points_stats.tres" id="6_soul_points_stats"]
+[ext_resource type="PackedScene" path="res://components/hurtbox.tscn" id="7_hurtbox"]
+[ext_resource type="Script" path="res://player/hit_reaction.gd" id="8_hit_reaction"]
+[ext_resource type="Script" path="res://player/invulnerability_blink.gd" id="9_blink"]
+[ext_resource type="Script" path="res://player/grab_escape.gd" id="10_grab_escape"]
+[ext_resource type="Resource" path="res://player/grab_stats.tres" id="11_grab_stats"]
+[ext_resource type="PackedScene" path="res://player/grab_prompt.tscn" id="12_grab_prompt"]
+[ext_resource type="Script" path="res://components/sinking_drawing.gd" id="13_sinking_drawing"]
 
 [sub_resource type="RectangleShape2D" id="RectangleShape2D_player"]
 size = Vector2(48, 96)
@@ -45,20 +63,23 @@ animations = [{
 "speed": 4.0
 }]
 
-[node name="Player" type="CharacterBody2D" unique_id=1108148048 node_paths=PackedStringArray("input")]
+[node name="Player" type="CharacterBody2D" node_paths=PackedStringArray("input", "soul_points") unique_id=1108148048]
+process_physics_priority = -1
 collision_layer = 2
-collision_mask = 257
+collision_mask = 261
 script = ExtResource("1_script")
 stats = ExtResource("2_stats")
 input = NodePath("PlayerInput")
+soul_points = NodePath("SoulPoints")
+knock_off_layers = 4
 
 [node name="CollisionShape2D" type="CollisionShape2D" parent="." unique_id=2146697779]
 position = Vector2(0, -48)
 shape = SubResource("RectangleShape2D_player")
 
 [node name="Sprite" type="AnimatedSprite2D" parent="." unique_id=1045081328]
-editor_description = "A 192 x 192 cell with the feet on its line y = 184, centred: at (0, -88) the feet sit on the player's origin, the bottom of the collision box."
-position = Vector2(5.9604645e-08, -48)
+editor_description = "A 192 x 192 cell with the feet on its line y = 184. Offset puts the feet on the node's own y = 0, at the player's origin, the bottom of the collision box: SinkingDrawing cuts what passes below that line."
+offset = Vector2(0, -953.333)
 scale = Vector2(0.04951923, 0.04951923)
 sprite_frames = SubResource("SpriteFrames_g4v7s")
 animation = &"idle"
@@ -68,6 +89,73 @@ frame_progress = 0.7723723
 [node name="PlayerInput" type="Node" parent="." unique_id=142086524]
 script = ExtResource("3_input")
 
-[node name="Crucifix" parent="." unique_id=1327693395 node_paths=PackedStringArray("player") instance=ExtResource("4_crucifix")]
+[node name="SoulPoints" type="Node" parent="."]
+script = ExtResource("5_soul_points")
+stats = ExtResource("6_soul_points_stats")
+
+[node name="PlayerSounds" type="Node2D" parent="." node_paths=PackedStringArray("player", "wall_slide", "footstep", "jump", "land")]
+script = ExtResource("4_sounds")
+player = NodePath("..")
+wall_slide = NodePath("WallSlide")
+footstep = NodePath("Footstep")
+footstep_sounds = Array[AudioStream]([ExtResource("6_footstep_1"), ExtResource("7_footstep_2"), ExtResource("8_footstep_3")])
+jump = NodePath("Jump")
+land = NodePath("Land")
+soft_land_sound = ExtResource("10_soft_land")
+hard_land_sounds = Array[AudioStream]([ExtResource("11_hard_land"), ExtResource("12_hard_land_2")])
+
+[node name="WallSlide" type="AudioStreamPlayer2D" parent="PlayerSounds"]
+stream = ExtResource("5_wall_slide")
+bus = &"SFX"
+
+[node name="Footstep" type="AudioStreamPlayer2D" parent="PlayerSounds"]
+max_polyphony = 2
+bus = &"SFX"
+
+[node name="Jump" type="AudioStreamPlayer2D" parent="PlayerSounds"]
+stream = ExtResource("9_jump")
+bus = &"SFX"
+
+[node name="Land" type="AudioStreamPlayer2D" parent="PlayerSounds"]
+bus = &"SFX"
+
+[node name="Crucifix" parent="." node_paths=PackedStringArray("player") instance=ExtResource("4_crucifix")]
 position = Vector2(0, -60)
 player = NodePath("..")
+
+[node name="Hurtbox" parent="." instance=ExtResource("7_hurtbox")]
+
+[node name="HurtboxShape" type="CollisionShape2D" parent="Hurtbox"]
+position = Vector2(0, -48)
+shape = SubResource("RectangleShape2D_player")
+
+[node name="HitReaction" type="Node" parent="." node_paths=PackedStringArray("player", "hurtbox")]
+script = ExtResource("8_hit_reaction")
+player = NodePath("..")
+hurtbox = NodePath("../Hurtbox")
+
+[node name="InvulnerabilityBlink" type="Node" parent="." node_paths=PackedStringArray("hurtbox", "drawing")]
+script = ExtResource("9_blink")
+hurtbox = NodePath("../Hurtbox")
+drawing = NodePath("../Sprite")
+
+[node name="SinkingDrawing" type="Node" parent="." node_paths=PackedStringArray("drawing")]
+script = ExtResource("13_sinking_drawing")
+drawing = NodePath("../Sprite")
+depth = 1939.0
+
+[node name="GrabEscape" type="Node" parent="." node_paths=PackedStringArray("player", "hit_reaction", "hurtbox")]
+script = ExtResource("10_grab_escape")
+player = NodePath("..")
+hit_reaction = NodePath("../HitReaction")
+hurtbox = NodePath("../Hurtbox")
+stats = ExtResource("11_grab_stats")
+
+[node name="GrabPrompt" parent="." node_paths=PackedStringArray("grab_escape") instance=ExtResource("12_grab_prompt")]
+grab_escape = NodePath("../GrabEscape")
+
+[connection signal="healed" from="Crucifix" to="SoulPoints" method="heal"]
+[connection signal="grabbed" from="GrabEscape" to="Crucifix" method="block" binds= [&"grab"]]
+[connection signal="broke_free" from="GrabEscape" to="Crucifix" method="unblock" binds= [&"grab"]]
+[connection signal="sink_changed" from="GrabEscape" to="SinkingDrawing" method="set_sink"]
+[connection signal="died" from="GrabEscape" to="." method="_on_grab_escape_died"]

@@ -2,6 +2,13 @@
 
 [ext_resource type="Script" path="res://crucifix/crucifix.gd" id="1_script"]
 [ext_resource type="Resource" path="res://crucifix/crucifix_stats.tres" id="2_stats"]
+[ext_resource type="Script" path="res://crucifix/crucifix_sounds.gd" id="3_sounds"]
+[ext_resource type="AudioStream" path="res://assets/audio/crucifix_raise.wav" id="4_raise"]
+[ext_resource type="AudioStream" path="res://assets/audio/crucifix_hold_loopable.wav" id="5_hold"]
+[ext_resource type="AudioStream" path="res://assets/audio/crucifix_holster.wav" id="6_holster"]
+[ext_resource type="AudioStream" path="res://assets/audio/crucifix_cd.wav" id="7_cooldown"]
+[ext_resource type="AudioStream" path="res://assets/audio/crucifix_avail.wav" id="8_available"]
+[ext_resource type="AudioStream" path="res://assets/audio/upgrade_unavail.wav" id="9_unavailable"]
 
 [sub_resource type="Gradient" id="Gradient_light"]
 offsets = PackedFloat32Array(0, 1)
@@ -40,3 +47,21 @@ unique_name_in_owner = true
 visible = false
 color = Color(0.95, 0.85, 0.45, 1)
 polygon = PackedVector2Array(-3, -20, 3, -20, 3, -12, 10, -12, 10, -6, 3, -6, 3, 14, -3, 14, -3, -6, -10, -6, -10, -12, -3, -12)
+
+[node name="CrucifixSounds" type="Node2D" parent="." node_paths=PackedStringArray("crucifix", "cue", "hold")]
+script = ExtResource("3_sounds")
+crucifix = NodePath("..")
+cue = NodePath("Cue")
+hold = NodePath("Hold")
+raise_sound = ExtResource("4_raise")
+holster_sound = ExtResource("6_holster")
+cooldown_sound = ExtResource("7_cooldown")
+available_sound = ExtResource("8_available")
+unavailable_sound = ExtResource("9_unavailable")
+
+[node name="Cue" type="AudioStreamPlayer2D" parent="CrucifixSounds"]
+bus = &"SFX"
+
+[node name="Hold" type="AudioStreamPlayer2D" parent="CrucifixSounds"]
+stream = ExtResource("5_hold")
+bus = &"SFX"
