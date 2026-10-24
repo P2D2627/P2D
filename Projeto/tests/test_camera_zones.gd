@@ -9,7 +9,17 @@
 # physics, running to an inner edge or falling to a zone's bottom, the screen never passes the edge,
 # though the smoothing and the look ahead lag behind. A change of zone moves the camera no faster
 # than Zone Change Speed. A zone in a sub-scene of the level counts, and the zones of a level being
-# freed do not. A scaled zone has the rectangle the editor shows, without its disabled shapes. The
+# freed do not. A scaled zone has the rectangle the editor shows, without its disabled shapes. In a
+# zone shorter than the screen, the zone's Vertical Anchor puts the screen's top edge on the zone's
+# top at 0, its centre on the zone's centre at 0.5 and its bottom edge on the zone's bottom at 1; in
+# a zone taller than the screen it changes nothing. A zone's Bottom Margin lowers the screen's bottom
+# edge by as much. A change of zone eases in: the camera's first step is a fraction of its biggest,
+# and it never goes past the new zone's range. A zone with Limit Horizontally off keeps its anchor up
+# and down but lets the camera follow the player across, where one with it on holds the camera on
+# its centre. Where two zones overlap, the one the player came into last counts, or the smaller if
+# it came into both at once, and leaving the overlap gives the camera back the zone it is in.
+# Running at top speed into a shaft that comes closer, the player's whole body stays on the screen
+# while the camera slides in. The
 # screen size comes from the camera itself, as the engine takes it: in headless runs the window is
 # 64 × 64 and the stretch would make the screen 1920 × 1920, so the test first gives the window the
 # game's screen size.
@@ -55,6 +65,38 @@ const DISABLED_SHAPE_SPOT: Vector2 = Vector2(5000.0, 5000.0)
 ## The edge-turn case: the player stops this far from the wall, and starts this far from it.
 const STOP_BEFORE_THE_WALL: float = 200.0
 const START_FROM_THE_WALL: float = 1500.0
+## The anchor cases: a zone this tall, much shorter than the 1080 px screen, and the share of its
+## height down from its top where the player's feet are in turn, low enough for its 96 px body to be
+## inside the zone, since the camera always shows the whole body.
+const SHORT_ZONE_HEIGHT: float = 400.0
+const SPOTS_DOWN_THE_ZONE: Array[float] = [0.3, 0.9]
+## The head case: the player's feet this far under the top of a zone anchored at the top, so its head
+## pokes out above the zone.
+const FEET_UNDER_THE_TOP: float = 20.0
+## The edge margin case: how far up the player is moved in one step, in px.
+const SUDDEN_CLIMB: float = 600.0
+## The horizontal anchor case: a zone this wide, narrower than the screen.
+const NARROW_SHAFT_WIDTH: float = 600.0
+## The shaft case: the narrow zone comes this close, as a shaft does, and the player stops this far
+## from its far side, as by the column of Lust phase 3's Zone08: two and a half tiles.
+const SHAFT_ZOOM: float = 2.0
+const SHAFT_STOP_GAP: float = 120.0
+## The margin case: how much further below the zone the screen may show, in px.
+const BOTTOM_MARGIN: float = 96.0
+## The easing case: the spring's reference values, whatever the game's tuning.
+const REFERENCE_ZONE_CHANGE_SHARPNESS: float = 6.0
+const REFERENCE_ZONE_CHANGE_SPEED: float = 2000.0
+## The easing case: the first step of a change may be at most this share of the biggest one.
+const FIRST_STEP_SHARE: float = 1.0 / 3.0
+## The easing case: a change counts as done at this share of the way.
+const MOSTLY_DONE: float = 0.95
+## The easing case: a short change of zone, from a zone one screen wide into one lower down by this
+## much, in px.
+const SHORT_CHANGE: float = 300.0
+## The horizontal case: a zone this wide, narrower than the screen, and the player's two spots in it.
+const NARROW_ZONE_WIDTH: float = 1200.0
+const NARROW_ZONE_START_X: float = 100.0
+const NARROW_ZONE_END_X: float = 1100.0
 ## The edge-turn case's wall, and the floor of the cases with physics.
 const WALL_THICKNESS: float = 100.0
 const FLOOR_SPAWN_HEIGHT: float = -2.0
@@ -84,6 +126,18 @@ func _initialize() -> void:
 	results.append(await _a_zone_in_a_sub_scene_of_the_level_counts())
 	results.append(await _the_zones_of_a_level_being_freed_do_not_count())
 	results.append(await _a_zone_s_rectangles_follow_its_scale_and_skip_disabled_shapes())
+	results.append(await _in_a_zone_shorter_than_the_screen_the_anchor_places_the_screen())
+	results.append(await _in_a_zone_taller_than_the_screen_the_anchor_changes_nothing())
+	results.append(await _a_bottom_margin_lets_the_screen_show_more_below())
+	results.append(await _a_change_of_zone_eases_in_and_never_goes_past())
+	results.append(await _a_short_change_of_zone_is_mostly_done_in_under_a_second())
+	results.append(await _a_zone_that_does_not_limit_horizontally_lets_the_camera_follow_across())
+	results.append(await _where_zones_overlap_the_one_entered_last_counts())
+	results.append(await _the_player_s_head_stays_on_screen_past_a_zone_s_top())
+	results.append(await _the_horizontal_anchor_puts_the_screen_s_side_on_the_zone_s_side())
+	results.append(await _a_sudden_climb_keeps_the_body_edge_margin_from_the_top())
+	results.append(await _into_a_zone_that_limits_across_the_lead_does_not_snap())
+	results.append(await _running_into_a_shaft_the_body_stays_on_screen())
 	finish(results)
 
 
@@ -466,15 +520,337 @@ func _a_zone_s_rectangles_follow_its_scale_and_skip_disabled_shapes() -> bool:
 			% [ZONE_SCALE, limits, expected, off_counts])
 
 
+## In a wide zone 400 px tall, with the player near its top and then near its bottom, the screen's
+## top edge sits on the zone's top at Vertical Anchor 0, its centre on the zone's centre at 0.5 and
+## its bottom edge on the zone's bottom at 1.
+func _in_a_zone_shorter_than_the_screen_the_anchor_places_the_screen() -> bool:
+	var screen: Vector2 = root.get_visible_rect().size
+	var zone_rect: Rect2 = Rect2(0.0, 0.0, 3.0 * screen.x, SHORT_ZONE_HEIGHT)
+	var zone: CameraZone = _make_zone([zone_rect])
+	var player: Player = _spawn_still_player(zone_rect.get_center())
+	var camera: GameCamera = _spawn_camera_by_hand(player, true)
+	var expected: Dictionary[float, float] = {
+		0.0: zone_rect.position.y + screen.y / 2.0,
+		0.5: zone_rect.get_center().y,
+		1.0: zone_rect.end.y - screen.y / 2.0,
+	}
+	var largest_miss: float = 0.0
+	var found: String = ""
+	for anchor: float in expected:
+		zone.vertical_anchor = anchor
+		for share: float in SPOTS_DOWN_THE_ZONE:
+			player.global_position = Vector2(zone_rect.get_center().x,
+					zone_rect.position.y + share * zone_rect.size.y)
+			_settle_by_hand(camera)
+			largest_miss = maxf(largest_miss, absf(camera.global_position.y - expected[anchor]))
+		found += " anchor %.1f: centre at y %.1f (expected %.1f);" % [anchor,
+				camera.global_position.y, expected[anchor]]
+	await _remove_all([camera, player, zone])
+	return report(largest_miss < SAME_SPOT,
+			"Zone %.0f px tall, screen %.0f px tall:%s largest miss %.3f px"
+			% [SHORT_ZONE_HEIGHT, screen.y, found, largest_miss])
+
+
+## In a zone taller than the screen, with Vertical Anchor 1, the camera follows the player in the
+## middle of the zone, and near the zone's bottom the screen stops at it, as with any anchor.
+func _in_a_zone_taller_than_the_screen_the_anchor_changes_nothing() -> bool:
+	var screen: Vector2 = root.get_visible_rect().size
+	var zone_rect: Rect2 = Rect2(Vector2.ZERO, 3.0 * screen)
+	var zone: CameraZone = _make_zone([zone_rect])
+	zone.vertical_anchor = 1.0
+	var middle: Vector2 = zone_rect.get_center()
+	var player: Player = _spawn_still_player(middle)
+	var camera: GameCamera = _spawn_camera_by_hand(player, true)
+	_settle_by_hand(camera)
+	var middle_miss: float = absf(camera.global_position.y - middle.y)
+	player.global_position = Vector2(middle.x, zone_rect.end.y - EDGE_GAP)
+	_settle_by_hand(camera)
+	var bottom_edge: float = camera.global_position.y + screen.y / 2.0
+	await _remove_all([camera, player, zone])
+	return report(middle_miss < SAME_SPOT and absf(bottom_edge - zone_rect.end.y) < SAME_SPOT,
+			"Zone %.0f px tall with anchor 1: in the middle the camera is %.3f px off the player; near the bottom the screen's bottom edge is at %.1f, the zone's at %.1f"
+			% [zone_rect.size.y, middle_miss, bottom_edge, zone_rect.end.y])
+
+
+## In a zone 400 px tall with Vertical Anchor 1 and Bottom Margin 96, the screen's bottom edge sits
+## 96 px below the zone's bottom.
+func _a_bottom_margin_lets_the_screen_show_more_below() -> bool:
+	var screen: Vector2 = root.get_visible_rect().size
+	var zone_rect: Rect2 = Rect2(0.0, 0.0, 3.0 * screen.x, SHORT_ZONE_HEIGHT)
+	var zone: CameraZone = _make_zone([zone_rect])
+	zone.vertical_anchor = 1.0
+	zone.bottom_margin = BOTTOM_MARGIN
+	var player: Player = _spawn_still_player(zone_rect.get_center())
+	var camera: GameCamera = _spawn_camera_by_hand(player, true)
+	_settle_by_hand(camera)
+	var bottom_edge: float = camera.global_position.y + screen.y / 2.0
+	var expected: float = zone_rect.end.y + BOTTOM_MARGIN
+	await _remove_all([camera, player, zone])
+	return report(absf(bottom_edge - expected) < SAME_SPOT,
+			"Zone with its bottom at %.0f and Bottom Margin %.0f: the screen's bottom edge at %.1f (expected %.1f)"
+			% [zone_rect.end.y, BOTTOM_MARGIN, bottom_edge, expected])
+
+
+## From a zone one screen wide into the zone on its right, with the real smoothing: the camera's
+## first step is at most a third of its biggest, it never goes past the new zone's range, and it
+## settles there.
+func _a_change_of_zone_eases_in_and_never_goes_past() -> bool:
+	var screen: Vector2 = root.get_visible_rect().size
+	var left_zone: CameraZone = _make_zone([Rect2(Vector2.ZERO, screen)])
+	var right_zone: CameraZone = _make_zone([Rect2(screen.x, 0.0, 3.0 * screen.x, screen.y)])
+	var player: Player = _spawn_still_player(screen / 2.0)
+	var camera: GameCamera = _spawn_camera_by_hand(player, false)
+	camera.stats.look_ahead_distance = 0.0
+	# The shape of the spring, not the game's tuning: the reference values the README describes.
+	camera.stats.zone_change_sharpness = REFERENCE_ZONE_CHANGE_SHARPNESS
+	camera.stats.zone_change_speed = REFERENCE_ZONE_CHANGE_SPEED
+	_settle_by_hand(camera)
+	var start_x: float = camera.global_position.x
+	player.global_position = Vector2(screen.x + EDGE_GAP, screen.y / 2.0)
+	var expected_x: float = screen.x + screen.x / 2.0
+	var steps: Array[float] = []
+	var furthest_x: float = start_x
+	var previous_x: float = start_x
+	for _step_index: int in SETTLE_STEPS:
+		camera._physics_process(_step())
+		steps.append(camera.global_position.x - previous_x)
+		previous_x = camera.global_position.x
+		furthest_x = maxf(furthest_x, previous_x)
+	var biggest: float = steps.max()
+	await _remove_all([camera, player, left_zone, right_zone])
+	return report(steps[0] <= FIRST_STEP_SHARE * biggest and furthest_x <= expected_x + SAME_SPOT
+			and absf(previous_x - expected_x) < SAME_SPOT,
+			"Change of zone from x %.0f to %.0f: first step %.1f px, biggest %.1f px, furthest x %.2f, settled at %.2f"
+			% [start_x, expected_x, steps[0], biggest, furthest_x, previous_x])
+
+
+## From a low zone, one screen wide and anchored at the bottom, into the one under it, 300 px tall
+## and anchored at the bottom too, as when the player drops to a floor 300 px lower, with the real
+## smoothing: the camera moves 300 px down, 95 % of the way in under a second, and settles.
+func _a_short_change_of_zone_is_mostly_done_in_under_a_second() -> bool:
+	var screen: Vector2 = root.get_visible_rect().size
+	var upper_zone: CameraZone = _make_zone([Rect2(0.0, 0.0, screen.x, SHORT_ZONE_HEIGHT)])
+	var lower_zone: CameraZone = _make_zone([Rect2(0.0, SHORT_ZONE_HEIGHT, screen.x, SHORT_CHANGE)])
+	upper_zone.vertical_anchor = 1.0
+	lower_zone.vertical_anchor = 1.0
+	var player: Player = _spawn_still_player(Vector2(screen.x / 2.0, SHORT_ZONE_HEIGHT / 2.0))
+	var camera: GameCamera = _spawn_camera_by_hand(player, false)
+	_settle_by_hand(camera)
+	var start_y: float = camera.global_position.y
+	player.global_position = Vector2(screen.x / 2.0, SHORT_ZONE_HEIGHT + SHORT_CHANGE / 2.0)
+	var expected_y: float = SHORT_ZONE_HEIGHT + SHORT_CHANGE - screen.y / 2.0
+	var mostly_done_frame: int = NEVER_REACHED
+	for step_index: int in SETTLE_STEPS:
+		camera._physics_process(_step())
+		var done: float = (camera.global_position.y - start_y) / (expected_y - start_y)
+		if mostly_done_frame == NEVER_REACHED and done >= MOSTLY_DONE:
+			mostly_done_frame = step_index + 1
+	var settled_y: float = camera.global_position.y
+	var mostly_done_time: float = mostly_done_frame * _step()
+	await _remove_all([camera, player, upper_zone, lower_zone])
+	return report(mostly_done_frame != NEVER_REACHED and mostly_done_time < 1.0
+			and absf(settled_y - expected_y) < SAME_SPOT,
+			"Change of zone of %.0f px down: 95 %% done in %.2f s, settled at %.2f (expected %.1f)"
+			% [expected_y - start_y, mostly_done_time, settled_y, expected_y])
+
+
+## In a zone 1200 px wide and 400 px tall, anchored at the bottom, with the player moved from near
+## its left side to near its right side: with Limit Horizontally on, the camera stays on the zone's
+## centre across; with it off, it follows the player across, to Window Half Width behind it, while
+## the screen's bottom edge stays on the zone's bottom.
+func _a_zone_that_does_not_limit_horizontally_lets_the_camera_follow_across() -> bool:
+	var screen: Vector2 = root.get_visible_rect().size
+	var zone_rect: Rect2 = Rect2(0.0, 0.0, NARROW_ZONE_WIDTH, SHORT_ZONE_HEIGHT)
+	var found: Dictionary[bool, Vector2] = {}
+	var window: float = 0.0
+	for limits: bool in [true, false]:
+		var zone: CameraZone = _make_zone([zone_rect])
+		zone.vertical_anchor = 1.0
+		zone.limit_horizontally = limits
+		var player: Player = _spawn_still_player(Vector2(NARROW_ZONE_START_X, zone_rect.get_center().y))
+		var camera: GameCamera = _spawn_camera_by_hand(player, true)
+		camera.stats.look_ahead_distance = 0.0
+		window = camera.stats.window_half_width
+		_settle_by_hand(camera)
+		player.global_position.x = NARROW_ZONE_END_X
+		_settle_by_hand(camera)
+		found[limits] = camera.global_position
+		await _remove_all([camera, player, zone])
+	var bottom_y: float = zone_rect.end.y - screen.y / 2.0
+	var held: bool = (absf(found[true].x - zone_rect.get_center().x) < SAME_SPOT
+			and absf(found[true].y - bottom_y) < SAME_SPOT)
+	var follows: bool = (absf(found[false].x - (NARROW_ZONE_END_X - window)) < SAME_SPOT
+			and absf(found[false].y - bottom_y) < SAME_SPOT)
+	return report(held and follows,
+			"Zone %.0f px wide, player at x %.0f: limiting across, the camera at %s (zone centre x %.0f); not limiting, at %s (expected x %.0f, y %.0f)"
+			% [NARROW_ZONE_WIDTH, NARROW_ZONE_END_X, found[true], zone_rect.get_center().x, found[false],
+			NARROW_ZONE_END_X - window, bottom_y])
+
+
+## A big zone four screens wide and a small one two screens wide that overlaps its last screen. With
+## the player walking from the big zone into the overlap, the camera takes the small zone there, the
+## one it came into last; back in the big zone alone, the big one; walking from the small zone alone
+## into the overlap, the big one, which it came into last; starting in the overlap, in both at once,
+## the smaller.
+func _where_zones_overlap_the_one_entered_last_counts() -> bool:
+	var screen: Vector2 = root.get_visible_rect().size
+	var big: CameraZone = _make_zone([Rect2(Vector2.ZERO, Vector2(4.0, 1.0) * screen)])
+	big.name = &"Big"
+	var small: CameraZone = _make_zone([Rect2(Vector2(3.0, 0.0) * screen, Vector2(2.0, 1.0) * screen)])
+	small.name = &"Small"
+	var in_big: Vector2 = Vector2(1.5, 0.5) * screen
+	var in_overlap: Vector2 = Vector2(3.5, 0.5) * screen
+	var in_small: Vector2 = Vector2(4.5, 0.5) * screen
+	var found: Array[String] = []
+	for path: Array in [[in_big, in_overlap, in_big], [in_small, in_overlap], [in_overlap]]:
+		var player: Player = _spawn_still_player(path[0])
+		var camera: GameCamera = _spawn_camera_by_hand(player, true)
+		var names: Array[String] = [camera.get_zone_name()]
+		for spot: Vector2 in path.slice(1):
+			player.global_position = spot
+			camera._physics_process(_step())
+			names.append(camera.get_zone_name())
+		found.append(" > ".join(names))
+		await _remove_all([camera, player])
+	await _remove_all([big, small])
+	return report(found == ["Big > Small > Big", "Small > Big", "Small"],
+			"Overlapping zones, Small inside the last screen of Big: from Big into the overlap and back %s; from Small into the overlap %s; starting in the overlap %s"
+			% [found[0], found[1], found[2]])
+
+
+## In a zone 400 px tall anchored at the top, with the player's feet 20 px under its top, so its
+## head pokes out above the zone: the camera moves up past the zone's top just enough for the head
+## to be on the screen's top edge.
+func _the_player_s_head_stays_on_screen_past_a_zone_s_top() -> bool:
+	var screen: Vector2 = root.get_visible_rect().size
+	var zone: CameraZone = _make_zone([Rect2(0.0, 0.0, 3.0 * screen.x, SHORT_ZONE_HEIGHT)])
+	zone.vertical_anchor = 0.0
+	var player: Player = _spawn_still_player(Vector2(1.5 * screen.x, FEET_UNDER_THE_TOP))
+	var camera: GameCamera = _spawn_camera_by_hand(player, true)
+	_settle_by_hand(camera)
+	var head: float = player.global_position.y - body_size(player).y
+	var top_edge: float = camera.global_position.y - screen.y / 2.0
+	await _remove_all([camera, player, zone])
+	return report(absf(top_edge - head) < SAME_SPOT,
+			"Head %.0f px above a zone's top: the screen's top edge at y %.1f, the head at y %.1f"
+			% [-head, top_edge, head])
+
+
+## A zone 600 px wide, limiting the screen across, with Horizontal Anchor 1 and then 0: the screen's
+## right edge sits on the zone's right edge, and then its left edge on the zone's left edge.
+func _the_horizontal_anchor_puts_the_screen_s_side_on_the_zone_s_side() -> bool:
+	var screen: Vector2 = root.get_visible_rect().size
+	var zone_rect: Rect2 = Rect2(screen.x, 0.0, NARROW_SHAFT_WIDTH, 3.0 * screen.y)
+	var zone: CameraZone = _make_zone([zone_rect])
+	var player: Player = _spawn_still_player(zone_rect.get_center())
+	var camera: GameCamera = _spawn_camera_by_hand(player, true)
+	zone.horizontal_anchor = 1.0
+	_settle_by_hand(camera)
+	var right_edge: float = camera.global_position.x + screen.x / 2.0
+	zone.horizontal_anchor = 0.0
+	_settle_by_hand(camera)
+	var left_edge: float = camera.global_position.x - screen.x / 2.0
+	await _remove_all([camera, player, zone])
+	return report(absf(right_edge - zone_rect.end.x) < SAME_SPOT and absf(left_edge - zone_rect.position.x) < SAME_SPOT,
+			"Zone %.0f px wide from x %.0f to %.0f: anchor 1, the screen's right edge at %.1f; anchor 0, its left edge at %.1f"
+			% [NARROW_SHAFT_WIDTH, zone_rect.position.x, zone_rect.end.x, right_edge, left_edge])
+
+
+## Outside every zone, with the real smoothing, the player moved 600 px up in one step: on that very
+## step the camera already keeps the top of its body Edge Margin of the screen from the top edge,
+## instead of letting the smoothing catch up.
+func _a_sudden_climb_keeps_the_body_edge_margin_from_the_top() -> bool:
+	var screen: Vector2 = root.get_visible_rect().size
+	var player: Player = _spawn_still_player(Vector2.ZERO)
+	var camera: GameCamera = _spawn_camera_by_hand(player, false)
+	_settle_by_hand(camera)
+	player.global_position.y -= SUDDEN_CLIMB
+	camera._physics_process(_step())
+	var head: float = player.global_position.y - body_size(player).y
+	var from_top: float = head - (camera.global_position.y - screen.y / 2.0)
+	var margin: float = camera.stats.edge_margin * screen.y
+	await _remove_all([camera, player])
+	return report(from_top >= margin - SAME_SPOT,
+			"A sudden climb of %.0f px: one step later the head is %.1f px from the screen's top edge (Edge Margin %.1f px)"
+			% [SUDDEN_CLIMB, from_top, margin])
+
+
+## The player leads the camera to the right in a wide zone that does not limit across, then steps
+## into a narrow zone on its right that does, anchored on its right side: the camera slides into the
+## new range with no step longer than Zone Change Speed allows, the lead included, instead of
+## dropping the lead in one step.
+func _into_a_zone_that_limits_across_the_lead_does_not_snap() -> bool:
+	var screen: Vector2 = root.get_visible_rect().size
+	var wide: CameraZone = _make_zone([Rect2(Vector2.ZERO, Vector2(3.0, 1.0) * screen)])
+	wide.limit_horizontally = false
+	var narrow: CameraZone = _make_zone([Rect2(Vector2(3.0 * screen.x, 0.0), Vector2(NARROW_SHAFT_WIDTH, screen.y))])
+	narrow.horizontal_anchor = 1.0
+	var player: Player = _spawn_still_player(Vector2(1.5, 0.5) * screen)
+	var camera: GameCamera = _spawn_camera_by_hand(player, false)
+	player.global_position.x = 3.0 * screen.x - EDGE_GAP
+	_settle_by_hand(camera)
+	var lead_before: float = camera.get_look_ahead()
+	player.global_position.x = 3.0 * screen.x + NARROW_SHAFT_WIDTH / 2.0
+	var most_per_step: float = camera.stats.zone_change_speed * _step()
+	var largest_step: float = 0.0
+	var previous: Vector2 = camera.global_position
+	for _step_index: int in SETTLE_STEPS:
+		camera._physics_process(_step())
+		largest_step = maxf(largest_step, camera.global_position.distance_to(previous))
+		previous = camera.global_position
+	var expected_x: float = 3.0 * screen.x + NARROW_SHAFT_WIDTH - screen.x / 2.0
+	await _remove_all([camera, player, wide, narrow])
+	return report(largest_step <= most_per_step + SAME_SPOT and absf(previous.x - expected_x) < SAME_SPOT,
+			"Into a narrow zone limiting across, leading %.0f px: largest step %.1f px (Zone Change Speed allows %.1f), settled at x %.1f (expected %.1f)"
+			% [lead_before, largest_step, most_per_step, previous.x, expected_x])
+
+
+## The player runs at top speed out of a wide zone into a narrow one beside it, as into a shaft: it
+## limits across, is anchored on its far side and comes closer, at Zoom 2. The player stops Shaft Stop
+## Gap from that side. From the step the player is in the shaft, while the camera slides into the new
+## range and closes in, the player's whole body stays on the screen. Before, the wide zone's side may
+## cut off up to half of it, as at any inner edge.
+func _running_into_a_shaft_the_body_stays_on_screen() -> bool:
+	var screen: Vector2 = root.get_visible_rect().size
+	var wide: CameraZone = _make_zone([Rect2(Vector2.ZERO, Vector2(3.0, 3.0) * screen)])
+	var shaft_rect: Rect2 = Rect2(3.0 * screen.x, 0.0, NARROW_SHAFT_WIDTH, 3.0 * screen.y)
+	var shaft: CameraZone = _make_zone([shaft_rect])
+	shaft.horizontal_anchor = 1.0
+	shaft.zoom = SHAFT_ZOOM
+	shaft.auto_zoom = false
+	var player: Player = _spawn_still_player(Vector2(3.0 * screen.x - EDGE_GAP, 1.5 * screen.y))
+	var camera: GameCamera = _spawn_camera_by_hand(player, false)
+	_settle_by_hand(camera)
+	var stop_x: float = shaft_rect.end.x - SHAFT_STOP_GAP
+	var speed: float = player.stats.max_run_speed
+	var run: float = speed * _step()
+	var half_body: float = body_size(player).x / 2.0
+	var worst: float = 0.0
+	for _step_index: int in SETTLE_STEPS:
+		player.global_position.x = minf(player.global_position.x + run, stop_x)
+		camera._physics_process(_step())
+		if player.global_position.x < shaft_rect.position.x:
+			continue
+		var half: float = screen.x / (2.0 * camera.zoom.x)
+		worst = maxf(worst, maxf(camera.global_position.x - half - (player.global_position.x - half_body),
+				player.global_position.x + half_body - (camera.global_position.x + half)))
+	await _remove_all([camera, player, wide, shaft])
+	return report(worst <= SAME_SPOT,
+			"Running at %.0f px/s into a shaft at Zoom %.1f, stopping %.0f px from its far side: the body at worst %.1f px past the screen's side"
+			% [speed, SHAFT_ZOOM, SHAFT_STOP_GAP, maxf(worst, 0.0)])
+
+
 ## A zone with these rectangles, in global coordinates, already in the scene.
 func _make_zone(rects: Array) -> CameraZone:
 	return _make_zone_under(root, rects)
 
 
-## A zone with these rectangles, under parent at the origin. Unless parent is the root, the zone is
-## owned by parent, as the nodes of a scene are owned by the scene's root.
+## A zone with these rectangles, under parent at the origin, that limits the screen on all four
+## sides, as the cases here need. Unless parent is the root, the zone is owned by parent, as the
+## nodes of a scene are owned by the scene's root.
 func _make_zone_under(parent: Node, rects: Array) -> CameraZone:
 	var zone: CameraZone = CameraZone.new()
+	zone.limit_horizontally = true
 	for rect: Rect2 in rects:
 		var shape: RectangleShape2D = RectangleShape2D.new()
 		shape.size = rect.size
@@ -541,9 +917,14 @@ func _spawn_camera_by_hand(player: Player, instant: bool) -> GameCamera:
 	return camera
 
 
+## A camera following player with the real values, except that it never closes in on a player
+## standing still: the cases here stop the player at walls and floors, and test_camera_zoom.gd checks
+## that on its own.
 func _spawn_camera(player: Player) -> GameCamera:
 	var camera: GameCamera = CAMERA_SCENE.instantiate() as GameCamera
 	camera.player = player
+	camera.stats = camera.stats.duplicate() as CameraStats
+	camera.stats.idle_delay = INF
 	root.add_child(camera)
 	return camera
 

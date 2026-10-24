@@ -264,14 +264,81 @@ deste jogo: a corrida, as chaminés, as subidas e as quedas. As medidas foram ob
 | Antecipação | a câmara mostra 300 px a mais do lado para onde a personagem corre e só troca de lado depois de a personagem recuar 180 px a partir do ponto mais afastado | em corrida, 1,5 s de percurso visível à frente; a troca de lado conclui-se em cerca de 1,2 s, sem ultrapassar a posição final |
 | Reenquadramento | ao pousar num chão mais alto, a câmara centra-se nesse chão | numa escada de degraus de 200 px, a câmara sobe um degrau de cada vez |
 | Olhar para baixo | numa queda superior a um salto completo, a câmara mostra 400 px a mais abaixo da personagem | à velocidade máxima de queda, 0,51 s de queda visível abaixo dos pés |
-| Zonas | enquanto a personagem está numa zona de câmara, o ecrã não mostra nada para lá dela | a correr para uma borda ou a cair para o fundo de uma zona, o ecrã para na borda; junto a uma parede, depois de uma inversão de sentido, o ecrã só se desloca quando a personagem se afasta o suficiente para precisar da antecipação (a partir de 200 px da parede, 0,9 s depois da inversão) |
-| Passagem entre zonas | ao mudar de zona, a câmara desloca-se no máximo a 2000 px/s | uma passagem que desloca a câmara 900 px demora cerca de meio segundo |
+| Zonas | enquanto a personagem está numa zona de câmara, o ecrã não mostra nada acima nem abaixo dela e, com o limite horizontal ligado, nada para os lados | a correr para uma borda de uma zona com o limite horizontal ligado ou a cair para o fundo de uma zona, o ecrã para na borda; junto a uma parede, depois de uma inversão de sentido, o ecrã só se desloca quando a personagem se afasta o suficiente para precisar da antecipação (a partir de 200 px da parede, 0,9 s depois da inversão) |
+| Passagem entre zonas | ao mudar de zona, a câmara desloca-se como uma mola criticamente amortecida: parte da velocidade que já tinha e, a partir do repouso, começa devagar, acelera e para sem ultrapassar o destino, no máximo a 2000 px/s | uma passagem de 300 px fica 95 % concluída em 0,80 s; numa passagem de 1920 px, o primeiro passo é de 9 px, e não de 33 px, a velocidade máxima, como acontecia antes da mola |
+| Margem inferior | a margem inferior de uma zona (Bottom Margin) deixa o ecrã mostrar mais abaixo dela, sem alterar o espaço que a zona ocupa | com 96 px, o fundo do ecrã fica 96 px abaixo do fundo da zona |
+| Zoom ao parar | parada no chão, sem pedir corrida, durante 1,5 s, a câmara fixa-se na personagem (a antecipação volta a zero) e aproxima-se para um zoom de 1,25; ao voltar a andar, regressa ao zoom normal e à antecipação, sempre como uma mola | 1 s depois de parar, zoom 1,000 e antecipação de 299 px; depois de assentar, zoom 1,250 e antecipação de 0 px; a andar de novo, zoom 1,000 e antecipação de 299 px |
+| Zoom por zona | cada zona pode ter o seu zoom (Zoom, no Inspector da zona), para um túnel ou um corredor encher mais o ecrã; a câmara passa para ele como uma mola, e a antecipação encolhe na mesma proporção, para a personagem ficar à mesma distância da borda do ecrã | numa zona com zoom 1,4, o zoom chega a 1,3998 com passos de 0,0061, no máximo, por frame, e a antecipação passa de 300 px para 214 px; parada nessa zona, o zoom fica em 1,749 (1,4 × 1,25) |
+| Zoom à altura da zona | com a opção Fit Height ligada, numa zona mais baixa do que o ecrã, a câmara aproxima-se até a zona, a sua margem inferior e uma folga de 96 px por cima (a altura da personagem, para a cabeça não sair do ecrã num salto) encherem a altura do ecrã, no máximo até ao zoom 2 | numa zona de 400 px de altura com margem de 96 px, o zoom fica em 1,824 e o ecrã mostra exatamente da folga acima da zona até ao fim da margem; numa zona de 200 px, o zoom para em 2,0, com o fundo do ecrã no mesmo sítio |
+| Zoom automático | com a opção Auto Zoom ligada (por omissão) e a câmara a conhecer os tiles do nível (Level Tiles, ou, se ficar vazio, a primeira camada de tiles com colisão do nível), numa zona com outra passagem por cima, separada por rocha, a câmara aproxima-se só o necessário para essa passagem deixar de se ver; uma abertura para fora da zona, como um poço que sobe do corredor, continua visível; no máximo até ao zoom 2; o zoom da própria zona funciona como mínimo | num corredor com outra passagem por cima, atrás de quatro filas de rocha, o zoom fica em 1,607 e o topo do ecrã coincide com o fundo da passagem; com o ar a subir diretamente do corredor, o zoom fica em 1 |
+| Âncora horizontal | com o limite horizontal ligado, numa zona mais estreita do que o ecrã, a âncora horizontal (Horizontal Anchor) escolhe onde fica o ecrã: com 1, a borda direita do ecrã coincide com a borda direita da zona e o excesso aparece à esquerda; com 0, o contrário; com 0,5 (por omissão), divide-se pelos dois lados | numa zona de 600 px de largura, com a âncora a 1, a borda direita do ecrã fica exatamente na borda direita da zona; com 0, a borda esquerda na borda esquerda |
+| Margem das bordas | se o corpo da personagem chegar a menos de 17 % do tamanho do ecrã de uma borda (184 px em cima e em baixo, 326 px dos lados), a câmara acompanha-o de imediato, sem esperar pela suavização, dentro dos limites da zona; durante a passagem entre zonas vale só na vertical, para a passagem lateral continuar suave | numa subida súbita de 600 px, logo no passo seguinte a cabeça está a 183,6 px do topo do ecrã |
+| Corpo sempre no ecrã | na vertical, a câmara desloca-se sempre o necessário para o corpo inteiro da personagem ficar no ecrã, mesmo que isso passe o limite de uma zona: uma câmara atrasada numa subida rápida, ou uma zona com o topo baixo demais, nunca cortam a cabeça. Na horizontal, o mesmo acontece enquanto a câmara muda de zona, se a personagem estava no ecrã e se deslocou, mas não ao entrar num miradouro, cuja Vista pode ficar ao lado da personagem; uma personagem que avança mais de 200 px num só passo foi colocada, não se deslocou, e a câmara continua a chegar até ela de forma suave. Dentro de uma zona, o lado da zona pode cortar até metade do corpo, antes de a personagem passar para a zona seguinte | com os pés 20 px abaixo do topo de uma zona ancorada em cima, a cabeça fica 76 px acima da zona, e o topo do ecrã sobe exatamente até ela; a correr a 720 px/s para um poço com zoom 2 e a parar a 120 px do lado oposto, o corpo chegava a ficar 205 px fora do ecrã e passou a ficar sempre dentro |
+| Limite horizontal | com a opção Limit Horizontally desligada (por omissão), a zona limita o ecrã só em cima e em baixo, e na horizontal a câmara segue a personagem como fora das zonas; ligada, limita-o dos quatro lados, para uma sala em que a câmara deve ficar parada | numa zona de 1200 px de largura, com a personagem a 1100 px da borda esquerda, a câmara fica no centro da zona (x 600) com a opção ligada e acompanha a personagem (x 1036) com a opção desligada, com o mesmo enquadramento vertical |
+| Âncora vertical | numa zona mais baixa do que o ecrã, a âncora da zona escolhe onde fica o ecrã: em baixo (1), o fundo do ecrã coincide com o fundo da zona; em cima (0), o topo do ecrã coincide com o topo da zona; ao centro (0,5, o valor por omissão), o excesso divide-se pelos dois lados | numa zona de 400 px de altura, o ecrã mostra 680 px acima da zona com a âncora em baixo e 340 px de cada lado com a âncora ao centro; numa zona mais alta do que o ecrã, a âncora não altera a posição da câmara |
+| Miradouros | antes de uma queda, de uma subida ou de um entroncamento, um miradouro (`CameraLookout`) afasta a câmara para mostrar esse troço: enquanto a personagem estiver no retângulo do miradouro, e depois durante o salto ou a queda até aterrar, o ecrã enche a Vista (um `ReferenceRect` filho) e nunca mostra nada fora dela, pelo que a Vista se desenha só sobre esse troço do caminho; tem prioridade sobre as zonas; no chão, deixa de valer quando o corpo fica a mais de um tile (48 px) do retângulo | numa Vista de 2400 × 1350 px, o zoom fica em 0,8 e o ecrã coincide com a Vista; numa Vista de 6000 × 5000 px, o zoom para em 0,7 e o ecrã segue a personagem sem sair dela; ao sair de um rebordo, o miradouro mantém-se durante toda a queda e acaba na aterragem |
 
 As zonas de câmara definem-se na cena de cada nível (ver "Câmara" em "Para quem programa"). Cada
 zona é formada por um ou mais retângulos, e enquanto a personagem estiver dentro de um deles o ecrã
-fica limitado à caixa que os envolve. As zonas de um nível devem cobrir todo o espaço jogável sem se
-sobreporem. Uma zona do tamanho do ecrã fixa a câmara. A sala de teste tem uma única zona, do
-tamanho da sala, para que a câmara siga a personagem em todo o lado.
+fica limitado, em cima e em baixo, à caixa que os envolve, e também dos lados se a zona tiver o
+limite horizontal ligado. As zonas podem sobrepor-se: onde se sobrepõem, conta aquela em que a
+personagem entrou por último, como nas zonas de bloqueio do Hollow Knight, pelo que a câmara muda
+logo à entrada da zona nova; ao sair dela, volta à que ainda contém a personagem. Se entrar em duas
+ao mesmo tempo, conta a de menor área, pelo que duas zonas sobrepostas não devem ter a mesma área. Fora de
+todas as zonas, a câmara usa os seus próprios limites, os do nível inteiro, e segue a personagem
+livremente. Uma zona do tamanho do ecrã, com o limite horizontal ligado, fixa a câmara. A sala de
+teste tem uma única zona, do tamanho da sala, para que a câmara siga a personagem em todo o lado.
+
+Numa sala mais alta do que o ecrã, uma zona que termina no chão da sala impede a câmara de mostrar a
+rocha por baixo do chão: com a personagem no chão, o fundo do ecrã fica no limite da zona e o resto
+do ecrã mostra a sala por cima. Numa sala ou num túnel mais baixo do que o ecrã, o ecrã mostra
+sempre algo fora da zona, e a âncora vertical (Vertical Anchor, no Inspector da zona) escolhe de que
+lado: com a âncora em baixo e o fundo da zona um tile (48 px) abaixo do chão, vê-se esse tile de
+chão e o restante espaço fica acima.
+
+Na caverna do nível 1 (`LustLevel_Phase1_Cave`), as 27 zonas estão no nó `CameraZones`. Seis
+(1, 4, 8, 10, 16 e 30) foram afinadas à mão e serviram de modelo às restantes, com três tipos:
+
+| Tipo | Retângulo | Valores |
+|---|---|---|
+| Sala | o ar da sala, um tile de rocha por cima e o fundo um tile abaixo do chão | âncora em baixo, margem inferior de 96 px, Zoom 1,3 e Auto Zoom |
+| Túnel baixo | o mesmo | como a sala, com Fit Height e Zoom 1,45 |
+| Poço vertical | o poço com dois tiles de rocha de cada lado, a entrar pouco na sala de baixo, sem que um salto a partir do chão dela a alcance | limite horizontal ligado, âncora horizontal com a borda do ecrã do lado de dentro do nível, para o excesso do ecrã mostrar a parede, Zoom 2, sem Auto Zoom e margem inferior de 200 px |
+
+Com a personagem parada num chão, ficam três tiles de chão à vista no fundo do ecrã. O
+`test_lust_phase1_zones.gd` verifica que duas zonas sobrepostas nunca têm a mesma área, que todos os
+647 tiles onde a personagem pode estar de pé ficam dentro de uma zona e que, no início, o fundo do
+ecrã fica três tiles abaixo do chão.
+
+As fases 2 e 3 seguem as mesmas regras, com 14 zonas cada, numeradas pela ordem do caminho, e 5 e 6
+miradouros. Cada sala, túnel ou poço tem a sua zona, com os valores da tabela. Numa sala, o limite
+horizontal só se liga quando, sem ele, o ecrã mostraria outro caminho do outro lado de uma parede.
+Numa sala ou num poço mais estreito do que o ecrã, a âncora horizontal põe a borda do ecrã do lado de
+dentro do nível, e o excesso do ecrã mostra a parede, que pode ver-se: no poço que sobe da sala
+inicial da fase 3, o ecrã mostrava 431 tiles de ar das salas ao lado e, com a âncora trocada, deixou
+de mostrar algum. Num poço encostado à borda do nível, a câmara não passa a borda, pelo que o ecrã
+ainda mostra parte do interior: no poço da fase 2 junto à borda esquerda, 90 tiles de ar em vez de
+144. Na fase 2, os dois poços paralelos que descem da sala da saída têm âncoras opostas (1 e 0), para
+cada um esconder o outro. Um
+poço que se abre a meio de uma passagem começa um tile abaixo do chão dela, para a câmara mudar quando
+a personagem cai nele, e não quando salta por cima. Os miradouros ficam antes dos buracos, das
+travessias, das subidas e dos cruzamentos e mostram esse troço, mas não o que vem a seguir: antes das
+pedras sobre o vão do meio da fase 2, por exemplo, o ecrã afasta-se para o zoom 0,91 e mostra as
+pedras, o outro lado e o começo do vão, sem o fundo. Em cima de uma plataforma em movimento, a câmara
+trata a personagem como se estivesse no ar, pelo que um miradouro dura a viagem toda. Duas zonas da
+fase 3 fogem aos valores da tabela para não mostrarem outro caminho através de um chão fino: o túnel
+por cima da sala inicial, cujo chão tem dois tiles, tem margem inferior de 48 px, e o corredor do fim,
+encostado ao topo do nível, tem zoom 2,05, porque a 2 o ecrã mostraria uma faixa de 12 px do corredor
+de baixo. O `test_lust_phase2_3_zones.gd` aplica às duas fases as verificações comuns e confirma que
+nenhuma zona mostra outro caminho, com a personagem em qualquer ponto da zona e a câmara a antecipar
+para os dois lados, nem o nível de baixo através do chão, que nenhuma zona com o limite horizontal
+ligado mostra mais ar para lá dos seus lados do que mostraria com a âncora trocada, e que a
+personagem começa numa zona ancorada em baixo.
+
+Para afinar uma zona não é preciso mexer em código: no editor, selecionar a zona (ou um dos seus
+retângulos) mostra a azul o que o ecrã pode mostrar nela e a branco um ecrã ao zoom dessa zona,
+calculados pela câmara do nível. O desenho atualiza-se ao mudar os valores no Inspector ou ao
+arrastar os retângulos.
 
 O desenho dos níveis deve ter em conta quatro consequências deste comportamento:
 
@@ -280,7 +347,8 @@ O desenho dos níveis deve ter em conta quatro consequências deste comportament
   e uma personagem que andasse para trás e para a frente sobre a fronteira faria a câmara ir e vir.
 - Uma zona mais estreita do que o ecrã deixa ver a zona vizinha. Os ecrãs mais largos (21:9) mostram
   2520 px: nesses ecrãs, uma zona fixa de 1920 px mostra 600 px da zona ao
-  lado.
+  lado. Na vertical, a âncora da zona escolhe se o que fica à vista é o que está por cima ou por
+  baixo; na horizontal, o excesso divide-se sempre pelos dois lados.
 - Em chaminés com mais de 228 px, a antecipação muda de lado a cada salto da parede, porque o
   balanço da personagem ultrapassa os 180 px do limiar. Estas chaminés já ficam fora do caminho
   obrigatório (ver "Medidas para o desenho de níveis").
@@ -296,6 +364,7 @@ Inspector do Godot, como os do movimento.
 |---|---|---|
 | Window Half Width | 64 px | a largura da janela para cada lado do ponto seguido |
 | Window Up | 250 px | a altura da janela acima do ponto seguido; o salto completo e 10 px de margem |
+| Edge Margin | 0,17 | a distância mínima do corpo da personagem às bordas do ecrã, em fração do ecrã, antes de a câmara a acompanhar de imediato; com 0, só fica a regra do corpo inteiro no ecrã |
 | Window Down | 0 px | a altura da janela abaixo do ponto seguido; com 0, a câmara acompanha logo qualquer descida |
 | Follow Sharpness | 6 /s | a rapidez da suavização |
 | Look Ahead Distance | 300 px | a distância da antecipação |
@@ -304,7 +373,17 @@ Inspector do Godot, como os do movimento.
 | Look Down Threshold | 250 px | a queda, abaixo do último chão, a partir da qual a câmara olha para baixo |
 | Look Down Distance | 400 px | a distância do olhar para baixo |
 | Look Down Sharpness | 10 /s | a rapidez com que a câmara olha para baixo e regressa |
-| Zone Change Speed | 2000 px/s | a velocidade máxima da câmara ao passar para outra zona; acima da velocidade máxima de queda (1400 px/s), para nunca perder a personagem |
+| Zone Change Speed | 3000 px/s | a velocidade máxima da câmara ao passar para outra zona; acima da velocidade máxima de queda (1400 px/s), para nunca perder a personagem |
+| Zone Change Sharpness | 10,1 /s | a rapidez da mola na passagem entre zonas; uma passagem de 300 px fica 95 % concluída em 0,38 s (com o valor de referência de 6 /s, em 0,80 s) |
+| Idle Delay | 1,5 s | quanto tempo a personagem tem de estar parada para a câmara se fixar nela e se aproximar |
+| Idle Zoom | 1,25 | quanto a câmara se aproxima com a personagem parada (o ecrã passa a mostrar 1536 × 864 px); multiplica o zoom da zona; com 1, nunca se aproxima |
+| Zoom Sharpness | 2,5 /s | a rapidez da mola do zoom; uma mudança fica 95 % concluída em 1,9 s |
+| Fit Headroom | 96 px | o espaço que o ecrã ainda mostra acima de uma zona com Fit Height |
+| Max Zone Zoom | 2 | o zoom máximo a que o Fit Height ou o Auto Zoom de uma zona podem levar a câmara; a 2, o ecrã mostra 960 × 540 px; o zoom definido à mão numa zona não tem este limite |
+| Min Lookout Zoom | 0,7 | o máximo que um miradouro pode afastar a câmara; a 0,7, o ecrã mostra 2743 × 1543 px; uma Vista maior é seguida por dentro |
+| Lookout Zoom Sharpness | 2,5 /s | a rapidez com que a câmara se afasta ao entrar num miradouro |
+| Lookout Change Sharpness | 3 /s | a rapidez com que a câmara se desloca para a Vista de um miradouro |
+| Lookout Change Speed | 2500 px/s | a velocidade máxima dessa deslocação; com os três valores, ao fim de 2 s a câmara está 96 % afastada e 96 % deslocada, para a entrada se ler como um recuo e não como um salto, e quem passa depressa ainda vê o caminho |
 
 ## Fundo em camadas
 
@@ -820,13 +899,41 @@ ao seu alvo, e sem este segundo limite a soma ultrapassava a borda em até 120 p
 conta a partir do foco, e não do ponto onde o limite segura o ecrã: junto a uma borda, o limite já
 afasta o ecrã da personagem, e uma antecipação somada a esse ponto podia deixar a personagem fora do
 ecrã, até ao valor da Look Ahead Distance, enquanto não recuasse o Turn Threshold. Ao mudar de zona,
-cada passo do seguimento fica limitado pela Zone Change Speed até a câmara chegar ao novo intervalo.
-A câmara considera as zonas que estão dentro da cena do seu nível, incluindo as de subcenas, e ignora
-as que estão sob um nó a ser removido, o que evita usar as zonas de um nível a ser descarregado; se
-existirem zonas mas nenhuma pertencer ao seu nível, emite um aviso.
+o seguimento passa a ser uma mola criticamente amortecida (Zone Change Sharpness), com a mesma
+solução exata da antecipação, que parte da velocidade que a câmara já tinha, para não travar uma
+câmara em movimento, por exemplo numa queda; cada passo fica ainda limitado pela Zone Change Speed,
+e a passagem termina quando a câmara está a menos de 0,5 px do destino. Limitada a essa velocidade,
+a mola só começa a travar a 2 × velocidade / Zone Change Sharpness do fim, o que basta para não
+ultrapassar o destino. A caixa de uma zona desce a sua margem inferior (`bottom_margin`), ocupa na
+horizontal toda a largura dos limites da própria câmara se a zona tiver `limit_horizontally`
+desligado, e fica dentro desses limites, que o motor também aplica ao ecrã. Quando a caixa da zona é
+mais baixa do que o ecrã, o intervalo vertical reduz-se a um ponto, obtido por interpolação linear,
+segundo a `vertical_anchor` da zona, entre o ecrã encostado ao topo da caixa (0) e o ecrã encostado
+ao fundo (1). Fora das zonas, e na horizontal, esse ponto é o centro da caixa, como nos limites da
+própria `Camera2D`. Num ponto que está em várias zonas, a câmara escolhe aquela em que os pés da
+personagem entraram por último, contando os passos de física; entre zonas em que entraram no mesmo
+passo, a de menor área, a soma dos seus retângulos. A câmara considera as zonas
+que estão dentro da cena do seu nível, incluindo as de subcenas, e ignora as que estão sob um nó a
+ser removido, o que evita usar as zonas de um nível a ser descarregado; se existirem zonas mas
+nenhuma pertencer ao seu nível, emite um aviso.
+
+O zoom segue o mesmo tipo de mola, com a Zoom Sharpness, até ao zoom da própria câmara multiplicado
+pelo zoom da zona e, com a personagem parada há Idle Delay, pelo Idle Zoom. Numa zona com
+`fit_height`, o zoom da zona é a altura do ecrã a dividir pela altura da caixa da zona mais a margem
+inferior e a Fit Headroom, entre 1 e a Max Zone Zoom. Com `auto_zoom` e os tiles do nível na câmara
+(`level_tiles`), a câmara percorre, em cada coluna da zona, os tiles de baixo para cima a partir do
+ar da própria zona: a primeira célula de ar fora da zona que surge depois de rocha é outra passagem,
+e ar fora da zona logo a seguir ao ar da zona é uma abertura, que não conta. Com a âncora vertical a,
+um ecrã mais alto do que a zona (com a margem) sobe a × a diferença acima do topo da zona; o zoom é o
+necessário para o topo do ecrã não passar do fundo da passagem mais baixa, entre 1 e a Max Zone
+Zoom, e o zoom definido na zona é o mínimo. A posição dessa passagem lê-se uma vez por zona. A personagem conta como
+parada quando está no chão, não pede corrida e se move a menos de 1 px/s; nesse caso a antecipação
+horizontal vai para zero. A antecipação e o olhar para baixo são divididos pelo zoom, para ocuparem
+sempre a mesma fração do ecrã, e o intervalo do centro do ecrã usa o zoom atual, como os limites da
+`Camera2D`.
 
 Os testes `test_game_camera.gd`, `test_camera_window.gd`, `test_camera_look_ahead.gd`,
-`test_camera_vertical.gd`, `test_camera_zones.gd` e `test_landed_signal.gd` verificam estes
+`test_camera_vertical.gd`, `test_camera_zones.gd`, `test_camera_zoom.gd` e `test_landed_signal.gd` verificam estes
 comportamentos. O `test_camera_keeps_player_on_screen.gd` verifica que, numa sala com uma só zona, o
 corpo da personagem fica inteiro no ecrã: junto às duas paredes, numa queda junto ao teto e em jogo
 com comandos aleatórios, sempre os mesmos em cada execução, que tem de chegar perto das duas paredes.

@@ -316,6 +316,10 @@ func _the_camera_line_follows_the_room_s_camera() -> bool:
 	root.add_child(room)
 	var overlay: DebugOverlay = _find_overlay(room)
 	var camera: GameCamera = room.get_node(^"GameCamera") as GameCamera
+	# The player stands still the whole case, and the camera would settle on it after Idle Delay,
+	# taking the lead back to nothing while the case reads it; this case wants it leading ahead.
+	camera.stats = camera.stats.duplicate() as CameraStats
+	camera.stats.idle_delay = INF
 	var player: Player = room.get_node(^"Player") as Player
 	var linked: bool = overlay.get(&"camera") == camera
 	await _wait_process_frames(TEXT_FRAMES)

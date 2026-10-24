@@ -1,6 +1,14 @@
-[gd_resource type="Resource" script_class="CameraStats" format=3]
+[gd_resource type="Resource" script_class="CameraStats" format=3 uid="uid://pd52pqvh1ikg"]
 
-[ext_resource type="Script" path="res://camera/camera_stats.gd" id="1_stats"]
+[ext_resource type="Script" uid="uid://cbot5yud8d2nm" path="res://camera/camera_stats.gd" id="1_stats"]
 
 [resource]
 script = ExtResource("1_stats")
+window_down = 80.0
+edge_margin = 0.1
+follow_sharpness = 3.0
+zone_change_sharpness = 4.0
+zoom_sharpness = 1.7
+lookout_zoom_sharpness = 2.5
+lookout_change_sharpness = 3.0
+lookout_change_speed = 2500.0

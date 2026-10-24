@@ -87,6 +87,10 @@ func _the_camera_starts_where_it_settles() -> bool:
 	var room: Node = TEST_ROOM_SCENE.instantiate()
 	var camera: GameCamera = _find_camera(room)
 	camera.position = AWAY_FROM_THE_PLAYER
+	# The player stands still once it lands, and the camera closing in on it then is not what this
+	# case watches: test_camera_zoom.gd checks that.
+	camera.stats = camera.stats.duplicate() as CameraStats
+	camera.stats.idle_delay = INF
 	root.add_child(room)
 	var at_start: Vector2 = camera.global_position
 	for _frame: int in SETTLE_FRAMES:
