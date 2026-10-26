@@ -655,7 +655,7 @@ Remote; os restantes valores são lidos sempre que são usados.
     ├── core/          serviços globais: as opções do jogador (autoload Settings), o registo moral (autoload Moral) e os perfis de controlos
     ├── player/        personagem: cena, scripts, valores do movimento, SP e agarrão
     ├── crucifix/      crucifixo: cena, script e valores
-    ├── demon/         demónios que perseguem: cena, scripts e os valores de cada nível
+    ├── demon/         demónios que perseguem: cena, scripts, os estados (states/) e os valores de cada nível
     ├── camera/        câmara do jogo e zonas de câmara
     ├── debug/         overlay de depuração
     ├── levels/        salas, níveis e a entrada de cada nível na lista do menu (LevelEntry)
@@ -1173,12 +1173,25 @@ classe-mãe comum ficaria quase vazia e não serviria uma personagem das duas fa
 que fala e que o crucifixo afasta. Pela mesma razão, o demónio do tutorial, que fala e não persegue,
 não é esta cena com a perseguição desligada.
 
-- **Máquina de estados num só script.** Os doze estados (`IDLE`, `CHASE`, `WARNING`, `LUNGE`,
-  `RETREAT`, `GRAB`, `THROWN`, `REPELLED`, `STUNNED`, `RETURN`, `OUT_OF_REACH` e `PATROL`) são uma
-  enumeração no `demon.gd`, o mesmo padrão da personagem, que o grupo já conhece. A alternativa, um
-  nó e um script por estado, pagaria já por estados que ainda não tinham design. Com a ronda e o
-  "fora de alcance", o `demon.gd` tem 825 linhas, e o desenho do nível 1 pede ainda o alerta e a
-  procura. Antes deles, cada estado passa a ser um objeto próprio: é o passo seguinte (ADR 0033).
+- **Um objeto por estado.** Os doze estados (`IDLE`, `CHASE`, `WARNING`, `LUNGE`, `RETREAT`,
+  `GRAB`, `THROWN`, `REPELLED`, `STUNNED`, `RETURN`, `OUT_OF_REACH` e `PATROL`) continuam a ser uma
+  enumeração no `demon.gd`, que a arte, o som e os testes leem, mas o que o demónio faz em cada um
+  está num objeto próprio, uma classe derivada de `DemonState`, em `demon/states/` (o padrão State).
+  Com a ronda e o "fora de alcance", o `demon.gd` chegou às 825 linhas, e sete estados partilhavam
+  um mesmo contador de passos, posto a zero à mão antes de cada mudança. Agora, cada estado guarda os
+  seus contadores e diz o que prepara ao começar e o que arruma ao sair. O demónio cria os doze
+  objetos uma vez, ao entrar na cena, e muda de estado só por um método, `change_state`, que liga ou
+  desliga a `Hitbox` e avisa a arte e o som. Os estados usam o corpo, os sentidos e os ataques do
+  demónio pelos métodos cuja documentação começa por "For its states". Os objetos não são nós da
+  cena: assim o `demon.tscn` não muda, cada demónio não ganha doze nós (600 com 50 demónios) e os
+  valores continuam todos no `DemonStats`. O alerta e a procura, que o desenho do nível 1 pede,
+  entram como dois ficheiros novos, cada um com o seu nome na enumeração e a linha que o cria no
+  `demon.gd`. A escolha do ataque, a mordida e a perseguição continuam no
+  `demon.gd`, que tem agora 668 linhas; separá-las em componentes decide-se quando a procura mostrar
+  de que dados precisa (ADR 0034). A mudança não alterou o comportamento: os 105 casos do
+  `test_demon.gd` passam sem alterações. Também não alterou o custo: com 50 demónios a perseguir, o
+  tempo dos scripts por passo foi, em mediana de quatro execuções alternadas, 0,87 ms antes e
+  0,86 ms depois.
 - **Ataques como dados.** Cada `DemonAttack` guarda o alcance, a diferença de altura, o aviso, as
   distâncias, a antecipação (Lead), a altura e o tempo do salto, a recuperação, a probabilidade e a
   animação. A ordem na lista é a prioridade: com a personagem ao alcance dos dois ataques, o demónio
