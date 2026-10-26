@@ -11,7 +11,12 @@ extends CharacterBody2D
 ## Sight Distance, and stops when he gets past Lose Distance, a wall has hidden him for Give Up Time,
 ## or, with Chases Only On Screen, it is off the screen. With Return Speed it then walks back to its
 ## post, where the level put it, facing the way it walks, and there faces the way it was put; the
-## end of its floor or a wall on the way makes where it stops its post. With the man inside the Attack Range of one
+## end of its floor or a wall on the way makes where it stops its post. A man standing on a floor or
+## a wall higher or lower than any of its attacks reaches is out of its reach (ADR 0033): it stands facing
+## him, never following him along under him, chases him again once he is back within its reach, and
+## gives up after Out Of Reach Wait. With Patrol Width and no man to chase, it walks to and fro
+## across that stretch around its post, pausing at each end for a draw of its own, and stands still
+## while it is off the screen. With the man inside the Attack Range of one
 ## of its attacks (ADR 0020), on about its own floor, and the attack's chance coming up, it warns
 ## for the attack's Warning Time. In a lunge, it aims, as the warning starts, where the man will be
 ## when it lands, and needs him ahead of it and floor all the way there: it stops to warn, lunges
@@ -51,13 +56,22 @@ signal attack_landed(attack: DemonAttack)
 ## holds the man, THROWN from his breaking free or the crucifix's touch until it lands, REPELLED
 ## for Repelled Time from landing after the crucifix's touch, and STUNNED for Stunned Time from
 ## landing after his breaking free. RETURN lasts from giving up until it is back at its post, or as
-## near it as its floor lets it go.
-enum State { IDLE, CHASE, WARNING, LUNGE, REPELLED, RETREAT, GRAB, THROWN, STUNNED, RETURN }
+## near it as its floor lets it go. OUT_OF_REACH lasts while the man stands out of its reach, up to
+## Out Of Reach Wait. With Patrol Width, PATROL lasts from setting off from one end of the patrol to
+## getting to the other, and IDLE is the pause in between.
+enum State {
+	IDLE, CHASE, WARNING, LUNGE, REPELLED, RETREAT, GRAB, THROWN, STUNNED, RETURN, OUT_OF_REACH,
+	PATROL,
+}
 
 ## How far apart, in px, the floor is looked for along a lunge: half a tile, so no hole is missed.
 const FLOOR_CHECK_STEP: float = 24.0
 ## How near its post, in px, a demon walking back has to be to be there.
 const POST_REACH: float = 1.0
+## How much higher than its reach, in px, the man has to stand to be out of it: two bodies on one
+## floor can stand a fraction of a px apart, which with no attacks, a reach of 0, would put him out
+## of it.
+const REACH_TOLERANCE: float = 1.0
 
 @export var stats: DemonStats
 ## Which way the demon faces at its post: where the level puts it looking, and where it looks again
@@ -114,6 +128,14 @@ var _hesitation_frames_left: int = -1
 ## Where along the floor the demon walks back to once it gives up: where the level put it, or where
 ## its floor or a wall last stopped it on the way back.
 var _post_x: float = 0.0
+## Physics frames the demon still pauses, standing, before it walks across its patrol; -1 until it
+## draws one, on its first frame standing, so the draw follows Stats as they are then.
+var _pause_frames_left: int = -1
+## 1 for right and -1 for left: the way the demon walks its patrol next.
+var _patrol_direction: float = 1.0
+## True once it gave up on a man out of its reach, until it notices him back within its reach: up
+## there, it leaves him alone, instead of starting the chase again on the next frame.
+var _gave_up_out_of_reach: bool = false
 
 @onready var _senses: DemonSenses = %Senses
 ## Finds the other demons within Pack Spacing of this one's body, to either side.
@@ -137,12 +159,15 @@ func _ready() -> void:
 				"Demon: every attack in Attacks needs a DemonAttack with one of its ANIMATIONS.")
 		assert(attack.lunge_min_distance <= attack.lunge_distance,
 				"Demon: an attack's Lunge Min Distance must be no more than its Lunge Distance.")
+	assert(stats.patrol_pause_min <= stats.patrol_pause_max,
+			"Demon: Patrol Pause Min must be no more than Patrol Pause Max.")
 	_rng.seed = randi()
 	_chase_speed_draw = _rng.randf_range(-1.0, 1.0)
 	_retreat_speed_draw = _rng.randf_range(-1.0, 1.0)
 	_retreat_distance_draw = _rng.randf_range(-1.0, 1.0)
 	_post_x = global_position.x
 	_facing = _post_facing()
+	_patrol_direction = _facing
 	_pack_area.body_entered.connect(_on_pack_area_body_entered)
 	_pack_area.body_exited.connect(_on_pack_area_body_exited)
 	_repellable.repelled.connect(_on_repellable_repelled)
@@ -179,6 +204,10 @@ func _physics_process(delta: float) -> void:
 			_physics_stunned()
 		State.RETURN:
 			_physics_return(delta)
+		State.OUT_OF_REACH:
+			_physics_out_of_reach()
+		State.PATROL:
+			_physics_patrol(delta)
 	_stop_at_the_man(delta)
 	move_and_slide()
 	_update_hitbox()
@@ -204,9 +233,37 @@ func _get_current_gravity() -> Vector2:
 	return get_gravity()
 
 
+## Stands. With Patrol Width, it pauses a draw between Patrol Pause Min and Max, and then sets off
+## across its patrol (ADR 0033).
 func _physics_idle() -> void:
 	velocity.x = 0.0
-	_chase_if_it_notices_the_man()
+	if _chase_if_it_notices_the_man() or stats.patrol_width <= 0.0:
+		return
+	if _pause_frames_left < 0:
+		_pause_frames_left = stats.get_patrol_pause_frames(_rng.randf())
+	_pause_frames_left -= 1
+	if _pause_frames_left > 0:
+		return
+	_facing = _patrol_direction
+	_change_state(State.PATROL)
+
+
+## Walks across its patrol at Patrol Speed, facing the way it walks, up to the end of Patrol Width
+## around its post, and there pauses and turns back; the end of its floor and a wall of the world
+## turn it back sooner (ADR 0033). Off the screen it stands where it is, so no demon wanders where
+## the player cannot see it, and in the air it only falls.
+func _physics_patrol(delta: float) -> void:
+	velocity.x = 0.0
+	if _chase_if_it_notices_the_man() or not is_on_floor() or not _senses.is_on_screen():
+		return
+	var gap: float = _post_x + _patrol_direction * stats.patrol_width / 2.0 - global_position.x
+	if absf(gap) <= POST_REACH or signf(gap) != _patrol_direction \
+			or _is_edge_ahead(_patrol_direction) or _is_against_a_wall(_patrol_direction):
+		_patrol_direction = -_patrol_direction
+		_change_state(State.IDLE)
+		return
+	_facing = _patrol_direction
+	velocity.x = _patrol_direction * minf(stats.patrol_speed, absf(gap) / delta)
 
 
 ## Walks back to its post at Return Speed, facing the way it walks, and once there stands facing the
@@ -239,6 +296,10 @@ func _chase_if_it_notices_the_man() -> bool:
 	if man == null or not _may_chase_from_here() or not _senses.can_notice(
 			man, _facing, stats.sight_distance * stats.sight_behind_share):
 		return false
+	if _gave_up_out_of_reach:
+		if _height_of(man) > stats.get_reach_height():
+			return false
+		_gave_up_out_of_reach = false
 	_target = man
 	var target_body: CollisionObject2D = _target as CollisionObject2D
 	_target_box = target_body.shape_owner_get_owner(
@@ -254,7 +315,8 @@ func _chase_if_it_notices_the_man() -> bool:
 
 ## True when the last move left the demon against a wall of the world, a static body or tiles, going
 ## in direction. A body that moves, such as the man's, does not count: it would make a post of a spot
-## that is free a moment later. Only read while it walks back, on the frames it touches a wall.
+## that is free a moment later. Only read while it walks back or patrols, on the frames it touches a
+## wall.
 func _is_against_a_wall(direction: float) -> bool:
 	if not is_on_wall():
 		return false
@@ -280,11 +342,17 @@ func _post_facing() -> float:
 func _physics_chase(delta: float) -> void:
 	if not _keeps_after_target():
 		return
+	var gap: float = _target.global_position.x - global_position.x
+	if _is_man_out_of_reach():
+		_turn_to(gap)
+		velocity.x = 0.0
+		_state_frames = 0
+		_change_state(State.OUT_OF_REACH)
+		return
 	if _retreat_after_bite and _bite_frames_left == 0:
 		_back_off_or_chase()
 		return
 	_recover_frames_left = maxi(_recover_frames_left - 1, 0)
-	var gap: float = _target.global_position.x - global_position.x
 	_turn_to(gap)
 	var attack: DemonAttack = _attack_to_start(gap, delta)
 	if attack != null:
@@ -297,6 +365,40 @@ func _physics_chase(delta: float) -> void:
 			velocity.x = 0.0
 			return
 	_go_after(gap, delta)
+
+
+## Stands facing the man out of its reach (ADR 0033), never following him along under him, and
+## chases him again as soon as he is back within its reach, on a floor or in the air. It gives up as
+## the chase does, and after Out Of Reach Wait also while it still sees him.
+func _physics_out_of_reach() -> void:
+	velocity.x = 0.0
+	if not _keeps_after_target():
+		return
+	if _height_of(_target) <= stats.get_reach_height():
+		_change_state(State.CHASE)
+		return
+	_turn_to(_target.global_position.x - global_position.x)
+	_state_frames += 1
+	if _state_frames >= stats.get_out_of_reach_frames():
+		_gave_up_out_of_reach = true
+		_stop_chasing()
+
+
+## True when the man stands out of the demon's reach: on a floor, or sliding down or holding on to a
+## wall, higher above or lower below the demon's floor than the Max Height Difference of any of its
+## attacks, with the demon on its floor too. In the air, or grazing a wall on the way up, he does not
+## count, since he can only come down, so a jump never stops the chase nor cuts a bite short; nor
+## does a demon in the air, which is still falling to its floor.
+func _is_man_out_of_reach() -> bool:
+	var man: CharacterBody2D = _target as CharacterBody2D
+	return man != null and is_on_floor() \
+			and (man.is_on_floor() or (man.is_on_wall() and man.velocity.y >= 0.0)) \
+			and _height_of(man) > stats.get_reach_height() + REACH_TOLERANCE
+
+
+## How far apart, in px, the man's feet and the demon's are in height, above it or below it.
+func _height_of(man: Node2D) -> float:
+	return absf(global_position.y - man.global_position.y)
 
 
 ## Before a lunge, still, since the chase stopped the demon when the warning started; before a bite
@@ -630,6 +732,8 @@ func _change_state(new_state: State) -> void:
 	if new_state != State.CHASE:
 		_bite_frames_left = 0
 		_retreat_after_bite = false
+	if new_state == State.IDLE:
+		_pause_frames_left = -1
 	_update_hitbox()
 	state_changed.emit(previous, new_state)
 

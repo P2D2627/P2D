@@ -25,6 +25,7 @@ lose_distance = 1600.0
 sight_behind_share = 0.2
 chases_only_on_screen = true
 return_speed = 200.0
+patrol_width = 480.0
 attacks = Array[ExtResource("2_attack")]([SubResource("Resource_bite"), SubResource("Resource_lunge")])
 retreat_distance = 130.0
 pack_spacing = 24.0

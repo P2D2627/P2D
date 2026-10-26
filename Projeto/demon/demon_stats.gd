@@ -19,6 +19,10 @@ extends Resource
 @export_range(0.0, 3000.0, 10.0, "suffix:px") var lose_distance: float = 720.0
 ## Seconds the demon keeps chasing a man it cannot see, behind a wall, before it gives up.
 @export_range(0.0, 10.0, 0.1, "suffix:s") var give_up_time: float = 1.5
+## Seconds the demon stands facing a man out of its reach before it gives up (ADR 0033): him on a
+## floor or a wall higher above or lower below its own than the Max Height Difference of any of its
+## attacks. It never follows him along under him or over him.
+@export_range(0.0, 10.0, 0.1, "suffix:s") var out_of_reach_wait: float = 2.0
 ## The share of Sight Distance the demon sees behind it, the way it does not face: at 1 it sees as
 ## far all round; lower, the man can get past at its back.
 @export_range(0.0, 1.0, 0.05) var sight_behind_share: float = 1.0
@@ -29,9 +33,20 @@ extends Resource
 
 @export_group("Post")
 ## Speed, in px/s, at which the demon walks back to its post, where it was put in the level, once it
-## gives up. At 0 it stays where it gave up. If the end of its floor or a wall stops it on the way,
+## gives up. At 0 it stays where it gave up, or with Patrol Width walks its patrol back to around its
+## post at Patrol Speed. If the end of its floor or a wall stops it on the way,
 ## as when a throw took it to another floor, where it stops is its post from then on (ADR 0032).
 @export_range(0.0, 1000.0, 10.0, "suffix:px/s") var return_speed: float = 0.0
+## Width, in px, of the stretch of its floor the demon walks to and fro across, centred on its post,
+## while it has no man to chase (ADR 0033). At 0 it stands at its post. The end of its floor and a
+## wall turn it back before the stretch ends.
+@export_range(0.0, 2000.0, 10.0, "suffix:px") var patrol_width: float = 0.0
+## Speed, in px/s, at which it walks its patrol: a walk, slower than the chase.
+@export_range(10.0, 1000.0, 10.0, "suffix:px/s") var patrol_speed: float = 150.0
+## Shortest and longest pause, in seconds, before each walk across its patrol: each demon draws its
+## own every time, so two demons put together soon drift apart.
+@export_range(0.0, 10.0, 0.1, "suffix:s") var patrol_pause_min: float = 0.8
+@export_range(0.0, 10.0, 0.1, "suffix:s") var patrol_pause_max: float = 2.0
 
 @export_group("Chase")
 ## Speed, in px/s, at which the demon drags itself towards the man. Below the man's running speed,
@@ -114,6 +129,26 @@ func get_throw_velocity() -> Vector2:
 ## give_up_time in whole physics frames, rounded to the nearest one.
 func get_give_up_frames() -> int:
 	return _to_frames(give_up_time)
+
+
+## out_of_reach_wait in whole physics frames, rounded to the nearest one.
+func get_out_of_reach_frames() -> int:
+	return _to_frames(out_of_reach_wait)
+
+
+## How far above or below the demon's floor, in px, the man is still in its reach: the most Max
+## Height Difference of its attacks; 0 with none.
+func get_reach_height() -> float:
+	var reach: float = 0.0
+	for attack: DemonAttack in attacks:
+		reach = maxf(reach, attack.max_height_difference)
+	return reach
+
+
+## A pause of share of the way from Patrol Pause Min to Max, share from 0 to 1, in whole physics
+## frames.
+func get_patrol_pause_frames(share: float) -> int:
+	return _to_frames(lerpf(patrol_pause_min, patrol_pause_max, share))
 
 
 ## repelled_time in whole physics frames, rounded to the nearest one.

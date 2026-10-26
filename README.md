@@ -224,7 +224,8 @@ estados:
 
 | Estado | O que o demónio faz |
 |---|---|
-| Parado | Espera no seu posto, onde o nível o colocou e virado para onde o nível o virou, até reparar na personagem. |
+| Parado | Espera no seu posto, onde o nível o colocou e virado para onde o nível o virou, até reparar na personagem. Com ronda, é a pausa entre duas idas, sorteada por cada demónio entre 0,8 e 2 s. |
+| Ronda | Vai e vem a passo, a 150 px/s, num troço de 480 px do seu chão, centrado no posto. Vira-se nas pontas, à beira de um desnível e contra uma parede. Fora do ecrã, fica parado. |
 | Perseguir | Segue-a a cerca de 560 px/s, no chão onde está. A personagem corre a 720 px/s, pelo que fugir resulta, mas com pouca margem. |
 | Aviso | Antes de cada ataque, mostra qual vem, para que o jogador tenha tempo de reagir: antes da mordida, alarga-se e baixa durante 0,2 s, sem parar de correr; antes do salto, para e encolhe durante 0,35 s. |
 | Atirar-se | Salta para onde a personagem vai estar, entre 200 e 420 px, e fica 0,35 s parado onde aterra. |
@@ -233,7 +234,8 @@ estados:
 | Atirado | Atirado pelo crucifixo, ou pela personagem quando esta se solta, voa até aterrar. |
 | Repelido | Depois de atirado pelo crucifixo, fica 0,3 s parado onde aterrou e volta a perseguir. |
 | Atordoado | Depois de atirado pela personagem ao soltar-se, fica 1,2 s no chão, achatado e mais escuro, e depois recua ou volta a perseguir. |
-| Voltar | Depois de desistir, volta ao posto a passo, a 200 px/s, e fica parado. Se a vir à frente pelo caminho, volta a persegui-la. |
+| Fora de alcance | Com a personagem num chão ou numa parede acima ou abaixo do que os seus ataques chegam, para onde está, virado para ela, e não a segue por baixo nem por cima. Se ela descer ao seu alcance, volta a persegui-la; ao fim de 2 s, desiste e deixa-a em paz enquanto ela lá ficar. |
+| Voltar | Depois de desistir, volta ao posto a passo, a 200 px/s, e retoma a ronda. Se a vir à frente pelo caminho, volta a persegui-la. |
 
 O demónio vê a personagem a menos de 1100 px, mais de meio ecrã, se não houver uma parede entre os
 seus olhos e o meio ou a cabeça dela: um muro baixo ou uma borda que tape só uma das duas não a
@@ -274,7 +276,11 @@ calculado a partir do desenho"). Os valores são provisórios e afinam-se a joga
 
 É o desenho do nível que limita os demónios. Um demónio não sobe, não salta para cima e para à beira
 de um desnível. Como nenhum salto passa dos 32 px de altura, um degrau de 48 px, uma largura da
-personagem, trava-o, e uma plataforma dessa altura é um sítio seguro. Quem desenha um nível sabe
+personagem, trava-o, e uma plataforma dessa altura é um sítio seguro. Um demónio que veja a
+personagem num sítio desses para onde está, virado para ela, em vez de a acompanhar por baixo de um
+lado para o outro, e o jogador lê que ali não lhe chega. O mesmo vale ao contrário: um demónio numa
+plataforma alta, de onde não desce, não corre até à borda para a acompanhar lá de cima. Um salto da personagem no chão do demónio
+não conta, porque ela só pode voltar a descer: a perseguição continua. Quem desenha um nível sabe
 assim até onde cada demónio chega, sem limites invisíveis. A exceção é o crucifixo, que pode
 atirar um demónio de uma borda abaixo: o demónio cai, fica no chão onde aterra e, se vir a
 personagem, persegue-a a partir daí. Quando desiste, tenta voltar ao posto, e o sítio onde a borda
@@ -1167,12 +1173,12 @@ classe-mãe comum ficaria quase vazia e não serviria uma personagem das duas fa
 que fala e que o crucifixo afasta. Pela mesma razão, o demónio do tutorial, que fala e não persegue,
 não é esta cena com a perseguição desligada.
 
-- **Máquina de estados num só script.** Os dez estados (`IDLE`, `CHASE`, `WARNING`, `LUNGE`,
-  `RETREAT`, `GRAB`, `THROWN`, `REPELLED`, `STUNNED` e `RETURN`) são uma enumeração no `demon.gd`, o
-  mesmo padrão da personagem, que o grupo já conhece. A alternativa, um nó e um script por estado,
-  pagaria já por estados que ainda não têm design. O `demon.gd` tem 721 linhas, e o desenho do
-  nível 1 pede mais três estados (ronda, alerta e procura): com eles, cada estado passa a ser um
-  objeto próprio.
+- **Máquina de estados num só script.** Os doze estados (`IDLE`, `CHASE`, `WARNING`, `LUNGE`,
+  `RETREAT`, `GRAB`, `THROWN`, `REPELLED`, `STUNNED`, `RETURN`, `OUT_OF_REACH` e `PATROL`) são uma
+  enumeração no `demon.gd`, o mesmo padrão da personagem, que o grupo já conhece. A alternativa, um
+  nó e um script por estado, pagaria já por estados que ainda não tinham design. Com a ronda e o
+  "fora de alcance", o `demon.gd` tem 825 linhas, e o desenho do nível 1 pede ainda o alerta e a
+  procura. Antes deles, cada estado passa a ser um objeto próprio: é o passo seguinte (ADR 0033).
 - **Ataques como dados.** Cada `DemonAttack` guarda o alcance, a diferença de altura, o aviso, as
   distâncias, a antecipação (Lead), a altura e o tempo do salto, a recuperação, a probabilidade e a
   animação. A ordem na lista é a prioridade: com a personagem ao alcance dos dois ataques, o demónio
@@ -1299,6 +1305,26 @@ não é esta cena com a perseguição desligada.
   contam as paredes do mundo (corpos estáticos e tiles): o corpo da personagem, que se move, faria
   de um sítio livre um posto para sempre. Num nível, um posto fica a mais de 30 px de uma borda,
   o alcance do raio que procura o chão; mais perto, o demónio para antes e o posto muda um pouco.
+- **Fora de alcance e ronda (ADR 0033).** Antes, um demónio que via a personagem num degrau alto
+  corria até ficar por baixo dela e acompanhava-a de um lado para o outro, e sem ninguém à vista
+  ficava imóvel, como se estivesse desligado. O alcance não é um valor novo: é a maior diferença de
+  altura dos seus ataques (hoje 24 px), para que os dois números nunca se contradigam. A personagem
+  conta acima e abaixo do demónio, e só com o demónio no chão: um demónio a cair ainda está a
+  chegar ao seu chão. A personagem
+  só fica fora de alcance quando está num chão, ou a deslizar ou agarrada a uma parede: no ar, ou a
+  roçar uma parede a subir, só pode voltar a descer, e um salto para fugir nunca para a perseguição
+  nem corta uma mordida a meio. Depois de desistir, o demónio ignora-a enquanto ela estiver acima do
+  seu alcance; sem isso, voltava a vê-la no passo seguinte e recomeçava a perseguição de 2 em 2 s. Para voltar a perseguir basta que ela desça ao
+  alcance, mesmo no ar; esta diferença entre a regra de entrada e a de saída evita que o demónio
+  pare e arranque aos solavancos com a personagem numa chaminé. A ronda é um estado próprio
+  (`PATROL`), e o parado (`IDLE`) passa a ser também a pausa nas pontas, para que a arte tenha uma
+  animação para andar e outra para estar parado. Cada demónio sorteia as suas pausas, e por isso
+  dois demónios postos lado a lado depressa deixam de andar ao mesmo ritmo. Em ronda, os demónios
+  não guardam distância entre si: dois troços sobrepostos deixam-nos atravessar-se. Por isso é uma
+  regra do desenho dos níveis que os troços de dois demónios no mesmo chão não se sobreponham, e o
+  teste das regras dos níveis, a fazer com o gerador do nível 1, vai verificá-la. Com Patrol Width a 0, o demónio fica parado no posto,
+  como antes. Fora do ecrã, não anda, para que o jogador encontre cada demónio perto de onde o nível
+  o pôs e para que os demónios que não se veem custem o mínimo.
 
 Antes de decidir se a perseguição precisava de ser otimizada, fixaram-se dois limites para 50
 demónios a perseguir ao mesmo tempo, muitos mais do que um ecrã terá: um limite para a média por
@@ -1368,6 +1394,29 @@ e por isso todos contam como estando no ecrã. Mede-se com o nível 1. A média 
 limite de 1,5 ms. Para que a medida
 continue a pôr todos os demónios a perseguir, cada um é colocado virado para a personagem.
 
+Com o "fora de alcance" e a ronda (2026-10-26, no mesmo computador e no mesmo dia), a medida ganhou
+duas partes, com 50 demónios em ronda e a personagem fora da vista de todos. Na primeira, sem
+câmara, todos contam como estando no ecrã e todos andam: é um teste de esforço. Na segunda, os
+demónios estão espalhados por dez ecrãs (19 200 px), com uma câmara ao meio, como num nível: só os
+que estão no ecrã andam, 4 dos 50 no fim da medida.
+
+| 50 demónios | Média por passo | Pior passo | Execuções |
+|---|---|---|---|
+| A perseguir, antes | 1,11 ms | 2,20 ms | 1 |
+| A perseguir, depois | 1,07 a 1,23 ms | 1,96 a 4,81 ms | 5 |
+| Em ronda, todos no ecrã | 1,37 a 1,71 ms | 2,36 a 3,04 ms | 5 |
+| Em ronda, espalhados por dez ecrãs | 0,48 a 0,85 ms | 1,05 a 1,52 ms | 5 |
+
+A média a perseguir ficou igual: a nova verificação é uma comparação de alturas por passo. O pior
+passo de 4,81 ms apareceu numa só execução, com a média igual às outras; a causa não foi medida. Em
+ronda, todos no ecrã passam os 2 ms no pior passo em todas as execuções, e a diferença para a
+perseguição está no motor de física (0,64 a 0,80 ms, contra 0,23 a 0,31 ms a perseguir), não nos
+scripts, que custam o mesmo. A hipótese, por medir no Profiler, é que os demónios em ronda se
+atravessam e a área que encontra os outros demónios está sempre a entrar e a sair. Espalhados por
+dez ecrãs, a 384 px uns dos outros, os troços também se sobrepõem, e mesmo assim os 50 ficam dentro
+dos dois limites, porque só os que estão no ecrã andam. Aceita-se, como na perseguição, até haver um
+nível para medir. Nos scripts, cada demónio parado fora do ecrã custa cerca de 13 µs por passo.
+
 O `test_demon.gd` verifica, com a personagem e o crucifixo verdadeiros, a visão (a distância e as
 paredes), a perseguição e a desistência, a paragem nas bordas e nos degraus, o aviso e o seu tempo,
 a altura, a distância e a direção do salto, também num salto mais rápido e num de metade da
@@ -1389,13 +1438,24 @@ agarrão com um e com dois demónios, o terceiro que espera à distância, o arr
 personagem se solta e o atordoamento. Com os sentidos novos e o posto, verifica a cabeça vista por
 cima de um muro baixo, o alcance para trás com o demónio virado para cada lado, o ecrã (não começa
 a perseguir fora dele e desiste quando sai), o regresso ao posto à velocidade certa, a nova
-perseguição a meio do regresso, o posto novo noutro chão e contra uma parede. São 91 casos. Todos menos os cinco últimos usam valores
-próprios, pelo que afinar o `.tres` não os altera. Os cinco últimos leem o `.tres` do nível 1 e
+perseguição a meio do regresso, o posto novo noutro chão e contra uma parede. Com o "fora de
+alcance", verifica que o demónio para virado para a personagem num degrau alto e não a segue
+quando ela anda por cima, que numa plataforma alta não corre até à borda por ela estar em baixo, que volta a persegui-la quando ela desce ao alcance, ainda no ar, que
+desiste ao fim do tempo mesmo vendo-a e depois a deixa em paz enquanto ela lá ficar, que um salto
+dela no seu chão não para a perseguição e que não avisa de um ataque a uma personagem no ar acima do
+seu alcance. Com a ronda, verifica o vai
+e vem dentro da largura e à velocidade certas, as pausas dentro dos limites, a volta à beira de um
+desnível e contra um degrau, a paragem fora do ecrã, as pausas diferentes de dois demónios, a
+perseguição a meio da ronda e a ronda retomada depois do regresso ao posto. O caso do degrau mudou:
+antes, o demónio corria até ao degrau; agora para onde a vê. São 105 casos. Todos menos os seis
+últimos usam valores próprios, pelo que afinar o `.tres` não os altera. Os seis últimos leem o
+`.tres` do nível 1 e
 confirmam o que o desenho dos níveis assume: cada ataque com uma das animações da arte, os saltos e a diferença
 de altura para atacar abaixo de um tile (48 px), o Lose Distance acima do Sight Distance e a
 perseguição mais lenta do que a corrida da personagem, e a regra do ecrã ligada, a visão de pelo
 menos meio ecrã, menos alcance para trás do que para a frente e o regresso mais lento do que a
-perseguição, para que um demónio a voltar nunca pareça vir na direção dela.
+perseguição, para que um demónio a voltar nunca pareça vir na direção dela, e a ronda ligada e mais
+lenta do que a perseguição, com um degrau de um tile fora do alcance.
 
 #### Overlay de depuração
 

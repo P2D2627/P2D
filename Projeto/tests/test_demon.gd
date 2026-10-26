@@ -1,6 +1,7 @@
 # Checks the demon's chase. It sees the man inside Sight Distance with no wall in between and chases
-# him along its own floor; it does not see him further away or through a wall. It stops at an edge
-# and against a step of one tile, so the level's own shape keeps it where it was placed. Once it
+# him along its own floor; it does not see him further away or through a wall. It stops at an edge,
+# and never climbs nor lunges up a step of one tile, so the level's own shape keeps it where it was
+# placed. Once it
 # chases, it stands still on the man's spot instead of shaking, keeps on past Sight Distance, loses
 # him past Lose Distance and does not chase him again, gives up after Give Up Time with a wall
 # between them, starts that count over when it sees him again, and lets go of a man who is freed,
@@ -22,7 +23,14 @@
 # with Sight Behind Share it sees less behind it, whichever way it was put facing; with Chases Only
 # On Screen it starts no chase off the screen and gives up once off it; with Return Speed it walks
 # back to its post once it gives up, chases a man it sees ahead on the way, and on another floor
-# stays where its floor stops it (ADR 0032). Its body and the man's stop each other at the side, also in a
+# stays where its floor stops it (ADR 0032). A man on a floor or a wall over every attack's Max
+# Height Difference, above it or below its ledge, is out of its reach (ADR 0033): it stands facing
+# him wherever he walks, chases
+# him again once he is back down, and gives up after Out Of Reach Wait; a man in the air over it
+# does not count, so a jump never stops the chase. With Patrol Width it walks to and fro across it
+# at Patrol Speed, pausing at each end within Patrol Pause Min and Max, turns back at an edge and at
+# a step, stands still off the screen, pauses apart from another demon, chases a man it notices on
+# the way, and patrols again once back at its post. Its body and the man's stop each other at the side, also in a
 # lunge. With a bite before the lunge, it bites a man right by it on the run, with the bite's own
 # warning and shape, with no pounce and never past him, and still lunges at one past Bite Range;
 # with no chance for the lunge, it runs on and bites him instead, then chases on with no attack for
@@ -304,6 +312,44 @@ const LOWER_START_X: float = 900.0
 ## In the case of the wall on the way back, the wall's right face, between the post and where the
 ## demon gives up.
 const RETURN_WALL_X: float = 100.0
+## The cases of the man out of reach (ADR 0033): a ledge two tiles up, over every attack's Max Height
+## Difference, from x = HIGH_LEDGE_LEFT on. The man stands on it at OUT_OF_REACH_X and then walks
+## ALONG_LEDGE px along it, over WALK_FRAMES, while the demon must stand where it is.
+const HIGH_LEDGE_HEIGHT: float = 96.0
+const HIGH_LEDGE_LEFT: float = 150.0
+const OUT_OF_REACH_X: float = 200.0
+const ALONG_LEDGE: float = 200.0
+const WALK_FRAMES: int = 20
+## Out Of Reach Wait of the cases' demons: 48 frames, longer than Give Up Time, so a demon that gave
+## up because it lost sight of the man would give up sooner and be caught.
+const OUT_OF_REACH_WAIT: float = 0.8
+## In the case of the man below, the demon's ledge ends at x = HIGH_LEDGE_RIGHT and the man stands
+## on the floor at BELOW_LEDGE_X, inside Sight Distance and in its sight past the ledge's corner.
+const HIGH_LEDGE_RIGHT: float = 200.0
+const BELOW_LEDGE_X: float = 400.0
+## How high above its floor the man is put in the case of the jump: over Max Height Difference.
+const JUMP_PEAK: float = 100.0
+## How high above the demon's floor the man is held in the air in the case of coming back down:
+## within Max Height Difference.
+const IN_REACH_HEIGHT: float = 12.0
+## The cases of the patrol (ADR 0033): the stretch the demon walks around its post, its speed and the
+## shortest and longest pause at each end, short so the cases do not wait long. Walking from one end
+## to the other takes some 80 frames, and a pause 12 to 24.
+const PATROL_WIDTH: float = 200.0
+const PATROL_SPEED: float = 150.0
+const PATROL_PAUSE_MIN: float = 0.2
+const PATROL_PAUSE_MAX: float = 0.4
+## How long a patrol is watched: past three ends at the slowest.
+const PATROL_FRAMES: int = 400
+## In the case of the edge and the step, both inside the patrol: the floor ends at x =
+## -PATROL_EDGE, and rises one tile at x = PATROL_STEP_X.
+const PATROL_EDGE: float = 60.0
+const PATROL_STEP_X: float = 70.0
+## The least number of times a patrolling demon has to set off in that while: both ways at least.
+const LEAST_SET_OFFS: int = 3
+## In the case of two demons on patrol, how far apart they are put: out of each other's way.
+const PATROL_APART: float = 600.0
+const PATROL_SEED: int = 33
 
 
 func _initialize() -> void:
@@ -390,12 +436,26 @@ func _initialize() -> void:
 	results.append(await _walking_back_it_chases_a_man_it_sees_ahead())
 	results.append(await _on_another_floor_its_post_is_where_its_floor_stops_it())
 	results.append(await _a_wall_on_the_way_back_makes_where_it_stops_its_post())
+	results.append(await _stands_facing_a_man_out_of_its_reach_wherever_he_walks())
+	results.append(await _stands_facing_a_man_out_of_its_reach_below_it())
+	results.append(await _out_of_reach_it_chases_again_once_the_man_comes_back_down())
+	results.append(await _out_of_reach_for_out_of_reach_wait_it_gives_up_and_walks_back())
+	results.append(await _keeps_chasing_a_man_who_jumps_on_its_floor())
+	results.append(await _having_given_up_it_leaves_a_man_out_of_reach_alone_until_he_comes_down())
+	results.append(await _never_warns_of_an_attack_at_a_man_in_the_air_over_its_reach())
+	results.append(await _with_patrol_width_it_walks_to_and_fro_and_pauses_at_each_end())
+	results.append(await _patrolling_it_turns_at_an_edge_and_at_a_step())
+	results.append(await _patrolling_off_the_screen_it_stands_still())
+	results.append(await _two_demons_on_patrol_never_set_off_together())
+	results.append(await _patrolling_it_chases_a_man_it_sees_ahead())
+	results.append(await _back_at_its_post_it_patrols_again())
 	results.append(_is_on_the_enemy_layer_and_looks_only_for_the_player())
 	results.append(_the_level_s_values_keep_what_the_levels_count_on())
 	results.append(_the_level_s_demons_back_off_past_bite_range_slower_than_they_chase())
 	results.append(_the_level_s_demons_keep_it_at_both_ends_of_pack_variation())
 	results.append(_the_level_s_throw_never_lands_a_demon_on_a_step())
 	results.append(_the_level_s_demons_chase_on_screen_and_walk_back_slower_than_they_chase())
+	results.append(_the_level_s_demons_patrol_and_leave_a_man_on_a_step_out_of_reach())
 	finish(results)
 
 
@@ -476,8 +536,8 @@ func _stops_at_an_edge() -> bool:
 			% [EDGE_X, front, feet, _name_of(state)])
 
 
-## The man on a step one tile high, inside Lunge Range once the demon gets there: the demon chases
-## him up to the step and stays below it, and never warns, since he is above its floor.
+## The man on a step one tile high, over Max Height Difference: out of the demon's reach (ADR 0033),
+## so it stops short of the step where it noticed him, on its floor, and never warns.
 func _does_not_climb_nor_lunge_up_a_step_of_one_tile() -> bool:
 	var ground: StaticBody2D = make_platform(FLOOR_LEFT, FLOOR_RIGHT)
 	var step: StaticBody2D = make_platform(STEP_X, FLOOR_RIGHT, -TILE)
@@ -490,11 +550,12 @@ func _does_not_climb_nor_lunge_up_a_step_of_one_tile() -> bool:
 	var state: Demon.State = demon.get_state()
 	var gap: float = man.position.x - demon.position.x
 	await _clear([ground, step, man, demon])
-	var at_the_step: bool = front <= STEP_X + TOLERANCE and front > STEP_X - TOLERANCE
-	return report(at_the_step and absf(feet) < TOLERANCE and state == Demon.State.CHASE
-			and gap < LUNGE_RANGE and not _warned(changes),
-			"Step at x = %d: front at %.1f, feet at y = %.1f, %s, %.1f px from the man, warned %s"
-			% [STEP_X, front, feet, _name_of(state), gap, _warned(changes)])
+	var stopped: bool = changes.any(
+			func(change: Vector2i) -> bool: return change.x == Demon.State.OUT_OF_REACH)
+	return report(front <= STEP_X + TOLERANCE and absf(feet) < TOLERANCE and stopped
+			and not _warned(changes),
+			"Step at x = %d: front at %.1f, feet at y = %.1f, out of reach %s, then %s, %.1f px from the man, warned %s"
+			% [STEP_X, front, feet, stopped, _name_of(state), gap, _warned(changes)])
 
 
 ## Once chasing, the demon keeps on with the man past Sight Distance, and stops past Lose Distance.
@@ -2342,6 +2403,22 @@ func _the_level_s_demons_chase_on_screen_and_walk_back_slower_than_they_chase() 
 					demon_stats.chase_speed])
 
 
+## The level's demons patrol, slower than they chase, so a demon is never found standing as if
+## switched off, and a man on a step of one tile is out of their reach, so the step is a safe spot
+## (ADR 0033); they wait for him there a while before they give up.
+func _the_level_s_demons_patrol_and_leave_a_man_on_a_step_out_of_reach() -> bool:
+	var demon_stats: DemonStats = load(LUST_DEMON_STATS) as DemonStats
+	var patrols: bool = demon_stats.patrol_width > 0.0 and demon_stats.patrol_speed > 0.0 \
+			and demon_stats.patrol_speed < demon_stats.chase_speed \
+			and demon_stats.patrol_pause_min <= demon_stats.patrol_pause_max
+	return report(patrols and demon_stats.get_reach_height() < TILE
+			and demon_stats.out_of_reach_wait > 0.0,
+			"Level values: patrol of %d px at %d px/s (chases at %d), pauses %.1f to %.1f s; reach %d px (a step is %d), waits %.1f s out of reach"
+			% [demon_stats.patrol_width, demon_stats.patrol_speed, demon_stats.chase_speed,
+					demon_stats.patrol_pause_min, demon_stats.patrol_pause_max,
+					demon_stats.get_reach_height(), TILE, demon_stats.out_of_reach_wait])
+
+
 ## The level's demons back off after each attack (ADR 0023): past the Attack Range of every bite on
 ## the run, so they have to come back to bite again, and slower than they chase, so it reads as
 ## backing off.
@@ -2601,6 +2678,309 @@ func _a_wall_on_the_way_back_makes_where_it_stops_its_post() -> bool:
 			% [RETURN_WALL_X, stopped, front, moved, _name_of(state)])
 
 
+## A man on a ledge over every attack's Max Height Difference is out of the demon's reach (ADR
+## 0033): the demon, put facing away from him, turns to him and stands where it is, and stays there
+## while he walks along the ledge, instead of following him along under it.
+func _stands_facing_a_man_out_of_its_reach_wherever_he_walks() -> bool:
+	var ground: StaticBody2D = make_platform(FLOOR_LEFT, FLOOR_RIGHT)
+	var ledge: StaticBody2D = make_platform(HIGH_LEDGE_LEFT, FLOOR_RIGHT, -HIGH_LEDGE_HEIGHT)
+	var demon: Demon = await _spawn_demon(0.0, NO_LUNGE, [], false, [], true)
+	var man: Player = await spawn_on_floor(
+			Vector2(OUT_OF_REACH_X, SPAWN_Y - HIGH_LEDGE_HEIGHT))
+	var stopped: bool = await _is_in_state_within(
+			demon, Demon.State.OUT_OF_REACH, FRAMES_TO_WATCH)
+	var stop_x: float = demon.position.x
+	for _frame: int in WALK_FRAMES:
+		man.position.x += ALONG_LEDGE / WALK_FRAMES
+		await physics_frame
+	var moved: float = absf(demon.position.x - stop_x)
+	var state: Demon.State = demon.get_state()
+	var facing: float = demon.get_facing()
+	await _clear([ground, ledge, man, demon])
+	return report(stopped and moved < STILL_TOLERANCE and state == Demon.State.OUT_OF_REACH
+			and facing > 0.0,
+			"Man %d px up: out of reach %s; he walked %d px, it moved %.2f px, %s, facing %d"
+			% [HIGH_LEDGE_HEIGHT, stopped, ALONG_LEDGE, moved, _name_of(state), facing])
+
+
+## The demon on a ledge two tiles up, from where it cannot get down to the man, him on the floor
+## below it: he is as much out of its reach as above it, so it stands where it noticed him, facing
+## him, instead of running to the edge and following him along up there.
+func _stands_facing_a_man_out_of_its_reach_below_it() -> bool:
+	var ground: StaticBody2D = make_platform(FLOOR_LEFT, FLOOR_RIGHT)
+	var ledge: StaticBody2D = make_platform(FLOOR_LEFT, HIGH_LEDGE_RIGHT, -HIGH_LEDGE_HEIGHT)
+	var demon: Demon = await _spawn_demon(0.0, NO_LUNGE)
+	demon.position.y -= HIGH_LEDGE_HEIGHT
+	await wait_frames(SETTLE_FRAMES)
+	await wait_until(demon.is_on_floor)
+	var start_x: float = demon.position.x
+	var man: Player = await spawn_on_floor(Vector2(BELOW_LEDGE_X, SPAWN_Y))
+	var stopped: bool = await _is_in_state_within(
+			demon, Demon.State.OUT_OF_REACH, FRAMES_TO_WATCH)
+	var moved: float = absf(demon.position.x - start_x)
+	var facing: float = demon.get_facing()
+	await _clear([ground, ledge, man, demon])
+	return report(stopped and moved < MOVED and facing > 0.0,
+			"On a ledge %d px up, the man below: out of reach %s, moved %.1f px, facing %d"
+			% [HIGH_LEDGE_HEIGHT, stopped, moved, facing])
+
+
+## Out of reach, the demon chases the man again as soon as he comes back down within its reach,
+## already while he is still in the air.
+func _out_of_reach_it_chases_again_once_the_man_comes_back_down() -> bool:
+	var ground: StaticBody2D = make_platform(FLOOR_LEFT, FLOOR_RIGHT)
+	var ledge: StaticBody2D = make_platform(HIGH_LEDGE_LEFT, FLOOR_RIGHT, -HIGH_LEDGE_HEIGHT)
+	var demon: Demon = await _spawn_demon(0.0, NO_LUNGE)
+	var man: Player = await spawn_on_floor(
+			Vector2(OUT_OF_REACH_X, SPAWN_Y - HIGH_LEDGE_HEIGHT))
+	var stopped: bool = await _is_in_state_within(
+			demon, Demon.State.OUT_OF_REACH, FRAMES_TO_WATCH)
+	var chased: bool = false
+	for _frame: int in SETTLE_FRAMES:
+		man.position = Vector2(-OUT_OF_REACH_X, SPAWN_Y - IN_REACH_HEIGHT)
+		man.velocity = Vector2.ZERO
+		await physics_frame
+		chased = chased or demon.get_state() == Demon.State.CHASE
+	var in_the_air: bool = not man.is_on_floor()
+	await _clear([ground, ledge, man, demon])
+	return report(stopped and chased and in_the_air,
+			"Out of reach %s; the man held %d px up, within reach: chased %s, still in the air %s"
+			% [stopped, IN_REACH_HEIGHT, chased, in_the_air])
+
+
+## Out of reach for Out Of Reach Wait, the demon gives up, though it still sees the man, and walks
+## back to its post.
+func _out_of_reach_for_out_of_reach_wait_it_gives_up_and_walks_back() -> bool:
+	var ground: StaticBody2D = make_platform(FLOOR_LEFT, FLOOR_RIGHT)
+	var ledge: StaticBody2D = make_platform(HIGH_LEDGE_LEFT, FLOOR_RIGHT, -HIGH_LEDGE_HEIGHT)
+	var changes: Array[Vector2i] = []
+	var demon: Demon = await _spawn_demon(0.0, NO_LUNGE, changes)
+	demon.stats.return_speed = RETURN_SPEED
+	var man: Player = await spawn_on_floor(Vector2(-SEEN_X, SPAWN_Y))
+	await wait_until(func() -> bool: return demon.position.x < -AWAY_FROM_POST)
+	man.position = Vector2(OUT_OF_REACH_X, SPAWN_Y - HIGH_LEDGE_HEIGHT)
+	var returning: bool = await _is_in_state_within(demon, Demon.State.RETURN, MAX_FRAMES)
+	var waited: int = _frames_in(changes, Demon.State.OUT_OF_REACH)
+	await _clear([ground, ledge, man, demon])
+	var wait_frames_asked: int = roundi(OUT_OF_REACH_WAIT * Engine.physics_ticks_per_second)
+	return report(returning and absi(waited - wait_frames_asked) <= ONE_FRAME,
+			"Out of reach, still seeing him: waited %d frames (asked %d), walking back %s"
+			% [waited, wait_frames_asked, returning])
+
+
+## A man who jumps on the demon's floor, over every attack's Max Height Difference, is not out of
+## its reach: in the air he can only come down, so it keeps on chasing him.
+func _keeps_chasing_a_man_who_jumps_on_its_floor() -> bool:
+	var ground: StaticBody2D = make_platform(FLOOR_LEFT, FLOOR_RIGHT)
+	var changes: Array[Vector2i] = []
+	var demon: Demon = await _spawn_demon(0.0, NO_LUNGE, changes)
+	var man: Player = await spawn_on_floor(Vector2(SEEN_X, SPAWN_Y))
+	var chased: bool = await _chases_within(demon, FRAMES_TO_WATCH)
+	man.position.y -= JUMP_PEAK
+	await physics_frame
+	var landed: bool = await wait_until_on_floor(man)
+	var state: Demon.State = demon.get_state()
+	var stopped: bool = changes.any(
+			func(change: Vector2i) -> bool: return change.x == Demon.State.OUT_OF_REACH)
+	await _clear([ground, man, demon])
+	return report(chased and landed and not stopped and state == Demon.State.CHASE,
+			"Man %d px up in the air: out of reach %s, then %s" % [JUMP_PEAK, stopped,
+					_name_of(state)])
+
+
+## Once it gave up on a man out of its reach, the demon does not chase him again while he stays up
+## there, though it still sees him, so it never starts and stops the chase over and over; once he
+## comes back down within its reach, it chases him again.
+func _having_given_up_it_leaves_a_man_out_of_reach_alone_until_he_comes_down() -> bool:
+	var ground: StaticBody2D = make_platform(FLOOR_LEFT, FLOOR_RIGHT)
+	var ledge: StaticBody2D = make_platform(HIGH_LEDGE_LEFT, FLOOR_RIGHT, -HIGH_LEDGE_HEIGHT)
+	var changes: Array[Vector2i] = []
+	var demon: Demon = await _spawn_demon(0.0, NO_LUNGE, changes)
+	var man: Player = await spawn_on_floor(
+			Vector2(OUT_OF_REACH_X, SPAWN_Y - HIGH_LEDGE_HEIGHT))
+	var gave_up: bool = await _is_in_state_within(demon, Demon.State.IDLE, MAX_FRAMES)
+	var given_up_at: int = changes.size()
+	await wait_frames(FRAMES_TO_WATCH)
+	var chased_up_there: bool = changes.slice(given_up_at).any(
+			func(change: Vector2i) -> bool: return change.x == Demon.State.CHASE)
+	man.position = Vector2(-OUT_OF_REACH_X, SPAWN_Y)
+	var chased_below: bool = await _chases_within(demon, FRAMES_TO_WATCH)
+	await _clear([ground, ledge, man, demon])
+	return report(gave_up and not chased_up_there and chased_below,
+			"Out of reach: gave up %s, chased him again up there %s; he came down: chased %s"
+			% [gave_up, chased_up_there, chased_below])
+
+
+## A man held in the air inside Lunge Range, over every attack's Max Height Difference: the demon
+## chases on under him, since he can only come down, and never warns of an attack it could not land.
+func _never_warns_of_an_attack_at_a_man_in_the_air_over_its_reach() -> bool:
+	var ground: StaticBody2D = make_platform(FLOOR_LEFT, FLOOR_RIGHT)
+	var changes: Array[Vector2i] = []
+	var demon: Demon = await _spawn_demon(0.0, LUNGE_RANGE, changes)
+	var man: Player = await spawn_on_floor(Vector2(BITE_X, SPAWN_Y))
+	for _frame: int in FRAMES_TO_WATCH:
+		man.position = Vector2(BITE_X, SPAWN_Y - JUMP_PEAK)
+		man.velocity = Vector2.ZERO
+		await physics_frame
+	var state: Demon.State = demon.get_state()
+	await _clear([ground, man, demon])
+	return report(state == Demon.State.CHASE and not _warned(changes),
+			"Man held %d px up, %d px ahead: %s, warned %s"
+			% [JUMP_PEAK, BITE_X, _name_of(state), _warned(changes)])
+
+
+## With Patrol Width and no man about, the demon walks to and fro across Patrol Width around its post
+## at Patrol Speed, facing the way it walks, and before each walk pauses, still, for between Patrol
+## Pause Min and Max (ADR 0033).
+func _with_patrol_width_it_walks_to_and_fro_and_pauses_at_each_end() -> bool:
+	var ground: StaticBody2D = make_platform(FLOOR_LEFT, FLOOR_RIGHT)
+	var changes: Array[Vector2i] = []
+	var demon: Demon = await _spawn_demon(0.0, NO_LUNGE, changes)
+	_make_it_patrol(demon)
+	var post_x: float = demon.position.x
+	var leftmost: float = INF
+	var rightmost: float = -INF
+	var fastest: float = 0.0
+	var facing_its_way: bool = true
+	var last_x: float = demon.position.x
+	for _frame: int in PATROL_FRAMES:
+		await physics_frame
+		var step: float = demon.position.x - last_x
+		last_x = demon.position.x
+		leftmost = minf(leftmost, last_x)
+		rightmost = maxf(rightmost, last_x)
+		fastest = maxf(fastest, absf(step) * Engine.physics_ticks_per_second)
+		if step != 0.0:
+			facing_its_way = facing_its_way and demon.get_facing() == signf(step)
+	await _clear([ground, demon])
+	var pauses: Array[int] = _stints_in(changes, Demon.State.IDLE)
+	var shortest: int = roundi(PATROL_PAUSE_MIN * Engine.physics_ticks_per_second)
+	var longest: int = roundi(PATROL_PAUSE_MAX * Engine.physics_ticks_per_second)
+	var pauses_right: bool = pauses.all(
+			func(frames: int) -> bool: return frames >= shortest and frames <= longest)
+	var set_offs: int = changes.filter(
+			func(change: Vector2i) -> bool: return change.x == Demon.State.PATROL).size()
+	var half: float = PATROL_WIDTH / 2.0
+	var across: bool = absf(leftmost - (post_x - half)) <= TOLERANCE \
+			and absf(rightmost - (post_x + half)) <= TOLERANCE
+	return report(across and absf(fastest - PATROL_SPEED) <= SPEED_TOLERANCE and facing_its_way
+			and set_offs >= LEAST_SET_OFFS and pauses_right,
+			"Patrol of %d px: from %.1f to %.1f px of its post, at up to %.1f px/s (asked %d), facing its way %s; set off %d times, pauses of %s frames (asked %d to %d)"
+			% [PATROL_WIDTH, leftmost - post_x, rightmost - post_x, fastest, PATROL_SPEED,
+					facing_its_way, set_offs, pauses, shortest, longest])
+
+
+## On patrol, the end of its floor and a step of one tile inside Patrol Width turn the demon back
+## where they stop it: it never falls off nor climbs.
+func _patrolling_it_turns_at_an_edge_and_at_a_step() -> bool:
+	var ground: StaticBody2D = make_platform(-PATROL_EDGE, FLOOR_RIGHT)
+	var step: StaticBody2D = make_platform(PATROL_STEP_X, FLOOR_RIGHT, -TILE)
+	var changes: Array[Vector2i] = []
+	var demon: Demon = await _spawn_demon(0.0, NO_LUNGE, changes)
+	_make_it_patrol(demon)
+	var half_width: float = _half_width(demon)
+	var ledge_reach: float = absf((demon.get_node(^"%LedgeCheck") as Node2D).position.x)
+	var leftmost: float = INF
+	var rightmost: float = -INF
+	var highest: float = 0.0
+	var lowest: float = 0.0
+	for _frame: int in PATROL_FRAMES:
+		await physics_frame
+		leftmost = minf(leftmost, demon.position.x)
+		rightmost = maxf(rightmost, demon.position.x + half_width)
+		highest = minf(highest, demon.position.y)
+		lowest = maxf(lowest, demon.position.y)
+	await _clear([ground, step, demon])
+	var set_offs: int = changes.filter(
+			func(change: Vector2i) -> bool: return change.x == Demon.State.PATROL).size()
+	var at_the_step: bool = absf(rightmost - PATROL_STEP_X) <= TOLERANCE
+	var at_the_edge: bool = absf(leftmost - (-PATROL_EDGE + ledge_reach)) <= TOLERANCE
+	return report(at_the_step and at_the_edge and highest > -TOLERANCE and lowest < TOLERANCE
+			and set_offs >= LEAST_SET_OFFS,
+			"Edge at x = %d, step at x = %d: middle back to %.1f (LedgeCheck %d ahead), front up to %.1f, feet from y = %.1f to %.1f, set off %d times"
+			% [-PATROL_EDGE, PATROL_STEP_X, leftmost, ledge_reach, rightmost, highest, lowest,
+					set_offs])
+
+
+## A demon on patrol off the screen stands still, and sets off once the screen comes to it.
+func _patrolling_off_the_screen_it_stands_still() -> bool:
+	var ground: StaticBody2D = make_platform(FLOOR_LEFT, FLOOR_RIGHT)
+	var camera: Camera2D = _make_camera(2.0 * _screen_width())
+	var demon: Demon = await _spawn_demon(0.0, NO_LUNGE)
+	_make_it_patrol(demon)
+	var start_x: float = demon.position.x
+	await wait_frames(FRAMES_TO_WATCH)
+	var moved_off: float = absf(demon.position.x - start_x)
+	camera.position.x = 0.0
+	var moved_on: bool = await wait_until(
+			func() -> bool: return absf(demon.position.x - start_x) > MOVED, FRAMES_TO_WATCH)
+	await _clear([ground, demon, camera])
+	return report(moved_off < STILL_TOLERANCE and moved_on,
+			"On patrol off the screen: moved %.2f px; on it: set off %s" % [moved_off, moved_on])
+
+
+## Two demons put on patrol together draw their own pauses, so they pause for different times and
+## never set off on the same frame.
+func _two_demons_on_patrol_never_set_off_together() -> bool:
+	seed(PATROL_SEED)
+	var ground: StaticBody2D = make_platform(FLOOR_LEFT, FLOOR_RIGHT)
+	var first_changes: Array[Vector2i] = []
+	var second_changes: Array[Vector2i] = []
+	var first: Demon = await _spawn_demon(0.0, NO_LUNGE, first_changes)
+	var second: Demon = await _spawn_demon(PATROL_APART, NO_LUNGE, second_changes)
+	_make_it_patrol(first)
+	_make_it_patrol(second)
+	await wait_frames(PATROL_FRAMES)
+	await _clear([ground, first, second])
+	var first_set_offs: Array[int] = _frames_of(first_changes, Demon.State.PATROL)
+	var second_set_offs: Array[int] = _frames_of(second_changes, Demon.State.PATROL)
+	var together: bool = first_set_offs.any(
+			func(frame: int) -> bool: return frame in second_set_offs)
+	var first_pauses: Array[int] = _stints_in(first_changes, Demon.State.IDLE)
+	var second_pauses: Array[int] = _stints_in(second_changes, Demon.State.IDLE)
+	return report(not first_pauses.is_empty() and first_pauses != second_pauses
+			and not together,
+			"Two on patrol: pauses of %s and %s frames, set off on frames %s and %s, together %s"
+			% [first_pauses, second_pauses, first_set_offs, second_set_offs, together])
+
+
+## A demon on patrol chases the man as soon as it notices him ahead, straight from walking. The man
+## waits past Lose Distance and is put ahead of it once it walks.
+func _patrolling_it_chases_a_man_it_sees_ahead() -> bool:
+	var ground: StaticBody2D = make_platform(FLOOR_LEFT, FLOOR_RIGHT)
+	var man: Player = await spawn_on_floor(Vector2(LOST_X, SPAWN_Y))
+	var changes: Array[Vector2i] = []
+	var demon: Demon = await _spawn_demon(0.0, NO_LUNGE, changes)
+	_make_it_patrol(demon)
+	var set_off: bool = await _is_in_state_within(demon, Demon.State.PATROL, FRAMES_TO_WATCH)
+	man.position.x = demon.position.x + demon.get_facing() * SEEN_X
+	var chased: bool = await _chases_within(demon, SETTLE_FRAMES)
+	var from: Demon.State = changes[changes.size() - 2].x as Demon.State
+	await _clear([ground, man, demon])
+	return report(set_off and chased and from == Demon.State.PATROL,
+			"On patrol %s, the man %d px ahead: chased %s, from %s"
+			% [set_off, SEEN_X, chased, _name_of(from)])
+
+
+## With Patrol Width and Return Speed, a demon that gave up walks back to its post and patrols again
+## from there.
+func _back_at_its_post_it_patrols_again() -> bool:
+	var ground: StaticBody2D = make_platform(FLOOR_LEFT, FLOOR_RIGHT)
+	var demon: Demon = await _spawn_demon(0.0, NO_LUNGE)
+	_make_it_patrol(demon)
+	demon.stats.return_speed = RETURN_SPEED
+	var man: Player = await spawn_on_floor(Vector2(-SEEN_X, SPAWN_Y))
+	await wait_until(func() -> bool: return demon.position.x < -PATROL_WIDTH)
+	await remove_player(man)
+	var returning: bool = await _is_in_state_within(demon, Demon.State.RETURN, SETTLE_FRAMES)
+	var patrolling: bool = await _is_in_state_within(demon, Demon.State.PATROL, MAX_FRAMES)
+	var off_post: float = absf(demon.position.x)
+	await _clear([ground, demon])
+	return report(returning and patrolling and off_post <= PATROL_WIDTH / 2.0 + TOLERANCE,
+			"Gave up %d px from its post: walking back %s, patrolling again %s, %.1f px from its post"
+			% [PATROL_WIDTH, returning, patrolling, off_post])
+
+
 ## The demon's body is on the enemy layer and collides with the world, one-way platforms and the
 ## man's body only, and its sight area is on no layer and looks only for the player.
 func _is_on_the_enemy_layer_and_looks_only_for_the_player() -> bool:
@@ -2645,6 +3025,7 @@ func _spawn_demon(x: float, lunge_range: float = LUNGE_RANGE,
 	stats.lose_distance = LOSE_DISTANCE
 	stats.give_up_time = GIVE_UP_TIME
 	stats.chase_speed = CHASE_SPEED
+	stats.out_of_reach_wait = OUT_OF_REACH_WAIT
 	if bite:
 		stats.attacks.append(_make_bite())
 	stats.attacks.append(lunge)
@@ -2757,6 +3138,41 @@ func _index_after(changes: Array[Vector2i], state: Demon.State) -> int:
 		if changes[index].x == state:
 			return index + 1
 	return NEVER_REACHED
+
+
+## Physics frames the demon stayed in state the first time it was in it, by changes; NEVER_REACHED
+## if it never was, or is still in it.
+func _frames_in(changes: Array[Vector2i], state: Demon.State) -> int:
+	var after: int = _index_after(changes, state)
+	if after == NEVER_REACHED:
+		return NEVER_REACHED
+	return changes[after].y - changes[after - 1].y
+
+
+## Physics frames the demon stayed in state each time it was in it and left it, by changes.
+func _stints_in(changes: Array[Vector2i], state: Demon.State) -> Array[int]:
+	var stints: Array[int] = []
+	for index: int in range(changes.size() - 1):
+		if changes[index].x == state:
+			stints.append(changes[index + 1].y - changes[index].y)
+	return stints
+
+
+## The physics frames on which the demon changed to state, by changes.
+func _frames_of(changes: Array[Vector2i], state: Demon.State) -> Array[int]:
+	var frames: Array[int] = []
+	for change: Vector2i in changes:
+		if change.x == state:
+			frames.append(change.y)
+	return frames
+
+
+## Gives the demon the cases' patrol, from its next frame standing at its post.
+func _make_it_patrol(demon: Demon) -> void:
+	demon.stats.patrol_width = PATROL_WIDTH
+	demon.stats.patrol_speed = PATROL_SPEED
+	demon.stats.patrol_pause_min = PATROL_PAUSE_MIN
+	demon.stats.patrol_pause_max = PATROL_PAUSE_MAX
 
 
 ## The man's crucifix, held up by a stand-in input, once it is up.
