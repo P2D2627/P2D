@@ -4,9 +4,14 @@ extends CharacterBody2D
 ## A demon that chases the man: the one scene of every level's demons (ADR 0019). What kind of
 ## demon it is comes from Stats, such as lust_demon_stats.tres, and where it lives is where the
 ## level puts it. It never jumps up nor climbs: it chases along its own floor, stops at an edge, and
-## a step stops it, so the level's own shape keeps it in its place. It sees the man inside Sight
-## Distance with no wall in between, keeps on chasing him past it, and stops when he gets past Lose
-## Distance or a wall has hidden him for Give Up Time. With the man inside the Attack Range of one
+## a step stops it, so the level's own shape keeps it in its place. Its Senses (ADR 0032) see the man
+## inside Sight Distance with no wall between its eyes and his middle or his head; it notices him,
+## and starts the chase, only if he is ahead of it or no further behind than Sight Behind Share of
+## that, and with Chases Only On Screen only while it is on the screen. It keeps on chasing him past
+## Sight Distance, and stops when he gets past Lose Distance, a wall has hidden him for Give Up Time,
+## or, with Chases Only On Screen, it is off the screen. With Return Speed it then walks back to its
+## post, where the level put it, facing the way it walks, and there faces the way it was put; the
+## end of its floor or a wall on the way makes where it stops its post. With the man inside the Attack Range of one
 ## of its attacks (ADR 0020), on about its own floor, and the attack's chance coming up, it warns
 ## for the attack's Warning Time. In a lunge, it aims, as the warning starts, where the man will be
 ## when it lands, and needs him ahead of it and floor all the way there: it stops to warn, lunges
@@ -45,13 +50,19 @@ signal attack_landed(attack: DemonAttack)
 ## LUNGE lasts from take-off until the attack's Recover Time after landing. GRAB lasts while its hit
 ## holds the man, THROWN from his breaking free or the crucifix's touch until it lands, REPELLED
 ## for Repelled Time from landing after the crucifix's touch, and STUNNED for Stunned Time from
-## landing after his breaking free.
-enum State { IDLE, CHASE, WARNING, LUNGE, REPELLED, RETREAT, GRAB, THROWN, STUNNED }
+## landing after his breaking free. RETURN lasts from giving up until it is back at its post, or as
+## near it as its floor lets it go.
+enum State { IDLE, CHASE, WARNING, LUNGE, REPELLED, RETREAT, GRAB, THROWN, STUNNED, RETURN }
 
 ## How far apart, in px, the floor is looked for along a lunge: half a tile, so no hole is missed.
 const FLOOR_CHECK_STEP: float = 24.0
+## How near its post, in px, a demon walking back has to be to be there.
+const POST_REACH: float = 1.0
 
 @export var stats: DemonStats
+## Which way the demon faces at its post: where the level puts it looking, and where it looks again
+## once it is back.
+@export var faces_left: bool = false
 
 var _state: State = State.IDLE
 ## The man, while the demon chases him.
@@ -61,8 +72,6 @@ var _target_box: CollisionShape2D = null
 var _target_half_size: Vector2 = Vector2.ZERO
 ## The man's Hurtbox while the demon chases him, or null if he has none.
 var _target_hurtbox: Hurtbox = null
-## The man, while he is inside the sight area, seen or not.
-var _in_sight_area: Node2D = null
 ## The other demons inside the pack area: about on this one's floor, near enough to keep apart from.
 var _packmates: Array[Demon] = []
 ## Physics frames in a row the demon has chased the man without seeing him.
@@ -102,15 +111,14 @@ var _retreat_distance_draw: float = 0.0
 ## Physics frames the demon still waits, able to attack, before it may (Max Hesitation); -1 while it
 ## can't attack, so it draws a new wait as soon as it can.
 var _hesitation_frames_left: int = -1
+## Where along the floor the demon walks back to once it gives up: where the level put it, or where
+## its floor or a wall last stopped it on the way back.
+var _post_x: float = 0.0
 
-@onready var _sight_area: Area2D = %SightArea
-@onready var _sight_shape: CollisionShape2D = %SightShape
+@onready var _senses: DemonSenses = %Senses
 ## Finds the other demons within Pack Spacing of this one's body, to either side.
 @onready var _pack_area: Area2D = %PackArea
 @onready var _pack_shape: CollisionShape2D = %PackShape
-## Looks from the demon's eyes to the man's, at the same height on him, since both are about the
-## same size. Only the world blocks it: one-way platforms do not hide him.
-@onready var _line_of_sight: RayCast2D = %LineOfSight
 ## Looks down just ahead of the demon's front. With no floor within its length, the floor ends
 ## there.
 @onready var _ledge_check: RayCast2D = %LedgeCheck
@@ -133,8 +141,8 @@ func _ready() -> void:
 	_chase_speed_draw = _rng.randf_range(-1.0, 1.0)
 	_retreat_speed_draw = _rng.randf_range(-1.0, 1.0)
 	_retreat_distance_draw = _rng.randf_range(-1.0, 1.0)
-	_sight_area.body_entered.connect(_on_sight_area_body_entered)
-	_sight_area.body_exited.connect(_on_sight_area_body_exited)
+	_post_x = global_position.x
+	_facing = _post_facing()
 	_pack_area.body_entered.connect(_on_pack_area_body_entered)
 	_pack_area.body_exited.connect(_on_pack_area_body_exited)
 	_repellable.repelled.connect(_on_repellable_repelled)
@@ -169,6 +177,8 @@ func _physics_process(delta: float) -> void:
 			_physics_thrown()
 		State.STUNNED:
 			_physics_stunned()
+		State.RETURN:
+			_physics_return(delta)
 	_stop_at_the_man(delta)
 	move_and_slide()
 	_update_hitbox()
@@ -196,17 +206,75 @@ func _get_current_gravity() -> Vector2:
 
 func _physics_idle() -> void:
 	velocity.x = 0.0
-	if is_instance_valid(_in_sight_area) and _can_see(_in_sight_area):
-		_target = _in_sight_area
-		var target_body: CollisionObject2D = _target as CollisionObject2D
-		_target_box = target_body.shape_owner_get_owner(
-				target_body.get_shape_owners()[0]) as CollisionShape2D
-		_target_half_size = _target_box.shape.get_rect().size / 2.0
-		_target_hurtbox = _hurtbox_of(_target)
-		_target_last_x = _target.global_position.x
-		_target_speed = 0.0
-		_unseen_frames = 0
-		_change_state(State.CHASE)
+	_chase_if_it_notices_the_man()
+
+
+## Walks back to its post at Return Speed, facing the way it walks, and once there stands facing the
+## way it was put. The end of its floor or a wall of the world on the way stops it where it is, which
+## is its post from then on, so a demon thrown to another floor never stays trying to get back (ADR
+## 0032). In the air, it only falls.
+func _physics_return(delta: float) -> void:
+	if _chase_if_it_notices_the_man():
+		return
+	if not is_on_floor():
+		velocity.x = 0.0
+		return
+	var gap: float = _post_x - global_position.x
+	var direction: float = signf(gap)
+	if absf(gap) <= POST_REACH or _is_edge_ahead(direction) or _is_against_a_wall(direction):
+		_post_x = global_position.x
+		velocity.x = 0.0
+		_facing = _post_facing()
+		_change_state(State.IDLE)
+		return
+	_facing = direction
+	velocity.x = direction * minf(stats.return_speed, absf(gap) / delta)
+
+
+## Starts the chase when the man is inside the sight area and the demon notices him: sees him, and
+## he is not further behind it than Sight Behind Share of Sight Distance. With Chases Only On
+## Screen, only while it is on the screen. True when it started.
+func _chase_if_it_notices_the_man() -> bool:
+	var man: Node2D = _senses.get_man_in_sight_area()
+	if man == null or not _may_chase_from_here() or not _senses.can_notice(
+			man, _facing, stats.sight_distance * stats.sight_behind_share):
+		return false
+	_target = man
+	var target_body: CollisionObject2D = _target as CollisionObject2D
+	_target_box = target_body.shape_owner_get_owner(
+			target_body.get_shape_owners()[0]) as CollisionShape2D
+	_target_half_size = _target_box.shape.get_rect().size / 2.0
+	_target_hurtbox = _hurtbox_of(_target)
+	_target_last_x = _target.global_position.x
+	_target_speed = 0.0
+	_unseen_frames = 0
+	_change_state(State.CHASE)
+	return true
+
+
+## True when the last move left the demon against a wall of the world, a static body or tiles, going
+## in direction. A body that moves, such as the man's, does not count: it would make a post of a spot
+## that is free a moment later. Only read while it walks back, on the frames it touches a wall.
+func _is_against_a_wall(direction: float) -> bool:
+	if not is_on_wall():
+		return false
+	for index: int in get_slide_collision_count():
+		var collision: KinematicCollision2D = get_slide_collision(index)
+		var collider: Object = collision.get_collider()
+		if signf(collision.get_normal().x) == -direction \
+				and (collider is StaticBody2D or collider is TileMapLayer):
+			return true
+	return false
+
+
+## With Chases Only On Screen, only while the demon is on the screen; otherwise always.
+func _may_chase_from_here() -> bool:
+	return not stats.chases_only_on_screen or _senses.is_on_screen()
+
+
+## 1 for right and -1 for left: the way the demon faces at its post.
+func _post_facing() -> float:
+	return -1.0 if faces_left else 1.0
 
 
 func _physics_chase(delta: float) -> void:
@@ -316,8 +384,12 @@ func _physics_retreat() -> void:
 ## count, so a pause never shortens it.
 func _physics_repelled() -> void:
 	_state_frames += 1
-	if _state_frames >= stats.get_repelled_frames():
-		_change_state(State.CHASE if is_instance_valid(_target) else State.IDLE)
+	if _state_frames < stats.get_repelled_frames():
+		return
+	if is_instance_valid(_target):
+		_change_state(State.CHASE)
+	else:
+		_stand_or_return()
 
 
 ## Lies still for Stunned Time after landing from the man's throw (ADR 0028), and then backs off
@@ -338,13 +410,14 @@ func _track_target(delta: float) -> void:
 
 
 ## True while the man is still there to chase: not past Lose Distance, nor hidden by a wall for Give
-## Up Time. Otherwise the demon stops chasing him.
+## Up Time, and, with Chases Only On Screen, the demon still on the screen. Otherwise the demon stops
+## chasing him.
 func _keeps_after_target() -> bool:
-	if not is_instance_valid(_target) \
+	if not is_instance_valid(_target) or not _may_chase_from_here() \
 			or global_position.distance_to(_target.global_position) > stats.lose_distance:
 		_stop_chasing()
 		return false
-	_unseen_frames = 0 if _can_see(_target) else _unseen_frames + 1
+	_unseen_frames = 0 if _senses.can_see(_target) else _unseen_frames + 1
 	if _unseen_frames >= stats.get_give_up_frames():
 		_stop_chasing()
 		return false
@@ -423,7 +496,15 @@ func _stop_chasing() -> void:
 	_target_box = null
 	_target_hurtbox = null
 	velocity.x = 0.0
-	_change_state(State.IDLE)
+	_stand_or_return()
+
+
+## With Return Speed, walks back to its post; with none, or already there, stands where it is.
+func _stand_or_return() -> void:
+	if stats.return_speed > 0.0 and absf(_post_x - global_position.x) > POST_REACH:
+		_change_state(State.RETURN)
+	else:
+		_change_state(State.IDLE)
 
 
 ## Never steps into the man's body from the side while their bodies collide. The man moves before
@@ -521,14 +602,6 @@ func _hurtbox_of(man: Node2D) -> Hurtbox:
 	return null
 
 
-## True when no wall stands between the demon's eyes and the man's.
-func _can_see(man: Node2D) -> bool:
-	_line_of_sight.target_position = _line_of_sight.to_local(
-			man.global_position + _line_of_sight.position)
-	_line_of_sight.force_raycast_update()
-	return not _line_of_sight.is_colliding()
-
-
 ## True when the floor ends just ahead of the demon's front, going in direction.
 func _is_edge_ahead(direction: float) -> bool:
 	return not _has_floor_at(_ledge_reach * direction)
@@ -544,7 +617,7 @@ func _has_floor_at(offset_x: float) -> bool:
 ## The pack area reaches a body width and Pack Spacing past this demon's body, so it finds a demon
 ## as soon as its body is that near.
 func _apply_stats() -> void:
-	(_sight_shape.shape as CircleShape2D).radius = stats.sight_distance
+	_senses.set_sight_distance(stats.sight_distance)
 	(_pack_shape.shape as RectangleShape2D).size = Vector2(
 			2.0 * (3.0 * _half_size.x + stats.pack_spacing), 2.0 * _half_size.y)
 
@@ -573,15 +646,6 @@ func _update_hitbox() -> void:
 		_hitbox.knockback_distance = _attack.knockback_distance
 		_hitbox.knockback_height = _attack.knockback_height
 		_hitbox.activate()
-
-
-func _on_sight_area_body_entered(body: Node2D) -> void:
-	_in_sight_area = body
-
-
-func _on_sight_area_body_exited(body: Node2D) -> void:
-	if body == _in_sight_area:
-		_in_sight_area = null
 
 
 func _on_pack_area_body_entered(body: Node2D) -> void:

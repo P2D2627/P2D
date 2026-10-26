@@ -153,6 +153,7 @@ func _spawn_demons(count: int) -> Array[Demon]:
 		var side: float = 1.0 if index % 2 == 0 else -1.0
 		var distance: float = lerpf(NEAREST, FARTHEST, float(index) / count)
 		var demon: Demon = DEMON_SCENE.instantiate() as Demon
+		demon.faces_left = side > 0.0
 		demon.position = FLOOR_START + Vector2(side * distance, 0.0)
 		demon.state_changed.connect(_on_demon_state_changed)
 		root.add_child(demon)

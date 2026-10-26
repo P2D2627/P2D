@@ -19,6 +19,19 @@ extends Resource
 @export_range(0.0, 3000.0, 10.0, "suffix:px") var lose_distance: float = 720.0
 ## Seconds the demon keeps chasing a man it cannot see, behind a wall, before it gives up.
 @export_range(0.0, 10.0, 0.1, "suffix:s") var give_up_time: float = 1.5
+## The share of Sight Distance the demon sees behind it, the way it does not face: at 1 it sees as
+## far all round; lower, the man can get past at its back.
+@export_range(0.0, 1.0, 0.05) var sight_behind_share: float = 1.0
+## On, the demon starts a chase only while its body is on the screen, and gives up as soon as it is
+## off it, so no demon the player cannot see comes after him (ADR 0032). With no camera, as in the
+## tests, all of the world counts as on the screen.
+@export var chases_only_on_screen: bool = false
+
+@export_group("Post")
+## Speed, in px/s, at which the demon walks back to its post, where it was put in the level, once it
+## gives up. At 0 it stays where it gave up. If the end of its floor or a wall stops it on the way,
+## as when a throw took it to another floor, where it stops is its post from then on (ADR 0032).
+@export_range(0.0, 1000.0, 10.0, "suffix:px/s") var return_speed: float = 0.0
 
 @export_group("Chase")
 ## Speed, in px/s, at which the demon drags itself towards the man. Below the man's running speed,

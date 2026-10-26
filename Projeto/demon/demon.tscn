@@ -6,6 +6,7 @@
 [ext_resource type="PackedScene" path="res://components/repellable.tscn" id="4_repellable"]
 [ext_resource type="PackedScene" path="res://components/hitbox.tscn" id="5_hitbox"]
 [ext_resource type="Script" path="res://components/sinking_drawing.gd" id="6_sinking_drawing"]
+[ext_resource type="Script" path="res://demon/demon_senses.gd" id="7_senses"]
 
 [sub_resource type="RectangleShape2D" id="RectangleShape2D_body"]
 size = Vector2(48, 96)
@@ -68,6 +69,14 @@ position = Vector2(0, -48)
 enabled = false
 target_position = Vector2(0, 0)
 collision_mask = 1
+
+[node name="Senses" type="Node" parent="." node_paths=PackedStringArray("sight_area", "sight_shape", "line_of_sight", "body_box")]
+unique_name_in_owner = true
+script = ExtResource("7_senses")
+sight_area = NodePath("../SightArea")
+sight_shape = NodePath("../SightArea/SightShape")
+line_of_sight = NodePath("../LineOfSight")
+body_box = NodePath("../CollisionShape2D")
 
 [node name="LedgeCheck" type="RayCast2D" parent="."]
 unique_name_in_owner = true
