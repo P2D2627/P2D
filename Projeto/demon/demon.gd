@@ -249,6 +249,12 @@ func may_chase_from_here() -> bool:
 	return not stats.chases_only_on_screen or _senses.is_on_screen()
 
 
+## For its states: what keeps a chase or a search going. With Chases Only On Screen, only while the
+## demon is no further off the screen than Screen Margin; otherwise always (ADR 0038).
+func may_keep_on_from_here() -> bool:
+	return not stats.chases_only_on_screen or _senses.is_on_screen(stats.screen_margin)
+
+
 ## For its states: 1 for right and -1 for left, the way the demon faces at its post.
 func post_facing() -> float:
 	return -1.0 if faces_left else 1.0
@@ -352,12 +358,12 @@ func has_target() -> bool:
 
 
 ## For its states: true while the man is still there to chase, not past Lose Distance, nor hidden
-## by a wall for Give Up Time, and, with Chases Only On Screen, the demon still on the screen.
-## Otherwise the demon stops chasing him; hidden by a wall, with Search Time, it goes to look for
-## him where it last saw him (ADR 0035).
+## by a wall for Give Up Time, and, with Chases Only On Screen, the demon no further off the screen
+## than Screen Margin. Otherwise the demon stops chasing him; hidden by a wall, with Search Time, it
+## goes to look for him where it last saw him (ADR 0035).
 func keeps_after_target() -> bool:
 	var man: Node2D = _target.get_man()
-	if not _target.has_man() or not may_chase_from_here() \
+	if not _target.has_man() or not may_keep_on_from_here() \
 			or global_position.distance_to(man.global_position) > stats.lose_distance:
 		_stop_chasing()
 		return false
@@ -437,16 +443,19 @@ func _varied(draw: float) -> float:
 
 
 ## With Pack Spacing, the nearest other demon between this one and the man, gap px away along the
-## floor, that is not backing off from him; otherwise null. A demon past the man is on his other
-## side, not between, so two demons can come at him from both sides. Every demon is this scene, so
-## their bodies are the same size. Of two on one spot, the one put in the scene first is ahead.
+## floor, that is after him and not backing off from him; otherwise null. One that stands, patrols,
+## walks back or searches is not after him, so it never holds back a chase. A demon past the man is
+## on his other side, not between, so two demons can come at him from both sides. Every demon is
+## this scene, so their bodies are the same size. Of two on one spot, the one put in the scene first
+## is ahead.
 func _packmate_ahead(gap: float) -> Demon:
 	if stats.pack_spacing <= 0.0:
 		return null
 	var nearest: Demon = null
 	var nearest_apart: float = INF
 	for mate: Demon in _packmates:
-		if not is_instance_valid(mate) or mate.get_state() == State.RETREAT:
+		if not is_instance_valid(mate) or not mate.has_target() \
+				or mate.get_state() == State.RETREAT:
 			continue
 		var apart: float = mate.global_position.x - global_position.x
 		var is_ahead: bool = absf(apart) < absf(gap) and (signf(apart) == signf(gap)
@@ -455,6 +464,27 @@ func _packmate_ahead(gap: float) -> Demon:
 			nearest = mate
 			nearest_apart = absf(apart)
 	return nearest
+
+
+## For its states: with Pack Spacing, how far, in px, this demon can walk towards a spot gap px away
+## along the floor before it is Pack Spacing behind the body of the nearest other searching demon
+## that way, or 0 if it already is; with none, INF. So two demons that search one spot sniff side by
+## side, not one on top of the other. Of two on one spot, the one put in the scene first is ahead.
+## Only x counts, as in the chase: a searching demon on a ledge just above, inside the pack area,
+## holds it back too.
+func room_behind_a_searching_packmate(gap: float) -> float:
+	var room: float = INF
+	if stats.pack_spacing <= 0.0:
+		return room
+	for mate: Demon in _packmates:
+		if not is_instance_valid(mate) or mate.get_state() != State.SEARCH:
+			continue
+		var apart: float = mate.global_position.x - global_position.x
+		var is_ahead: bool = signf(apart) == signf(gap) if apart != 0.0 \
+				else mate.get_instance_id() < get_instance_id()
+		if is_ahead:
+			room = minf(room, maxf(absf(apart) - 2.0 * _half_size.x - stats.pack_spacing, 0.0))
+	return room
 
 
 func _stop_chasing() -> void:

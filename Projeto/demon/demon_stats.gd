@@ -39,6 +39,10 @@ extends Resource
 ## off it, so no demon the player cannot see comes after him (ADR 0032). With no camera, as in the
 ## tests, all of the world counts as on the screen.
 @export var chases_only_on_screen: bool = false
+## With Chases Only On Screen, how far off the screen, in px, a demon after the man or searching for
+## him still goes on. It starts a chase only on the screen but gives up only past this, so a demon by
+## the edge of the screen never keeps switching between the chase and the walk back (ADR 0038).
+@export_range(0.0, 960.0, 8.0, "suffix:px") var screen_margin: float = 0.0
 
 @export_group("Post")
 ## Speed, in px/s, at which the demon walks back to its post, where it was put in the level, once it

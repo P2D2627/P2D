@@ -27,6 +27,7 @@ alert_time = 0.3
 search_time = 2.5
 sight_behind_share = 0.2
 chases_only_on_screen = true
+screen_margin = 160.0
 return_speed = 200.0
 patrol_width = 480.0
 attacks = Array[ExtResource("2_attack")]([SubResource("Resource_bite"), SubResource("Resource_lunge")])

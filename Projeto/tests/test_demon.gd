@@ -297,6 +297,9 @@ const STUNNED_TIME: float = 1.2
 const LOW_WALL_TOP: float = -60.0
 ## The share of Sight Distance the cases' demons see behind them: 120 px, short of SEEN_X.
 const BEHIND_SHARE: float = 0.25
+const NO_SIGHT_BEHIND: float = 0.0
+## In the case of the screen's edge (ADR 0038): how far off the screen a chase goes on.
+const SCREEN_MARGIN: float = 160.0
 ## Return Speed of the cases' demons that walk back to their post: slower than Chase Speed.
 const RETURN_SPEED: float = 150.0
 ## Physics frames the walk back is measured over, and how far, in px/s, its speed may be from Return
@@ -373,6 +376,7 @@ func _initialize() -> void:
 	results.append(await _gives_up_when_a_wall_hides_the_man())
 	results.append(await _seeing_the_man_again_starts_give_up_time_over())
 	results.append(await _lets_go_of_a_man_who_is_freed())
+	results.append(await _a_man_freed_while_it_warns_waits_or_holds_leaves_it_standing())
 	results.append(await _warns_inside_lunge_range_then_lunges())
 	results.append(await _lunge_rises_lunge_height_and_lands_lunge_distance_away())
 	results.append(await _a_quick_lunge_keeps_its_height_and_distance_in_less_time())
@@ -415,6 +419,7 @@ func _initialize() -> void:
 	results.append(await _a_demon_stepping_back_to_pack_spacing_stops_at_an_edge())
 	results.append(await _two_demons_that_bite_both_keep_biting_and_cross_only_while_one_backs_off())
 	results.append(await _a_demon_past_the_man_never_keeps_another_from_biting_him())
+	results.append(await _a_demon_not_after_the_man_never_holds_back_one_that_chases_him())
 	results.append(await _the_pack_area_follows_pack_spacing_at_once())
 	results.append(await _with_pack_variation_each_demon_has_its_own_speeds_and_retreat_distance())
 	results.append(await _warns_of_no_attack_while_the_man_is_invulnerable())
@@ -441,6 +446,7 @@ func _initialize() -> void:
 	results.append(await _sees_behind_it_only_its_behind_share())
 	results.append(await _starts_no_chase_off_the_screen())
 	results.append(await _gives_up_once_it_is_off_the_screen())
+	results.append(await _keeps_chasing_inside_screen_margin_and_starts_only_on_the_screen())
 	results.append(await _walks_back_to_its_post_at_return_speed_once_it_gives_up())
 	results.append(await _walking_back_it_chases_a_man_it_sees_ahead())
 	results.append(await _on_another_floor_its_post_is_where_its_floor_stops_it())
@@ -464,6 +470,7 @@ func _initialize() -> void:
 	results.append(await _with_search_time_only_a_wall_makes_it_search())
 	results.append(await _searching_it_is_alerted_by_a_man_it_sees_again())
 	results.append(await _searching_off_the_screen_it_walks_back())
+	results.append(await _two_demons_searching_one_spot_sniff_pack_spacing_apart())
 	results.append(_is_on_the_enemy_layer_and_looks_only_for_the_player())
 	results.append(_the_level_s_values_keep_what_the_levels_count_on())
 	results.append(_the_level_s_demons_back_off_past_bite_range_slower_than_they_chase())
@@ -650,6 +657,45 @@ func _lets_go_of_a_man_who_is_freed() -> bool:
 
 ## The man on the same floor: once he is inside Lunge Range, the demon stops and warns, crouched and
 ## recoloured, for Warning Time, and then lunges, back in its own shape and colour.
+## A man freed, as on a respawn, while a demon warns of a lunge at him, waits out of its reach, or
+## holds him in its bite: each time the demon lets go of him and stands, with no lunge at where he
+## was and no hold on nothing.
+func _a_man_freed_while_it_warns_waits_or_holds_leaves_it_standing() -> bool:
+	var ground: StaticBody2D = make_platform(FLOOR_LEFT, FLOOR_RIGHT)
+	var warning_changes: Array[Vector2i] = []
+	var man: Player = await spawn_on_floor(Vector2(SEEN_X, SPAWN_Y))
+	var demon: Demon = await _spawn_demon(0.0, LUNGE_RANGE, warning_changes)
+	var warned: bool = await _is_in_state_within(demon, Demon.State.WARNING, MAX_FRAMES)
+	var from: int = warning_changes.size()
+	await remove_player(man)
+	var after_warning: bool = await _is_in_state_within(demon, Demon.State.IDLE, MAX_FRAMES)
+	var lunged: bool = warning_changes.slice(from).any(
+			func(change: Vector2i) -> bool: return change.x == Demon.State.LUNGE)
+	await _clear([demon])
+	var ledge: StaticBody2D = make_platform(HIGH_LEDGE_LEFT, FLOOR_RIGHT, -HIGH_LEDGE_HEIGHT)
+	demon = await _spawn_demon(0.0, NO_LUNGE)
+	man = await spawn_on_floor(Vector2(-SEEN_X, SPAWN_Y))
+	var chased: bool = await _chases_within(demon, FRAMES_TO_WATCH)
+	man.position = Vector2(OUT_OF_REACH_X, SPAWN_Y - HIGH_LEDGE_HEIGHT)
+	var waiting: bool = await _is_in_state_within(demon, Demon.State.OUT_OF_REACH, MAX_FRAMES)
+	await remove_player(man)
+	var after_waiting: bool = await _is_in_state_within(demon, Demon.State.IDLE, MAX_FRAMES)
+	await _clear([ledge, demon])
+	man = await _man_a_bite_grabs()
+	demon = await _spawn_demon(0.0, LUNGE_RANGE, [], true)
+	_make_it_back_off(demon)
+	var grabbed: bool = await _is_in_state_within(demon, Demon.State.GRAB, MAX_FRAMES)
+	await remove_player(man)
+	var after_holding: bool = await _is_in_state_within(demon, Demon.State.IDLE, MAX_FRAMES)
+	var state: Demon.State = demon.get_state()
+	await _clear([ground, demon])
+	return report(warned and after_warning and not lunged and chased and waiting and after_waiting
+			and grabbed and after_holding,
+			"The man freed: while it warned %s, stands %s, lunged %s; while it waited out of reach %s, stands %s; while it held him %s, stands %s (in %s)"
+			% [warned, after_warning, lunged, waiting, after_waiting, grabbed, after_holding,
+					_name_of(state)])
+
+
 func _warns_inside_lunge_range_then_lunges() -> bool:
 	var ground: StaticBody2D = make_platform(FLOOR_LEFT, FLOOR_RIGHT)
 	var man: Player = await spawn_on_floor(Vector2(SEEN_X, SPAWN_Y))
@@ -1611,6 +1657,29 @@ func _a_demon_behind_another_lunges_over_it() -> bool:
 					_names_of(changes), lunged_behind_by, over_it])
 
 
+## A demon standing between the man and one that chases him, facing away from him and seeing
+## nothing behind it, never notices him: the one that chases him goes past it to his spot, since only
+## a demon after the man holds back another.
+func _a_demon_not_after_the_man_never_holds_back_one_that_chases_him() -> bool:
+	var ground: StaticBody2D = make_platform(FLOOR_LEFT, FLOOR_RIGHT)
+	var changes: Array[Vector2i] = []
+	var standing: Demon = await _spawn_demon(0.0, NO_LUNGE, changes, false, [], true)
+	standing.stats.sight_behind_share = NO_SIGHT_BEHIND
+	var chasing: Demon = await _spawn_demon(-SECOND_DEMON_BEHIND, NO_LUNGE)
+	for demon: Demon in [standing, chasing]:
+		_make_it_keep_apart(demon)
+	var man: Player = await spawn_on_floor(Vector2(SEEN_X, SPAWN_Y))
+	var chased: bool = await _chases_within(chasing, FRAMES_TO_WATCH)
+	var got_to_him: bool = await wait_until(
+			func() -> bool: return absf(man.position.x - chasing.position.x) <= TOLERANCE,
+			FRAMES_TO_WATCH)
+	var past: float = chasing.position.x - standing.position.x
+	await _clear([ground, man, standing, chasing])
+	return report(chased and got_to_him and changes.is_empty(),
+			"A demon chasing the man past one that stands facing away: got to his spot %s, %.1f px past it; the one standing changed state %s"
+			% [got_to_him, past, _names_of(changes)])
+
+
 ## A demon put with its body inside that of one at a man's side, as after crossing it on the way
 ## back, neither with attacks: it steps back, facing the man, until it is Pack Spacing behind the
 ## other's body.
@@ -2403,20 +2472,21 @@ func _the_level_s_throw_never_lands_a_demon_on_a_step() -> bool:
 			"Level values: thrown %d px up at most (a step is %d)" % [demon_stats.throw_height, TILE])
 
 
-## The level's demons chase only on the screen, see the man from anywhere on it to its middle, see
-## less behind them than ahead, and walk back to their post slower than they chase, so a demon going
-## back never reads as one coming at him (ADR 0032).
+## The level's demons chase only on the screen, give up only some way off it (ADR 0038), see the man
+## from anywhere on it to its middle, see less behind them than ahead, and walk back to their post
+## slower than they chase, so a demon going back never reads as one coming at him (ADR 0032).
 func _the_level_s_demons_chase_on_screen_and_walk_back_slower_than_they_chase() -> bool:
 	var demon_stats: DemonStats = load(LUST_DEMON_STATS) as DemonStats
 	var half_screen: float = ProjectSettings.get_setting("display/window/size/viewport_width") / 2.0
 	var walks_back: bool = demon_stats.return_speed > 0.0 \
 			and demon_stats.return_speed < demon_stats.chase_speed
-	return report(demon_stats.chases_only_on_screen and demon_stats.sight_distance >= half_screen
+	return report(demon_stats.chases_only_on_screen and demon_stats.screen_margin > 0.0
+			and demon_stats.sight_distance >= half_screen
 			and demon_stats.sight_behind_share < 1.0 and walks_back,
-			"Level values: only on the screen %s, sees %d px (half the screen is %d), %.2f of it behind; walks back at %d px/s, chases at %d"
-			% [demon_stats.chases_only_on_screen, demon_stats.sight_distance, half_screen,
-					demon_stats.sight_behind_share, demon_stats.return_speed,
-					demon_stats.chase_speed])
+			"Level values: only on the screen %s, give up %d px off it, sees %d px (half the screen is %d), %.2f of it behind; walks back at %d px/s, chases at %d"
+			% [demon_stats.chases_only_on_screen, demon_stats.screen_margin,
+					demon_stats.sight_distance, half_screen, demon_stats.sight_behind_share,
+					demon_stats.return_speed, demon_stats.chase_speed])
 
 
 ## The level's demons patrol, slower than they chase, so a demon is never found standing as if
@@ -2608,6 +2678,35 @@ func _gives_up_once_it_is_off_the_screen() -> bool:
 	await _clear([ground, man, demon, camera])
 	return report(chased and gave_up and not chased_again,
 			"Chasing, then off the screen: gave up %s, chased again %s" % [gave_up, chased_again])
+
+
+## With Chases Only On Screen and Screen Margin, a demon that chases the man keeps on just off the
+## screen, inside Screen Margin, and gives up past it. Back inside Screen Margin but still off the
+## screen, it does not chase him again; on the screen, it does (ADR 0038).
+func _keeps_chasing_inside_screen_margin_and_starts_only_on_the_screen() -> bool:
+	var ground: StaticBody2D = make_platform(FLOOR_LEFT, FLOOR_RIGHT)
+	var demon: Demon = await _spawn_demon(0.0, NO_LUNGE)
+	demon.stats.chases_only_on_screen = true
+	demon.stats.screen_margin = SCREEN_MARGIN
+	var camera: Camera2D = _make_camera(0.0)
+	var man: Player = await spawn_on_floor(Vector2(SEEN_X, SPAWN_Y))
+	var chased: bool = await wait_until(
+			func() -> bool: return absf(man.position.x - demon.position.x) <= STILL_TOLERANCE,
+			FRAMES_TO_WATCH)
+	var inside_margin: float = demon.position.x + _half_width(demon) + SCREEN_MARGIN / 2.0 \
+			+ _screen_width() / 2.0
+	camera.position.x = inside_margin
+	var gave_up_inside: bool = await _is_in_state_within(demon, Demon.State.IDLE, FRAMES_TO_WATCH)
+	camera.position.x = inside_margin + SCREEN_MARGIN
+	var gave_up_past: bool = await _is_in_state_within(demon, Demon.State.IDLE, SETTLE_FRAMES)
+	camera.position.x = inside_margin
+	var chased_inside: bool = await _chases_within(demon, FRAMES_TO_WATCH)
+	camera.position.x = 0.0
+	var chased_on: bool = await _chases_within(demon, FRAMES_TO_WATCH)
+	await _clear([ground, man, demon, camera])
+	return report(chased and not gave_up_inside and gave_up_past and not chased_inside and chased_on,
+			"Screen Margin %d: chasing, then off the screen inside it: gave up %s; past it: gave up %s; back inside it: chased %s; on the screen: chased %s"
+			% [SCREEN_MARGIN, gave_up_inside, gave_up_past, chased_inside, chased_on])
 
 
 ## With Return Speed, a demon put facing left that gives up on a man on its left walks back to its
@@ -3175,6 +3274,41 @@ func _searching_off_the_screen_it_walks_back() -> bool:
 	await _clear([ground, wall, man, demon, camera])
 	return report(chased and searching and walks_back,
 			"Searching %s, then off the screen: walks back %s" % [searching, walks_back])
+
+
+## Two demons, one Pack Spacing behind the other, chase the man until a wall hides him: both search
+## where they last saw him, and the second sniffs Pack Spacing behind the first's body instead of
+## walking on into it.
+func _two_demons_searching_one_spot_sniff_pack_spacing_apart() -> bool:
+	var ground: StaticBody2D = make_platform(FLOOR_LEFT, FLOOR_RIGHT)
+	var wall: StaticBody2D = make_wall(HIDING_WALL_X, HIDING_WALL_X + WALL_THICKNESS, WALL_TOP)
+	var front: Demon = await _spawn_demon(0.0, NO_LUNGE)
+	var back: Demon = await _spawn_demon(-SECOND_DEMON_BEHIND, NO_LUNGE)
+	for demon: Demon in [front, back]:
+		_make_it_search(demon)
+		_make_it_keep_apart(demon)
+	var man: Player = await spawn_on_floor(Vector2(SEEN_X, SPAWN_Y))
+	var got_to_him: bool = await wait_until(
+			func() -> bool: return absf(man.position.x - front.position.x) <= TOLERANCE,
+			FRAMES_TO_WATCH)
+	man.position.x = HIDDEN_X
+	var both_search: Callable = func() -> bool:
+		return front.get_state() == Demon.State.SEARCH and back.get_state() == Demon.State.SEARCH
+	var searching: bool = await wait_until(both_search,
+			front.stats.get_give_up_frames() + SETTLE_FRAMES)
+	var closest: Array[float] = [INF]
+	await wait_until(
+			func() -> bool:
+				if not both_search.call():
+					return true
+				closest[0] = minf(closest[0], absf(front.position.x - back.position.x))
+				return false,
+			front.stats.get_search_frames() + SETTLE_FRAMES)
+	var apart: float = _body_width(front) + PACK_SPACING
+	await _clear([ground, wall, man, front, back])
+	return report(got_to_him and searching and closest[0] >= apart - CONTACT_TOLERANCE,
+			"Two demons searching one spot %s: never nearer than %.1f px (body %d + Pack Spacing %d)"
+			% [searching, closest[0], apart - PACK_SPACING, PACK_SPACING])
 
 
 ## The demon's body is on the enemy layer and collides with the world, one-way platforms and the

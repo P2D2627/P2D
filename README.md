@@ -259,7 +259,9 @@ de diferença):
 
 Em grupo, cada demónio decide sozinho, mas o conjunto lê-se como uma matilha:
 
-- um demónio atrás de outro fica a 24 px dele e ataca dali, saltando-lhe por cima. Os corpos dos
+- um demónio atrás de outro fica a 24 px dele e ataca dali, saltando-lhe por cima. Só conta um
+  demónio que também persegue a personagem, incluindo um em alerta ou à espera fora do alcance: um
+  parado, em ronda, a voltar ou a procurar não trava os outros. Dois que a procurem no mesmo sítio farejam à mesma distância um do outro. Os corpos dos
   demónios não colidem entre si, para que não tremam nem se bloqueiem;
 - cada um persegue e recua ao seu ritmo, até 10 % acima ou abaixo dos valores, para que nunca se
   movam em uníssono;
@@ -1363,6 +1365,22 @@ não é esta cena com a perseguição desligada.
   ordem. Só uma parede leva à procura; longe demais, fora do ecrã ou com a personagem morta, o
   demónio desiste como antes. Com Alert Time e Search Time a 0, o demónio comporta-se como antes,
   e é assim que os casos antigos do `test_demon.gd` o usam.
+- **Borda do ecrã, matilha e personagem destruída (ADR 0038).** Três correções ao comportamento dos
+  passos anteriores. Com um único limite para começar e para continuar a perseguição, um demónio na
+  borda do ecrã alternava entre perseguir e voltar ao posto. Agora começa a perseguir apenas dentro
+  do ecrã, e só desiste quando está a mais de Screen Margin (160 px) fora dele. Um tempo de espera
+  depois de desistir ficou de lado, porque deixaria no ecrã um demónio a ignorar a personagem.
+  Um demónio parado, em ronda, a voltar ou a procurar, entre outro e a personagem, travava a
+  perseguição desse outro, e dois a procurar no mesmo sítio ficavam um em cima do outro (ver a
+  matilha, acima). Com a personagem destruída, como num recomeço que a substitua por uma nova, um
+  demónio a meio do aviso saltava para onde ela estivera, e um que a agarrava ficava preso no
+  agarrão. Agora larga-a e fica no sítio, ou volta ao posto. Hoje, o recomeço recarrega o nível e
+  liberta também os demónios, por isso esta correção protege o caso futuro de um recomeço que
+  substitua apenas a personagem; fica nos estados, e não no código do agarrão, para não alterar o
+  combate. Custo, com 50 demónios a perseguir, em
+  duas execuções alternadas com a versão anterior: o tempo dos scripts passou de cerca de 0,95 ms
+  para 1,03 ms em média, dentro do orçamento, e o pior passo chegou a 1,92 ms, perto dos 2 ms. A
+  ronda não mudou.
 
 Antes de decidir se a perseguição precisava de ser otimizada, fixaram-se dois limites para 50
 demónios a perseguir ao mesmo tempo, muitos mais do que um ecrã terá: um limite para a média por
@@ -1489,13 +1507,17 @@ antes, o demónio corria até ao degrau; agora para onde a vê. Com o alerta e a
 para virado para ela durante o alerta e só depois a persegue, que a larga se ela morrer a meio,
 que vai à velocidade certa até onde a viu pela última vez, fareja ali o tempo certo virando-se para
 os dois lados e depois volta ao posto, que fica alerta se a vir durante a procura, que desiste da
-procura fora do ecrã e que, perdida de outra forma que não por uma parede, nunca a procura. São
-112 casos. Todos menos os sete
+procura fora do ecrã e que, perdida de outra forma que não por uma parede, nunca a procura. Com o
+ADR 0038, verifica que um demónio que não persegue a personagem não trava outro que a persegue, que
+dois a procurar no mesmo sítio ficam à distância de matilha, que a perseguição continua dentro da
+margem do ecrã, acaba depois dela e não recomeça fora do ecrã, e que a personagem destruída a meio
+do aviso, fora do alcance ou no agarrão deixa o demónio parado, sem saltar. São 116 casos. Todos
+menos os sete
 últimos usam valores próprios, pelo que afinar o `.tres` não os altera. Os sete últimos leem o
 `.tres` do nível 1 e
 confirmam o que o desenho dos níveis assume: cada ataque com uma das animações da arte, os saltos e a diferença
 de altura para atacar abaixo de um tile (48 px), o Lose Distance acima do Sight Distance e a
-perseguição mais lenta do que a corrida da personagem, e a regra do ecrã ligada, a visão de pelo
+perseguição mais lenta do que a corrida da personagem, e a regra do ecrã ligada, com margem, a visão de pelo
 menos meio ecrã, menos alcance para trás do que para a frente e o regresso mais lento do que a
 perseguição, para que um demónio a voltar nunca pareça vir na direção dela, e a ronda ligada e mais
 lenta do que a perseguição, com um degrau de um tile fora do alcance, e o alerta ligado, com o

@@ -59,14 +59,14 @@ func can_notice(man: Node2D, facing: float, behind_reach: float) -> bool:
 	return behind <= behind_reach and can_see(man)
 
 
-## True while some of the demon's body is on the screen, with the camera's zoom; with no camera, as
-## in the tests, all of the world counts as on it.
-func is_on_screen() -> bool:
+## True while some of the demon's body is on the screen, with the camera's zoom, or no further off
+## it than margin px; with no camera, as in the tests, all of the world counts as on it.
+func is_on_screen(margin: float = 0.0) -> bool:
 	var viewport: Viewport = get_viewport()
 	if viewport.get_camera_2d() == null:
 		return true
 	var screen: Rect2 = viewport.get_canvas_transform().affine_inverse() * viewport.get_visible_rect()
-	return screen.intersects(Rect2(body_box.global_position - _body_half_size,
+	return screen.grow(margin).intersects(Rect2(body_box.global_position - _body_half_size,
 			2.0 * _body_half_size))
 
 
