@@ -17,8 +17,17 @@ extends Resource
 ## How far, in px, the man has to get for the demon to stop chasing him at once. Above Sight
 ## Distance, so a man right at the edge does not start and stop the chase every frame.
 @export_range(0.0, 3000.0, 10.0, "suffix:px") var lose_distance: float = 720.0
-## Seconds the demon keeps chasing a man it cannot see, behind a wall, before it gives up.
+## Seconds the demon keeps chasing a man it cannot see, behind a wall, before it gives up, or with
+## Search Time goes to look for him where it last saw him.
 @export_range(0.0, 10.0, 0.1, "suffix:s") var give_up_time: float = 1.5
+## Seconds the demon stands, turned to the man, once it notices him and before it chases him: the
+## alert, which the art and the sounds show with a bark (ADR 0035). At 0 it chases him at once.
+@export_range(0.0, 2.0, 0.05, "suffix:s") var alert_time: float = 0.0
+## Seconds the demon sniffs where it last saw the man, turning round halfway, once a wall has hidden
+## him for Give Up Time; then it gives up (ADR 0035). At 0 it gives up at once.
+@export_range(0.0, 10.0, 0.1, "suffix:s") var search_time: float = 0.0
+## Speed, in px/s, at which it walks to where it last saw the man: slower than the chase.
+@export_range(10.0, 1000.0, 10.0, "suffix:px/s") var search_speed: float = 300.0
 ## Seconds the demon stands facing a man out of its reach before it gives up (ADR 0033): him on a
 ## floor or a wall higher above or lower below its own than the Max Height Difference of any of its
 ## attacks. It never follows him along under him or over him.
@@ -129,6 +138,16 @@ func get_throw_velocity() -> Vector2:
 ## give_up_time in whole physics frames, rounded to the nearest one.
 func get_give_up_frames() -> int:
 	return _to_frames(give_up_time)
+
+
+## alert_time in whole physics frames, rounded to the nearest one.
+func get_alert_frames() -> int:
+	return _to_frames(alert_time)
+
+
+## search_time in whole physics frames, rounded to the nearest one.
+func get_search_frames() -> int:
+	return _to_frames(search_time)
 
 
 ## out_of_reach_wait in whole physics frames, rounded to the nearest one.

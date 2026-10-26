@@ -30,8 +30,11 @@
 # does not count, so a jump never stops the chase. With Patrol Width it walks to and fro across it
 # at Patrol Speed, pausing at each end within Patrol Pause Min and Max, turns back at an edge and at
 # a step, stands still off the screen, pauses apart from another demon, chases a man it notices on
-# the way, and patrols again once back at its post. Its body and the man's stop each other at the side, also in a
-# lunge. With a bite before the lunge, it bites a man right by it on the run, with the bite's own
+# the way, and patrols again once back at its post. With Alert Time it stands turned to a man it
+# notices for that long before it chases him, and lets go of one freed meanwhile; with Search Time,
+# once a wall hides him, it sniffs where it last saw him and then walks back, is alerted by him
+# again if it sees him on the way, and walks back once off the screen; lost any other way, it never
+# searches (ADR 0035). Its body and the man's stop each other at the side, also in a lunge. With a bite before the lunge, it bites a man right by it on the run, with the bite's own
 # warning and shape, with no pounce and never past him, and still lunges at one past Bite Range;
 # with no chance for the lunge, it runs on and bites him instead, then chases on with no attack for
 # the bite's Recover Time; and the chance per second comes to the same at any frame rate. Its Hitbox
@@ -61,7 +64,7 @@
 # see only how the demon chases and aims; the cases where a bite lands and those of his body turn
 # them on. Each demon gets its own DemonStats with the values below and its attacks, the lunge, or a
 # bite and then the lunge, backs off only in the cases of the retreat, and keeps apart or varies
-# only in those of the pack, so the .tres can be tuned without breaking the test; only the last five
+# only in those of the pack, so the .tres can be tuned without breaking the test; only the last seven
 # cases read the .tres, to check that its values keep what the levels count on.
 # Run from the repository root; the exit code is 0 on pass and 1 on fail:
 # godot --headless --fixed-fps 60 --path Projeto --script res://tests/test_demon.gd
@@ -350,6 +353,12 @@ const LEAST_SET_OFFS: int = 3
 ## In the case of two demons on patrol, how far apart they are put: out of each other's way.
 const PATROL_APART: float = 600.0
 const PATROL_SEED: int = 33
+## The cases of the alert and the search (ADR 0035): how long the demon stands alerted, 18 frames;
+## how long it sniffs where it last saw the man, 60 frames, longer than Give Up Time; and how fast
+## it walks there, slower than it chases.
+const ALERT_TIME: float = 0.3
+const SEARCH_TIME: float = 1.0
+const SEARCH_SPEED: float = 200.0
 
 
 func _initialize() -> void:
@@ -449,6 +458,12 @@ func _initialize() -> void:
 	results.append(await _two_demons_on_patrol_never_set_off_together())
 	results.append(await _patrolling_it_chases_a_man_it_sees_ahead())
 	results.append(await _back_at_its_post_it_patrols_again())
+	results.append(await _with_alert_time_it_stands_turned_to_the_man_then_chases())
+	results.append(await _alerted_it_lets_go_of_a_man_who_is_freed())
+	results.append(await _with_search_time_it_sniffs_where_it_last_saw_the_man_then_walks_back())
+	results.append(await _with_search_time_only_a_wall_makes_it_search())
+	results.append(await _searching_it_is_alerted_by_a_man_it_sees_again())
+	results.append(await _searching_off_the_screen_it_walks_back())
 	results.append(_is_on_the_enemy_layer_and_looks_only_for_the_player())
 	results.append(_the_level_s_values_keep_what_the_levels_count_on())
 	results.append(_the_level_s_demons_back_off_past_bite_range_slower_than_they_chase())
@@ -456,6 +471,7 @@ func _initialize() -> void:
 	results.append(_the_level_s_throw_never_lands_a_demon_on_a_step())
 	results.append(_the_level_s_demons_chase_on_screen_and_walk_back_slower_than_they_chase())
 	results.append(_the_level_s_demons_patrol_and_leave_a_man_on_a_step_out_of_reach())
+	results.append(_the_level_s_demons_are_alerted_and_search_before_they_give_up())
 	finish(results)
 
 
@@ -2419,6 +2435,19 @@ func _the_level_s_demons_patrol_and_leave_a_man_on_a_step_out_of_reach() -> bool
 					demon_stats.get_reach_height(), TILE, demon_stats.out_of_reach_wait])
 
 
+## The level's demons are alerted before each chase, so the player sees it coming, and once a wall
+## hides the man they go where they last saw him sooner than they sniff there, slower than they
+## chase, so the hunt for him shows instead of a chase that knows where he is (ADR 0035).
+func _the_level_s_demons_are_alerted_and_search_before_they_give_up() -> bool:
+	var demon_stats: DemonStats = load(LUST_DEMON_STATS) as DemonStats
+	return report(demon_stats.alert_time > 0.0
+			and demon_stats.give_up_time < demon_stats.search_time
+			and demon_stats.search_speed < demon_stats.chase_speed,
+			"Level values: alerted %.2f s; blind %.1f s, then sniffs %.1f s; searches at %d px/s, chases at %d"
+			% [demon_stats.alert_time, demon_stats.give_up_time, demon_stats.search_time,
+					demon_stats.search_speed, demon_stats.chase_speed])
+
+
 ## The level's demons back off after each attack (ADR 0023): past the Attack Range of every bite on
 ## the run, so they have to come back to bite again, and slower than they chase, so it reads as
 ## backing off.
@@ -2981,6 +3010,173 @@ func _back_at_its_post_it_patrols_again() -> bool:
 			% [PATROL_WIDTH, returning, patrolling, off_post])
 
 
+## With Alert Time, a demon that notices the man behind it is alerted first (ADR 0035): it turns to
+## him and stands where it is for Alert Time, and only then chases him.
+func _with_alert_time_it_stands_turned_to_the_man_then_chases() -> bool:
+	var ground: StaticBody2D = make_platform(FLOOR_LEFT, FLOOR_RIGHT)
+	var changes: Array[Vector2i] = []
+	var demon: Demon = await _spawn_demon(0.0, NO_LUNGE, changes)
+	demon.stats.alert_time = ALERT_TIME
+	var man: Player = await spawn_on_floor(Vector2(-SEEN_X, SPAWN_Y))
+	var alerted: bool = await _is_in_state_within(demon, Demon.State.ALERT, FRAMES_TO_WATCH)
+	var alert_x: float = demon.position.x
+	var facing: float = demon.get_facing()
+	var alert_frames: int = demon.stats.get_alert_frames()
+	var chased: bool = await _chases_within(demon, alert_frames + SETTLE_FRAMES)
+	var moved: float = absf(demon.position.x - alert_x)
+	var first: Demon.State = changes.front().x as Demon.State if not changes.is_empty() \
+			else Demon.State.IDLE
+	var stood: int = _frames_in(changes, Demon.State.ALERT)
+	await _clear([ground, man, demon])
+	return report(alerted and first == Demon.State.ALERT and facing < 0.0 and chased
+			and stood == alert_frames and moved <= Demon.POST_REACH,
+			"Man behind it: first %s, facing %d, stood %d frames (asked %d), moved %.2f px; then chased %s"
+			% [_name_of(first), facing, stood, alert_frames, moved, chased])
+
+
+## An alerted demon whose man is freed, as on a respawn, lets go of him and stands, with no chase.
+func _alerted_it_lets_go_of_a_man_who_is_freed() -> bool:
+	var ground: StaticBody2D = make_platform(FLOOR_LEFT, FLOOR_RIGHT)
+	var changes: Array[Vector2i] = []
+	var demon: Demon = await _spawn_demon(0.0, NO_LUNGE, changes)
+	demon.stats.alert_time = ALERT_TIME
+	var man: Player = await spawn_on_floor(Vector2(SEEN_X, SPAWN_Y))
+	var alerted: bool = await _is_in_state_within(demon, Demon.State.ALERT, FRAMES_TO_WATCH)
+	await remove_player(man)
+	var stands: bool = await _is_in_state_within(demon, Demon.State.IDLE, SETTLE_FRAMES)
+	await wait_frames(demon.stats.get_alert_frames())
+	var chased: bool = changes.any(
+			func(change: Vector2i) -> bool: return change.x == Demon.State.CHASE)
+	await _clear([ground, demon])
+	return report(alerted and stands and not chased,
+			"Alerted %s, then the man is freed: stands %s, chased %s" % [alerted, stands, chased])
+
+
+## With Search Time, a wall that hides the man for Give Up Time sends the demon where it last saw him
+## (ADR 0035): it walks there at Search Speed, sniffs there for Search Time, turning round on the way,
+## and then walks back to its post.
+func _with_search_time_it_sniffs_where_it_last_saw_the_man_then_walks_back() -> bool:
+	var ground: StaticBody2D = make_platform(FLOOR_LEFT, FLOOR_RIGHT)
+	var wall: StaticBody2D = make_wall(HIDING_WALL_X, HIDING_WALL_X + WALL_THICKNESS, WALL_TOP)
+	var demon: Demon = await _spawn_demon(0.0, NO_LUNGE)
+	_make_it_search(demon)
+	demon.stats.return_speed = RETURN_SPEED
+	var man: Player = await spawn_on_floor(Vector2(SEEN_X, SPAWN_Y))
+	var chased: bool = await _chases_within(demon, FRAMES_TO_WATCH)
+	man.position.x = HIDDEN_X
+	var searching: bool = await _is_in_state_within(demon, Demon.State.SEARCH,
+			demon.stats.get_give_up_frames() + SETTLE_FRAMES)
+	var start_x: float = demon.position.x
+	await wait_frames(RETURN_MEASURE_FRAMES)
+	var speed: float = (demon.position.x - start_x) * Engine.physics_ticks_per_second \
+			/ RETURN_MEASURE_FRAMES
+	var there: bool = await wait_until(
+			func() -> bool: return absf(demon.position.x - SEEN_X) <= TOLERANCE)
+	var facings: Array[float] = []
+	var frames_there: Array[int] = [0]
+	var farthest: Array[float] = [0.0]
+	var search_frames: int = demon.stats.get_search_frames()
+	var walked_back: bool = await wait_until(
+			func() -> bool:
+				if demon.get_state() == Demon.State.RETURN:
+					return true
+				facings.append(demon.get_facing())
+				frames_there[0] += 1
+				farthest[0] = maxf(farthest[0], absf(demon.position.x - SEEN_X))
+				return false,
+			search_frames + SETTLE_FRAMES)
+	var both_ways: bool = facings.has(1.0) and facings.has(-1.0)
+	await _clear([ground, wall, man, demon])
+	return report(chased and searching and absf(speed - SEARCH_SPEED) <= SPEED_TOLERANCE and there
+			and farthest[0] <= TOLERANCE and both_ways
+			and frames_there[0] >= search_frames - SETTLE_FRAMES and walked_back,
+			"Hidden: searching %s at %.1f px/s (asked %d), got where it saw him %s, sniffed %d frames (asked %d) at most %.1f px from it, facing both ways %s, walked back %s"
+			% [searching, speed, SEARCH_SPEED, there, frames_there[0], search_frames, farthest[0],
+					both_ways, walked_back])
+
+
+## With Search Time, a demon that loses the man any way but behind a wall never searches: freed, as
+## on a respawn, past Lose Distance, or with the demon off the screen, it stands or walks back as
+## before.
+func _with_search_time_only_a_wall_makes_it_search() -> bool:
+	var ground: StaticBody2D = make_platform(FLOOR_LEFT, FLOOR_RIGHT)
+	var changes: Array[Vector2i] = []
+	var demon: Demon = await _spawn_demon(0.0, NO_LUNGE, changes)
+	_make_it_search(demon)
+	demon.stats.return_speed = RETURN_SPEED
+	demon.stats.chases_only_on_screen = true
+	var camera: Camera2D = _make_camera(0.0)
+	var gave_up: Callable = func() -> bool:
+		return demon.get_state() == Demon.State.IDLE or demon.get_state() == Demon.State.RETURN
+	var man: Player = await spawn_on_floor(Vector2(SEEN_X, SPAWN_Y))
+	var chased: bool = await _chases_within(demon, FRAMES_TO_WATCH)
+	await remove_player(man)
+	var freed: bool = await wait_until(gave_up, SETTLE_FRAMES)
+	man = await spawn_on_floor(Vector2(demon.position.x + SEEN_X, SPAWN_Y))
+	var chased_far: bool = await _chases_within(demon, FRAMES_TO_WATCH)
+	man.position.x = demon.position.x + LOST_X
+	var lost: bool = await wait_until(gave_up, SETTLE_FRAMES)
+	man.position.x = demon.position.x + SEEN_X
+	var chased_on_screen: bool = await _chases_within(demon, FRAMES_TO_WATCH)
+	camera.position.x = 2.0 * _screen_width()
+	var off_screen: bool = await wait_until(gave_up, SETTLE_FRAMES)
+	var searched: bool = changes.any(
+			func(change: Vector2i) -> bool: return change.x == Demon.State.SEARCH)
+	await _clear([ground, man, demon, camera])
+	return report(chased and freed and chased_far and lost and chased_on_screen and off_screen
+			and not searched,
+			"With Search Time, it gave up on a man freed %s, past Lose Distance %s, off the screen %s; searched %s"
+			% [freed, lost, off_screen, searched])
+
+
+## A searching demon that sees the man again is alerted by him, as at first, and then chases him.
+func _searching_it_is_alerted_by_a_man_it_sees_again() -> bool:
+	var ground: StaticBody2D = make_platform(FLOOR_LEFT, FLOOR_RIGHT)
+	var wall: StaticBody2D = make_wall(HIDING_WALL_X, HIDING_WALL_X + WALL_THICKNESS, WALL_TOP)
+	var changes: Array[Vector2i] = []
+	var demon: Demon = await _spawn_demon(0.0, NO_LUNGE, changes)
+	_make_it_search(demon)
+	demon.stats.alert_time = ALERT_TIME
+	var man: Player = await spawn_on_floor(Vector2(SEEN_X, SPAWN_Y))
+	var chased: bool = await _chases_within(demon, FRAMES_TO_WATCH)
+	man.position.x = HIDDEN_X
+	var searching: bool = await _is_in_state_within(demon, Demon.State.SEARCH,
+			demon.stats.get_give_up_frames() + SETTLE_FRAMES)
+	man.position.x = SEEN_X
+	var alerted: bool = await _is_in_state_within(demon, Demon.State.ALERT, SETTLE_FRAMES)
+	var chased_again: bool = await _chases_within(demon,
+			demon.stats.get_alert_frames() + SETTLE_FRAMES)
+	var after_search: int = _index_after(changes, Demon.State.SEARCH)
+	var next: Demon.State = changes[after_search].x as Demon.State if after_search != NEVER_REACHED \
+			else Demon.State.SEARCH
+	await _clear([ground, wall, man, demon])
+	return report(chased and searching and alerted and next == Demon.State.ALERT and chased_again,
+			"Searching %s, the man seen again: next %s, chased again %s"
+			% [searching, _name_of(next), chased_again])
+
+
+## With Chases Only On Screen, a searching demon the screen leaves stops searching and walks back to
+## its post, as it gives up a chase.
+func _searching_off_the_screen_it_walks_back() -> bool:
+	var ground: StaticBody2D = make_platform(FLOOR_LEFT, FLOOR_RIGHT)
+	var wall: StaticBody2D = make_wall(HIDING_WALL_X, HIDING_WALL_X + WALL_THICKNESS, WALL_TOP)
+	var demon: Demon = await _spawn_demon(0.0, NO_LUNGE)
+	_make_it_search(demon)
+	demon.stats.return_speed = RETURN_SPEED
+	demon.stats.chases_only_on_screen = true
+	var camera: Camera2D = _make_camera(0.0)
+	var man: Player = await spawn_on_floor(Vector2(SEEN_X, SPAWN_Y))
+	var chased: bool = await _chases_within(demon, FRAMES_TO_WATCH)
+	man.position.x = HIDDEN_X
+	var searching: bool = await _is_in_state_within(demon, Demon.State.SEARCH,
+			demon.stats.get_give_up_frames() + SETTLE_FRAMES)
+	camera.position.x = 2.0 * _screen_width()
+	var walks_back: bool = await _is_in_state_within(demon, Demon.State.RETURN, SETTLE_FRAMES)
+	await _clear([ground, wall, man, demon, camera])
+	return report(chased and searching and walks_back,
+			"Searching %s, then off the screen: walks back %s" % [searching, walks_back])
+
+
 ## The demon's body is on the enemy layer and collides with the world, one-way platforms and the
 ## man's body only, and its sight area is on no layer and looks only for the player.
 func _is_on_the_enemy_layer_and_looks_only_for_the_player() -> bool:
@@ -3173,6 +3369,12 @@ func _make_it_patrol(demon: Demon) -> void:
 	demon.stats.patrol_speed = PATROL_SPEED
 	demon.stats.patrol_pause_min = PATROL_PAUSE_MIN
 	demon.stats.patrol_pause_max = PATROL_PAUSE_MAX
+
+
+## Gives the demon the cases' search: Search Time and Search Speed.
+func _make_it_search(demon: Demon) -> void:
+	demon.stats.search_time = SEARCH_TIME
+	demon.stats.search_speed = SEARCH_SPEED
 
 
 ## The man's crucifix, held up by a stand-in input, once it is up.

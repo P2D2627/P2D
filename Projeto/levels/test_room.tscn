@@ -7,6 +7,7 @@
 [ext_resource type="PackedScene" path="res://background/test_room_background.tscn" id="5_test_room_background"]
 [ext_resource type="PackedScene" path="res://demon/demon.tscn" id="5_demon"]
 [ext_resource type="Script" path="res://levels/level.gd" id="6_level"]
+[ext_resource type="Script" path="res://debug/demon_debug_view.gd" id="7_demon_debug_view"]
 
 [sub_resource type="RectangleShape2D" id="RectangleShape2D_floor"]
 size = Vector2(5824, 80)
@@ -46,6 +47,9 @@ size = Vector2(5824, 2244)
 
 [sub_resource type="RectangleShape2D" id="RectangleShape2D_one_way"]
 size = Vector2(240, 24)
+
+[sub_resource type="RectangleShape2D" id="RectangleShape2D_hiding_wall"]
+size = Vector2(48, 144)
 
 [node name="TestRoom" type="Node2D" node_paths=PackedStringArray("player") unique_id=1111842025]
 script = ExtResource("6_level")
@@ -221,12 +225,30 @@ one_way_collision = true
 color = Color(0.36, 0.3, 0.42, 1)
 polygon = PackedVector2Array(-120, -12, 120, -12, 120, 12, -120, 12)
 
+[node name="HidingWall" type="StaticBody2D" parent="."]
+position = Vector2(1700, 928)
+collision_mask = 0
+
+[node name="CollisionShape2D" type="CollisionShape2D" parent="HidingWall"]
+shape = SubResource("RectangleShape2D_hiding_wall")
+
+[node name="Placeholder" type="Polygon2D" parent="HidingWall"]
+color = Color(0.15, 0.13, 0.18, 1)
+polygon = PackedVector2Array(-24, -72, 24, -72, 24, 72, -24, 72)
+
 [node name="Player" parent="." unique_id=1512336293 instance=ExtResource("1_player")]
 position = Vector2(960, 600)
 
 [node name="DebugOverlay" parent="." unique_id=1963797770 node_paths=PackedStringArray("player", "camera") instance=ExtResource("2_debug_overlay")]
 player = NodePath("../Player")
 camera = NodePath("../GameCamera")
+
+[node name="DemonDebugView" type="Node2D" parent="." node_paths=PackedStringArray("overlay", "demons", "player")]
+process_mode = 3
+script = ExtResource("7_demon_debug_view")
+overlay = NodePath("../DebugOverlay")
+demons = [NodePath("../FloorDemon"), NodePath("../WalkwayDemon"), NodePath("../FloorDemon2"), NodePath("../LeftFloorDemon")]
+player = NodePath("../Player")
 
 [node name="GameCamera" parent="." unique_id=1105774144 node_paths=PackedStringArray("player") instance=ExtResource("3_game_camera")]
 position = Vector2(960, 600)

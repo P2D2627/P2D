@@ -1,0 +1,43 @@
+class_name DemonSearchState
+extends DemonState
+
+## SEARCH: with Search Time, once a wall has hidden the man for Give Up Time (ADR 0035). The demon
+## walks at Search Speed, facing the way it walks, to where it last saw him, or as near it as its
+## floor lets it go, and sniffs there for Search Time, turning round halfway; then it gives up and
+## walks back to its post, or stands. It is alerted by the man as soon as it notices him, and off
+## the screen, with Chases Only On Screen, it gives up at once. In the air, it only falls.
+
+## True once the demon got to where it last saw the man.
+var _there: bool = false
+## Physics frames the demon has sniffed there.
+var _frames: int = 0
+
+
+func enter() -> void:
+	_there = false
+	_frames = 0
+
+
+func physics_update(delta: float) -> void:
+	_demon.velocity.x = 0.0
+	if _demon.chase_if_it_notices_the_man():
+		return
+	if not _demon.may_chase_from_here():
+		_demon.stand_or_return()
+		return
+	if not _demon.is_on_floor():
+		return
+	if not _there:
+		var gap: float = _demon.get_last_seen_x() - _demon.global_position.x
+		var direction: float = signf(gap)
+		_there = absf(gap) <= Demon.POST_REACH or _demon.is_edge_ahead(direction) \
+				or _demon.is_against_a_wall(direction)
+		if not _there:
+			_demon.turn_to(direction)
+			_demon.velocity.x = direction * minf(_demon.stats.search_speed, absf(gap) / delta)
+			return
+	_frames += 1
+	if _frames == roundi(_demon.stats.get_search_frames() / 2.0):
+		_demon.turn_to(-_demon.get_facing())
+	if _frames >= _demon.stats.get_search_frames():
+		_demon.stand_or_return()

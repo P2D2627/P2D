@@ -45,7 +45,7 @@ signal attack_landed(attack: DemonAttack)
 ## DemonState in states/, whose doc says when it starts and how long it lasts.
 enum State {
 	IDLE, CHASE, WARNING, LUNGE, REPELLED, RETREAT, GRAB, THROWN, STUNNED, RETURN, OUT_OF_REACH,
-	PATROL,
+	PATROL, ALERT, SEARCH,
 }
 
 ## How far apart, in px, the floor is looked for along a lunge: half a tile, so no hole is missed.
@@ -78,6 +78,10 @@ var _target_hurtbox: Hurtbox = null
 var _packmates: Array[Demon] = []
 ## Physics frames in a row the demon has chased the man without seeing him.
 var _unseen_frames: int = 0
+## The man's x the last time the demon saw him, where it looks for him once he is hidden, and the
+## physics frame it saw him on.
+var _last_seen_x: float = 0.0
+var _seen_on_frame: int = -2
 ## 1 when the demon goes right, -1 when left. A lunge's warning fixes it until the lunge lands.
 var _facing: float = 1.0
 ## The attack the demon warns for and then makes, chosen when the warning starts.
@@ -181,6 +185,8 @@ func _make_states() -> void:
 	_states[State.RETURN] = DemonReturnState.new(self)
 	_states[State.OUT_OF_REACH] = DemonOutOfReachState.new(self)
 	_states[State.PATROL] = DemonPatrolState.new(self)
+	_states[State.ALERT] = DemonAlertState.new(self)
+	_states[State.SEARCH] = DemonSearchState.new(self)
 	assert(not _states.has(null), "Demon: every State needs its object in _make_states.")
 	_current = _states[_state]
 
@@ -189,6 +195,13 @@ func _make_states() -> void:
 ## man while it chases him and backs off from him.
 func get_facing() -> float:
 	return _facing
+
+
+## True while the demon is after the man and saw him on this physics frame or the one before, for
+## what shows it, such as the test room's debug view. In a lunge, a grab or a throw it does not
+## look, so there it is false.
+func sees_target() -> bool:
+	return is_instance_valid(_target) and Engine.get_physics_frames() - _seen_on_frame <= 1
 
 
 ## For its states: where along the floor the demon walks back to once it gives up.
@@ -213,10 +226,11 @@ func random_share() -> float:
 
 ## For its states: starts the chase when the man is inside the sight area and the demon notices
 ## him: sees him, and he is not further behind it than Sight Behind Share of Sight Distance. With
-## Chases Only On Screen, only while it is on the screen. True when it started.
+## Chases Only On Screen, only while it is on the screen. With Alert Time, the chase starts with the
+## alert (ADR 0035). True when it started.
 func chase_if_it_notices_the_man() -> bool:
 	var man: Node2D = _senses.get_man_in_sight_area()
-	if man == null or not _may_chase_from_here() or not _senses.can_notice(
+	if man == null or not may_chase_from_here() or not _senses.can_notice(
 			man, _facing, stats.sight_distance * stats.sight_behind_share):
 		return false
 	if _gave_up_out_of_reach:
@@ -230,16 +244,17 @@ func chase_if_it_notices_the_man() -> bool:
 	_target_half_size = _target_box.shape.get_rect().size / 2.0
 	_target_hurtbox = _hurtbox_of(_target)
 	_target_last_x = _target.global_position.x
+	_last_seen_x = _target_last_x
 	_target_speed = 0.0
 	_unseen_frames = 0
-	change_state(State.CHASE)
+	change_state(State.ALERT if stats.alert_time > 0.0 else State.CHASE)
 	return true
 
 
 ## For its states: true when the last move left the demon against a wall of the world, a static
 ## body or tiles, going in direction. A body that moves, such as the man's, does not count: it would
-## make a post of a spot that is free a moment later. Only read while it walks back or patrols, on
-## the frames it touches a wall.
+## make a post of a spot that is free a moment later. Only read while it walks back, patrols or
+## searches, on the frames it touches a wall.
 func is_against_a_wall(direction: float) -> bool:
 	if not is_on_wall():
 		return false
@@ -252,8 +267,9 @@ func is_against_a_wall(direction: float) -> bool:
 	return false
 
 
-## With Chases Only On Screen, only while the demon is on the screen; otherwise always.
-func _may_chase_from_here() -> bool:
+## For its states: with Chases Only On Screen, only while the demon is on the screen; otherwise
+## always.
+func may_chase_from_here() -> bool:
 	return not stats.chases_only_on_screen or _senses.is_on_screen()
 
 
@@ -370,17 +386,32 @@ func _track_target(delta: float) -> void:
 
 ## For its states: true while the man is still there to chase, not past Lose Distance, nor hidden
 ## by a wall for Give Up Time, and, with Chases Only On Screen, the demon still on the screen.
-## Otherwise the demon stops chasing him.
+## Otherwise the demon stops chasing him; hidden by a wall, with Search Time, it goes to look for
+## him where it last saw him (ADR 0035).
 func keeps_after_target() -> bool:
-	if not is_instance_valid(_target) or not _may_chase_from_here() \
+	if not is_instance_valid(_target) or not may_chase_from_here() \
 			or global_position.distance_to(_target.global_position) > stats.lose_distance:
 		_stop_chasing()
 		return false
-	_unseen_frames = 0 if _senses.can_see(_target) else _unseen_frames + 1
+	if _senses.can_see(_target):
+		_unseen_frames = 0
+		_last_seen_x = _target.global_position.x
+		_seen_on_frame = Engine.get_physics_frames()
+	else:
+		_unseen_frames += 1
 	if _unseen_frames >= stats.get_give_up_frames():
-		_stop_chasing()
+		if stats.search_time > 0.0:
+			_forget_target()
+			change_state(State.SEARCH)
+		else:
+			_stop_chasing()
 		return false
 	return true
+
+
+## For its states: the man's x the last time the demon saw him.
+func get_last_seen_x() -> float:
+	return _last_seen_x
 
 
 ## For its states: faces the man, or a spot, gap px away along the floor, + to the right. Right
@@ -461,11 +492,16 @@ func _packmate_ahead(gap: float) -> Demon:
 
 
 func _stop_chasing() -> void:
+	_forget_target()
+	stand_or_return()
+
+
+## Lets go of the man, and stops.
+func _forget_target() -> void:
 	_target = null
 	_target_box = null
 	_target_hurtbox = null
 	velocity.x = 0.0
-	stand_or_return()
 
 
 ## For its states: with Return Speed, walks back to its post; with none, or already there, stands
