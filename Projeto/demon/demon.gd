@@ -29,8 +29,8 @@ extends CharacterBody2D
 ## the attack's damage and knockback to the man's Hurtbox. When the hit holds him instead, it holds
 ## on until he breaks free and throws it off, away from him (ADR 0028). Its body and the man's stop
 ## each other, so it never gets on his spot (ADR 0022). It only tells what it does, by
-## state_changed, warning_started and attack_landed: the art and the sounds listen, and it never
-## touches them.
+## state_changed, warning_started, attack_landed and barked: the art and the sounds listen, and it
+## never touches them.
 
 ## The demon changed from previous to current this physics frame.
 signal state_changed(previous: State, current: State)
@@ -40,6 +40,9 @@ signal warning_started(attack: DemonAttack)
 ## The demon's attack landed on a Hurtbox this physics frame, so the art and the sounds can show the
 ## bite or the blow.
 signal attack_landed(attack: DemonAttack)
+## The demon barked this physics frame at a man out of its reach (ADR 0039), hopping at a wall or
+## the end of its floor that stops it on his side if hops, so the art and the sounds can show it.
+signal barked(hops: bool)
 
 ## What the demon is doing, as the art, the sounds and the tests read it. Each has its own
 ## DemonState in states/, whose doc says when it starts and how long it lasts.
@@ -229,8 +232,8 @@ func chase_if_it_notices_the_man() -> bool:
 
 ## For its states: true when the last move left the demon against a wall of the world, a static
 ## body or tiles, going in direction. A body that moves, such as the man's, does not count: it would
-## make a post of a spot that is free a moment later. Only read while it walks back, patrols or
-## searches, on the frames it touches a wall.
+## make a post of a spot that is free a moment later. Only read while it walks back, patrols,
+## searches or paces out of reach, on the frames it touches a wall.
 func is_against_a_wall(direction: float) -> bool:
 	if not is_on_wall():
 		return false
@@ -319,6 +322,11 @@ func change_state_and_act(new_state: State, delta: float) -> void:
 	_current.physics_update(delta)
 
 
+## For its states: barks at a man out of its reach, hopping at what stops it on his side if hops.
+func bark(hops: bool) -> void:
+	barked.emit(hops)
+
+
 ## For its states: true when the man stands out of the demon's reach, on a floor, or sliding down or
 ## holding on to a wall, higher above or lower below the demon's floor than the Max Height
 ## Difference of any of its attacks, with the demon on its floor too. In the air, or grazing a wall
@@ -360,8 +368,10 @@ func has_target() -> bool:
 ## For its states: true while the man is still there to chase, not past Lose Distance, nor hidden
 ## by a wall for Give Up Time, and, with Chases Only On Screen, the demon no further off the screen
 ## than Screen Margin. Otherwise the demon stops chasing him; hidden by a wall, with Search Time, it
-## goes to look for him where it last saw him (ADR 0035).
-func keeps_after_target() -> bool:
+## goes to look for him where it last saw him (ADR 0035). With counts_unseen off, as out of his
+## reach, the time he is hidden does not count, since he is up or down where it saw him go (ADR
+## 0039).
+func keeps_after_target(counts_unseen: bool = true) -> bool:
 	var man: Node2D = _target.get_man()
 	if not _target.has_man() or not may_keep_on_from_here() \
 			or global_position.distance_to(man.global_position) > stats.lose_distance:
@@ -369,7 +379,7 @@ func keeps_after_target() -> bool:
 		return false
 	if _senses.can_see(man):
 		_target.saw_him(Engine.get_physics_frames())
-	else:
+	elif counts_unseen:
 		_target.missed_him()
 	if _target.get_unseen_frames() >= stats.get_give_up_frames():
 		if stats.search_time > 0.0:

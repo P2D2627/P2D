@@ -235,7 +235,7 @@ estados:
 | Atirado | Atirado pelo crucifixo, ou pela personagem quando esta se solta, voa até aterrar. |
 | Repelido | Depois de atirado pelo crucifixo, fica 0,3 s parado onde aterrou e volta a perseguir. |
 | Atordoado | Depois de atirado pela personagem ao soltar-se, fica 1,2 s no chão, achatado e mais escuro, e depois recua ou volta a perseguir. |
-| Fora de alcance | Com a personagem num chão ou numa parede acima ou abaixo do que os seus ataques chegam, para onde está, virado para ela, e não a segue por baixo nem por cima. Se ela descer ao seu alcance, volta a persegui-la; ao fim de 2 s, desiste e deixa-a em paz enquanto ela lá ficar. |
+| Fora de alcance | Com a personagem num chão ou numa parede acima ou abaixo do que os seus ataques chegam, não a segue por baixo nem por cima: para virado para ela e ladra, e depois anda para trás e para a frente num troço de 160 px à volta do sítio onde parou e, em cada ponta, volta a parar e a ladrar; contra uma parede ou na borda do seu chão, do lado dela, salta no sítio. Se ela descer ao seu alcance, volta a persegui-la; ao fim de 3 s, desiste e deixa-a em paz enquanto ela lá ficar. |
 | Procurar | Quando uma parede a esconde durante 0,5 s, vai a 300 px/s até onde a viu pela última vez, ou até onde o seu chão deixa, e fareja ali durante 2,5 s, virando-se para o outro lado a meio. Se a vir, fica alerta e volta a persegui-la; se não, desiste. Fora do ecrã, desiste logo. |
 | Voltar | Depois de desistir, volta ao posto a passo, a 200 px/s, e retoma a ronda. Se a vir à frente pelo caminho, fica alerta e volta a persegui-la. |
 
@@ -1381,6 +1381,22 @@ não é esta cena com a perseguição desligada.
   duas execuções alternadas com a versão anterior: o tempo dos scripts passou de cerca de 0,95 ms
   para 1,03 ms em média, dentro do orçamento, e o pior passo chegou a 1,92 ms, perto dos 2 ms. A
   ronda não mudou.
+- **Fora de alcance sem ficar hirto (ADR 0039).** Parado e imóvel, um demónio com a personagem fora
+  de alcance não mostrava o que pretendia. O desenho do nível 1 pede que um inimigo seja sempre
+  plausível e que a intenção se leia na animação e no som. Agora, o demónio anda num troço de Out Of
+  Reach Pace Width (160 px) à volta do sítio onde parou, à velocidade da ronda. Ao parar, e em cada
+  ponta, fica entre 0,6 e 1,2 s virado para a personagem e ladra. Se uma parede ou a borda do chão o
+  trava do lado dela, salta no sítio. Seguir o x da personagem por baixo dela ficou de lado, porque
+  a imita e treme quando ela para por cima. O salto é só do desenho, e o corpo fica no chão, para
+  não mudar a física, o alcance nem os ataques. O ladrar é um sinal (`barked`), a que a arte e o
+  som vão responder; até lá, o retângulo provisório dá um pequeno salto, maior junto à parede.
+  Enquanto está fora de alcance, o tempo em que um rebordo ou uma parede esconde a personagem não
+  conta para desistir, porque o demónio sabe que ela subiu ou desceu ali. Sem isto, um demónio
+  que andasse por baixo de uma prateleira perdia-a de vista, ia procurá-la, voltava a vê-la e
+  recomeçava, sem nunca desistir, e não chegava a saltar contra a parede por baixo dela. Desiste ao
+  fim de 3 s (antes 2 s), o que dá tempo a pelo menos dois ladridos. Cada pausa é sorteada, para
+  dois demónios não ladrarem a par; evitar que dois ladridos simultâneos soem como um é tarefa do
+  áudio. Com Out Of Reach Pace Width a 0, o demónio fica parado como antes.
 
 Antes de decidir se a perseguição precisava de ser otimizada, fixaram-se dois limites para 50
 demónios a perseguir ao mesmo tempo, muitos mais do que um ecrã terá: um limite para a média por
@@ -1473,6 +1489,23 @@ dez ecrãs, a 384 px uns dos outros, os troços também se sobrepõem, e mesmo a
 dos dois limites, porque só os que estão no ecrã andam. Aceita-se, como na perseguição, até haver um
 nível para medir. Nos scripts, cada demónio parado fora do ecrã custa cerca de 13 µs por passo.
 
+Com o ADR 0039 (2026-10-26, ligado à corrente), a medida ganhou uma parte com 50 demónios no chão,
+todos a ver a personagem numa prateleira fora do seu alcance, sem câmara: primeiro parados (troço a
+0, como antes) e depois a andar no troço de 160 px. É um teste de esforço, porque uma sala do nível
+tem poucos demónios.
+
+| 50 demónios fora de alcance | Média por passo | Pior passo | Scripts, média | Execuções |
+|---|---|---|---|---|
+| Parados | 0,93 a 1,07 ms | 1,68 a 2,87 ms | 0,65 a 0,75 ms | 4 |
+| A andar no troço | 1,19 a 1,48 ms | 1,79 a 4,58 ms | 0,76 a 0,98 ms | 4 |
+
+Em cada execução, andar custa 0,23 a 0,41 ms a mais no passo inteiro e 0,11 a 0,23 ms nos
+scripts, cerca de 5 a 8 µs por demónio, sobretudo no motor de física, como na ronda. A média fica
+dentro de 1,5 ms. O pior passo varia muito de execução para execução, também com os demónios
+parados (os valores mais altos de ambas as linhas vêm da mesma execução, com a média também mais
+alta), e passa os 2 ms em três das quatro, como na ronda com todos no ecrã. Aceita-se pelo mesmo
+motivo, até haver um nível para medir; a causa do pior passo fica para o Profiler.
+
 O `test_demon.gd` verifica, com a personagem e o crucifixo verdadeiros, a visão (a distância e as
 paredes), a perseguição e a desistência, a paragem nas bordas e nos degraus, o aviso e o seu tempo,
 a altura, a distância e a direção do salto, também num salto mais rápido e num de metade da
@@ -1511,9 +1544,15 @@ procura fora do ecrã e que, perdida de outra forma que não por uma parede, nun
 ADR 0038, verifica que um demónio que não persegue a personagem não trava outro que a persegue, que
 dois a procurar no mesmo sítio ficam à distância de matilha, que a perseguição continua dentro da
 margem do ecrã, acaba depois dela e não recomeça fora do ecrã, e que a personagem destruída a meio
-do aviso, fora do alcance ou no agarrão deixa o demónio parado, sem saltar. São 116 casos. Todos
-menos os sete
-últimos usam valores próprios, pelo que afinar o `.tres` não os altera. Os sete últimos leem o
+do aviso, fora do alcance ou no agarrão deixa o demónio parado, sem saltar. Com o ADR 0039,
+verifica que, fora de alcance, o demónio anda no seu troço sem o passar e nunca fica parado mais
+do que a pausa mais longa, que ladra virado para a personagem em cada ponta, que salta só contra a
+parede ou na borda do lado dela e não passa nenhuma das duas, que desiste ao fim do mesmo tempo,
+que continua por baixo de uma prateleira que a esconde, que sem troço nunca ladra, que dois
+demónios com as pausas do nível, em três sementes, ladram a menos de 6 passos um do outro menos de
+metade das vezes, que o salto do retângulo deixa o corpo no chão e que uma mudança de estado o
+interrompe e o repõe logo. São 127 casos. Todos menos os oito
+últimos usam valores próprios, pelo que afinar o `.tres` não os altera. Os oito últimos leem o
 `.tres` do nível 1 e
 confirmam o que o desenho dos níveis assume: cada ataque com uma das animações da arte, os saltos e a diferença
 de altura para atacar abaixo de um tile (48 px), o Lose Distance acima do Sight Distance e a
@@ -1521,7 +1560,9 @@ perseguição mais lenta do que a corrida da personagem, e a regra do ecrã liga
 menos meio ecrã, menos alcance para trás do que para a frente e o regresso mais lento do que a
 perseguição, para que um demónio a voltar nunca pareça vir na direção dela, e a ronda ligada e mais
 lenta do que a perseguição, com um degrau de um tile fora do alcance, e o alerta ligado, com o
-tempo às cegas menor do que o de procura e a procura mais lenta do que a perseguição.
+tempo às cegas menor do que o de procura e a procura mais lenta do que a perseguição, e o "fora de
+alcance" com troço e com tempo para pelo menos dois ladridos antes de desistir, mesmo com a pausa
+inicial mais longa.
 
 #### Overlay de depuração
 

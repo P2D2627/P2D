@@ -362,6 +362,43 @@ const PATROL_SEED: int = 33
 const ALERT_TIME: float = 0.3
 const SEARCH_TIME: float = 1.0
 const SEARCH_SPEED: float = 200.0
+## The cases of the demon pacing out of reach (ADR 0039): the stretch it paces around where it
+## stopped, at Patrol Speed, some 64 frames from end to end; the shortest and longest pause at each
+## end, where it barks, 12 to 18 frames; and an Out Of Reach Wait long enough to watch it pace across
+## three times before it gives up.
+const PACE_WIDTH: float = 160.0
+const PACE_PAUSE_MIN: float = 0.2
+const PACE_PAUSE_MAX: float = 0.3
+const PACE_WAIT: float = 6.0
+## How long the pacing is watched: past three ends at the slowest, inside PACE_WAIT.
+const PACE_FRAMES: int = 300
+## The least number of barks in that while: one at each end.
+const LEAST_BARKS: int = 3
+## In the cases of the wall and the edge, how far from them the demon is put: nearer than half
+## PACE_WIDTH, so its stretch runs past them.
+const PACE_NEAR: float = 60.0
+## Frames a bark is watched for its hop in the drawing: past the placeholder's Hop Time.
+const HOP_FRAMES: int = 30
+## Frames into a hop when the case of the hop cut short changes the demon's state: about its top.
+const HOP_CUT_FRAMES: int = 8
+## In the case of the thin shelf: its top SHELF_HEIGHT above the floor, SHELF_THICKNESS thick, from
+## x = HIGH_LEDGE_LEFT on, with room below it for the demon; the man SHELF_INSET px in from its
+## corner, the demon put SHELF_AWAY px out from it. From there it sees his head over the corner, but
+## about 33 px nearer the corner it no longer does, and its stretch takes it 80 px nearer.
+const SHELF_HEIGHT: float = 200.0
+const SHELF_THICKNESS: float = 10.0
+const SHELF_INSET: float = 100.0
+const SHELF_AWAY: float = 200.0
+## The case of two demons pacing as in a level: the level's pauses, with Out Of Reach Wait over
+## PAIR_FRAMES, watched with each of PAIR_SEEDS. Two barks nearer than MIN_BARK_GAP frames, a tenth
+## of a second, read and sound as one, and two demons that bark together half the time or more are
+## in step.
+const LEVEL_PAUSE_MIN: float = 0.6
+const LEVEL_PAUSE_MAX: float = 1.2
+const PAIR_WAIT: float = 10.0
+const PAIR_FRAMES: int = 540
+const PAIR_SEEDS: Array[int] = [39, 40, 41]
+const MIN_BARK_GAP: int = 6
 
 
 func _initialize() -> void:
@@ -471,6 +508,16 @@ func _initialize() -> void:
 	results.append(await _searching_it_is_alerted_by_a_man_it_sees_again())
 	results.append(await _searching_off_the_screen_it_walks_back())
 	results.append(await _two_demons_searching_one_spot_sniff_pack_spacing_apart())
+	results.append(await _with_pace_width_out_of_reach_it_paces_around_where_it_stopped())
+	results.append(await _pacing_out_of_reach_it_barks_facing_the_man_at_each_end())
+	results.append(await _pacing_out_of_reach_it_hops_where_a_wall_stops_it_on_the_man_s_side())
+	results.append(await _pacing_out_of_reach_it_hops_where_its_floor_ends_on_the_man_s_side())
+	results.append(await _pacing_out_of_reach_it_still_gives_up_after_out_of_reach_wait())
+	results.append(await _pacing_out_of_reach_it_keeps_on_below_a_shelf_that_hides_the_man())
+	results.append(await _with_no_pace_width_out_of_reach_it_never_barks())
+	results.append(await _two_demons_pacing_out_of_reach_never_bark_in_step())
+	results.append(await _a_bark_hops_only_the_drawing_and_higher_at_a_wall())
+	results.append(await _a_new_state_ends_a_hop_with_the_drawing_at_rest())
 	results.append(_is_on_the_enemy_layer_and_looks_only_for_the_player())
 	results.append(_the_level_s_values_keep_what_the_levels_count_on())
 	results.append(_the_level_s_demons_back_off_past_bite_range_slower_than_they_chase())
@@ -478,6 +525,7 @@ func _initialize() -> void:
 	results.append(_the_level_s_throw_never_lands_a_demon_on_a_step())
 	results.append(_the_level_s_demons_chase_on_screen_and_walk_back_slower_than_they_chase())
 	results.append(_the_level_s_demons_patrol_and_leave_a_man_on_a_step_out_of_reach())
+	results.append(_the_level_s_demons_pace_and_bark_out_of_reach_before_they_give_up())
 	results.append(_the_level_s_demons_are_alerted_and_search_before_they_give_up())
 	finish(results)
 
@@ -2505,6 +2553,22 @@ func _the_level_s_demons_patrol_and_leave_a_man_on_a_step_out_of_reach() -> bool
 					demon_stats.get_reach_height(), TILE, demon_stats.out_of_reach_wait])
 
 
+## The level's demons pace out of reach, with their pauses in order, and bark at least twice before
+## they give up, even with the longest first pause (ADR 0039): once as it ends, and again at the end
+## of the half of the stretch they walk first.
+func _the_level_s_demons_pace_and_bark_out_of_reach_before_they_give_up() -> bool:
+	var demon_stats: DemonStats = load(LUST_DEMON_STATS) as DemonStats
+	var second_bark: float = demon_stats.out_of_reach_pause_max \
+			+ demon_stats.out_of_reach_pace_width / 2.0 / demon_stats.patrol_speed
+	return report(demon_stats.out_of_reach_pace_width > 0.0
+			and demon_stats.out_of_reach_pause_min <= demon_stats.out_of_reach_pause_max
+			and second_bark < demon_stats.out_of_reach_wait,
+			"Level values: paces %d px out of reach, pauses %.1f to %.1f s, second bark by %.2f s, waits %.1f s"
+			% [demon_stats.out_of_reach_pace_width, demon_stats.out_of_reach_pause_min,
+					demon_stats.out_of_reach_pause_max, second_bark,
+					demon_stats.out_of_reach_wait])
+
+
 ## The level's demons are alerted before each chase, so the player sees it coming, and once a wall
 ## hides the man they go where they last saw him sooner than they sniff there, slower than they
 ## chase, so the hunt for him shows instead of a chase that knows where he is (ADR 0035).
@@ -2955,6 +3019,286 @@ func _never_warns_of_an_attack_at_a_man_in_the_air_over_its_reach() -> bool:
 	return report(state == Demon.State.CHASE and not _warned(changes),
 			"Man held %d px up, %d px ahead: %s, warned %s"
 			% [JUMP_PEAK, BITE_X, _name_of(state), _warned(changes)])
+
+
+## With Out Of Reach Pace Width, the demon never stands stiff below a man out of its reach (ADR
+## 0039): it paces across that stretch around where it stopped, not past it, and pauses no longer
+## than Out Of Reach Pause Max at a time.
+func _with_pace_width_out_of_reach_it_paces_around_where_it_stopped() -> bool:
+	var ground: StaticBody2D = make_platform(FLOOR_LEFT, FLOOR_RIGHT)
+	var ledge: StaticBody2D = make_platform(HIGH_LEDGE_LEFT, FLOOR_RIGHT, -HIGH_LEDGE_HEIGHT)
+	var demon: Demon = await _spawn_demon(0.0, NO_LUNGE)
+	_make_it_pace(demon)
+	var man: Player = await spawn_on_floor(
+			Vector2(OUT_OF_REACH_X, SPAWN_Y - HIGH_LEDGE_HEIGHT))
+	var stopped: bool = await _is_in_state_within(
+			demon, Demon.State.OUT_OF_REACH, FRAMES_TO_WATCH)
+	var anchor: float = demon.position.x
+	var lowest: float = anchor
+	var highest: float = anchor
+	var last_x: float = anchor
+	var still_for: int = 0
+	var longest_still: int = 0
+	for _frame: int in PACE_FRAMES:
+		await physics_frame
+		var x: float = demon.position.x
+		lowest = minf(lowest, x)
+		highest = maxf(highest, x)
+		still_for = still_for + 1 if absf(x - last_x) < STILL_TOLERANCE else 0
+		longest_still = maxi(longest_still, still_for)
+		last_x = x
+	var state: Demon.State = demon.get_state()
+	await _clear([ground, ledge, man, demon])
+	var longest_pause: int = roundi(PACE_PAUSE_MAX * Engine.physics_ticks_per_second) + ONE_FRAME
+	var inside: bool = lowest >= anchor - PACE_WIDTH / 2.0 - TOLERANCE \
+			and highest <= anchor + PACE_WIDTH / 2.0 + TOLERANCE
+	return report(stopped and state == Demon.State.OUT_OF_REACH and inside
+			and highest - lowest >= PACE_WIDTH - TOLERANCE and longest_still <= longest_pause,
+			"Out of reach %s, pacing %d px: from %.1f to %.1f around %.1f, still at most %d frames (pause up to %d), %s"
+			% [stopped, PACE_WIDTH, lowest, highest, anchor, longest_still, longest_pause,
+					_name_of(state)])
+
+
+## Pacing out of reach on an open floor, the demon barks at each end of its stretch, turned to the
+## man, and never hops, since nothing stops it on his side.
+func _pacing_out_of_reach_it_barks_facing_the_man_at_each_end() -> bool:
+	var ground: StaticBody2D = make_platform(FLOOR_LEFT, FLOOR_RIGHT)
+	var ledge: StaticBody2D = make_platform(HIGH_LEDGE_LEFT, FLOOR_RIGHT, -HIGH_LEDGE_HEIGHT)
+	var demon: Demon = await _spawn_demon(0.0, NO_LUNGE)
+	_make_it_pace(demon)
+	var barks: Array[Vector3] = []
+	_record_barks(demon, barks)
+	var man: Player = await spawn_on_floor(
+			Vector2(OUT_OF_REACH_X, SPAWN_Y - HIGH_LEDGE_HEIGHT))
+	await wait_frames(PACE_FRAMES)
+	await _clear([ground, ledge, man, demon])
+	var facing_him: bool = barks.all(func(bark: Vector3) -> bool: return bark.y > 0.0)
+	var hopped: bool = barks.any(func(bark: Vector3) -> bool: return bark.z > 0.0)
+	return report(barks.size() >= LEAST_BARKS and facing_him and not hopped,
+			"Pacing out of reach: %d barks (at least %d), all facing him %s, hopped %s"
+			% [barks.size(), LEAST_BARKS, facing_him, hopped])
+
+
+## The man on top of a block, the demon put PACE_NEAR from its side: pacing out of reach, it stops
+## against the block, never past it, and barks there hopping, turned to him, and only there, while
+## it keeps on pacing out of reach.
+func _pacing_out_of_reach_it_hops_where_a_wall_stops_it_on_the_man_s_side() -> bool:
+	var ground: StaticBody2D = make_platform(FLOOR_LEFT, FLOOR_RIGHT)
+	var block: StaticBody2D = make_platform(HIGH_LEDGE_LEFT, FLOOR_RIGHT, -HIGH_LEDGE_HEIGHT)
+	var demon: Demon = await _spawn_demon(HIGH_LEDGE_LEFT - PACE_NEAR, NO_LUNGE)
+	_make_it_pace(demon)
+	var anchor: float = demon.position.x
+	var barks: Array[Vector3] = []
+	_record_barks(demon, barks)
+	var man: Player = await spawn_on_floor(
+			Vector2(OUT_OF_REACH_X, SPAWN_Y - HIGH_LEDGE_HEIGHT))
+	var front: float = -INF
+	for _frame: int in PACE_FRAMES:
+		await physics_frame
+		front = maxf(front, demon.position.x + _half_width(demon))
+	var state: Demon.State = demon.get_state()
+	await _clear([ground, block, man, demon])
+	var hops: Array[Vector3] = barks.filter(func(bark: Vector3) -> bool: return bark.z > 0.0)
+	var at_the_block: bool = hops.all(
+			func(bark: Vector3) -> bool: return bark.x > anchor and bark.y > 0.0)
+	return report(not hops.is_empty() and at_the_block
+			and front <= HIGH_LEDGE_LEFT + STILL_TOLERANCE and state == Demon.State.OUT_OF_REACH,
+			"Block at x = %d: %d barks, %d hopping, all at the block facing him %s; front at most %.1f, %s"
+			% [HIGH_LEDGE_LEFT, barks.size(), hops.size(), at_the_block, front, _name_of(state)])
+
+
+## The demon on a ledge, put PACE_NEAR from its end, the man on the floor below: pacing out of
+## reach, it stops at the end of its floor, never falls off, and barks there hopping, turned to him,
+## and only there.
+func _pacing_out_of_reach_it_hops_where_its_floor_ends_on_the_man_s_side() -> bool:
+	var ground: StaticBody2D = make_platform(FLOOR_LEFT, FLOOR_RIGHT)
+	var ledge: StaticBody2D = make_platform(FLOOR_LEFT, HIGH_LEDGE_RIGHT, -HIGH_LEDGE_HEIGHT)
+	var demon: Demon = await _spawn_demon(0.0, NO_LUNGE)
+	demon.position = Vector2(HIGH_LEDGE_RIGHT - PACE_NEAR, SPAWN_Y - HIGH_LEDGE_HEIGHT)
+	await wait_frames(SETTLE_FRAMES)
+	await wait_until(demon.is_on_floor)
+	_make_it_pace(demon)
+	var anchor: float = demon.position.x
+	var barks: Array[Vector3] = []
+	_record_barks(demon, barks)
+	var man: Player = await spawn_on_floor(Vector2(BELOW_LEDGE_X, SPAWN_Y))
+	var furthest: float = -INF
+	for _frame: int in PACE_FRAMES:
+		await physics_frame
+		furthest = maxf(furthest, demon.position.x)
+	var on_the_ledge: bool = demon.position.y < -HIGH_LEDGE_HEIGHT / 2.0
+	var state: Demon.State = demon.get_state()
+	await _clear([ground, ledge, man, demon])
+	var hops: Array[Vector3] = barks.filter(func(bark: Vector3) -> bool: return bark.z > 0.0)
+	var at_the_end: bool = hops.all(
+			func(bark: Vector3) -> bool: return bark.x > anchor and bark.y > 0.0)
+	return report(not hops.is_empty() and at_the_end and furthest <= HIGH_LEDGE_RIGHT
+			and on_the_ledge and state == Demon.State.OUT_OF_REACH,
+			"Ledge ending at x = %d, the man below: %d barks, %d hopping, all at the end facing him %s; furthest %.1f, on the ledge %s, %s"
+			% [HIGH_LEDGE_RIGHT, barks.size(), hops.size(), at_the_end, furthest, on_the_ledge,
+					_name_of(state)])
+
+
+## Pacing out of reach, the demon still gives up after Out Of Reach Wait, having paced on the way.
+func _pacing_out_of_reach_it_still_gives_up_after_out_of_reach_wait() -> bool:
+	var ground: StaticBody2D = make_platform(FLOOR_LEFT, FLOOR_RIGHT)
+	var ledge: StaticBody2D = make_platform(HIGH_LEDGE_LEFT, FLOOR_RIGHT, -HIGH_LEDGE_HEIGHT)
+	var changes: Array[Vector2i] = []
+	var demon: Demon = await _spawn_demon(0.0, NO_LUNGE, changes)
+	_make_it_pace(demon)
+	demon.stats.out_of_reach_wait = OUT_OF_REACH_WAIT
+	var man: Player = await spawn_on_floor(
+			Vector2(OUT_OF_REACH_X, SPAWN_Y - HIGH_LEDGE_HEIGHT))
+	var stopped: bool = await _is_in_state_within(
+			demon, Demon.State.OUT_OF_REACH, FRAMES_TO_WATCH)
+	var anchor: float = demon.position.x
+	var paced: float = 0.0
+	for _frame: int in MAX_FRAMES:
+		await physics_frame
+		if demon.get_state() != Demon.State.OUT_OF_REACH:
+			break
+		paced = maxf(paced, absf(demon.position.x - anchor))
+	var waited: int = _frames_in(changes, Demon.State.OUT_OF_REACH)
+	await _clear([ground, ledge, man, demon])
+	var wait_frames_asked: int = roundi(OUT_OF_REACH_WAIT * Engine.physics_ticks_per_second)
+	return report(stopped and paced > MOVED and absi(waited - wait_frames_asked) <= ONE_FRAME,
+			"Pacing out of reach: paced up to %.1f px away, waited %d frames (asked %d)"
+			% [paced, waited, wait_frames_asked])
+
+
+## The man on a thin shelf, the demon below it SHELF_AWAY out from its corner: pacing out of reach,
+## it goes on below the shelf though the shelf hides the man for longer than Give Up Time, since it
+## knows he is up there, and never stops pacing out of reach for a search, an alert or a chase.
+func _pacing_out_of_reach_it_keeps_on_below_a_shelf_that_hides_the_man() -> bool:
+	var ground: StaticBody2D = make_platform(FLOOR_LEFT, FLOOR_RIGHT)
+	var shelf: StaticBody2D = make_wall(HIGH_LEDGE_LEFT, FLOOR_RIGHT, -SHELF_HEIGHT,
+			-SHELF_HEIGHT + SHELF_THICKNESS)
+	var changes: Array[Vector2i] = []
+	var demon: Demon = await _spawn_demon(HIGH_LEDGE_LEFT - SHELF_AWAY, NO_LUNGE, changes)
+	_make_it_pace(demon)
+	var man: Player = await spawn_on_floor(
+			Vector2(HIGH_LEDGE_LEFT + SHELF_INSET, SPAWN_Y - SHELF_HEIGHT))
+	var stopped: bool = await _is_in_state_within(
+			demon, Demon.State.OUT_OF_REACH, FRAMES_TO_WATCH)
+	var since: int = changes.size()
+	var lowest: float = demon.position.x
+	var highest: float = demon.position.x
+	var unseen_for: int = 0
+	var longest_unseen: int = 0
+	for _frame: int in PACE_FRAMES:
+		await physics_frame
+		lowest = minf(lowest, demon.position.x)
+		highest = maxf(highest, demon.position.x)
+		unseen_for = 0 if demon.sees_target() else unseen_for + 1
+		longest_unseen = maxi(longest_unseen, unseen_for)
+	var left_it: bool = changes.size() > since
+	var state: Demon.State = demon.get_state()
+	var give_up_frames: int = demon.stats.get_give_up_frames()
+	await _clear([ground, shelf, man, demon])
+	return report(stopped and not left_it and highest - lowest > MOVED
+			and longest_unseen > give_up_frames,
+			"Man on a thin shelf %d px up: out of reach %s, paced %.1f px, hidden up to %d frames (Give Up Time %d), left it %s, %s"
+			% [SHELF_HEIGHT, stopped, highest - lowest, longest_unseen, give_up_frames, left_it,
+					_name_of(state)])
+
+
+## With no Out Of Reach Pace Width, the demon stands out of reach as before and never barks.
+func _with_no_pace_width_out_of_reach_it_never_barks() -> bool:
+	var ground: StaticBody2D = make_platform(FLOOR_LEFT, FLOOR_RIGHT)
+	var ledge: StaticBody2D = make_platform(HIGH_LEDGE_LEFT, FLOOR_RIGHT, -HIGH_LEDGE_HEIGHT)
+	var demon: Demon = await _spawn_demon(0.0, NO_LUNGE)
+	var barks: Array[Vector3] = []
+	_record_barks(demon, barks)
+	var man: Player = await spawn_on_floor(
+			Vector2(OUT_OF_REACH_X, SPAWN_Y - HIGH_LEDGE_HEIGHT))
+	var stopped: bool = await _is_in_state_within(
+			demon, Demon.State.OUT_OF_REACH, FRAMES_TO_WATCH)
+	var gave_up: bool = await _is_in_state_within(demon, Demon.State.IDLE, MAX_FRAMES)
+	await _clear([ground, ledge, man, demon])
+	return report(stopped and gave_up and barks.is_empty(),
+			"No pace width: out of reach %s, gave up %s, %d barks" % [stopped, gave_up,
+					barks.size()])
+
+
+## Two demons out of reach of one man, with the level's pauses, draw their own pauses and the way
+## they set off, so with each of PAIR_SEEDS they bark nearer than MIN_BARK_GAP frames to each other
+## less than half the time: never in step. The audio keeps two barks at once from sounding as one.
+func _two_demons_pacing_out_of_reach_never_bark_in_step() -> bool:
+	var reports: PackedStringArray = []
+	var in_step: bool = false
+	for pair_seed: int in PAIR_SEEDS:
+		var barks: Array[Array] = await _barks_of_two_pacing(pair_seed)
+		var first: Array = barks[0]
+		var second: Array = barks[1]
+		var paired: int = first.filter(func(frame: int) -> bool: return second.any(
+				func(other: int) -> bool: return absi(other - frame) < MIN_BARK_GAP)).size()
+		in_step = in_step or first.size() < LEAST_BARKS or second.size() < LEAST_BARKS \
+				or 2 * paired >= first.size()
+		reports.append("seed %d: %d and %d barks, %d together" % [pair_seed, first.size(),
+				second.size(), paired])
+	return report(not in_step, "Two pacing out of reach, %d frames apart or less is together: %s"
+			% [MIN_BARK_GAP, "; ".join(reports)])
+
+
+## The physics frames on which each of two demons pacing out of reach with the level's pauses barks
+## over PAIR_FRAMES, with the generators seeded by pair_seed.
+func _barks_of_two_pacing(pair_seed: int) -> Array[Array]:
+	seed(pair_seed)
+	var ground: StaticBody2D = make_platform(FLOOR_LEFT, FLOOR_RIGHT)
+	var ledge: StaticBody2D = make_platform(HIGH_LEDGE_LEFT, FLOOR_RIGHT, -HIGH_LEDGE_HEIGHT)
+	var first: Demon = await _spawn_demon(0.0, NO_LUNGE)
+	var second: Demon = await _spawn_demon(-AWAY_FROM_POST, NO_LUNGE)
+	var first_barks: Array[int] = []
+	var second_barks: Array[int] = []
+	for pair: Array in [[first, first_barks], [second, second_barks]]:
+		var demon: Demon = pair[0]
+		var frames: Array[int] = pair[1]
+		_make_it_pace(demon)
+		demon.stats.out_of_reach_pause_min = LEVEL_PAUSE_MIN
+		demon.stats.out_of_reach_pause_max = LEVEL_PAUSE_MAX
+		demon.stats.out_of_reach_wait = PAIR_WAIT
+		demon.barked.connect(
+				func(_hops: bool) -> void: frames.append(Engine.get_physics_frames()))
+	var man: Player = await spawn_on_floor(
+			Vector2(OUT_OF_REACH_X, SPAWN_Y - HIGH_LEDGE_HEIGHT))
+	await wait_frames(PAIR_FRAMES)
+	await _clear([ground, ledge, man, first, second])
+	return [first_barks, second_barks]
+
+
+## A bark makes the stand-in's drawing hop and come back down, higher when the demon hops at a wall
+## or the end of its floor, while its body stays where it is on the floor.
+func _a_bark_hops_only_the_drawing_and_higher_at_a_wall() -> bool:
+	var ground: StaticBody2D = make_platform(FLOOR_LEFT, FLOOR_RIGHT)
+	var demon: Demon = await _spawn_demon(0.0, NO_LUNGE)
+	var plain: Array[float] = await _hop_of(demon, false)
+	var at_a_wall: Array[float] = await _hop_of(demon, true)
+	await _clear([ground, demon])
+	var body_still: bool = plain[2] < STILL_TOLERANCE and at_a_wall[2] < STILL_TOLERANCE
+	var back_down: bool = is_zero_approx(plain[1]) and is_zero_approx(at_a_wall[1])
+	return report(plain[0] > 0.0 and at_a_wall[0] > plain[0] and back_down and body_still,
+			"Bark: drawing up %.1f px, at a wall %.1f px, back down %s, body still on the floor %s"
+			% [plain[0], at_a_wall[0], back_down, body_still])
+
+
+## A new state, such as the chase once the man comes down, ends a hop under way: the stand-in's
+## drawing is back at its rest on that same frame, and stays there.
+func _a_new_state_ends_a_hop_with_the_drawing_at_rest() -> bool:
+	var ground: StaticBody2D = make_platform(FLOOR_LEFT, FLOOR_RIGHT)
+	var demon: Demon = await _spawn_demon(0.0, NO_LUNGE)
+	var placeholder: Polygon2D = demon.get_node(^"Placeholder") as Polygon2D
+	var rest_y: float = placeholder.position.y
+	demon.barked.emit(true)
+	await wait_frames(HOP_CUT_FRAMES)
+	var hopping: bool = placeholder.position.y < rest_y
+	demon.change_state(Demon.State.IDLE)
+	var at_once: bool = is_equal_approx(placeholder.position.y, rest_y)
+	await wait_frames(HOP_FRAMES)
+	var stays: bool = is_equal_approx(placeholder.position.y, rest_y)
+	await _clear([ground, demon])
+	return report(hopping and at_once and stays,
+			"Hop cut by a new state: hopping %s, at rest at once %s, stays at rest %s"
+			% [hopping, at_once, stays])
 
 
 ## With Patrol Width and no man about, the demon walks to and fro across Patrol Width around its post
@@ -3509,6 +3853,41 @@ func _make_it_patrol(demon: Demon) -> void:
 func _make_it_search(demon: Demon) -> void:
 	demon.stats.search_time = SEARCH_TIME
 	demon.stats.search_speed = SEARCH_SPEED
+
+
+## Gives the demon the cases' pacing out of reach: Out Of Reach Pace Width, its pauses and Patrol
+## Speed, with PACE_WAIT to watch it.
+func _make_it_pace(demon: Demon) -> void:
+	demon.stats.out_of_reach_pace_width = PACE_WIDTH
+	demon.stats.out_of_reach_pause_min = PACE_PAUSE_MIN
+	demon.stats.out_of_reach_pause_max = PACE_PAUSE_MAX
+	demon.stats.patrol_speed = PATROL_SPEED
+	demon.stats.out_of_reach_wait = PACE_WAIT
+
+
+## Records each bark of the demon from now on into barks: its x, its facing, and 1 if it hopped or 0
+## if not.
+func _record_barks(demon: Demon, barks: Array[Vector3]) -> void:
+	demon.barked.connect(
+			func(hops: bool) -> void:
+				barks.append(Vector3(demon.position.x, demon.get_facing(), 1.0 if hops else 0.0)))
+
+
+## Has the demon bark, hopping or not, and watches its stand-in for HOP_FRAMES: how high its drawing
+## went, how far from its rest it ended, and how far the body moved, INF if it left the floor.
+func _hop_of(demon: Demon, hops: bool) -> Array[float]:
+	var placeholder: Polygon2D = demon.get_node(^"Placeholder") as Polygon2D
+	var rest_y: float = placeholder.position.y
+	var body: Vector2 = demon.position
+	var peak: float = 0.0
+	var on_floor: bool = true
+	demon.barked.emit(hops)
+	for _frame: int in HOP_FRAMES:
+		await physics_frame
+		peak = maxf(peak, rest_y - placeholder.position.y)
+		on_floor = on_floor and demon.is_on_floor()
+	var moved: float = demon.position.distance_to(body) if on_floor else INF
+	return [peak, placeholder.position.y - rest_y, moved]
 
 
 ## The man's crucifix, held up by a stand-in input, once it is up.

@@ -103,4 +103,5 @@ shape = SubResource("RectangleShape2D_hit")
 
 [connection signal="state_changed" from="." to="Placeholder" method="_on_demon_state_changed"]
 [connection signal="warning_started" from="." to="Placeholder" method="_on_demon_warning_started"]
+[connection signal="barked" from="." to="Placeholder" method="_on_demon_barked"]
 [connection signal="hold_sink_changed" from="Hitbox" to="SinkingDrawing" method="set_sink"]

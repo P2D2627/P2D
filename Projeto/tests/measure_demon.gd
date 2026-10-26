@@ -4,7 +4,9 @@
 # others wait at Retreat Distance (ADR 0025), the busiest a pack gets; then 50 on patrol, with the
 # man out of their sight, as a level's demons spend most of their time (ADR 0033): first all on the
 # screen, which with no camera is all of the world, and then spread along ten screens with a camera,
-# as in a level, where those off its screen stand. Each part starts with a new
+# as in a level, where those off its screen stand. Between the two, 50 below the man on a shelf out
+# of their reach, first standing, with no Out Of Reach Pace Width, and then pacing with that of
+# lust_demon_stats.tres (ADR 0039). Each part starts with a new
 # man, with full SP: the demons drain it, and a grab that killed him would hold him for good, since
 # only a Level starts the room over. Each cost is what the demons add to the same room with no
 # demons, on average and on the worst frame. The whole frame: the time from one physics frame to the
@@ -89,6 +91,20 @@ const MAN_AWAY: float = 2500.0
 ## out of sight of all of them.
 const LEVEL_HALF_WIDTH: float = 9600.0
 const MAN_BELOW: float = 3000.0
+## The measure out of reach: a thin shelf this high over the floor, far over any attack's reach,
+## from x = SHELF_LEFT, with the man on it SHELF_INSET px in; the demons spread from SHELF_LEFT -
+## OUT_OF_REACH_FARTHEST to SHELF_LEFT - OUT_OF_REACH_NEAREST, far enough out to see his head over
+## the shelf's corner as they pace, and inside Sight Distance. Out Of Reach Wait is raised to
+## OUT_OF_REACH_HELD in memory, so none gives up while it is measured.
+const SHELF_LEFT: float = 1000.0
+const SHELF_WIDTH: float = 400.0
+const SHELF_HEIGHT: float = 200.0
+const SHELF_THICKNESS: float = 10.0
+const SHELF_INSET: float = 100.0
+const OUT_OF_REACH_NEAREST: float = 320.0
+const OUT_OF_REACH_FARTHEST: float = 950.0
+const OUT_OF_REACH_HELD: float = 10.0
+const LUST_DEMON_STATS: String = "res://demon/lust_demon_stats.tres"
 
 ## Demons that started their warning since the last physics frame was read.
 var _warnings: int = 0
@@ -156,6 +172,21 @@ func _initialize() -> void:
 					patrol.scripts - empty.scripts, patrol.worst_scripts - empty.scripts])
 	for demon: Demon in patrolling:
 		demon.queue_free()
+	var stats: DemonStats = load(LUST_DEMON_STATS) as DemonStats
+	var pace_width: float = stats.out_of_reach_pace_width
+	var wait: float = stats.out_of_reach_wait
+	stats.out_of_reach_wait = OUT_OF_REACH_HELD
+	var shelf: StaticBody2D = make_wall(SHELF_LEFT, SHELF_LEFT + SHELF_WIDTH, -SHELF_HEIGHT,
+			-SHELF_HEIGHT + SHELF_THICKNESS)
+	player.position = Vector2(SHELF_LEFT + SHELF_INSET, -SHELF_HEIGHT + FLOOR_START.y)
+	await wait_until_on_floor(player)
+	for width: float in [0.0, pace_width]:
+		stats.out_of_reach_pace_width = width
+		if not await _measure_out_of_reach(first, last, empty, width):
+			return
+	stats.out_of_reach_pace_width = pace_width
+	stats.out_of_reach_wait = wait
+	shelf.queue_free()
 	make_platform(-LEVEL_HALF_WIDTH, LEVEL_HALF_WIDTH)
 	make_platform(-FLOOR_HALF_WIDTH, FLOOR_HALF_WIDTH, MAN_BELOW)
 	player.position = Vector2(0.0, MAN_BELOW + FLOOR_START.y)
@@ -204,6 +235,36 @@ func _spawn_demons_across(count: int) -> Array[Demon]:
 		root.add_child(demon)
 		demons.append(demon)
 	return demons
+
+
+## Measures and prints BUDGET_DEMONS demons below the man on the shelf, with Out Of Reach Pace Width
+## width already set; false if one is not out of his reach when the measure starts, after saying so
+## and quitting with 1.
+func _measure_out_of_reach(first: Stamp, last: Stamp, empty: Cost, width: float) -> bool:
+	var demons: Array[Demon] = []
+	for index: int in BUDGET_DEMONS:
+		var demon: Demon = DEMON_SCENE.instantiate() as Demon
+		demon.position = FLOOR_START + Vector2(SHELF_LEFT - lerpf(OUT_OF_REACH_FARTHEST,
+				OUT_OF_REACH_NEAREST, float(index) / BUDGET_DEMONS), 0.0)
+		root.add_child(demon)
+		demons.append(demon)
+	await wait_frames(SETTLE_FRAMES)
+	if demons.any(
+			func(demon: Demon) -> bool: return demon.get_state() != Demon.State.OUT_OF_REACH):
+		printerr("Demons below the shelf: one is not out of the man's reach.")
+		quit(1)
+		return false
+	var cost: Cost = await _measure(first, last)
+	var walking: int = demons.filter(
+			func(demon: Demon) -> bool: return demon.velocity.x != 0.0).size()
+	print("%d demons out of reach, pacing %.0f px, %d walking at the end: whole frame %.0f us on average, %.0f us on the worst; scripts %.0f and %.0f us"
+			% [BUDGET_DEMONS, width, walking, cost.frame - empty.frame,
+					cost.worst_frame - empty.frame, cost.scripts - empty.scripts,
+					cost.worst_scripts - empty.scripts])
+	for demon: Demon in demons:
+		demon.queue_free()
+	await wait_frames(SETTLE_FRAMES)
+	return true
 
 
 ## count demons on the floor, every other one on each side of the man, from NEAREST to FARTHEST.

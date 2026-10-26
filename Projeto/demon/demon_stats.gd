@@ -32,6 +32,15 @@ extends Resource
 ## floor or a wall higher above or lower below its own than the Max Height Difference of any of its
 ## attacks. It never follows him along under him or over him.
 @export_range(0.0, 10.0, 0.1, "suffix:s") var out_of_reach_wait: float = 2.0
+## Width, in px, of the stretch the demon paces to and fro across at Patrol Speed, around where it
+## stopped, while the man is out of its reach, so it never stands stiff (ADR 0039). At 0 it stands
+## facing him.
+@export_range(0.0, 1000.0, 10.0, "suffix:px") var out_of_reach_pace_width: float = 0.0
+## Shortest pause, in seconds, where it stops and at each end of that stretch, where it barks turned
+## to the man: each demon draws its own every time, so two demons below one man fall out of step.
+@export_range(0.0, 5.0, 0.1, "suffix:s") var out_of_reach_pause_min: float = 0.6
+## Longest of those pauses, in seconds.
+@export_range(0.0, 5.0, 0.1, "suffix:s") var out_of_reach_pause_max: float = 1.2
 ## The share of Sight Distance the demon sees behind it, the way it does not face: at 1 it sees as
 ## far all round; lower, the man can get past at its back.
 @export_range(0.0, 1.0, 0.05) var sight_behind_share: float = 1.0
@@ -157,6 +166,12 @@ func get_search_frames() -> int:
 ## out_of_reach_wait in whole physics frames, rounded to the nearest one.
 func get_out_of_reach_frames() -> int:
 	return _to_frames(out_of_reach_wait)
+
+
+## A pause of share of the way from Out Of Reach Pause Min to Max, share from 0 to 1, in whole
+## physics frames, and never under one, so pauses at 0 never make a demon bark on every frame.
+func get_out_of_reach_pause_frames(share: float) -> int:
+	return maxi(_to_frames(lerpf(out_of_reach_pause_min, out_of_reach_pause_max, share)), 1)
 
 
 ## How far above or below the demon's floor, in px, the man is still in its reach: the most Max
