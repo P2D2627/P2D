@@ -740,6 +740,7 @@ godot --headless --fixed-fps 60 --path Projeto --script res://tests/test_control
 godot --headless --fixed-fps 60 --path Projeto --script res://tests/test_background_layer.gd
 godot --headless --fixed-fps 60 --path Projeto --script res://tests/test_soul_points.gd
 godot --headless --fixed-fps 60 --path Projeto --script res://tests/test_demon.gd
+godot --headless --fixed-fps 60 --path Projeto --script res://tests/test_demon_target.gd
 godot --headless --fixed-fps 60 --path Projeto --script res://tests/test_hit_boxes.gd
 godot --headless --fixed-fps 60 --path Projeto --script res://tests/test_knockback.gd
 godot --headless --fixed-fps 60 --path Projeto --script res://tests/test_grab_rules.gd
@@ -1190,8 +1191,9 @@ não é esta cena com a perseguição desligada.
   cena: assim o `demon.tscn` não muda, cada demónio não ganha doze nós (600 com 50 demónios) e os
   valores continuam todos no `DemonStats`. O alerta e a procura, que o desenho do nível 1 pedia,
   entraram assim: dois ficheiros novos, cada um com o seu nome na enumeração e a linha que o cria
-  no `demon.gd` (ADR 0035). A escolha do ataque, a mordida e a perseguição continuam no
-  `demon.gd`; separá-las em componentes é um passo próprio (ADR 0034). A divisão em objetos não alterou o
+  no `demon.gd` (ADR 0035). O alvo e a memória passaram depois para um componente (ver "Alvo e
+  memória num componente"); a escolha do ataque, a mordida e a perseguição continuam no
+  `demon.gd`. A divisão em objetos não alterou o
   comportamento: os 105 casos do
   `test_demon.gd` passam sem alterações. Também não alterou o custo: com 50 demónios a perseguir, o
   tempo dos scripts por passo foi, em mediana de quatro execuções alternadas, 0,87 ms antes e
@@ -1221,6 +1223,15 @@ não é esta cena com a perseguição desligada.
   demónio aterrar, ela estiver ao nível dele ou atrás. A pontaria fica fixa até ao fim, como a
   direção. No `test_demon.gd`, com os valores do teste, o salto aterrou a 2,3 px de uma personagem
   parada e a 3,0 px de uma que se afastava a 50 px/s.
+- **Alvo e memória num componente.** O que o demónio sabe da personagem que persegue está no
+  `DemonTarget` (`demon/demon_target.gd`): a caixa e a `Hurtbox` dela, a velocidade a que anda, há
+  quantos passos não a vê, e onde e quando a viu pela última vez. O componente só guarda e conta; é
+  o `demon.gd` que decide desistir, procurar ou atacar. Ao largar a personagem, guarda o último
+  sítio onde a viu, que é para onde a procura vai. Não é um nó da cena, pelas razões dos estados.
+  Testa-se sozinho, sem cena (`test_demon_target.gd`), e os 112 casos do `test_demon.gd` passam sem
+  alterações. Custa cerca de 1,6 µs por demónio e por passo: com 50 a perseguir, o tempo dos
+  scripts foi, em mediana de quatro execuções alternadas, 0,91 ms antes e 0,99 ms depois, dentro do
+  orçamento (ADR 0037).
 - **Sentidos num componente.** O que o demónio percebe da personagem está no `DemonSenses`
   (`demon/demon_senses.gd`): uma área circular, do raio do Sight Distance, encontra-a, e um raio
   confirma que nenhuma parede está entre os olhos do demónio e o meio dela ou, se esse estiver

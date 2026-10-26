@@ -67,29 +67,14 @@ var _state: State = State.IDLE
 ## demon is in.
 var _states: Array[DemonState] = []
 var _current: DemonState = null
-## The man, while the demon chases him.
-var _target: Node2D = null
-## The man's body box and half its size, in px, while the demon chases him.
-var _target_box: CollisionShape2D = null
-var _target_half_size: Vector2 = Vector2.ZERO
-## The man's Hurtbox while the demon chases him, or null if he has none.
-var _target_hurtbox: Hurtbox = null
+## The man while the demon chases him, and what it remembers of him once he is hidden (ADR 0037).
+var _target: DemonTarget = DemonTarget.new()
 ## The other demons inside the pack area: about on this one's floor, near enough to keep apart from.
 var _packmates: Array[Demon] = []
-## Physics frames in a row the demon has chased the man without seeing him.
-var _unseen_frames: int = 0
-## The man's x the last time the demon saw him, where it looks for him once he is hidden, and the
-## physics frame it saw him on.
-var _last_seen_x: float = 0.0
-var _seen_on_frame: int = -2
 ## 1 when the demon goes right, -1 when left. A lunge's warning fixes it until the lunge lands.
 var _facing: float = 1.0
 ## The attack the demon warns for and then makes, chosen when the warning starts.
 var _attack: DemonAttack = null
-## The man's x on the last physics frame, and his speed along the floor from it, in px/s, + to the
-## right: how far he went, whatever moved him, so a platform that carries him counts too.
-var _target_last_x: float = 0.0
-var _target_speed: float = 0.0
 ## Physics frames left, after a bite on the run, before the demon can attack again.
 var _recover_frames_left: int = 0
 ## Physics frames left in which the bite on the run just made can land.
@@ -158,7 +143,7 @@ func _ready() -> void:
 
 func _physics_process(delta: float) -> void:
 	_bite_frames_left = maxi(_bite_frames_left - 1, 0)
-	_track_target(delta)
+	_target.track(delta)
 	if not is_on_floor():
 		velocity += _current.get_gravity() * delta
 	_current.physics_update(delta)
@@ -201,7 +186,7 @@ func get_facing() -> float:
 ## what shows it, such as the test room's debug view. In a lunge, a grab or a throw it does not
 ## look, so there it is false.
 func sees_target() -> bool:
-	return is_instance_valid(_target) and Engine.get_physics_frames() - _seen_on_frame <= 1
+	return _target.sees_him_on(Engine.get_physics_frames())
 
 
 ## For its states: where along the floor the demon walks back to once it gives up.
@@ -237,16 +222,7 @@ func chase_if_it_notices_the_man() -> bool:
 		if _height_of(man) > stats.get_reach_height():
 			return false
 		_gave_up_out_of_reach = false
-	_target = man
-	var target_body: CollisionObject2D = _target as CollisionObject2D
-	_target_box = target_body.shape_owner_get_owner(
-			target_body.get_shape_owners()[0]) as CollisionShape2D
-	_target_half_size = _target_box.shape.get_rect().size / 2.0
-	_target_hurtbox = _hurtbox_of(_target)
-	_target_last_x = _target.global_position.x
-	_last_seen_x = _target_last_x
-	_target_speed = 0.0
-	_unseen_frames = 0
+	_target.take(man)
 	change_state(State.ALERT if stats.alert_time > 0.0 else State.CHASE)
 	return true
 
@@ -280,12 +256,12 @@ func post_facing() -> float:
 
 ## For its states: how far the man is along the floor, in px, + to the right.
 func get_gap_to_target() -> float:
-	return _target.global_position.x - global_position.x
+	return _target.get_man().global_position.x - global_position.x
 
 
 ## For its states: how far apart, in px, the man's feet and the demon's are in height.
 func get_target_height() -> float:
-	return _height_of(_target)
+	return _height_of(_target.get_man())
 
 
 ## For its states: warns of attack, chosen by attack_to_start, which it makes once the warning is
@@ -343,7 +319,7 @@ func change_state_and_act(new_state: State, delta: float) -> void:
 ## on the way up, he does not count, since he can only come down, so a jump never stops the chase
 ## nor cuts a bite short; nor does a demon in the air, which is still falling to its floor.
 func is_man_out_of_reach() -> bool:
-	var man: CharacterBody2D = _target as CharacterBody2D
+	var man: CharacterBody2D = _target.get_man() as CharacterBody2D
 	return man != null and is_on_floor() \
 			and (man.is_on_floor() or (man.is_on_wall() and man.velocity.y >= 0.0)) \
 			and _height_of(man) > stats.get_reach_height() + REACH_TOLERANCE
@@ -362,7 +338,7 @@ func back_off_or_chase(delta: float) -> void:
 	_retreat_after_bite = false
 	_retreat_distance_draw = _rng.randf_range(-1.0, 1.0)
 	_retreat_speed_draw = _rng.randf_range(-1.0, 1.0)
-	if stats.retreat_distance > 0.0 and is_instance_valid(_target) \
+	if stats.retreat_distance > 0.0 and _target.has_man() \
 			and absf(get_gap_to_target()) < retreat_distance():
 		_recover_frames_left = 0
 		change_state_and_act(State.RETREAT, delta)
@@ -372,16 +348,7 @@ func back_off_or_chase(delta: float) -> void:
 
 ## For its states: true while the demon is after the man.
 func has_target() -> bool:
-	return is_instance_valid(_target)
-
-
-## Keeps the man's speed along the floor up to date while the demon is after him.
-func _track_target(delta: float) -> void:
-	if not is_instance_valid(_target):
-		return
-	var x: float = _target.global_position.x
-	_target_speed = (x - _target_last_x) / delta
-	_target_last_x = x
+	return _target.has_man()
 
 
 ## For its states: true while the man is still there to chase, not past Lose Distance, nor hidden
@@ -389,17 +356,16 @@ func _track_target(delta: float) -> void:
 ## Otherwise the demon stops chasing him; hidden by a wall, with Search Time, it goes to look for
 ## him where it last saw him (ADR 0035).
 func keeps_after_target() -> bool:
-	if not is_instance_valid(_target) or not may_chase_from_here() \
-			or global_position.distance_to(_target.global_position) > stats.lose_distance:
+	var man: Node2D = _target.get_man()
+	if not _target.has_man() or not may_chase_from_here() \
+			or global_position.distance_to(man.global_position) > stats.lose_distance:
 		_stop_chasing()
 		return false
-	if _senses.can_see(_target):
-		_unseen_frames = 0
-		_last_seen_x = _target.global_position.x
-		_seen_on_frame = Engine.get_physics_frames()
+	if _senses.can_see(man):
+		_target.saw_him(Engine.get_physics_frames())
 	else:
-		_unseen_frames += 1
-	if _unseen_frames >= stats.get_give_up_frames():
+		_target.missed_him()
+	if _target.get_unseen_frames() >= stats.get_give_up_frames():
 		if stats.search_time > 0.0:
 			_forget_target()
 			change_state(State.SEARCH)
@@ -411,7 +377,7 @@ func keeps_after_target() -> bool:
 
 ## For its states: the man's x the last time the demon saw him.
 func get_last_seen_x() -> float:
-	return _last_seen_x
+	return _target.get_last_seen_x()
 
 
 ## For its states: faces the man, or a spot, gap px away along the floor, + to the right. Right
@@ -498,9 +464,7 @@ func _stop_chasing() -> void:
 
 ## Lets go of the man, and stops.
 func _forget_target() -> void:
-	_target = null
-	_target_box = null
-	_target_hurtbox = null
+	_target.forget()
 	velocity.x = 0.0
 
 
@@ -518,11 +482,12 @@ func stand_or_return() -> void:
 ## started, so on its own it would let the demon into the room he just took, and the two bodies
 ## would shove each other apart frame after frame (ADR 0022).
 func _stop_at_the_man(delta: float) -> void:
-	if (not is_instance_valid(_target_box) or velocity.x == 0.0
-			or collision_mask & (_target as CollisionObject2D).collision_layer == 0):
+	var target_box: CollisionShape2D = _target.get_box()
+	if (not is_instance_valid(target_box) or velocity.x == 0.0
+			or collision_mask & (_target.get_man() as CollisionObject2D).collision_layer == 0):
 		return
-	var apart: Vector2 = _target_box.global_position - _box.global_position
-	var touching: Vector2 = _target_half_size + _half_size
+	var apart: Vector2 = target_box.global_position - _box.global_position
+	var touching: Vector2 = _target.get_half_size() + _half_size
 	if absf(apart.y) >= touching.y or signf(apart.x) != signf(velocity.x):
 		return
 	var room: float = maxf(absf(apart.x) - touching.x, 0.0)
@@ -537,7 +502,7 @@ func _stop_at_the_man(delta: float) -> void:
 ## looked for, which takes many rays: the odds are the same either way.
 func attack_to_start(gap: float, delta: float) -> DemonAttack:
 	_recover_frames_left = maxi(_recover_frames_left - 1, 0)
-	if not is_on_floor() or _unseen_frames != 0 or _recover_frames_left > 0 \
+	if not is_on_floor() or _target.get_unseen_frames() != 0 or _recover_frames_left > 0 \
 			or target_takes_no_hits():
 		_hesitation_frames_left = -1
 		return null
@@ -565,13 +530,13 @@ func _can_lunge(attack: DemonAttack, gap: float) -> bool:
 ## For its states: how far the attack's lunge goes from here, in px, to land where the man, gap px
 ## away along the floor, + to the right, will be.
 func lunge_distance_to(attack: DemonAttack, gap: float) -> float:
-	return attack.get_lunge_distance_to(gap * _facing, _target_speed * _facing)
+	return attack.get_lunge_distance_to(gap * _facing, _target.get_speed() * _facing)
 
 
 ## True when the man is inside the attack's Attack Range and at about the demon's own height.
 func _has_man_in_range(attack: DemonAttack, gap: float) -> bool:
 	return absf(gap) < attack.attack_range \
-			and absf(_target.global_position.y - global_position.y) \
+			and absf(_target.get_man().global_position.y - global_position.y) \
 					<= attack.max_height_difference
 
 
@@ -597,17 +562,7 @@ func _has_floor_along_lunge(attack: DemonAttack, distance: float) -> bool:
 ## For its states: true while the man's Hurtbox lets no hit land, so an attack now could do nothing
 ## to him.
 func target_takes_no_hits() -> bool:
-	return is_instance_valid(_target_hurtbox) and not _target_hurtbox.takes_hits()
-
-
-## The first Hurtbox among the man's children, where its scene puts it, or null. Looked for once,
-## when the chase starts, by index, so no list is made.
-func _hurtbox_of(man: Node2D) -> Hurtbox:
-	for index: int in man.get_child_count():
-		var hurtbox: Hurtbox = man.get_child(index) as Hurtbox
-		if hurtbox != null:
-			return hurtbox
-	return null
+	return _target.takes_no_hits()
 
 
 ## For its states: true when the floor ends just ahead of the demon's front, going in direction.
