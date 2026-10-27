@@ -22,12 +22,13 @@
 # body, and looks only for the player. It sees the man's head over a wall that hides his middle;
 # with Sight Behind Share it sees less behind it, whichever way it was put facing; with Chases Only
 # On Screen it starts no chase off the screen and gives up once off it; with Return Speed it walks
-# back to its post once it gives up, chases a man it sees ahead on the way, and on another floor
-# stays where its floor stops it (ADR 0032). A man on a floor or a wall over every attack's Max
-# Height Difference, above it or below its ledge, is out of its reach (ADR 0033): it stands facing
-# him wherever he walks, chases
-# him again once he is back down, and gives up after Out Of Reach Wait; a man in the air over it
-# does not count, so a jump never stops the chase. With Patrol Width it walks to and fro across it
+# back to its post once it gives up, chases a man it sees ahead on the way, and on another floor or
+# against a wall stays where it is stopped (ADR 0032), with its post the same, and patrols around
+# there; with the wall gone, it walks home the next time it gives up (ADR 0043). A man on a floor
+# or a wall over every attack's Max Height Difference, above it or below its ledge, is out of its
+# reach (ADR 0033): it stands facing him wherever he walks, chases him again once he is back down,
+# and gives up after Out Of Reach Wait; a man in the air over it does not count, so a jump never
+# stops the chase. With Patrol Width it walks to and fro across it
 # at Patrol Speed, pausing at each end within Patrol Pause Min and Max, turns back at an edge and at
 # a step, stands still off the screen, pauses apart from another demon, chases a man it notices on
 # the way, and patrols again once back at its post. With Alert Time it stands turned to a man it
@@ -486,8 +487,10 @@ func _initialize() -> void:
 	results.append(await _keeps_chasing_inside_screen_margin_and_starts_only_on_the_screen())
 	results.append(await _walks_back_to_its_post_at_return_speed_once_it_gives_up())
 	results.append(await _walking_back_it_chases_a_man_it_sees_ahead())
-	results.append(await _on_another_floor_its_post_is_where_its_floor_stops_it())
-	results.append(await _a_wall_on_the_way_back_makes_where_it_stops_its_post())
+	results.append(await _on_another_floor_it_stays_where_its_floor_stops_it_and_keeps_its_post())
+	results.append(await _a_wall_on_the_way_back_stops_it_there_and_it_keeps_its_post())
+	results.append(await _with_the_wall_gone_it_walks_home_the_next_time_it_gives_up())
+	results.append(await _kept_off_its_post_it_patrols_around_where_it_stopped())
 	results.append(await _stands_facing_a_man_out_of_its_reach_wherever_he_walks())
 	results.append(await _stands_facing_a_man_out_of_its_reach_below_it())
 	results.append(await _out_of_reach_it_chases_again_once_the_man_comes_back_down())
@@ -2820,12 +2823,14 @@ func _walking_back_it_chases_a_man_it_sees_ahead() -> bool:
 
 
 ## A demon on another floor than its post's, as a throw can leave it, walks back as far as its floor
-## goes, stops at the edge and stays there: that is its post from then on (ADR 0032).
-func _on_another_floor_its_post_is_where_its_floor_stops_it() -> bool:
+## goes, stops at the edge and stays there (ADR 0032), standing there for now, with its post where
+## the level put it (ADR 0043).
+func _on_another_floor_it_stays_where_its_floor_stops_it_and_keeps_its_post() -> bool:
 	var upper: StaticBody2D = make_platform(FLOOR_LEFT, UPPER_FLOOR_RIGHT)
 	var lower: StaticBody2D = make_platform(LOWER_FLOOR_LEFT, FLOOR_RIGHT, LOWER_FLOOR_DROP)
 	var demon: Demon = await _spawn_demon(0.0, NO_LUNGE)
 	demon.stats.return_speed = RETURN_SPEED
+	var post: Vector2 = demon.get_post()
 	demon.position = Vector2(LOWER_START_X, LOWER_FLOOR_DROP + SPAWN_Y)
 	await wait_frames(SETTLE_FRAMES)
 	await wait_until(demon.is_on_floor)
@@ -2839,20 +2844,23 @@ func _on_another_floor_its_post_is_where_its_floor_stops_it() -> bool:
 	await wait_frames(FRAMES_TO_WATCH)
 	var moved: float = absf(demon.position.x - stop_x)
 	var state: Demon.State = demon.get_state()
+	var kept: bool = demon.get_post().is_equal_approx(post)
+	var stands: float = demon.get_stand_x()
 	await _clear([upper, lower, demon])
 	var at_the_edge: bool = front >= LOWER_FLOOR_LEFT and front < LOWER_FLOOR_LEFT + TOLERANCE
 	return report(chased and stopped and at_the_edge and moved < STILL_TOLERANCE
-			and state == Demon.State.IDLE,
-			"Post on the floor above, edge at x = %d: stopped %s, front at %.1f, then moved %.2f px, %s"
-			% [LOWER_FLOOR_LEFT, stopped, front, moved, _name_of(state)])
+			and state == Demon.State.IDLE and kept and absf(stands - stop_x) < STILL_TOLERANCE,
+			"Post on the floor above, edge at x = %d: stopped %s, front at %.1f, then moved %.2f px, %s; post kept %s, stands at x = %.1f"
+			% [LOWER_FLOOR_LEFT, stopped, front, moved, _name_of(state), kept, stands])
 
 
 ## A wall put between a demon and its post while it chases: walking back, it stops against the wall
-## and stays there, its post from then on.
-func _a_wall_on_the_way_back_makes_where_it_stops_its_post() -> bool:
+## and stays there, standing there for now, with its post where the level put it (ADR 0043).
+func _a_wall_on_the_way_back_stops_it_there_and_it_keeps_its_post() -> bool:
 	var ground: StaticBody2D = make_platform(FLOOR_LEFT, FLOOR_RIGHT)
 	var demon: Demon = await _spawn_demon(0.0, NO_LUNGE)
 	demon.stats.return_speed = RETURN_SPEED
+	var post: Vector2 = demon.get_post()
 	var man: Player = await spawn_on_floor(Vector2(SEEN_X, SPAWN_Y))
 	await wait_until(func() -> bool: return demon.position.x > AWAY_FROM_POST)
 	var wall: StaticBody2D = make_wall(RETURN_WALL_X - WALL_THICKNESS, RETURN_WALL_X, WALL_TOP)
@@ -2863,11 +2871,69 @@ func _a_wall_on_the_way_back_makes_where_it_stops_its_post() -> bool:
 	await wait_frames(FRAMES_TO_WATCH)
 	var moved: float = absf(demon.position.x - stop_x)
 	var state: Demon.State = demon.get_state()
+	var kept: bool = demon.get_post().is_equal_approx(post)
+	var stands: float = demon.get_stand_x()
 	await _clear([ground, wall, demon])
 	var at_the_wall: bool = absf(front - RETURN_WALL_X) < TOLERANCE
-	return report(stopped and at_the_wall and moved < STILL_TOLERANCE and state == Demon.State.IDLE,
-			"Wall at x = %d on the way back: stopped %s, front at %.1f, then moved %.2f px, %s"
-			% [RETURN_WALL_X, stopped, front, moved, _name_of(state)])
+	return report(stopped and at_the_wall and moved < STILL_TOLERANCE and state == Demon.State.IDLE
+			and kept and absf(stands - stop_x) < STILL_TOLERANCE,
+			"Wall at x = %d on the way back: stopped %s, front at %.1f, then moved %.2f px, %s; post kept %s, stands at x = %.1f"
+			% [RETURN_WALL_X, stopped, front, moved, _name_of(state), kept, stands])
+
+
+## A demon stopped on its way back by a wall that is gone by the time it next gives up: it walks all
+## the way home to its post then, and stands there.
+func _with_the_wall_gone_it_walks_home_the_next_time_it_gives_up() -> bool:
+	var ground: StaticBody2D = make_platform(FLOOR_LEFT, FLOOR_RIGHT)
+	var demon: Demon = await _spawn_demon(0.0, NO_LUNGE)
+	demon.stats.return_speed = RETURN_SPEED
+	var post: Vector2 = demon.get_post()
+	var man: Player = await spawn_on_floor(Vector2(SEEN_X, SPAWN_Y))
+	await wait_until(func() -> bool: return demon.position.x > AWAY_FROM_POST)
+	var wall: StaticBody2D = make_wall(RETURN_WALL_X - WALL_THICKNESS, RETURN_WALL_X, WALL_TOP)
+	await remove_player(man)
+	var stopped: bool = await _is_in_state_within(demon, Demon.State.IDLE, MAX_FRAMES)
+	wall.queue_free()
+	var again: Player = await spawn_on_floor(Vector2(demon.position.x + SEEN_X, SPAWN_Y))
+	var chased: bool = await _chases_within(demon, FRAMES_TO_WATCH)
+	await remove_player(again)
+	var returning: bool = await _is_in_state_within(demon, Demon.State.RETURN, SETTLE_FRAMES)
+	var home: bool = await _is_in_state_within(demon, Demon.State.IDLE, MAX_FRAMES)
+	var off_post: float = absf(demon.position.x - post.x)
+	await _clear([ground, demon])
+	return report(stopped and chased and returning and home and off_post <= TOLERANCE,
+			"Wall gone after it stopped there: chased again %s, walking back %s, home %s, %.1f px off its post"
+			% [chased, returning, home, off_post])
+
+
+## With Patrol Width, a demon kept off its post on another floor patrols around where its floor
+## stopped it, across all of Patrol Width that its floor lets it, instead of turning back over and
+## over at the edge towards its post.
+func _kept_off_its_post_it_patrols_around_where_it_stopped() -> bool:
+	var upper: StaticBody2D = make_platform(FLOOR_LEFT, UPPER_FLOOR_RIGHT)
+	var lower: StaticBody2D = make_platform(LOWER_FLOOR_LEFT, FLOOR_RIGHT, LOWER_FLOOR_DROP)
+	var demon: Demon = await _spawn_demon(0.0, NO_LUNGE)
+	demon.stats.return_speed = RETURN_SPEED
+	demon.position = Vector2(LOWER_START_X, LOWER_FLOOR_DROP + SPAWN_Y)
+	await wait_frames(SETTLE_FRAMES)
+	await wait_until(demon.is_on_floor)
+	var man: Player = await spawn_on_floor(
+			Vector2(LOWER_START_X + SEEN_X, LOWER_FLOOR_DROP + SPAWN_Y))
+	var chased: bool = await _chases_within(demon, FRAMES_TO_WATCH)
+	await remove_player(man)
+	var stopped: bool = await _is_in_state_within(demon, Demon.State.IDLE, MAX_FRAMES)
+	_make_it_patrol(demon)
+	var stop_x: float = demon.position.x
+	var patrolling: bool = await _is_in_state_within(demon, Demon.State.PATROL, MAX_FRAMES)
+	var farthest: float = 0.0
+	for _frame: int in MAX_FRAMES:
+		await physics_frame
+		farthest = maxf(farthest, absf(demon.position.x - stop_x))
+	await _clear([upper, lower, demon])
+	return report(chased and stopped and patrolling
+			and absf(farthest - PATROL_WIDTH / 2.0) <= TOLERANCE,
+			"Kept off its post, stopped at x = %.1f: patrolling %s, went %.1f px from there (half Patrol Width %d)"
+			% [stop_x, patrolling, farthest, PATROL_WIDTH / 2.0])
 
 
 ## A man on a ledge over every attack's Max Height Difference is out of the demon's reach (ADR

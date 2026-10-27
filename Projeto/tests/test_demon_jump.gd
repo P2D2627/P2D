@@ -11,8 +11,9 @@
 # floor when it chases fast; it never leaps down a drop deeper than that, nor with no lunge to leap
 # as, nor where a ceiling over the end of its floor is in the way of its leap, and stopped on its
 # way to take off it stands out of his reach. The crucifix throws it off in the middle of a drop,
-# and a man freed in the middle of one leaves it standing once it lands. With no Jump Height nor
-# Max Drop, the step and edge cases of test_demon.gd hold.
+# and a man freed in the middle of one leaves it standing once it lands. Kept off its post on a
+# higher floor, it leaps down after a man and then walks home to its post, which never moved (ADR
+# 0043). With no Jump Height nor Max Drop, the step and edge cases of test_demon.gd hold.
 # Run from the repository root; the exit code is 0 on pass and 1 on fail:
 # godot --headless --fixed-fps 60 --path Projeto --script res://tests/test_demon_jump.gd
 extends "res://tests/support/player_test.gd"
@@ -74,6 +75,16 @@ const SLOW_CHASE_SPEED: float = 100.0
 ## its floor, and how high.
 const BLOCK_AHEAD: float = 2.0
 const BLOCK_HEIGHT: float = TILE
+## In the case of the way home: the demon's post POST_PAST_EDGE px past the end of the high floor,
+## on the low floor; the demon is put KEPT_OFF_AWAY px short of that end, on the high floor, and the
+## first man FIRST_MAN_AWAY px short of it, where it chases him along that floor; it walks back at
+## RETURN_SPEED.
+const POST_PAST_EDGE: float = 400.0
+const KEPT_OFF_AWAY: float = 300.0
+const FIRST_MAN_AWAY: float = 100.0
+const RETURN_SPEED: float = 150.0
+## Frames for a demon put somewhere new to settle on the floor there.
+const SETTLE_FRAMES: int = 3
 ## How far, in px, a demon may be from where it must be.
 const TOLERANCE: float = 6.0
 ## How far over the step's top and the demon's Jump Clearance its peak may go, in px: the frames
@@ -105,6 +116,7 @@ func _initialize() -> void:
 	results.append(await _stopped_on_its_way_to_take_off_it_stands_out_of_reach())
 	results.append(await _the_crucifix_throws_it_off_in_the_middle_of_a_drop())
 	results.append(await _a_man_freed_in_the_middle_of_a_drop_leaves_it_standing())
+	results.append(await _kept_off_its_post_it_drops_back_down_and_walks_home())
 	finish(results)
 
 
@@ -422,6 +434,45 @@ func _a_man_freed_in_the_middle_of_a_drop_leaves_it_standing() -> bool:
 			% [dropped, on_floor, feet, _name_of(state)])
 
 
+## A demon put on the floor below the high one, where it falls to from where it was put, and then
+## moved up onto the high one, as a throw could leave it: its post is on the low floor, at that
+## floor's height. Walking back after a man on the high floor, it stops at the end of that floor;
+## then it leaps down after a man on the low floor, and once he is gone it walks all the way home
+## to its post, which never moved (ADR 0043).
+func _kept_off_its_post_it_drops_back_down_and_walks_home() -> bool:
+	var depth: float = 2.0 * TILE
+	var high: StaticBody2D = make_platform(FLOOR_LEFT, EDGE_X)
+	var low: StaticBody2D = make_platform(EDGE_X, FLOOR_RIGHT, depth)
+	var changes: Array[int] = []
+	var demon: Demon = await _spawn_demon(changes, 0.0, MAX_DROP, EDGE_X + POST_PAST_EDGE)
+	demon.stats.return_speed = RETURN_SPEED
+	var post: Vector2 = demon.get_post()
+	demon.position = Vector2(EDGE_X - KEPT_OFF_AWAY, SPAWN_Y)
+	await wait_frames(SETTLE_FRAMES)
+	await wait_until(demon.is_on_floor)
+	var first: Player = await spawn_on_floor(Vector2(EDGE_X - FIRST_MAN_AWAY, SPAWN_Y))
+	var chased: bool = await wait_until(
+			func() -> bool: return demon.get_state() == Demon.State.CHASE, FRAMES_TO_WATCH)
+	first.queue_free()
+	var stopped: bool = await wait_until(
+			func() -> bool: return demon.get_state() == Demon.State.IDLE, MAX_FRAMES)
+	var kept_off: bool = absf(demon.position.y) < TOLERANCE
+	var second: Player = await spawn_on_floor(
+			Vector2(EDGE_X + DROP_MAN_INSET, SPAWN_Y + depth))
+	var down: bool = await wait_until(
+			func() -> bool: return _chases_on_floor_at(demon, depth), MAX_FRAMES)
+	second.queue_free()
+	var home: bool = await wait_until(
+			func() -> bool: return demon.get_state() == Demon.State.IDLE, MAX_FRAMES)
+	var off_post: float = demon.position.distance_to(post)
+	await _clear([high, low, demon])
+	return report(absf(post.y - depth) < TOLERANCE and chased and stopped and kept_off
+			and changes.has(Demon.State.DROP) and down and home and off_post <= TOLERANCE,
+			"Post at y = %.1f on the low floor (put at y = %d): stopped on the high floor %s, dropped %s, down %s, home %s, %.1f px off its post"
+			% [post.y, SPAWN_Y, stopped and kept_off, changes.has(Demon.State.DROP), down, home,
+			off_post])
+
+
 ## A demon at x with the cases' values, jump_height and max_drop, and one attack of animation, with
 ## its own defaults, facing right, writing each state it changes to into changes. Its body lets the
 ## man's through, so only the floors stop it.
@@ -454,6 +505,11 @@ func _spawn_demon(changes: Array[int], jump_height: float, max_drop: float = 0.0
 ## Half the width of the demon's body box, read from its scene.
 func _half_width(demon: Demon) -> float:
 	return (demon.get_node(^"CollisionShape2D") as CollisionShape2D).shape.get_rect().size.x / 2.0
+
+
+## True while the demon chases on the floor whose top is at y.
+func _chases_on_floor_at(demon: Demon, y: float) -> bool:
+	return demon.get_state() == Demon.State.CHASE and absf(demon.position.y - y) < TOLERANCE
 
 
 ## Half the height of the demon's body box, read from its scene.

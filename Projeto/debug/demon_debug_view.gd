@@ -3,11 +3,12 @@ extends Node2D
 
 ## Draws over the room what each of its demons is doing, for trying them out and tuning them while
 ## playing: above it, the name of its state and the seconds it has been in it, and an arrow the way
-## it faces; along its floor, its post and its patrol; while it is after the man or looks for him,
-## where it last saw him; and while it sees him, a line to him. It shows and hides with the debug
-## overlay, F3. Outside debug builds it frees itself, so a release export never shows it. Only the
-## test room has it: a level's demons show only what their art shows. The room sets its process
-## mode to Always, so it keeps drawing while the game is paused; its seconds stop with the game.
+## it faces; its post, on its own floor, and its patrol, along the floor it stands on for now; while
+## it is after the man or looks for him, where it last saw him; and while it sees him, a line to
+## him. It shows and hides with the debug overlay, F3. Outside debug builds it frees itself, so a
+## release export never shows it. Only the test room has it: a level's demons show only what their
+## art shows. The room sets its process mode to Always, so it keeps drawing while the game is
+## paused; its seconds stop with the game.
 
 ## How high above its feet the text sits, and the arrow below it, in px: over the 96 px body.
 const TEXT_HEIGHT: float = 140.0
@@ -88,10 +89,11 @@ func _draw() -> void:
 func _draw_demon(index: int) -> void:
 	var demon: Demon = demons[index]
 	var feet: Vector2 = to_local(demon.global_position)
-	var post: Vector2 = to_local(Vector2(demon.get_post_x(), demon.global_position.y))
+	var post: Vector2 = to_local(demon.get_post())
+	var stand: Vector2 = to_local(Vector2(demon.get_stand_x(), demon.global_position.y))
 	var half_patrol: float = demon.stats.patrol_width / 2.0
 	if half_patrol > 0.0:
-		draw_line(post - Vector2(half_patrol, 0.0), post + Vector2(half_patrol, 0.0), PATROL_COLOR,
+		draw_line(stand - Vector2(half_patrol, 0.0), stand + Vector2(half_patrol, 0.0), PATROL_COLOR,
 				LINE_WIDTH)
 	draw_line(post, post - Vector2(0.0, POST_MARK_HEIGHT), POST_COLOR, LINE_WIDTH)
 	if demon.has_target() or demon.get_state() == Demon.State.SEARCH:

@@ -57,6 +57,9 @@ enum State {
 const FLOOR_CHECK_STEP: float = 24.0
 ## How near its post, in px, a demon walking back has to be to be there.
 const POST_REACH: float = 1.0
+## How far above or below its post, in px, a demon there may stand and still be on its post's floor:
+## its feet rest a fraction of a px over the floor.
+const POST_HEIGHT_TOLERANCE: float = 1.0
 ## How much higher than its reach, in px, the man has to stand to be out of it: two bodies on one
 ## floor can stand a fraction of a px apart, which with no attacks, a reach of 0, would put him out
 ## of it.
@@ -109,9 +112,16 @@ var _retreat_distance_draw: float = 0.0
 ## Physics frames the demon still waits, able to attack, before it may (Max Hesitation); -1 while it
 ## can't attack, so it draws a new wait as soon as it can.
 var _hesitation_frames_left: int = -1
-## Where along the floor the demon walks back to once it gives up: where the level put it, or where
-## its floor or a wall last stopped it on the way back.
-var _post_x: float = 0.0
+## The demon's post, its home, which never changes (ADR 0043): where the level put it, with the y of
+## the floor it first stands on there, below where it was put; thrown before it lands, it takes that
+## y once it first stands there.
+var _post: Vector2 = Vector2.ZERO
+## True once the demon has stood on the floor at its post, and so has the y of its post.
+var _post_on_floor: bool = false
+## Where along its floor the demon stands and patrols around for now: its post's x, or, where its
+## floor or a wall stopped it on the way back, there, until it next gives up and tries for home
+## again.
+var _stand_x: float = 0.0
 ## True once it gave up on a man out of its reach, until it notices him back within its reach: up
 ## there, it leaves him alone, instead of starting the chase again on the next frame.
 var _gave_up_out_of_reach: bool = false
@@ -150,7 +160,8 @@ func _ready() -> void:
 	_chase_speed_draw = _rng.randf_range(-1.0, 1.0)
 	_retreat_speed_draw = _rng.randf_range(-1.0, 1.0)
 	_retreat_distance_draw = _rng.randf_range(-1.0, 1.0)
-	_post_x = global_position.x
+	_post = global_position
+	_stand_x = _post.x
 	_facing = post_facing()
 	_make_states()
 	_pack_area.body_entered.connect(_on_pack_area_body_entered)
@@ -171,6 +182,9 @@ func _physics_process(delta: float) -> void:
 	_current.physics_update(delta)
 	_stop_at_the_man(delta)
 	move_and_slide()
+	if not _post_on_floor and is_on_floor() and absf(global_position.x - _post.x) <= POST_REACH:
+		_post_on_floor = true
+		_post.y = global_position.y
 	_update_hitbox()
 
 
@@ -213,14 +227,25 @@ func sees_target() -> bool:
 	return _target.sees_him_on(Engine.get_physics_frames())
 
 
-## For its states: where along the floor the demon walks back to once it gives up.
-func get_post_x() -> float:
-	return _post_x
+## For its states: the demon's post, where it walks back to once it gives up (ADR 0043).
+func get_post() -> Vector2:
+	return _post
 
 
-## For its states: makes where the demon stands its post from now on.
-func make_post_here() -> void:
-	_post_x = global_position.x
+## For its states: true when the demon stands at its post, on its post's floor.
+func is_at_post() -> bool:
+	return absf(_post.x - global_position.x) <= POST_REACH \
+			and absf(_post.y - global_position.y) <= POST_HEIGHT_TOLERANCE
+
+
+## For its states: where along its floor the demon stands and patrols around for now.
+func get_stand_x() -> float:
+	return _stand_x
+
+
+## For its states: makes where the demon stands the middle of its patrol until it next gives up.
+func stand_here() -> void:
+	_stand_x = global_position.x
 
 
 ## For its states: true while the demon is on the screen.
@@ -678,10 +703,10 @@ func _forget_target() -> void:
 	velocity.x = 0.0
 
 
-## For its states: with Return Speed, walks back to its post; with none, or already there, stands
-## where it is.
+## For its states: with Return Speed, walks back to its post, from wherever it stands for now; with
+## none, or already there, stands where it is.
 func stand_or_return() -> void:
-	if stats.return_speed > 0.0 and absf(_post_x - global_position.x) > POST_REACH:
+	if stats.return_speed > 0.0 and not is_at_post():
 		change_state(State.RETURN)
 	else:
 		change_state(State.IDLE)

@@ -295,8 +295,9 @@ plataforma alta, de onde não desce, não corre até à borda para a acompanhar 
 não conta, porque ela só pode voltar a descer: a perseguição continua. Quem desenha um nível sabe
 assim até onde cada demónio chega, sem limites invisíveis. A exceção é o crucifixo, que pode
 atirar um demónio de uma borda abaixo: o demónio cai, fica no chão onde aterra e, se vir a
-personagem, persegue-a a partir daí. Quando desiste, tenta voltar ao posto, e o sítio onde a borda
-ou uma parede o param passa a ser o seu posto; nunca fica a tentar subir. É uma mecânica: o jogador pode gastar o crucifixo para tirar
+personagem, persegue-a a partir daí. Quando desiste, tenta voltar ao posto, e fica onde a borda ou
+uma parede o param, fazendo aí a ronda; nunca fica a tentar subir. O posto não muda: de cada vez que
+desiste, volta a tentar chegar-lhe. É uma mecânica: o jogador pode gastar o crucifixo para tirar
 um demónio do caminho, e os níveis podem oferecer-lhe bordas e buracos para onde o atirar.
 
 Os valores são os do demónio da luxúria, num ficheiro de dados (`demon/lust_demon_stats.tres`);
@@ -1342,14 +1343,18 @@ não é esta cena com a perseguição desligada.
   cena (ver "Estrutura"). Repor cada sistema à mão (a personagem, os SP, os demónios, a câmara)
   pedia código de reposição em todos eles, e cada sistema novo podia esquecê-lo; a cópia nova está
   sempre como no início, e por isso cada demónio recomeça no seu posto.
-- **Posto e regresso.** O posto é a posição horizontal onde o nível pôs o demónio. Com Return Speed
-  acima de 0, quem desiste volta lá a passo; a 0, fica onde desistiu, como antes. Se o fim do chão
-  ou uma parede o parar pelo caminho, como depois de o crucifixo o atirar para outro chão, esse
-  sítio passa a ser o posto. A alternativa, tentar voltar e ficar à borda, deixava-o parado de
-  frente para um chão a que nunca chega, precisamente o que o desenho do nível 1 quer acabar. Só
-  contam as paredes do mundo (corpos estáticos e tiles): o corpo da personagem, que se move, faria
-  de um sítio livre um posto para sempre. Num nível, um posto fica a mais de 30 px de uma borda,
-  o alcance do raio que procura o chão; mais perto, o demónio para antes e o posto muda um pouco.
+- **Posto e regresso (ADR 0032 e 0043).** O posto é a posição onde o nível pôs o demónio, com a
+  altura do chão em que assenta, e nunca muda. Com Return Speed acima de 0, quem desiste volta lá a
+  passo; a 0, fica onde desistiu, como antes. Se o fim do chão ou uma parede o parar pelo caminho,
+  como depois de o crucifixo o atirar para outro chão, fica nesse sítio e faz aí a ronda até voltar
+  a desistir, altura em que tenta de novo o posto. Inicialmente, esse sítio passava a ser o posto
+  definitivo. Foi abandonado porque apagava o lugar que o nível escolheu para cada demónio: um
+  demónio que regressasse ao chão de casa, a saltar atrás da personagem (ADR 0042), ou que visse
+  sair do caminho a parede que o travara, ficava para sempre longe do posto. A alternativa de ficar
+  parado à borda, sem ronda, deixava-o virado para um chão a que nunca chega, precisamente o que o
+  desenho do nível 1 quer evitar. Só contam as paredes do mundo (corpos estáticos e tiles), e não o
+  corpo da personagem. Num nível, um posto fica a mais de 30 px de uma borda, o alcance do raio que
+  procura o chão; mais perto, o demónio para antes de lá chegar.
 - **Fora de alcance e ronda (ADR 0033).** Antes, um demónio que via a personagem num degrau alto
   corria até ficar por baixo dela e acompanhava-a de um lado para o outro, e sem ninguém à vista
   ficava imóvel, como se estivesse desligado. O alcance não é um valor novo: é a maior diferença de
@@ -1563,7 +1568,8 @@ agarrão com um e com dois demónios, o terceiro que espera à distância, o arr
 personagem se solta e o atordoamento. Com os sentidos novos e o posto, verifica a cabeça vista por
 cima de um muro baixo, o alcance para trás com o demónio virado para cada lado, o ecrã (não começa
 a perseguir fora dele e desiste quando sai), o regresso ao posto à velocidade certa, a nova
-perseguição a meio do regresso, o posto novo noutro chão e contra uma parede. Com o "fora de
+perseguição a meio do regresso, a paragem noutro chão e contra uma parede sem o posto mudar, o
+regresso a casa depois de a parede sair e a ronda à volta do sítio onde parou. Com o "fora de
 alcance", verifica que o demónio para virado para a personagem num degrau alto e não a segue
 quando ela anda por cima, que numa plataforma alta não corre até à borda por ela estar em baixo, que volta a persegui-la quando ela desce ao alcance, ainda no ar, que
 desiste ao fim do tempo mesmo vendo-a e depois a deixa em paz enquanto ela lá ficar, que um salto
@@ -1587,7 +1593,7 @@ parede ou na borda do lado dela e não passa nenhuma das duas, que desiste ao fi
 que continua por baixo de uma prateleira que a esconde, que sem troço nunca ladra, que dois
 demónios com as pausas do nível, em três sementes, ladram a menos de 6 passos um do outro menos de
 metade das vezes, que o salto do retângulo deixa o corpo no chão e que uma mudança de estado o
-interrompe e o repõe logo. São 127 casos. Todos menos os oito
+interrompe e o repõe logo. São 129 casos. Todos menos os oito
 últimos usam valores próprios, pelo que afinar o `.tres` não os altera. Os oito últimos leem o
 `.tres` do nível 1 e
 confirmam o que o desenho dos níveis assume: cada ataque com uma das animações da arte, os saltos e a diferença
