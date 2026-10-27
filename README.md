@@ -19,6 +19,9 @@ Este documento tem duas partes. A primeira descreve, para toda a equipa, o que j
 experimentado e as medidas que servem o desenho de níveis. A segunda, "Para quem programa",
 documenta a organização técnica do projeto.
 
+O desenho do nível 1 (as três fases, o comportamento dos cães, as medidas e a lista de verificação de
+cada sala) está em `docs/nivel1_desenho.md`, e os artigos que o fundamentam em `docs/referencias/`.
+
 ## Experimentar
 
 1. Instalar o Godot 4.7.x, versão standard (não a versão .NET).
