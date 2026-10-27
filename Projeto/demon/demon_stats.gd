@@ -21,7 +21,8 @@ extends Resource
 ## Search Time goes to look for him where it last saw him.
 @export_range(0.0, 10.0, 0.1, "suffix:s") var give_up_time: float = 1.5
 ## Seconds the demon stands, turned to the man, once it notices him and before it chases him: the
-## alert, which the art and the sounds show with a bark (ADR 0035). At 0 it chases him at once.
+## alert (ADR 0035), which DemonMark shows with a "!" and DemonSounds with a beep (ADR 0040). At 0
+## it chases him at once, with no alert, so with no mark and no beep either.
 @export_range(0.0, 2.0, 0.05, "suffix:s") var alert_time: float = 0.0
 ## Seconds the demon sniffs where it last saw the man, turning round halfway, once a wall has hidden
 ## him for Give Up Time; then it gives up (ADR 0035). At 0 it gives up at once.

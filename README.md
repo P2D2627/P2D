@@ -226,7 +226,7 @@ estados:
 |---|---|
 | Parado | Espera no seu posto, onde o nível o colocou e virado para onde o nível o virou, até reparar na personagem. Com ronda, é a pausa entre duas idas, sorteada por cada demónio entre 0,8 e 2 s. |
 | Ronda | Vai e vem a passo, a 150 px/s, num troço de 480 px do seu chão, centrado no posto. Vira-se nas pontas, à beira de um desnível e contra uma parede. Fora do ecrã, fica parado. |
-| Alerta | Ao reparar na personagem, vira-se para ela e fica 0,3 s parado onde está, o tempo de ladrar, antes de a perseguir. |
+| Alerta | Ao reparar na personagem, vira-se para ela e fica 0,3 s parado onde está, o tempo de ladrar, antes de a perseguir. Por cima da cabeça surge um "!", com um bip agudo; o "!" fica mais 0,5 s já na perseguição, para se conseguir ler. |
 | Perseguir | Segue-a a cerca de 560 px/s, no chão onde está. A personagem corre a 720 px/s, pelo que fugir resulta, mas com pouca margem. |
 | Aviso | Antes de cada ataque, mostra qual vem, para que o jogador tenha tempo de reagir: antes da mordida, alarga-se e baixa durante 0,2 s, sem parar de correr; antes do salto, para e encolhe durante 0,35 s. |
 | Atirar-se | Salta para onde a personagem vai estar, entre 200 e 420 px, e fica 0,35 s parado onde aterra. |
@@ -236,7 +236,7 @@ estados:
 | Repelido | Depois de atirado pelo crucifixo, fica 0,3 s parado onde aterrou e volta a perseguir. |
 | Atordoado | Depois de atirado pela personagem ao soltar-se, fica 1,2 s no chão, achatado e mais escuro, e depois recua ou volta a perseguir. |
 | Fora de alcance | Com a personagem num chão ou numa parede acima ou abaixo do que os seus ataques chegam, não a segue por baixo nem por cima: para virado para ela e ladra, e depois anda para trás e para a frente num troço de 160 px à volta do sítio onde parou e, em cada ponta, volta a parar e a ladrar; contra uma parede ou na borda do seu chão, do lado dela, salta no sítio. Se ela descer ao seu alcance, volta a persegui-la; ao fim de 3 s, desiste e deixa-a em paz enquanto ela lá ficar. |
-| Procurar | Quando uma parede a esconde durante 0,5 s, vai a 300 px/s até onde a viu pela última vez, ou até onde o seu chão deixa, e fareja ali durante 2,5 s, virando-se para o outro lado a meio. Se a vir, fica alerta e volta a persegui-la; se não, desiste. Fora do ecrã, desiste logo. |
+| Procurar | Quando uma parede a esconde durante 0,5 s, vai a 300 px/s até onde a viu pela última vez, ou até onde o seu chão deixa, e fareja ali durante 2,5 s, virando-se para o outro lado a meio. Se a vir, fica alerta e volta a persegui-la; se não, desiste. Fora do ecrã, desiste logo. Durante a procura mostra um "?" e, ao começar, toca dois bips a descer. |
 | Voltar | Depois de desistir, volta ao posto a passo, a 200 px/s, e retoma a ronda. Se a vir à frente pelo caminho, fica alerta e volta a persegui-la. |
 
 O demónio vê a personagem a menos de 1100 px, mais de meio ecrã, se não houver uma parede entre os
@@ -743,6 +743,8 @@ godot --headless --fixed-fps 60 --path Projeto --script res://tests/test_backgro
 godot --headless --fixed-fps 60 --path Projeto --script res://tests/test_soul_points.gd
 godot --headless --fixed-fps 60 --path Projeto --script res://tests/test_demon.gd
 godot --headless --fixed-fps 60 --path Projeto --script res://tests/test_demon_target.gd
+godot --headless --fixed-fps 60 --path Projeto --script res://tests/test_demon_mark.gd
+godot --headless --fixed-fps 60 --path Projeto --script res://tests/test_demon_sounds.gd
 godot --headless --fixed-fps 60 --path Projeto --script res://tests/test_hit_boxes.gd
 godot --headless --fixed-fps 60 --path Projeto --script res://tests/test_knockback.gd
 godot --headless --fixed-fps 60 --path Projeto --script res://tests/test_grab_rules.gd
@@ -1278,7 +1280,8 @@ não é esta cena com a perseguição desligada.
   som escutam-nos. Hoje, o retângulo
   provisório (`demon_placeholder.gd`) muda de forma e de cor no aviso, por uma ligação feita na
   cena, e sai quando a arte chegar. A forma, e não só a cor, distingue a mordida do salto, para
-  quem não distingue as cores.
+  quem não distingue as cores. A marca por cima da cabeça (`demon_mark.gd`) e os sons
+  (`demon_sounds.gd`) escutam da mesma forma, sem que o `demon.gd` mude (ADR 0040).
 - **Afastamento pelo crucifixo.** O demónio tem o componente `Repellable` (ver "Crucifixo:
   componentes e modificadores de movimento"). O toque do crucifixo erguido atira-o uma vez, em
   qualquer estado, para longe do crucifixo, com os mesmos valores do arremesso de quando a
@@ -1359,7 +1362,7 @@ não é esta cena com a perseguição desligada.
   sem aviso, e quando uma parede escondia a personagem continuava 1,5 s a correr para onde ela
   estava de facto, sem a ver, e depois esquecia-a. O alerta é o momento em que a arte e o som vão
   mostrar que a personagem foi vista, com o ladrar e um sinal visível; enquanto o demónio for um
-  retângulo provisório, o alerta é só uma pausa de 0,3 s, que ainda não se vê nem se ouve. A procura troca esse conhecimento que o
+  retângulo provisório, o alerta vê-se por um "!" e ouve-se por um bip (ADR 0040). A procura troca esse conhecimento que o
   demónio não devia ter por uma memória: a última posição em que a viu. Por isso, o tempo às cegas
   desceu para 0,5 s, menos do que os 2,5 s de procura, e o teste dos valores do nível verifica essa
   ordem. Só uma parede leva à procura; longe demais, fora do ecrã ou com a personagem morta, o
@@ -1397,6 +1400,27 @@ não é esta cena com a perseguição desligada.
   fim de 3 s (antes 2 s), o que dá tempo a pelo menos dois ladridos. Cada pausa é sorteada, para
   dois demónios não ladrarem a par; evitar que dois ladridos simultâneos soem como um é tarefa do
   áudio. Com Out Of Reach Pace Width a 0, o demónio fica parado como antes.
+- **Alerta e procura à vista e ao ouvido (ADR 0040).** O alerta durava 0,3 s e não se via nem se
+  ouvia, pelo que a personagem não sabia que tinha sido descoberta. Agora, o nó `Mark` mostra um "!"
+  no alerta e um "?" na procura, brancos e com contorno escuro, para não se confundirem com as cores
+  do aviso de ataque; distinguem-se pela forma e não pela cor. Cada marca surge maior e encolhe uma
+  única vez, sem piscar. O "!" fica Alert Linger Time (0,5 s) já na perseguição, porque 0,3 s mal
+  chega para ler. Qualquer outro estado apaga a marca no mesmo passo, e uma pausa suspende a
+  contagem. O nó `DemonSounds` toca um bip no alerta e dois bips a descer na procura, e tem um lugar
+  vazio para o ladrido. Cada demónio tem uma voz própria, até 8% acima ou abaixo do tom normal, e
+  cada som varia até 2%. A marca e o som cobrem-se um ao outro: quem não ouve vê a marca, e quem não
+  está a olhar ouve o bip. O som usa um gerador de números próprio. Com o gerador global, o som
+  tirava números de que cada demónio se serve para a sua semente, e mudava o comportamento nos
+  testes com semente fixa. Os valores da marca ficam no Inspector da cena do demónio. Custo, com 50
+  demónios alertados no mesmo passo (headless, à corrente): a marca acrescenta cerca de 0,2 ms
+  nesse passo e nos dois seguintes. Arrancar 50 sons custava cerca de 2 ms nos dois passos
+  seguintes. Por isso, todos os demónios juntos arrancam no máximo Max Notice Sounds Per Step (3)
+  sons de alerta ou de procura por passo de física, e os restantes ficam em silêncio. Os ladridos
+  contam à parte (Max Barks Per Step, 2), para que um ladrido, que só diz que a personagem está fora
+  de alcance, nunca cale um demónio que acabou de a ver. Com o limite, os dois passos depois do
+  alerta custam 0,32 ms (mediana; pior 0,6 ms) para a marca e o som juntos. Um bando que vê a
+  personagem ouve-se como um só, e as marcas continuam a mostrar quais a viram. Um demónio com
+  Alert Time 0 persegue logo, sem alerta, e por isso sem marca nem bip, como antes do ADR 0035.
 
 Antes de decidir se a perseguição precisava de ser otimizada, fixaram-se dois limites para 50
 demónios a perseguir ao mesmo tempo, muitos mais do que um ecrã terá: um limite para a média por
@@ -1866,6 +1890,9 @@ registo para um jogo novo; a gravação fica para quando houver saves.
 
 - Dialogue Manager 4.1.0, de Nathan Hoad. Licença MIT. Plugin de diálogo, em
   `Projeto/addons/dialogue_manager/`. https://github.com/nathanhoad/godot_dialogue_manager
+- `demon_alert.wav` e `demon_search.wav`, em `Projeto/assets/audio/`: bips provisórios gerados
+  por síntese de ondas sinusoidais, sem material de terceiros. Saem quando chegarem os sons
+  definitivos.
 
 ## Licença
 

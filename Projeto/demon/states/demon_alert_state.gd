@@ -2,8 +2,8 @@ class_name DemonAlertState
 extends DemonState
 
 ## ALERT: with Alert Time, from noticing the man until the chase starts (ADR 0035). The demon stands
-## where it is, turned to him, for Alert Time, which the art and the sounds show with a bark, and
-## then chases him. It loses him as the chase does, and in the air it only falls.
+## where it is, turned to him, for Alert Time, which DemonMark shows with a "!" and DemonSounds with
+## a beep (ADR 0040), and then chases him. It loses him as the chase does, and in the air it only falls.
 
 ## Physics frames the demon has stood alerted.
 var _frames: int = 0
