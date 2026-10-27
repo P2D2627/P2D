@@ -22,8 +22,9 @@ var _last_x: float = 0.0
 var _speed: float = 0.0
 ## Physics frames in a row the demon has been after the man without seeing him.
 var _unseen_frames: int = 0
-## The man's x the last time the demon saw him, and the physics frame it saw him on.
+## Where the man's feet were the last time the demon saw him, and the physics frame it saw him on.
 var _last_seen_x: float = 0.0
+var _last_seen_y: float = 0.0
 var _seen_on_frame: int = -2
 
 
@@ -36,6 +37,7 @@ func take(man: Node2D) -> void:
 	_hurtbox = _hurtbox_of(man)
 	_last_x = man.global_position.x
 	_last_seen_x = _last_x
+	_last_seen_y = man.global_position.y
 	_speed = 0.0
 	_unseen_frames = 0
 
@@ -84,6 +86,7 @@ func get_speed() -> float:
 func saw_him(frame: int) -> void:
 	_unseen_frames = 0
 	_last_seen_x = _man.global_position.x
+	_last_seen_y = _man.global_position.y
 	_seen_on_frame = frame
 
 
@@ -99,6 +102,11 @@ func get_unseen_frames() -> int:
 ## The man's x the last time the demon saw him.
 func get_last_seen_x() -> float:
 	return _last_seen_x
+
+
+## The y of the man's feet the last time the demon saw him.
+func get_last_seen_y() -> float:
+	return _last_seen_y
 
 
 ## True while the demon is after the man and saw him on physics frame frame or just before.

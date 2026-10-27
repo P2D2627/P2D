@@ -752,6 +752,8 @@ godot --headless --fixed-fps 60 --path Projeto --script res://tests/test_backgro
 godot --headless --fixed-fps 60 --path Projeto --script res://tests/test_soul_points.gd
 godot --headless --fixed-fps 60 --path Projeto --script res://tests/test_demon.gd
 godot --headless --fixed-fps 60 --path Projeto --script res://tests/test_demon_target.gd
+godot --headless --fixed-fps 60 --path Projeto --script res://tests/test_demon_jump.gd
+godot --headless --fixed-fps 60 --path Projeto --script res://tests/test_demon_path.gd
 godot --headless --fixed-fps 60 --path Projeto --script res://tests/test_demon_mark.gd
 godot --headless --fixed-fps 60 --path Projeto --script res://tests/test_demon_sounds.gd
 godot --headless --fixed-fps 60 --path Projeto --script res://tests/test_hit_boxes.gd
@@ -1347,7 +1349,11 @@ não é esta cena com a perseguição desligada.
   altura do chão em que assenta, e nunca muda. Com Return Speed acima de 0, quem desiste volta lá a
   passo; a 0, fica onde desistiu, como antes. Se o fim do chão ou uma parede o parar pelo caminho,
   como depois de o crucifixo o atirar para outro chão, fica nesse sítio e faz aí a ronda até voltar
-  a desistir, altura em que tenta de novo o posto. Inicialmente, esse sítio passava a ser o posto
+  a desistir, altura em que tenta de novo o posto. Com Jump Height ou Max Drop (ADR 0042), o
+  demónio guarda o caminho por onde saiu do chão de casa, um passo por cada vez que aterra noutro
+  chão (salto, queda ou arremesso), e no regresso refá-lo do último passo para o primeiro. Um passo
+  que não consegue desfazer, como uma queda mais alta do que o Jump Height, deixa-o nesse chão, com
+  a mesma regra. Inicialmente, esse sítio passava a ser o posto
   definitivo. Foi abandonado porque apagava o lugar que o nível escolheu para cada demónio: um
   demónio que regressasse ao chão de casa, a saltar atrás da personagem (ADR 0042), ou que visse
   sair do caminho a parede que o travara, ficava para sempre longe do posto. A alternativa de ficar

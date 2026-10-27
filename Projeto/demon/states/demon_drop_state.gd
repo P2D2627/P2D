@@ -1,13 +1,13 @@
 class_name DemonDropState
 extends DemonState
 
-## DROP: with Max Drop, from the end of its floor, leaping down after a man out of its reach below
-## it, until it lands (ADR 0042). It walks on at its Chase Speed to where it takes off, if it is
-## short of it, and leaps as it lunges, pulled down by the leap's own gravity, keeping its Chase
+## DROP: with Max Drop, from the end of its floor, leaping down, as after a man out of its reach
+## below it, until it lands (ADR 0042). It walks on at its Chase Speed to where it takes off, if it
+## is short of it, and leaps as it lunges, pulled down by the leap's own gravity, keeping its Chase
 ## Speed across all the way down onto the floor its arc lands on. Landed lower than it set off, it
-## chases on; anything else, as when something in the way stopped it, on the way to where it takes
-## off or in the leap, it stands out of his reach, so it never leaps at that end over and over. No
-## attack lands while it drops.
+## goes back to the state it dropped in, as to the chase; anything else, as when something in the
+## way stopped it, on the way to where it takes off or in the leap, the demon decides
+## (Demon.land_off_its_floor). No attack lands while it drops.
 
 ## How much lower than where it set off, in px, the demon has to land to have got down.
 const LANDED_LOWER: float = 1.0
@@ -26,14 +26,17 @@ var _walked: float = 0.0
 var _leapt: bool = false
 ## True once it is in the air.
 var _left_floor: bool = false
+## The state it dropped in.
+var _for_state: Demon.State = Demon.State.CHASE
 
 
 ## Sets up the drop, right before the demon changes to DROP: a leap with take-off velocity leap,
-## after walking walk px from start; with none, the demon has taken off already.
-func aim(leap: Vector2, walk: float, start: Vector2) -> void:
+## after walking walk px from start, in for_state; with no walk, the demon has taken off already.
+func aim(leap: Vector2, walk: float, start: Vector2, for_state: Demon.State) -> void:
 	_leap = leap
 	_walk = walk
 	_start = start
+	_for_state = for_state
 
 
 func enter() -> void:
@@ -51,8 +54,7 @@ func physics_update(delta: float) -> void:
 		var walked: float = absf(_demon.global_position.x - _start.x)
 		var left: float = _walk - walked
 		if left > TAKE_OFF_REACH and is_equal_approx(walked, _walked):
-			_demon.velocity.x = 0.0
-			_demon.change_state(Demon.State.OUT_OF_REACH)
+			_demon.land_off_its_floor(_for_state, false)
 			return
 		_walked = walked
 		if left > TAKE_OFF_REACH:
@@ -61,11 +63,8 @@ func physics_update(delta: float) -> void:
 		_leapt = true
 		_demon.velocity = _leap
 		return
-	_demon.velocity.x = 0.0
-	if _left_floor and _demon.global_position.y - _start.y >= LANDED_LOWER:
-		_demon.change_state(Demon.State.CHASE)
-	else:
-		_demon.change_state(Demon.State.OUT_OF_REACH)
+	_demon.land_off_its_floor(_for_state,
+			_left_floor and _demon.global_position.y - _start.y >= LANDED_LOWER)
 
 
 func get_gravity() -> Vector2:
