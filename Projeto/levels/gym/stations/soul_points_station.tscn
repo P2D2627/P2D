@@ -1,0 +1,47 @@
+[gd_scene format=3]
+
+[ext_resource type="PackedScene" path="res://levels/gym/gym_hint.tscn" id="1_hint"]
+[ext_resource type="PackedScene" path="res://demon/demon.tscn" id="2_demon"]
+
+[sub_resource type="RectangleShape2D" id="RectangleShape2D_floor"]
+size = Vector2(1920, 200)
+
+[sub_resource type="RectangleShape2D" id="RectangleShape2D_ledge"]
+size = Vector2(960, 200)
+
+[node name="SoulPointsStation" type="Node2D"]
+
+[node name="Floor" type="StaticBody2D" parent="."]
+position = Vector2(960, 1100)
+collision_mask = 0
+
+[node name="CollisionShape2D" type="CollisionShape2D" parent="Floor"]
+shape = SubResource("RectangleShape2D_floor")
+
+[node name="Placeholder" type="Polygon2D" parent="Floor"]
+color = Color(0.15, 0.13, 0.18, 1)
+polygon = PackedVector2Array(-960, -100, 960, -100, 960, 100, -960, 100)
+
+[node name="StartLedge" type="StaticBody2D" parent="."]
+position = Vector2(480, 900)
+collision_mask = 0
+
+[node name="CollisionShape2D" type="CollisionShape2D" parent="StartLedge"]
+shape = SubResource("RectangleShape2D_ledge")
+
+[node name="Placeholder" type="Polygon2D" parent="StartLedge"]
+color = Color(0.15, 0.13, 0.18, 1)
+polygon = PackedVector2Array(-480, -100, 480, -100, 480, 100, -480, 100)
+
+[node name="Dog" parent="." instance=ExtResource("2_demon")]
+position = Vector2(1500, 1000)
+faces_left = true
+
+[node name="GymHint" parent="." instance=ExtResource("1_hint")]
+position = Vector2(90, 360)
+text = "SP e morte
+Aqui em cima, F4 tira SP. Uns segundos sem dano e voltam sozinhos: devagar, e depois mais depressa.
+Com os SP baixos, desce, deixa o cão agarrar-te e não carregues em nada: afundas-te e morres. Voltas aqui, ao início desta estação."
+
+[node name="Start" type="Marker2D" parent="."]
+position = Vector2(800, 780)

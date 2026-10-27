@@ -43,6 +43,11 @@ cada sala) está em `docs/nivel1_desenho.md`, e os artigos que o fundamentam em 
    numa sala com uma porta; ao atravessá-la, o ecrã escurece e a fase 2 começa no canto inferior
    direito. Os retângulos amarelos assinalam os checkpoints provisórios e o verde a porta para a
    fase seguinte. Cada fase também corre sozinha com F6.
+6. A sala de treino (Play ▸ Gym (training room)) põe à prova, uma de cada vez, as mecânicas que já
+   existem: movimento, paredes e chaminés, câmara, zona fixa da câmara, cães, matilha e agarrão,
+   crucifixo, SP e morte. Cada estação ocupa um ecrã e tem uma placa que explica o que experimentar.
+   As teclas 1 a 9 levam ao início da estação com esse número. Quem morre recomeça
+   no início da estação onde estava. Ver "Sala de treino".
 
 Os controlos de teclado e rato escolhem-se em Options ▸ Controls, entre três perfis. O comando é
 igual em todos.
@@ -757,6 +762,10 @@ godot --headless --fixed-fps 60 --path Projeto --script res://tests/test_sinking
 godot --headless --fixed-fps 60 --path Projeto --script res://tests/test_level_restart.gd
 godot --headless --fixed-fps 60 --path Projeto --script res://tests/test_moral_record.gd
 godot --headless --fixed-fps 60 --path Projeto --script res://tests/test_moral_dialogue.gd
+godot --headless --fixed-fps 60 --path Projeto --script res://tests/test_gym_hint.gd
+godot --headless --fixed-fps 60 --path Projeto --script res://tests/test_gym_stations.gd
+godot --headless --fixed-fps 60 --path Projeto --script res://tests/test_gym.gd
+godot --headless --fixed-fps 60 --path Projeto --script res://tests/test_gym_dogs.gd
 ```
 
 O `test_input_profiles.gd` escreve seis ERROR, das tentativas de atribuir teclas inválidas, todos
@@ -1862,6 +1871,39 @@ São valores de referência, a afinar em jogo. Com eles, um atalho basta para a 
 três portagens juntas pesam pouco mais do que um atalho. As regras estão numa classe sem nós
 (`MoralRecord`), testada isoladamente; o autoload limita-se a disponibilizá-la. O `reset()` limpa o
 registo para um jogo novo; a gravação fica para quando houver saves.
+
+#### Sala de treino
+
+A sala de treino (`levels/gym/gym.tscn`) permite experimentar cada mecânica isoladamente, sem
+atravessar um nível. É composta por estações, cenas próprias em `levels/gym/stations/`, colocadas
+lado a lado. Cada estação respeita o mesmo contrato:
+
+- tem 1920 px de largura (um ecrã) e começa em x = 1920 · n, pela ordem de `Stations`;
+- o topo do chão fica em y = 1000, nas coordenadas da estação;
+- a placa (`GymHint`) fica em (90, 360), e o marcador `Start` é o ponto onde a personagem começa;
+- a placa não pode cobrir nada com que se jogue, e tem de caber inteira no ecrã a partir do início,
+  com a câmara já aproximada (o `test_gym.gd` verifica as duas condições).
+
+Para acrescentar uma estação: instanciá-la em `Stations`, juntar o seu `Start` à lista `starts` do
+nó `GymStations` e deslocar a parede direita (`WallRight`) e o `limit_right` da câmara mais 1920 px.
+
+As placas usam texto claro sobre um painel opaco, com contraste de 17:1, acima do mínimo de 4,5:1
+da norma WCAG AA, e letra de 36 px. Ficam baixas no ecrã: quando a personagem está parada, a
+câmara aproxima-se e corta a parte de cima. Nas estações com cães, a personagem começa num patamar
+200 px acima do chão, fora do alcance dos ataques (24 px de altura): pode ler a placa em segurança,
+e o cão mostra o comportamento de quem não alcança o alvo.
+
+Quem morre na sala recomeça no início da estação onde estava, e não no início da sala. Como o
+recomeço cria uma cópia nova do nível, a estação fica guardada numa variável estática do
+`GymStations`, que sobrevive à troca. A estação só é guardada quando o nível pede para recomeçar:
+quem morre e sai para o menu antes disso volta a entrar na primeira estação. Este comportamento
+pertence apenas à sala, e não é o checkpoint do jogo. As teclas 1 a 9 levam a personagem ao início
+da estação correspondente, mantendo os SP; não funcionam durante um agarrão, depois da morte, nem
+quando a tecla está atribuída a uma ação no perfil Custom. Lêem as teclas diretamente, sem ações no
+mapa de controlos, porque servem apenas para depuração; por isso não há equivalente no comando.
+
+Ficam de fora as armadilhas, o checkpoint, que ainda não existe, e o diálogo, que ainda não é
+iniciado por nada no jogo. A estação de cada uma acrescenta-se quando a mecânica entrar no jogo.
 
 ### Convenções de código
 
