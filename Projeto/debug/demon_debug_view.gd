@@ -4,8 +4,10 @@ extends Node2D
 ## Draws over the room what each of its demons is doing, for trying them out and tuning them while
 ## playing: above it, the name of its state and the seconds it has been in it, and an arrow the way
 ## it faces; its post, on its own floor, and its patrol, along the floor it stands on for now; while
-## it is after the man or looks for him, where it last saw him; and while it sees him, a line to
-## him. It shows and hides with the debug overlay, F3. Outside debug builds it frees itself, so a
+## it is after the man or looks for him, where it last saw him; while it sees him, a line to him;
+## and its way back (ADR 0042), an arrow for each step, from where it landed to where it left the
+## floor before, numbered in the order it undoes them, 1 first. It shows and hides with the debug
+## overlay, F3. Outside debug builds it frees itself, so a
 ## release export never shows it. Only the test room has it: a level's demons show only what their
 ## art shows. The room sets its process mode to Always, so it keeps drawing while the game is
 ## paused; its seconds stop with the game.
@@ -29,6 +31,9 @@ const POST_COLOR: Color = Color(0.4, 0.8, 1.0)
 const PATROL_COLOR: Color = Color(0.4, 0.8, 1.0, 0.5)
 const LAST_SEEN_COLOR: Color = Color(1.0, 0.6, 0.1)
 const SIGHT_COLOR: Color = Color(1.0, 0.25, 0.25, 0.7)
+const WAY_COLOR: Color = Color(0.6, 1.0, 0.4)
+## How far above the step's arrow its number sits, in px.
+const WAY_MARK_HEIGHT: float = 8.0
 
 ## The overlay it shows and hides with. Without one, it shows from the start and stays.
 @export var overlay: DebugOverlay
@@ -80,6 +85,12 @@ func get_text(index: int) -> String:
 	return "%s %.1f s" % [_state_names[demons[index].get_state()], seconds]
 
 
+## The number over step of the way back of the demon at index in demons: 1 on the step it undoes
+## first, the last it took.
+func get_step_mark(index: int, step: int) -> String:
+	return str(demons[index].get_way_back().size() - step)
+
+
 func _draw() -> void:
 	for index: int in demons.size():
 		if is_instance_valid(demons[index]):
@@ -102,6 +113,7 @@ func _draw_demon(index: int) -> void:
 				LAST_SEEN_COLOR, LINE_WIDTH)
 		draw_line(seen + Vector2(-CROSS_SIZE, CROSS_SIZE), seen + Vector2(CROSS_SIZE, -CROSS_SIZE),
 				LAST_SEEN_COLOR, LINE_WIDTH)
+	_draw_way_back(index)
 	if demon.sees_target() and is_instance_valid(player):
 		var eyes: Vector2 = feet - Vector2(0.0, EYE_HEIGHT)
 		draw_line(eyes, to_local(player.global_position) - Vector2(0.0, EYE_HEIGHT), SIGHT_COLOR,
@@ -117,6 +129,24 @@ func _draw_demon(index: int) -> void:
 	draw_string_outline(_font, at, text, HORIZONTAL_ALIGNMENT_LEFT, -1, FONT_SIZE, OUTLINE_SIZE,
 			OUTLINE_COLOR)
 	draw_string(_font, at, text, HORIZONTAL_ALIGNMENT_LEFT, -1, FONT_SIZE, TEXT_COLOR)
+
+
+## Each step of the way back of the demon at index: an arrow from where it landed to where it left
+## the floor before, the way it goes back, with its number over the arrow's middle.
+func _draw_way_back(index: int) -> void:
+	var way: DemonPath = demons[index].get_way_back()
+	for step: int in way.size():
+		var landed: Vector2 = to_local(way.get_to(step))
+		var left: Vector2 = to_local(way.get_from(step))
+		var back: Vector2 = (left - landed).normalized()
+		draw_line(landed, left, WAY_COLOR, LINE_WIDTH)
+		draw_line(left, left - back.rotated(PI / 4.0) * ARROW_LENGTH / 2.0, WAY_COLOR, LINE_WIDTH)
+		draw_line(left, left - back.rotated(-PI / 4.0) * ARROW_LENGTH / 2.0, WAY_COLOR, LINE_WIDTH)
+		var mark: String = get_step_mark(index, step)
+		var at: Vector2 = (landed + left) / 2.0 - Vector2(0.0, WAY_MARK_HEIGHT)
+		draw_string_outline(_font, at, mark, HORIZONTAL_ALIGNMENT_LEFT, -1, FONT_SIZE, OUTLINE_SIZE,
+				OUTLINE_COLOR)
+		draw_string(_font, at, mark, HORIZONTAL_ALIGNMENT_LEFT, -1, FONT_SIZE, WAY_COLOR)
 
 
 func _set_shown(shown: bool) -> void:

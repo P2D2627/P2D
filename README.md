@@ -1947,9 +1947,9 @@ iniciado por nada no jogo. A estação de cada uma acrescenta-se quando a mecân
 
 - Dialogue Manager 4.1.0, de Nathan Hoad. Licença MIT. Plugin de diálogo, em
   `Projeto/addons/dialogue_manager/`. https://github.com/nathanhoad/godot_dialogue_manager
-- `demon_alert.wav` e `demon_search.wav`, em `Projeto/assets/audio/`: bips provisórios gerados
-  por síntese de ondas sinusoidais, sem material de terceiros. Saem quando chegarem os sons
-  definitivos.
+- `demon_alert.wav`, `demon_search.wav`, `demon_take_off.wav` e `demon_land.wav`, em
+  `Projeto/assets/audio/`: bips provisórios gerados por síntese de ondas sinusoidais, sem
+  material de terceiros. Saem quando chegarem os sons definitivos.
 
 ## Licença
 

@@ -31,7 +31,8 @@ extends CharacterBody2D
 ## the attack's damage and knockback to the man's Hurtbox. When the hit holds him instead, it holds
 ## on until he breaks free and throws it off, away from him (ADR 0028). Its body and the man's stop
 ## each other, so it never gets on his spot (ADR 0022). It only tells what it does, by
-## state_changed, warning_started, attack_landed and barked: the art and the sounds listen, and it
+## state_changed, warning_started, attack_landed, barked, took_off and landed: the art and the
+## sounds listen, and it
 ## never touches them.
 
 ## The demon changed from previous to current this physics frame.
@@ -45,6 +46,13 @@ signal attack_landed(attack: DemonAttack)
 ## The demon barked this physics frame at a man out of its reach (ADR 0039), hopping at a wall or
 ## the end of its floor that stops it on his side if hops, so the art and the sounds can show it.
 signal barked(hops: bool)
+## The demon left its floor this physics frame, jumping up a step or leaping down off its end (ADR
+## 0042), right after state_changed to JUMP or DROP, so the art and the sounds can show it.
+signal took_off
+## The demon landed this physics frame from a jump up a step or a leap down off the end of its
+## floor (ADR 0042), right after state_changed to what it does next, so the art and the sounds can
+## show it. Never without took_off first, nor after the crucifix threw it off in the air.
+signal landed
 
 ## What the demon is doing, as the art, the sounds and the tests read it. Each has its own
 ## DemonState in states/, whose doc says when it starts and how long it lasts.
@@ -124,6 +132,10 @@ var _post_on_floor: bool = false
 var _stand_x: float = 0.0
 ## The way the demon came from its post's floor to the one it stands on, which its way back undoes.
 var _way: DemonPath = DemonPath.new()
+## True from the frame the demon takes off up a step or down off the end of its floor until it
+## changes state, as when it lands, so it tells landed only after took_off. Set after the change to
+## JUMP or DROP, which clears it like any other.
+var _off_its_floor: bool = false
 ## True once it gave up on a man out of its reach, until it notices him back within its reach: up
 ## there, it leaves him alone, instead of starting the chase again on the next frame.
 var _gave_up_out_of_reach: bool = false
@@ -430,6 +442,7 @@ func goes_off_its_floor(gap: float, highest: float, lowest: float, for_state: St
 ## On its way back, it stops there, as at any other step it cannot get past (ADR 0043); in its
 ## search, it sniffs there.
 func land_off_its_floor(for_state: State, got_there: bool) -> void:
+	var was_off_its_floor: bool = _off_its_floor
 	velocity.x = 0.0
 	if got_there:
 		change_state(for_state)
@@ -440,6 +453,15 @@ func land_off_its_floor(for_state: State, got_there: bool) -> void:
 		(_states[State.SEARCH] as DemonSearchState).sniff_here()
 	else:
 		change_state(State.OUT_OF_REACH)
+	if was_off_its_floor:
+		landed.emit()
+
+
+## For its states and itself: the demon leaves its floor on this physics frame, in JUMP or DROP,
+## with the velocity it takes off at already set.
+func take_off() -> void:
+	_off_its_floor = true
+	took_off.emit()
 
 
 ## For its states, on its way back with steps left on its way (ADR 0042): goes toward where it left
@@ -537,6 +559,8 @@ func _drops_toward(gap: float, highest: float, lowest: float, for_state: State,
 		else:
 			velocity = leap
 		change_state(State.DROP)
+		if walk <= 0.0:
+			take_off()
 		return true
 	if absf(gap) < 2.0 * _half_size.x:
 		return false
@@ -616,6 +640,7 @@ func _jump_up(direction: float, height: float, for_state: State, delta: float) -
 			-stats.get_jump_velocity(height + JUMP_CLEARANCE)
 			+ stats.get_jump_gravity() * delta / 2.0)
 	change_state(State.JUMP)
+	take_off()
 
 
 ## For its states, after an attack: backs off from the man with Retreat Distance in Stats, and
@@ -927,6 +952,7 @@ func _apply_stats() -> void:
 ## attack in the same frame. Changing to the state it is in starts that state again.
 func change_state(new_state: State) -> void:
 	var previous: State = _state
+	_off_its_floor = false
 	_current.exit()
 	_state = new_state
 	_current = _states[new_state]

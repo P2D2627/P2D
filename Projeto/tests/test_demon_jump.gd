@@ -17,7 +17,10 @@
 # down a step of Jump Height, or two, it jumps back up each; after jumping up after the man, it
 # leaps back down; thrown down a step higher than Jump Height, it walks to the step's wall and
 # stands there. With the man seen up a step or down a drop and then hidden, it jumps up or leaps down
-# in its search, and sniffs where it last saw him. With no Jump Height nor Max Drop, the step and
+# in its search, and sniffs where it last saw him. Up a step and down a drop, walking to take off
+# or taking off at once, it tells one take-off and one landing, and its drawing stretches, squashes
+# and settles back; thrown off in a jump it tells no landing, and stopped before it takes off it
+# tells neither. With no Jump Height nor Max Drop, the step and
 # edge cases of test_demon.gd hold.
 # Run from the repository root; the exit code is 0 on pass and 1 on fail:
 # godot --headless --fixed-fps 60 --path Projeto --script res://tests/test_demon_jump.gd
@@ -137,6 +140,11 @@ func _initialize() -> void:
 	results.append(await _thrown_down_higher_than_jump_height_it_stands_below())
 	results.append(await _hidden_up_a_step_it_jumps_up_to_search_there())
 	results.append(await _hidden_down_a_drop_it_leaps_down_to_search_there())
+	results.append(await _tells_its_take_off_and_landing_up_a_step())
+	results.append(await _tells_its_take_off_and_landing_down_a_drop(CHASE_SPEED))
+	results.append(await _tells_its_take_off_and_landing_down_a_drop(FAST_CHASE_SPEED))
+	results.append(await _thrown_off_in_a_jump_it_tells_no_landing())
+	results.append(await _stopped_on_its_way_to_take_off_it_tells_no_take_off_nor_landing())
 	finish(results)
 
 
@@ -688,6 +696,135 @@ func _stands_on_floor_at(demon: Demon, y: float) -> bool:
 ## True while the demon stands at post, on its floor.
 func _stands_at(demon: Demon, post: Vector2) -> bool:
 	return demon.get_state() == Demon.State.IDLE and demon.position.distance_to(post) <= TOLERANCE
+
+
+## The man on a step of one tile: the demon tells one take-off, in JUMP, and one landing, on the
+## floor, and its drawing stretches as it takes off, squashes as it lands, and is back to its own
+## size after.
+func _tells_its_take_off_and_landing_up_a_step() -> bool:
+	var ground: StaticBody2D = make_platform(FLOOR_LEFT, FLOOR_RIGHT)
+	var step: StaticBody2D = make_platform(STEP_X, FLOOR_RIGHT, -TILE)
+	var man: Player = await spawn_on_floor(Vector2(STEP_X + MAN_INSET, SPAWN_Y - TILE))
+	var changes: Array[int] = []
+	var demon: Demon = await _spawn_demon(changes, JUMP_HEIGHT)
+	var leaps: Array[Vector2] = []
+	var landings: Array[Vector2] = []
+	var mistimed: Array[bool] = []
+	_watch_leaps(demon, leaps, landings, mistimed)
+	await wait_frames(FRAMES_TO_WATCH)
+	var size: Vector2 = _drawing(demon).scale
+	await _clear([ground, step, man, demon])
+	return _report_leap("Step of %d px" % TILE, leaps, landings, mistimed, size)
+
+
+## The man on a floor two tiles below the end of the demon's, which chases at chase_speed, walking
+## to where it takes off or, fast, taking off at once: as up a step, one take-off, in DROP, and one
+## landing, on the floor, stretched, squashed, and back to its own size after.
+func _tells_its_take_off_and_landing_down_a_drop(chase_speed: float) -> bool:
+	var depth: float = 2.0 * TILE
+	var high: StaticBody2D = make_platform(FLOOR_LEFT, EDGE_X)
+	var low: StaticBody2D = make_platform(EDGE_X, FLOOR_RIGHT, depth)
+	var man: Player = await spawn_on_floor(Vector2(EDGE_X + DROP_MAN_INSET, SPAWN_Y + depth))
+	var changes: Array[int] = []
+	var demon: Demon = await _spawn_demon(changes, 0.0, MAX_DROP, EDGE_X - DROP_DEMON_AWAY)
+	demon.stats.chase_speed = chase_speed
+	var leaps: Array[Vector2] = []
+	var landings: Array[Vector2] = []
+	var mistimed: Array[bool] = []
+	_watch_leaps(demon, leaps, landings, mistimed)
+	await wait_frames(FRAMES_TO_WATCH)
+	var size: Vector2 = _drawing(demon).scale
+	await _clear([high, low, man, demon])
+	return _report_leap("Drop of %d px at %d px/s" % [depth, chase_speed], leaps, landings,
+			mistimed, size)
+
+
+## The crucifix's touch as the demon takes off up a step: it told its take-off, never tells a
+## landing, and its drawing is back to its own size at once.
+func _thrown_off_in_a_jump_it_tells_no_landing() -> bool:
+	var ground: StaticBody2D = make_platform(FLOOR_LEFT, FLOOR_RIGHT)
+	var step: StaticBody2D = make_platform(STEP_X, FLOOR_RIGHT, -TILE)
+	var man: Player = await spawn_on_floor(Vector2(STEP_X + MAN_INSET, SPAWN_Y - TILE))
+	var changes: Array[int] = []
+	var demon: Demon = await _spawn_demon(changes, JUMP_HEIGHT)
+	var leaps: Array[Vector2] = []
+	var landings: Array[Vector2] = []
+	var mistimed: Array[bool] = []
+	_watch_leaps(demon, leaps, landings, mistimed)
+	var repellable: Repellable = demon.get_node(^"Repellable") as Repellable
+	var jumped: bool = await wait_until(
+			func() -> bool: return demon.get_state() == Demon.State.JUMP, FRAMES_TO_WATCH)
+	repellable.repelled.emit(man.global_position)
+	var size: Vector2 = _drawing(demon).scale
+	var came_down: bool = await wait_until(demon.is_on_floor, FRAMES_TO_WATCH)
+	var take_offs: int = leaps.size()
+	var landed: int = landings.size()
+	await _clear([ground, step, man, demon])
+	return report(jumped and came_down and take_offs == 1 and landed == 0 and mistimed.is_empty()
+			and size.is_equal_approx(Vector2.ONE),
+			"Crucifix in a jump: jumped %s, came down %s with %d take-off and %d landing, told at the wrong time %s, size when thrown %s"
+			% [jumped, came_down, take_offs, landed, not mistimed.is_empty(), size])
+
+
+## As in _stopped_on_its_way_to_take_off_it_stands_out_of_reach: in DROP but stopped before it
+## takes off, the demon tells neither a take-off nor a landing.
+func _stopped_on_its_way_to_take_off_it_tells_no_take_off_nor_landing() -> bool:
+	var depth: float = 2.0 * TILE
+	var high: StaticBody2D = make_platform(FLOOR_LEFT, EDGE_X)
+	var low: StaticBody2D = make_platform(EDGE_X, FLOOR_RIGHT, depth)
+	var man: Player = await spawn_on_floor(Vector2(EDGE_X + DROP_MAN_INSET, SPAWN_Y + depth))
+	var changes: Array[int] = []
+	var demon: Demon = await _spawn_demon(changes, 0.0, MAX_DROP, EDGE_X - DROP_DEMON_AWAY)
+	demon.stats.chase_speed = SLOW_CHASE_SPEED
+	var leaps: Array[Vector2] = []
+	var landings: Array[Vector2] = []
+	var mistimed: Array[bool] = []
+	_watch_leaps(demon, leaps, landings, mistimed)
+	var dropping: bool = await wait_until(
+			func() -> bool: return demon.get_state() == Demon.State.DROP, FRAMES_TO_WATCH)
+	var front: float = demon.position.x + _half_width(demon)
+	var block: StaticBody2D = make_wall(front + BLOCK_AHEAD, front + BLOCK_AHEAD + TILE,
+			-BLOCK_HEIGHT, 0.0)
+	var stood: bool = await wait_until(
+			func() -> bool: return demon.get_state() == Demon.State.OUT_OF_REACH, FRAMES_TO_WATCH)
+	await _clear([high, low, block, man, demon])
+	return report(dropping and stood and leaps.is_empty() and landings.is_empty(),
+			"Walk to take-off stopped: dropping %s, then out of reach %s, %d take-off, %d landing"
+			% [dropping, stood, leaps.size(), landings.size()])
+
+
+## Writes the size of demon's drawing into leaps each time it tells took_off, and into landings
+## each time it tells landed, and true into mistimed for a take-off out of JUMP and DROP or a
+## landing in the air.
+func _watch_leaps(demon: Demon, leaps: Array[Vector2], landings: Array[Vector2],
+		mistimed: Array[bool]) -> void:
+	var on_take_off: Callable = func() -> void:
+		leaps.append(_drawing(demon).scale)
+		if demon.get_state() != Demon.State.JUMP and demon.get_state() != Demon.State.DROP:
+			mistimed.append(true)
+	var on_landing: Callable = func() -> void:
+		landings.append(_drawing(demon).scale)
+		if not demon.is_on_floor():
+			mistimed.append(true)
+	demon.took_off.connect(on_take_off)
+	demon.landed.connect(on_landing)
+
+
+## Passes with one take-off told with the drawing taller and narrower, one landing told with it
+## wider and lower, none at the wrong time, and the drawing at size after, back to its own.
+func _report_leap(what: String, leaps: Array[Vector2], landings: Array[Vector2],
+		mistimed: Array[bool], size: Vector2) -> bool:
+	var stretched: bool = leaps.size() == 1 and leaps[0].x < 1.0 and leaps[0].y > 1.0
+	var squashed: bool = landings.size() == 1 and landings[0].x > 1.0 and landings[0].y < 1.0
+	return report(stretched and squashed and mistimed.is_empty()
+			and size.is_equal_approx(Vector2.ONE),
+			"%s: take-offs at sizes %s, landings at sizes %s, told at the wrong time %s, size after %s"
+			% [what, leaps, landings, not mistimed.is_empty(), size])
+
+
+## The demon's stand-in drawing, read from its scene.
+func _drawing(demon: Demon) -> Polygon2D:
+	return demon.get_node(^"Placeholder") as Polygon2D
 
 
 ## A demon at x with the cases' values, jump_height and max_drop, and one attack of animation, with

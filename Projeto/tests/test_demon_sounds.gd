@@ -1,8 +1,10 @@
 # Test of the demon's sounds (ADR 0040). The demon scene has them, linked to the demon and to a cue
 # on the SFX bus, with the alert and search beeps and no bark yet. The alert plays Alert Sound and
 # the search Search Sound, at the demon's voice moved by at most Pitch Variation; a bark plays Bark
-# Sound, and nothing while its slot is empty; other states play nothing. Each demon's voice is
-# within Voice Spread of the normal pitch, and demons do not all share one.
+# Sound, and nothing while its slot is empty; other states play nothing. A take-off plays Take Off
+# Sound and a landing Land Sound, both in the scene, at the demon's voice; a pack leaping on one
+# step starts at most Max Leap Sounds Per Step of them, and never silences an alert. Each demon's
+# voice is within Voice Spread of the normal pitch, and demons do not all share one.
 # The demon's own physics is off, so only the test changes its state, by emitting its signals.
 # Run from the repository root; the exit code is 0 on pass and 1 on fail:
 # godot --headless --fixed-fps 60 --path Projeto --script res://tests/test_demon_sounds.gd
@@ -29,6 +31,8 @@ func _initialize() -> void:
 	results.append(await _a_pack_starts_at_most_its_limit_on_one_frame())
 	results.append(await _barks_never_silence_an_alert())
 	results.append(await _the_sounds_take_no_global_random_numbers())
+	results.append(await _the_take_off_and_the_landing_play_their_sounds())
+	results.append(await _leaps_count_apart_and_never_silence_an_alert())
 	finish(results)
 
 
@@ -165,6 +169,48 @@ func _the_sounds_take_no_global_random_numbers() -> bool:
 	await _clear(demon)
 	return report(next == expected, "Global random numbers after making a demon: one taken %s"
 			% (next == expected))
+
+
+## The demon scene fills Take Off Sound and Land Sound; a take-off plays the first and a landing
+## the second, each at the demon's voice moved by at most Pitch Variation.
+func _the_take_off_and_the_landing_play_their_sounds() -> bool:
+	var demon: Demon = await _make_demon()
+	var sounds: DemonSounds = _sounds_of(demon)
+	var filled: bool = sounds.take_off_sound != null and sounds.land_sound != null
+	demon.took_off.emit()
+	var take_off_plays: bool = sounds.cue.stream == sounds.take_off_sound and sounds.cue.playing \
+			and _within_voice(sounds)
+	await physics_frame
+	demon.landed.emit()
+	var land_plays: bool = sounds.cue.stream == sounds.land_sound and sounds.cue.playing \
+			and _within_voice(sounds)
+	await _clear(demon)
+	return report(filled and take_off_plays and land_plays,
+			"Leap: both sounds in the scene %s, take-off plays at its voice %s, landing %s"
+			% [filled, take_off_plays, land_plays])
+
+
+## BARKING_DEMONS demons taking off on one physics step start Max Leap Sounds Per Step sounds
+## between them, and ALERTED_DEMONS more alerted on that same step all start their beeps.
+func _leaps_count_apart_and_never_silence_an_alert() -> bool:
+	var leaping: Array[Demon] = []
+	var alerted: Array[Demon] = []
+	for _index: int in BARKING_DEMONS:
+		leaping.append(await _make_demon())
+	for _index: int in ALERTED_DEMONS:
+		alerted.append(await _make_demon())
+	var leap_limit: int = _sounds_of(leaping[0]).max_leap_sounds_per_step
+	for demon: Demon in leaping:
+		demon.took_off.emit()
+	for demon: Demon in alerted:
+		demon.state_changed.emit(Demon.State.IDLE, Demon.State.ALERT)
+	var leaps: int = leaping.filter(_is_playing).size()
+	var alerts: int = alerted.filter(_is_playing).size()
+	for demon: Demon in leaping + alerted:
+		await _clear(demon)
+	return report(leaps == leap_limit and alerts == ALERTED_DEMONS,
+			"Take-offs on one step: %d of %d play (limit %d), %d of %d alerted beep after them"
+			% [leaps, BARKING_DEMONS, leap_limit, alerts, ALERTED_DEMONS])
 
 
 func _is_playing(demon: Demon) -> bool:

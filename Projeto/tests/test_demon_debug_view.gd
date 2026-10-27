@@ -2,7 +2,8 @@
 # the start and linked to the room's four demons and its player. Toggle Debug Overlay, on F3, hides
 # the view and stops its processing along with the overlay, and F3 again brings both back. Each
 # demon's text names the state it is in and follows it when it changes, its seconds starting over
-# and stopping in a pause. The room's hiding wall hides the man right behind it from the nearest
+# and stopping in a pause. With two steps on a demon's way back, the view numbers them in the order
+# the demon undoes them, the last step 1, and draws them with no error. The room's hiding wall hides the man right behind it from the nearest
 # floor demon, not in front of it, and is lower than his Jump Height, so he jumps over it.
 # That the view frees itself outside debug builds can only be checked on a release export.
 # Run from the repository root; the exit code is 0 on pass and 1 on fail:
@@ -24,6 +25,9 @@ const COUNT_FRAMES: int = 12
 const BESIDE_WALL: float = 100.0
 const ROOM_FLOOR_Y: float = 998.0
 const SIGHT_FRAMES: int = 3
+## How far across and down each step of the made-up way back goes, in px.
+const WAY_STEP_ACROSS: float = 100.0
+const WAY_STEP_DOWN: float = 96.0
 
 
 func _initialize() -> void:
@@ -32,6 +36,7 @@ func _initialize() -> void:
 	results.append(await _f3_hides_and_shows_it_with_the_overlay())
 	results.append(await _each_demon_s_text_follows_its_state())
 	results.append(await _the_hiding_wall_hides_the_man_and_a_jump_clears_it())
+	results.append(await _the_way_back_is_numbered_last_step_first())
 	finish(results)
 
 
@@ -112,6 +117,33 @@ func _the_hiding_wall_hides_the_man_and_a_jump_clears_it() -> bool:
 	return report(wall_height < stats.jump_height and hidden and seen,
 			"Hiding wall %d px high (he jumps %d px): hides him behind it %s, not in front %s"
 			% [wall_height, stats.jump_height, hidden, seen])
+
+
+## A demon, its own physics off so only the test moves it along its way, lands on two floors each
+## lower than the last: the view numbers the second step 1 and the first 2, as the demon undoes
+## them, and draws them for TEXT_FRAMES frames.
+func _the_way_back_is_numbered_last_step_first() -> bool:
+	var room: Node2D = await _make_room()
+	var view: DemonDebugView = _view_of(room)
+	var demon: Demon = view.demons[0]
+	demon.set_physics_process(false)
+	var way: DemonPath = demon.get_way_back()
+	var start: Vector2 = demon.global_position
+	for floor_index: int in [1, 2]:
+		way.update(start + Vector2(floor_index * WAY_STEP_ACROSS, (floor_index - 1) * WAY_STEP_DOWN),
+				true)
+		way.update(start + Vector2(floor_index * WAY_STEP_ACROSS, floor_index * WAY_STEP_DOWN),
+				false)
+		way.update(start + Vector2((floor_index + 1) * WAY_STEP_ACROSS, floor_index * WAY_STEP_DOWN),
+				true)
+	await wait_frames(TEXT_FRAMES)
+	var steps: int = way.size()
+	var marks: Array[String] = []
+	for step: int in steps:
+		marks.append(view.get_step_mark(0, step))
+	await _clear(room)
+	return report(steps == 2 and marks[0] == "2" and marks[1] == "1",
+			"Way back of %d steps, numbered first to last %s" % [steps, marks])
 
 
 func _make_room() -> Node2D:

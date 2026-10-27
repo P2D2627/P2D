@@ -62,6 +62,7 @@ func physics_update(delta: float) -> void:
 			return
 		_leapt = true
 		_demon.velocity = _leap
+		_demon.take_off()
 		return
 	_demon.land_off_its_floor(_for_state,
 			_left_floor and _demon.global_position.y - _start.y >= LANDED_LOWER)

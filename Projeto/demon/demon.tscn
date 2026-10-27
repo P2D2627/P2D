@@ -11,6 +11,8 @@
 [ext_resource type="Script" path="res://demon/demon_sounds.gd" id="9_sounds"]
 [ext_resource type="AudioStream" uid="uid://d14rquii3j2i3" path="res://assets/audio/demon_alert.wav" id="10_alert"]
 [ext_resource type="AudioStream" uid="uid://bpoa7jbrvdybb" path="res://assets/audio/demon_search.wav" id="11_search"]
+[ext_resource type="AudioStream" uid="uid://b5dy3n1l8novm" path="res://assets/audio/demon_take_off.wav" id="12_take_off"]
+[ext_resource type="AudioStream" uid="uid://bnaebg4uygkcb" path="res://assets/audio/demon_land.wav" id="13_land"]
 
 [sub_resource type="RectangleShape2D" id="RectangleShape2D_body"]
 size = Vector2(48, 96)
@@ -66,6 +68,8 @@ demon = NodePath("..")
 cue = NodePath("Cue")
 alert_sound = ExtResource("10_alert")
 search_sound = ExtResource("11_search")
+take_off_sound = ExtResource("12_take_off")
+land_sound = ExtResource("13_land")
 
 [node name="Cue" type="AudioStreamPlayer2D" parent="DemonSounds"]
 bus = &"SFX"
@@ -144,5 +148,7 @@ shape = SubResource("RectangleShape2D_hit")
 [connection signal="state_changed" from="." to="Placeholder" method="_on_demon_state_changed"]
 [connection signal="warning_started" from="." to="Placeholder" method="_on_demon_warning_started"]
 [connection signal="barked" from="." to="Placeholder" method="_on_demon_barked"]
+[connection signal="took_off" from="." to="Placeholder" method="_on_demon_took_off"]
+[connection signal="landed" from="." to="Placeholder" method="_on_demon_landed"]
 [connection signal="state_changed" from="." to="Mark" method="_on_demon_state_changed"]
 [connection signal="hold_sink_changed" from="Hitbox" to="SinkingDrawing" method="set_sink"]
