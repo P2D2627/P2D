@@ -77,6 +77,13 @@ const REACH_TOLERANCE: float = 1.0
 const STEP_CHECK_INSET: float = 8.0
 ## How much higher than a step's top, in px, the demon's jump peaks, so its feet clear the corner.
 const JUMP_CLEARANCE: float = 12.0
+## How far past Pack Spacing, in px, another demon still counts as in this one's way, and how far
+## short of it as too near: a demon right at it neither stops for it nor steps away, so the two never
+## take turns at it.
+const PACK_TOLERANCE: float = 1.0
+## The states in which the demon's own move carries it, a lunge, a throw or a leap, so it never steps
+## aside from another demon in them (ADR 0046).
+const STATES_THAT_CARRY_IT: Array[State] = [State.LUNGE, State.THROWN, State.JUMP, State.DROP]
 ## How high over a step's top, in px, the demon's feet are as its front gets to the corner: half
 ## Jump Clearance, which takes up the frame's run by which it may take off nearer the step.
 const CORNER_CLEARANCE: float = JUMP_CLEARANCE / 2.0
@@ -191,6 +198,7 @@ func _physics_process(delta: float) -> void:
 	if not is_on_floor():
 		velocity += _current.get_gravity() * delta
 	_current.physics_update(delta)
+	_keep_apart_from_packmates()
 	_stop_at_the_man(delta)
 	move_and_slide()
 	_way.update(global_position, is_on_floor())
@@ -786,6 +794,20 @@ func _packmate_ahead(gap: float) -> Demon:
 	return nearest
 
 
+## For its states: true when, with Pack Spacing, another demon on its floor stands that way, 1 for
+## right and -1 for left, no further than Pack Spacing from its body, so it stops or turns there as
+## at a wall (ADR 0046).
+func is_packmate_in_the_way(direction: float) -> bool:
+	if stats.pack_spacing <= 0.0:
+		return false
+	for mate: Demon in _packmates:
+		var ahead: float = (mate.global_position.x - global_position.x) * direction
+		if ahead > 0.0 and ahead <= _apart_from_packmates() + PACK_TOLERANCE \
+				and _shares_floor_with(mate):
+			return true
+	return false
+
+
 ## For its states: with Pack Spacing, how far, in px, this demon can walk towards a spot gap px away
 ## along the floor before it is Pack Spacing behind the body of the nearest other searching demon
 ## that way, or 0 if it already is; with none, INF. So two demons that search one spot sniff side by
@@ -961,6 +983,61 @@ func _update_hitbox() -> void:
 		_hitbox.knockback_distance = _attack.knockback_distance
 		_hitbox.knockback_height = _attack.knockback_height
 		_hitbox.activate()
+
+
+## With Pack Spacing, on its floor, steps away at Pack Push Speed from the nearest other demon on it
+## that its body is nearer to than Pack Spacing and that it yields to, whatever its state asked of
+## it, unless its own move carries it or its floor ends that way; of two on one spot, the one put in
+## the scene first steps left. Where neither can step away, they stay as they are (ADR 0046).
+func _keep_apart_from_packmates() -> void:
+	if stats.pack_spacing <= 0.0 or not is_on_floor() or _state in STATES_THAT_CARRY_IT:
+		return
+	var nearest: Demon = null
+	var nearest_apart: float = _apart_from_packmates() - PACK_TOLERANCE
+	for mate: Demon in _packmates:
+		var apart: float = absf(mate.global_position.x - global_position.x)
+		if apart < nearest_apart and _shares_floor_with(mate) and _yields_to(mate):
+			nearest = mate
+			nearest_apart = apart
+	if nearest == null:
+		return
+	var away: float = signf(global_position.x - nearest.global_position.x)
+	if away == 0.0:
+		away = -1.0 if get_instance_id() < nearest.get_instance_id() else 1.0
+	if is_edge_ahead(away):
+		return
+	velocity.x = away * maxf(stats.pack_push_speed, velocity.x * away)
+
+
+## True when this demon steps away from the other one, too near it, keeping the chase's rules (ADR
+## 0024): not while either of them backs off, since one backing off crosses the other; not with the
+## body of the man it chases between them, each at least touching him, not over him, since his body
+## keeps theirs apart; and not, after the man, from one that is not, since only a demon after him
+## holds back another: that one steps away instead.
+func _yields_to(mate: Demon) -> bool:
+	if _state == State.RETREAT or mate.get_state() == State.RETREAT:
+		return false
+	if not has_target():
+		return true
+	var man_x: float = _target.get_man().global_position.x
+	var to_me: float = man_x - global_position.x
+	var to_mate: float = man_x - mate.global_position.x
+	var touching: float = _target.get_half_size().x + _half_size.x - PACK_TOLERANCE
+	if to_me * to_mate < 0.0 and absf(to_me) >= touching and absf(to_mate) >= touching:
+		return false
+	return mate.has_target()
+
+
+## How far apart, in px, two demons' middles stand with Pack Spacing between their bodies.
+func _apart_from_packmates() -> float:
+	return 2.0 * _half_size.x + stats.pack_spacing
+
+
+## True when the other demon stands on about this one's floor: on a floor, less than half a body
+## higher or lower.
+func _shares_floor_with(mate: Demon) -> bool:
+	return is_instance_valid(mate) and mate.is_on_floor() \
+			and absf(mate.global_position.y - global_position.y) < _half_size.y
 
 
 func _on_pack_area_body_entered(body: Node2D) -> void:

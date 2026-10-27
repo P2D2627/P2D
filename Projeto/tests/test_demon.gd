@@ -342,6 +342,13 @@ const LEDGE_CORNER_X: float = 170.0
 const FOLLOW_AWAY: float = 300.0
 const STEP_WITHIN: float = 60.0
 const FOLLOW_FRAMES: int = 120
+## The cases of two demons kept apart in every state (ADR 0046): how long two on one spot are given
+## to step a body and PACK_SPACING apart, one alone at Pack Push Speed, with room to spare; and how
+## far either side of the man two pacing below him, or of 0 two patrolling, are put, apart from the
+## start.
+const APART_FRAMES: int = 90
+const PAIR_HALF_APART: float = 70.0
+const PATROL_PAIR_HALF_APART: float = 150.0
 ## In the case of the man below, the demon's ledge ends at x = HIGH_LEDGE_RIGHT and the man stands
 ## on the floor at BELOW_LEDGE_X, inside Sight Distance and in its sight past the ledge's corner.
 const HIGH_LEDGE_RIGHT: float = 200.0
@@ -531,6 +538,11 @@ func _initialize() -> void:
 	results.append(await _pacing_out_of_reach_it_never_gives_up_while_it_sees_the_man())
 	results.append(await _pacing_out_of_reach_it_follows_a_man_who_leaves_its_stretch())
 	results.append(await _pacing_out_of_reach_it_stays_on_its_stretch_while_the_man_steps_within_it())
+	results.append(await _two_demons_put_on_one_spot_step_apart())
+	results.append(await _two_demons_on_one_spot_at_the_end_of_their_floor_step_apart_on_it())
+	results.append(await _two_demons_pacing_below_one_man_never_overlap())
+	results.append(await _two_demons_patrolling_into_each_other_never_overlap())
+	results.append(await _two_demons_on_one_side_of_a_grabbed_man_end_apart())
 	results.append(await _pacing_out_of_reach_it_keeps_on_below_a_shelf_that_hides_the_man())
 	results.append(await _with_no_pace_width_out_of_reach_it_never_barks())
 	results.append(await _two_demons_pacing_out_of_reach_never_bark_in_step())
@@ -3325,6 +3337,115 @@ func _pacing_out_of_reach_it_stays_on_its_stretch_while_the_man_steps_within_it(
 			and state == Demon.State.OUT_OF_REACH,
 			"Out of reach %s; he stepped %d px: it paced from %.1f to %.1f around %.1f, %s"
 			% [stopped, STEP_WITHIN, lowest, highest, anchor, _name_of(state)])
+
+
+## Two demons that keep Pack Spacing put on one spot, with no man: they step apart, a body and Pack
+## Spacing, and stay on their floor (ADR 0046).
+func _two_demons_put_on_one_spot_step_apart() -> bool:
+	var ground: StaticBody2D = make_platform(FLOOR_LEFT, FLOOR_RIGHT)
+	var pair: Array[Demon] = [await _spawn_demon(0.0, NO_LUNGE), await _spawn_demon(0.0, NO_LUNGE)]
+	for demon: Demon in pair:
+		_make_it_keep_apart(demon)
+	await wait_frames(APART_FRAMES)
+	var apart: float = absf(pair[0].position.x - pair[1].position.x)
+	var on_floor: bool = pair[0].is_on_floor() and pair[1].is_on_floor()
+	var asked: float = _body_width(pair[0]) + PACK_SPACING
+	await _clear([ground, pair[0], pair[1]])
+	return report(apart >= asked - CONTACT_TOLERANCE and on_floor,
+			"Two demons on one spot: %.1f px apart after %d frames (asked %.1f), on the floor %s"
+			% [apart, APART_FRAMES, asked, on_floor])
+
+
+## Two demons that keep Pack Spacing put on one spot at the end of their floor: the one the end
+## stops never steps off it, and the other steps away from it, so they end apart on the floor (ADR
+## 0046).
+func _two_demons_on_one_spot_at_the_end_of_their_floor_step_apart_on_it() -> bool:
+	var ground: StaticBody2D = make_platform(FLOOR_LEFT, EDGE_X)
+	var pair: Array[Demon] = [await _spawn_demon(0.0, NO_LUNGE), await _spawn_demon(0.0, NO_LUNGE)]
+	var at_the_end: float = EDGE_X - _body_width(pair[0]) / 2.0 - CONTACT_TOLERANCE
+	for demon: Demon in pair:
+		_make_it_keep_apart(demon)
+		demon.position.x = at_the_end
+	await wait_frames(APART_FRAMES)
+	var apart: float = absf(pair[0].position.x - pair[1].position.x)
+	var on_floor: bool = absf(pair[0].position.y) < TOLERANCE and absf(pair[1].position.y) < TOLERANCE
+	var asked: float = _body_width(pair[0]) + PACK_SPACING
+	await _clear([ground, pair[0], pair[1]])
+	return report(apart >= asked - CONTACT_TOLERANCE and on_floor,
+			"Two demons on one spot at the end of their floor: %.1f px apart (asked %.1f), both on it %s"
+			% [apart, asked, on_floor])
+
+
+## Two demons that keep Pack Spacing, pacing out of reach below one man on a one-way shelf, their
+## stretches crossing: each stops a body and Pack Spacing from the other, as at a wall, and they
+## never overlap (ADR 0046).
+func _two_demons_pacing_below_one_man_never_overlap() -> bool:
+	var ground: StaticBody2D = make_platform(FLOOR_LEFT, FLOOR_RIGHT)
+	var shelf: StaticBody2D = _make_one_way_shelf(FLOOR_LEFT, FLOOR_RIGHT, -SHELF_HEIGHT)
+	var pair: Array[Demon] = [await _spawn_demon(-PAIR_HALF_APART, NO_LUNGE),
+			await _spawn_demon(PAIR_HALF_APART, NO_LUNGE)]
+	for demon: Demon in pair:
+		_make_it_pace(demon)
+		_make_it_keep_apart(demon)
+	var man: Player = await spawn_on_floor(Vector2(0.0, SPAWN_Y - SHELF_HEIGHT))
+	var both_paced: bool = await wait_until(func() -> bool:
+			return pair[0].get_state() == Demon.State.OUT_OF_REACH \
+					and pair[1].get_state() == Demon.State.OUT_OF_REACH, FRAMES_TO_WATCH)
+	var closest: float = INF
+	for _frame: int in PACE_FRAMES:
+		await physics_frame
+		closest = minf(closest, absf(pair[0].position.x - pair[1].position.x))
+	var asked: float = _body_width(pair[0]) + PACK_SPACING
+	await _clear([ground, shelf, man, pair[0], pair[1]])
+	return report(both_paced and closest >= asked - CONTACT_TOLERANCE,
+			"Two demons pacing below one man %s: never nearer than %.1f px (asked %.1f)"
+			% [both_paced, closest, asked])
+
+
+## Two demons that keep Pack Spacing, patrolling across each other's patrol: each turns back a body
+## and Pack Spacing from the other, as at a wall, and they never overlap (ADR 0046).
+func _two_demons_patrolling_into_each_other_never_overlap() -> bool:
+	var ground: StaticBody2D = make_platform(FLOOR_LEFT, FLOOR_RIGHT)
+	var pair: Array[Demon] = [await _spawn_demon(-PATROL_PAIR_HALF_APART, NO_LUNGE),
+			await _spawn_demon(PATROL_PAIR_HALF_APART, NO_LUNGE, [], false, [], true)]
+	for demon: Demon in pair:
+		_make_it_patrol(demon)
+		_make_it_keep_apart(demon)
+	var closest: float = INF
+	for _frame: int in PACK_FRAMES:
+		await physics_frame
+		closest = minf(closest, absf(pair[0].position.x - pair[1].position.x))
+	var asked: float = _body_width(pair[0]) + PACK_SPACING
+	await _clear([ground, pair[0], pair[1]])
+	return report(closest >= asked - CONTACT_TOLERANCE,
+			"Two demons patrolling into each other: never nearer than %.1f px (asked %.1f)"
+			% [closest, asked])
+
+
+## With the man's SP low, two demons that keep Pack Spacing come at him from one side and he is
+## grabbed: however they got there, holding him or not, they end a body and Pack Spacing apart, not
+## one on the other (ADR 0046).
+func _two_demons_on_one_side_of_a_grabbed_man_end_apart() -> bool:
+	var ground: StaticBody2D = make_platform(FLOOR_LEFT, FLOOR_RIGHT)
+	var man: Player = await _man_a_bite_grabs()
+	var pair: Array[Demon] = [await _spawn_demon(0.0, LUNGE_RANGE, [], true),
+			await _spawn_demon(-SECOND_DEMON_BEHIND, LUNGE_RANGE, [], true)]
+	for demon: Demon in pair:
+		_make_it_back_off(demon)
+		_make_it_keep_apart(demon)
+	var grabbed: bool = await wait_until(func() -> bool:
+			return pair[0].get_state() == Demon.State.GRAB \
+					or pair[1].get_state() == Demon.State.GRAB, MAX_FRAMES)
+	await wait_frames(APART_FRAMES)
+	var apart: float = absf(pair[0].position.x - pair[1].position.x)
+	var asked: float = _body_width(pair[0]) + PACK_SPACING
+	var states: String = "%s %.1f px and %s %.1f px from him" % [_name_of(pair[0].get_state()),
+			man.position.x - pair[0].position.x, _name_of(pair[1].get_state()),
+			man.position.x - pair[1].position.x]
+	await _clear([ground, man, pair[0], pair[1]])
+	return report(grabbed and apart >= asked - CONTACT_TOLERANCE,
+			"Two demons on one side of a man at low SP: grabbed %s, %.1f px apart after %d frames (asked %.1f): %s"
+			% [grabbed, apart, APART_FRAMES, asked, states])
 
 
 ## A one-way platform from x = left to x = right, SHELF_THICKNESS thick under y = top, already in the

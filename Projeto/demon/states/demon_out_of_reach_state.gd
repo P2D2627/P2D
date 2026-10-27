@@ -4,7 +4,8 @@ extends DemonState
 ## OUT_OF_REACH: while the man stands out of the demon's reach (ADR 0033).
 ## With Out Of Reach Pace Width it never stands stiff (ADR 0039): it pauses turned to him and barks,
 ## then paces to and fro across that stretch around where it stopped, at Patrol Speed, and at each
-## end pauses turned to him and barks again; where a wall or the end of its floor stops it on his
+## end, or sooner at another demon with Pack Spacing (ADR 0046), pauses turned to him and barks
+## again; where a wall or the end of its floor stops it on his
 ## side, it hops at it. Once he is past half that stretch from where it paces around, where it last
 ## saw him, it runs after him at Chase Speed to below that spot, or as near as its floor lets it, and
 ## paces around there: his steps within the stretch never move it, so it never mirrors him (ADR
@@ -66,6 +67,7 @@ func _pace(delta: float) -> void:
 	var gap: float = _anchor_x + _direction * _demon.stats.out_of_reach_pace_width / 2.0 \
 			- _demon.global_position.x
 	if _demon.is_edge_ahead(_direction) or _demon.is_against_a_wall(_direction) \
+			or _demon.is_packmate_in_the_way(_direction) \
 			or absf(gap) <= Demon.POST_REACH or signf(gap) != _direction:
 		_stop(-_direction)
 		return

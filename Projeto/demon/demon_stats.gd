@@ -108,12 +108,17 @@ extends Resource
 @export_group("Pack")
 ## How far, in px, the demon keeps its body from the body of another demon that stands between it
 ## and the man and is not backing off: it keeps that far behind it, or steps back to it, and attacks
-## from there, so two demons never look like one (ADR 0024). 0 keeps no distance: they can share a
-## spot.
+## from there, so two demons never look like one (ADR 0024). In every other state too, on its floor,
+## it stops or turns that far from another demon as at a wall, and steps away from one nearer than
+## that at Pack Push Speed (ADR 0046). 0 keeps no distance: they can share a spot.
 @export_range(0.0, 500.0, 2.0, "suffix:px") var pack_spacing: float = 0.0:
 	set(value):
 		pack_spacing = value
 		emit_changed()
+## Speed, in px/s, at which the demon steps away from another demon nearer to it than Pack Spacing,
+## as when both land, stop or hold the man on one spot (ADR 0046): the patrol's, so it reads as
+## making room, not as being shoved.
+@export_range(10.0, 1000.0, 10.0, "suffix:px/s") var pack_push_speed: float = 150.0
 ## How much, as a share of each, a demon's Chase Speed, Retreat Speed and Retreat Distance can be
 ## above or below these: each demon draws its own Chase Speed once, when it is put in the level, and
 ## its Retreat Speed and Retreat Distance again each time it backs off, so two that come together
