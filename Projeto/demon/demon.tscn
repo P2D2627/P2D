@@ -118,6 +118,13 @@ enabled = false
 target_position = Vector2(0, 25)
 collision_mask = 257
 
+[node name="StepCheck" type="RayCast2D" parent="."]
+unique_name_in_owner = true
+position = Vector2(32, -1)
+enabled = false
+target_position = Vector2(0, 0)
+collision_mask = 257
+
 [node name="Repellable" parent="." node_paths=PackedStringArray("target") instance=ExtResource("4_repellable")]
 unique_name_in_owner = true
 target = NodePath("..")

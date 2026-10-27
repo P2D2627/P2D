@@ -76,6 +76,14 @@ extends Resource
 ## so running away always works.
 @export_range(0.0, 2000.0, 10.0, "suffix:px/s") var chase_speed: float = 560.0
 
+@export_group("Jump")
+## Height, in px, of the highest step the demon jumps up onto after a man out of its reach above it
+## (ADR 0042): a wall in its way no higher than this. Below the man's own jump, so a ledge between
+## the two stays his alone. At 0 it never jumps, and stays on its own floor.
+@export_range(0.0, 480.0, 1.0, "suffix:px") var jump_height: float = 0.0
+## Seconds a jump of Jump Height takes to its peak. A lower step takes less, at the same gravity.
+@export_range(0.05, 1.0, 0.01, "suffix:s") var jump_time_to_peak: float = 0.25
+
 @export_group("Attacks")
 ## The demon's attacks, in order: of those it can start at the man, it starts the first in the
 ## list. With none, it only chases.
@@ -209,6 +217,17 @@ func get_retreat_max_frames(distance_scale: float = 1.0, speed_scale: float = 1.
 ## A wait of share of Max Hesitation, share from 0 to 1, in whole physics frames.
 func get_hesitation_frames(share: float) -> int:
 	return _to_frames(max_hesitation * share)
+
+
+## Downward acceleration, in px/s², of a jump: what takes a jump of Jump Height to its peak in Jump
+## Time To Peak. 0 with no Jump Height.
+func get_jump_gravity() -> float:
+	return 2.0 * jump_height / (jump_time_to_peak * jump_time_to_peak)
+
+
+## Upward speed, in px/s, that takes a jump height px up at the jump's gravity.
+func get_jump_velocity(height: float) -> float:
+	return sqrt(2.0 * get_jump_gravity() * height)
 
 
 func _to_frames(seconds: float) -> int:

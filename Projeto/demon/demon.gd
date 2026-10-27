@@ -3,8 +3,9 @@ extends CharacterBody2D
 
 ## A demon that chases the man: the one scene of every level's demons (ADR 0019). What kind of
 ## demon it is comes from Stats, such as lust_demon_stats.tres, and where it lives is where the
-## level puts it. It never jumps up nor climbs: it chases along its own floor, stops at an edge, and
-## a step stops it, so the level's own shape keeps it in its place. Its Senses (ADR 0032) see the man
+## level puts it. It chases along its own floor, stops at an edge, and a step stops it, so the
+## level's own shape keeps it in its place; with Jump Height, it jumps up a step no higher than that
+## after a man out of its reach above it (ADR 0042). Its Senses (ADR 0032) see the man
 ## inside Sight Distance with no wall between its eyes and his middle or his head; it notices him,
 ## and starts the chase, only if he is ahead of it or no further behind than Sight Behind Share of
 ## that, and with Chases Only On Screen only while it is on the screen. It keeps on chasing him past
@@ -48,7 +49,7 @@ signal barked(hops: bool)
 ## DemonState in states/, whose doc says when it starts and how long it lasts.
 enum State {
 	IDLE, CHASE, WARNING, LUNGE, REPELLED, RETREAT, GRAB, THROWN, STUNNED, RETURN, OUT_OF_REACH,
-	PATROL, ALERT, SEARCH,
+	PATROL, ALERT, SEARCH, JUMP,
 }
 
 ## How far apart, in px, the floor is looked for along a lunge: half a tile, so no hole is missed.
@@ -59,6 +60,11 @@ const POST_REACH: float = 1.0
 ## floor can stand a fraction of a px apart, which with no attacks, a reach of 0, would put him out
 ## of it.
 const REACH_TOLERANCE: float = 1.0
+## How far into a step, in px past the demon's front, StepCheck looks down for its top: a sixth of a
+## tile, so the corner's rounding never hides it.
+const STEP_CHECK_INSET: float = 8.0
+## How much higher than a step's top, in px, the demon's jump peaks, so its feet clear the corner.
+const JUMP_CLEARANCE: float = 12.0
 
 @export var stats: DemonStats
 ## Which way the demon faces at its post: where the level puts it looking, and where it looks again
@@ -112,6 +118,8 @@ var _gave_up_out_of_reach: bool = false
 @onready var _ledge_check: RayCast2D = %LedgeCheck
 ## How far ahead of the demon's middle LedgeCheck looks, in px, set in the scene.
 @onready var _ledge_reach: float = absf(_ledge_check.position.x)
+## Looks down onto the top of a step just past the demon's front, from Jump Height above its floor.
+@onready var _step_check: RayCast2D = %StepCheck
 @onready var _repellable: Repellable = %Repellable
 @onready var _hitbox: Hitbox = %Hitbox
 @onready var _box: CollisionShape2D = $CollisionShape2D
@@ -175,6 +183,7 @@ func _make_states() -> void:
 	_states[State.PATROL] = DemonPatrolState.new(self)
 	_states[State.ALERT] = DemonAlertState.new(self)
 	_states[State.SEARCH] = DemonSearchState.new(self)
+	_states[State.JUMP] = DemonJumpState.new(self)
 	assert(not _states.has(null), "Demon: every State needs its object in _make_states.")
 	_current = _states[_state]
 
@@ -342,6 +351,58 @@ func is_man_out_of_reach() -> bool:
 ## How far apart, in px, the man's feet and the demon's are in height, above it or below it.
 func _height_of(man: Node2D) -> float:
 	return absf(global_position.y - man.global_position.y)
+
+
+## For its states, with the man out of its reach, gap px away along the floor: with Jump Height and
+## him above it, goes after him on this physics frame of delta seconds, and jumps up the step that
+## stops it, if it can (ADR 0042). False, with nothing done, where nothing more takes it nearer him:
+## with no Jump Height, with him below it, at the end of its floor, at a wall it cannot jump up
+## onto, or with nothing in its way along its floor to below him, as under a platform, so no step
+## to jump up.
+func climbs_after_target(gap: float, delta: float) -> bool:
+	if stats.jump_height <= 0.0 or _target.get_man().global_position.y >= global_position.y:
+		return false
+	var direction: float = signf(gap)
+	if is_against_a_wall(direction):
+		var step: float = get_step_height(direction)
+		if step <= 0.0:
+			return false
+		_jump_up(direction, step, delta)
+		return true
+	if is_edge_ahead(direction) or not test_move(global_transform, Vector2(gap, 0.0)):
+		return false
+	go_after(gap, delta)
+	return true
+
+
+## For its states: the height, in px, of the top of a step just past the demon's front, going in
+## direction, if it is no higher than Jump Height and the demon has room to jump up onto it; 0
+## otherwise. A wall higher than that has no top within StepCheck, which starts inside it and so
+## never finds it.
+func get_step_height(direction: float) -> float:
+	_step_check.position = Vector2(direction * (_half_size.x + STEP_CHECK_INSET),
+			-stats.jump_height - REACH_TOLERANCE)
+	_step_check.target_position = Vector2(0.0, stats.jump_height)
+	_step_check.force_raycast_update()
+	if not _step_check.is_colliding() or _step_check.get_collision_normal().y >= 0.0:
+		return 0.0
+	var height: float = global_position.y - _step_check.get_collision_point().y
+	var rise: Vector2 = Vector2.UP * (height + JUMP_CLEARANCE)
+	if test_move(global_transform, rise) or test_move(global_transform.translated(rise),
+			Vector2(direction * 2.0 * _half_size.x, 0.0)):
+		return 0.0
+	return height
+
+
+## Takes off up a step height px high, going in direction at its Chase Speed, on this physics frame
+## of delta seconds. The take-off frame moves it up with no gravity yet, so half a frame of gravity
+## off the take-off speed keeps the peak on Jump Clearance over the step, as the man's jump does.
+func _jump_up(direction: float, height: float, delta: float) -> void:
+	(_states[State.JUMP] as DemonJumpState).aim(direction * _chase_speed(), global_position.y)
+	velocity = Vector2(direction * _chase_speed(),
+			-stats.get_jump_velocity(height + JUMP_CLEARANCE)
+			+ stats.get_jump_gravity() * delta / 2.0)
+	change_state(State.JUMP)
 
 
 ## For its states, after an attack: backs off from the man with Retreat Distance in Stats, and
