@@ -29,9 +29,10 @@ extends Resource
 @export_range(0.0, 10.0, 0.1, "suffix:s") var search_time: float = 0.0
 ## Speed, in px/s, at which it walks to where it last saw the man: slower than the chase.
 @export_range(10.0, 1000.0, 10.0, "suffix:px/s") var search_speed: float = 300.0
-## Seconds the demon stands facing a man out of its reach before it gives up (ADR 0033): him on a
-## floor or a wall higher above or lower below its own than the Max Height Difference of any of its
-## attacks. It never follows him along under him or over him.
+## Seconds a man out of the demon's reach has to stay hidden from it before it gives up (ADR 0033 and
+## 0044): him on a floor or a wall higher above or lower below its own than the Max Height
+## Difference of any of its attacks. While it sees him, it never gives up. It follows him along under
+## him or over him only with Out Of Reach Pace Width, once he is past half that stretch (ADR 0045).
 @export_range(0.0, 10.0, 0.1, "suffix:s") var out_of_reach_wait: float = 2.0
 ## Width, in px, of the stretch the demon paces to and fro across at Patrol Speed, around where it
 ## stopped, while the man is out of its reach, so it never stands stiff (ADR 0039). At 0 it stands

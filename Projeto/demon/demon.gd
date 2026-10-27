@@ -136,9 +136,6 @@ var _way: DemonPath = DemonPath.new()
 ## changes state, as when it lands, so it tells landed only after took_off. Set after the change to
 ## JUMP or DROP, which clears it like any other.
 var _off_its_floor: bool = false
-## True once it gave up on a man out of its reach, until it notices him back within its reach: up
-## there, it leaves him alone, instead of starting the chase again on the next frame.
-var _gave_up_out_of_reach: bool = false
 ## Where test_move finds the wall in the demon's way to a man above it, kept so the chase allocates
 ## nothing per frame.
 var _wall_ahead: KinematicCollision2D = KinematicCollision2D.new()
@@ -288,10 +285,6 @@ func chase_if_it_notices_the_man() -> bool:
 	if man == null or not may_chase_from_here() or not _senses.can_notice(
 			man, _facing, stats.sight_distance * stats.sight_behind_share):
 		return false
-	if _gave_up_out_of_reach:
-		if _height_of(man) > stats.get_reach_height():
-			return false
-		_gave_up_out_of_reach = false
 	_target.take(man)
 	change_state(State.ALERT if stats.alert_time > 0.0 else State.CHASE)
 	return true
@@ -373,13 +366,6 @@ func should_back_off_after_bite() -> bool:
 func end_bite() -> void:
 	_bite_frames_left = 0
 	_retreat_after_bite = false
-
-
-## For its states: gives up on a man out of its reach (ADR 0033), and leaves him alone up there
-## until it notices him back within its reach.
-func give_up_out_of_reach() -> void:
-	_gave_up_out_of_reach = true
-	_stop_chasing()
 
 
 ## For its states: changes to new_state, and lets it act on this same physics frame of delta
@@ -667,10 +653,10 @@ func has_target() -> bool:
 ## For its states: true while the man is still there to chase, not past Lose Distance, nor hidden
 ## by a wall for Give Up Time, and, with Chases Only On Screen, the demon no further off the screen
 ## than Screen Margin. Otherwise the demon stops chasing him; hidden by a wall, with Search Time, it
-## goes to look for him where it last saw him (ADR 0035). With counts_unseen off, as out of his
-## reach, the time he is hidden does not count, since he is up or down where it saw him go (ADR
-## 0039).
-func keeps_after_target(counts_unseen: bool = true) -> bool:
+## goes to look for him where it last saw him (ADR 0035). With out_of_reach, as with him out of its
+## reach, he has to be hidden for Out Of Reach Wait instead, since he is up or down where it saw him
+## go and a ledge's corner hides him on and off; while it sees him, it never gives up (ADR 0044).
+func keeps_after_target(out_of_reach: bool = false) -> bool:
 	var man: Node2D = _target.get_man()
 	if not _target.has_man() or not may_keep_on_from_here() \
 			or global_position.distance_to(man.global_position) > stats.lose_distance:
@@ -678,9 +664,11 @@ func keeps_after_target(counts_unseen: bool = true) -> bool:
 		return false
 	if _senses.can_see(man):
 		_target.saw_him(Engine.get_physics_frames())
-	elif counts_unseen:
+	else:
 		_target.missed_him()
-	if _target.get_unseen_frames() >= stats.get_give_up_frames():
+	var blind_frames: int = stats.get_out_of_reach_frames() if out_of_reach \
+			else stats.get_give_up_frames()
+	if _target.get_unseen_frames() >= blind_frames:
 		if stats.search_time > 0.0:
 			_forget_target()
 			change_state(State.SEARCH)
