@@ -79,10 +79,13 @@ extends Resource
 @export_group("Jump")
 ## Height, in px, of the highest step the demon jumps up onto after a man out of its reach above it
 ## (ADR 0042): a wall in its way no higher than this. Below the man's own jump, so a ledge between
-## the two stays his alone. At 0 it never jumps, and stays on its own floor.
+## the two stays his alone. It jumps as it lunges, pulled down by its lunge's gravity, so with no
+## lunge in Attacks it never jumps. At 0 it never jumps, and stays on its own floor.
 @export_range(0.0, 480.0, 1.0, "suffix:px") var jump_height: float = 0.0
-## Seconds a jump of Jump Height takes to its peak. A lower step takes less, at the same gravity.
-@export_range(0.05, 1.0, 0.01, "suffix:s") var jump_time_to_peak: float = 0.25
+## Height, in px, of the deepest drop the demon walks off the end of its floor into after a man out
+## of its reach below it (ADR 0042), onto the floor it finds below. At 0 it never drops, and stops
+## at the end of its floor.
+@export_range(0.0, 960.0, 1.0, "suffix:px") var max_drop: float = 0.0
 
 @export_group("Attacks")
 ## The demon's attacks, in order: of those it can start at the man, it starts the first in the
@@ -219,10 +222,15 @@ func get_hesitation_frames(share: float) -> int:
 	return _to_frames(max_hesitation * share)
 
 
-## Downward acceleration, in px/s², of a jump: what takes a jump of Jump Height to its peak in Jump
-## Time To Peak. 0 with no Jump Height.
+## Downward acceleration, in px/s², of a jump up a step: the gravity of the first lunge in Attacks,
+## so the demon jumps as it lunges. 0 with no Jump Height or no lunge: it never jumps.
 func get_jump_gravity() -> float:
-	return 2.0 * jump_height / (jump_time_to_peak * jump_time_to_peak)
+	if jump_height <= 0.0:
+		return 0.0
+	for attack: DemonAttack in attacks:
+		if attack.animation == &"lunge":
+			return attack.get_lunge_gravity()
+	return 0.0
 
 
 ## Upward speed, in px/s, that takes a jump height px up at the jump's gravity.
