@@ -179,7 +179,8 @@ func _the_last_number_key_takes_the_camera_there() -> bool:
 	var stations: Array[Node] = _stations_of(gym)
 	var last: Node2D = stations[stations.size() - 1] as Node2D
 	var event: InputEventKey = InputEventKey.new()
-	event.physical_keycode = KEY_1 + stations.size() - 1 as Key
+	event.physical_keycode = KEY_0 if stations.size() - 1 == GymStations.TENTH_STATION \
+			else KEY_1 + stations.size() - 1 as Key
 	event.pressed = true
 	root.push_input(event)
 	var at_start: bool = gym.player.global_position.is_equal_approx(

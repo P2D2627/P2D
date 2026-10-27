@@ -15,6 +15,7 @@
 [ext_resource type="PackedScene" path="res://levels/gym/stations/pack_station.tscn" id="13_pack"]
 [ext_resource type="PackedScene" path="res://levels/gym/stations/crucifix_station.tscn" id="14_crucifix"]
 [ext_resource type="PackedScene" path="res://levels/gym/stations/soul_points_station.tscn" id="15_soul_points"]
+[ext_resource type="PackedScene" path="res://levels/gym/stations/jumping_dogs_station.tscn" id="16_jumping_dogs"]
 
 [sub_resource type="RectangleShape2D" id="RectangleShape2D_wall"]
 size = Vector2(64, 1200)
@@ -31,7 +32,7 @@ collision_mask = 0
 shape = SubResource("RectangleShape2D_wall")
 
 [node name="WallRight" type="StaticBody2D" parent="."]
-position = Vector2(17312, 600)
+position = Vector2(19232, 600)
 collision_mask = 0
 
 [node name="CollisionShape2D" type="CollisionShape2D" parent="WallRight"]
@@ -65,12 +66,15 @@ position = Vector2(13440, 0)
 [node name="SoulPointsStation" parent="Stations" instance=ExtResource("15_soul_points")]
 position = Vector2(15360, 0)
 
+[node name="JumpingDogsStation" parent="Stations" instance=ExtResource("16_jumping_dogs")]
+position = Vector2(17280, 0)
+
 [node name="GymStations" type="Node" parent="." node_paths=PackedStringArray("player", "level", "grab_escape", "starts")]
 script = ExtResource("3_gym_stations")
 player = NodePath("../Player")
 level = NodePath("..")
 grab_escape = NodePath("../Player/GrabEscape")
-starts = [NodePath("../Stations/IntroStation/Start"), NodePath("../Stations/MovementStation/Start"), NodePath("../Stations/WallStation/Start"), NodePath("../Stations/CameraStation/Start"), NodePath("../Stations/CameraZoneStation/Start"), NodePath("../Stations/DogsStation/Start"), NodePath("../Stations/PackStation/Start"), NodePath("../Stations/CrucifixStation/Start"), NodePath("../Stations/SoulPointsStation/Start")]
+starts = [NodePath("../Stations/IntroStation/Start"), NodePath("../Stations/MovementStation/Start"), NodePath("../Stations/WallStation/Start"), NodePath("../Stations/CameraStation/Start"), NodePath("../Stations/CameraZoneStation/Start"), NodePath("../Stations/DogsStation/Start"), NodePath("../Stations/PackStation/Start"), NodePath("../Stations/CrucifixStation/Start"), NodePath("../Stations/SoulPointsStation/Start"), NodePath("../Stations/JumpingDogsStation/Start")]
 
 [node name="Player" parent="." instance=ExtResource("4_player")]
 
@@ -82,12 +86,12 @@ camera = NodePath("../GameCamera")
 process_mode = 3
 script = ExtResource("6_demon_debug_view")
 overlay = NodePath("../DebugOverlay")
-demons = [NodePath("../Stations/DogsStation/Dog"), NodePath("../Stations/PackStation/NearDog"), NodePath("../Stations/PackStation/FarDog"), NodePath("../Stations/CrucifixStation/Dog"), NodePath("../Stations/SoulPointsStation/Dog")]
+demons = [NodePath("../Stations/DogsStation/Dog"), NodePath("../Stations/PackStation/NearDog"), NodePath("../Stations/PackStation/FarDog"), NodePath("../Stations/CrucifixStation/Dog"), NodePath("../Stations/SoulPointsStation/Dog"), NodePath("../Stations/JumpingDogsStation/Dog")]
 player = NodePath("../Player")
 
 [node name="GameCamera" parent="." node_paths=PackedStringArray("player") instance=ExtResource("7_game_camera")]
 limit_left = 0
 limit_top = -800
-limit_right = 17280
+limit_right = 19200
 limit_bottom = 1200
 player = NodePath("../Player")

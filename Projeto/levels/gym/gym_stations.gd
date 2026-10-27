@@ -8,9 +8,13 @@ extends Node
 ## asks to start over: a gym left for the menu after a death starts at the first station next time.
 ## It must come before the GameCamera in the gym's tree, so the camera starts on the man where he
 ## was put.
-## The number keys 1 to 9 put the man at a station's start, as he is, with his SP. Not while he is
+## The number keys 1 to 9, and 0 for the tenth, put the man at a station's start, as he is, with
+## his SP. Not while he is
 ## held, as the grab goes on between him and the demon, nor once he is dead, and not a key the
 ## controls give to an action, as a Custom profile can.
+
+## The station the 0 key takes the man to, from 0.
+const TENTH_STATION: int = 9
 
 ## The gym's man.
 @export var player: Player
@@ -55,10 +59,13 @@ func _unhandled_input(event: InputEvent) -> void:
 	player.reset_physics_interpolation()
 
 
-## The station a number key takes the man to, from 0; -1 for any other key.
+## The station a number key takes the man to, from 0, with 0 as the tenth, after 9 on the keyboard;
+## -1 for any other key.
 static func station_of_key(keycode: Key) -> int:
 	if keycode >= KEY_1 and keycode <= KEY_9:
 		return keycode - KEY_1
+	if keycode == KEY_0:
+		return TENTH_STATION
 	return -1
 
 

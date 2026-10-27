@@ -107,7 +107,7 @@ func _a_gym_left_before_its_restart_starts_at_the_first() -> bool:
 func _the_number_keys_give_their_stations() -> bool:
 	var got: Array[int] = [GymStations.station_of_key(KEY_1), GymStations.station_of_key(KEY_9),
 			GymStations.station_of_key(KEY_0), GymStations.station_of_key(KEY_A)]
-	var expected: Array[int] = [0, 8, -1, -1]
+	var expected: Array[int] = [0, 8, 9, -1]
 	return report(got == expected, "Number keys: 1, 9, 0 and A give %s (want %s)" % [got, expected])
 
 
