@@ -30,7 +30,9 @@ extends CharacterBody2D
 ## warning, and through a lunge from take-off until it lands, never once thrown off; on, it carries
 ## the attack's damage and knockback to the man's Hurtbox. When the hit holds him instead, it holds
 ## on until he breaks free and throws it off, away from him (ADR 0028). Its body and the man's stop
-## each other, so it never gets on his spot (ADR 0022). It only tells what it does, by
+## each other, so it never gets on his spot (ADR 0022), and it never stands on him: on his head it
+## is shoved off sideways at Knock Off Speed, whatever its state, unless it holds him (ADR 0047), and
+## his head is never a floor on its way. It only tells what it does, by
 ## state_changed, warning_started, attack_landed, barked, took_off and landed: the art and the
 ## sounds listen, and it
 ## never touches them.
@@ -72,6 +74,9 @@ const POST_HEIGHT_TOLERANCE: float = 1.0
 ## floor can stand a fraction of a px apart, which with no attacks, a reach of 0, would put him out
 ## of it.
 const REACH_TOLERANCE: float = 1.0
+## How far into each other, in px, the demon's body and the man's may be and still only touch: past
+## it, they pass through each other (ADR 0047).
+const OVERLAP_TOLERANCE: float = 1.0
 ## How far into a step, in px past the demon's front, StepCheck looks down for its top: a sixth of a
 ## tile, so the corner's rounding never hides it.
 const STEP_CHECK_INSET: float = 8.0
@@ -95,6 +100,9 @@ const FLOOR_SIDE_DEPTH: float = 2.0
 ## Which way the demon faces at its post: where the level puts it looking, and where it looks again
 ## once it is back.
 @export var faces_left: bool = false
+## Bodies on these physics layers can't be stood on: standing on one shoves the demon off it
+## sideways, at Knock Off Speed in Stats. The scene puts the man's layer here (ADR 0047).
+@export_flags_2d_physics var knock_off_layers: int = 0
 
 var _state: State = State.IDLE
 ## One DemonState of each State, at its State's index (ADR 0034), made in _ready, and the one the
@@ -146,6 +154,8 @@ var _off_its_floor: bool = false
 ## Where test_move finds the wall in the demon's way to a man above it, kept so the chase allocates
 ## nothing per frame.
 var _wall_ahead: KinematicCollision2D = KinematicCollision2D.new()
+## Says which way to shove the demon off a body on Knock Off Layers.
+var _knock_off: KnockOff = KnockOff.new(self)
 
 @onready var _senses: DemonSenses = %Senses
 ## Finds the other demons within Pack Spacing of this one's body, to either side.
@@ -192,17 +202,24 @@ func _ready() -> void:
 	_apply_stats()
 
 
+## Its state moves it, then it keeps apart from the pack and from the man's side; standing on a body
+## on Knock Off Layers, the shove off it takes over the move. The man's head is never a floor on its
+## way back nor where its post's floor is found.
 func _physics_process(delta: float) -> void:
 	_bite_frames_left = maxi(_bite_frames_left - 1, 0)
 	_target.track(delta)
+	var shove: float = _knock_off.update(knock_off_layers, _state == State.GRAB)
 	if not is_on_floor():
 		velocity += _current.get_gravity() * delta
 	_current.physics_update(delta)
 	_keep_apart_from_packmates()
 	_stop_at_the_man(delta)
+	if shove != 0.0:
+		velocity = Vector2(shove * stats.knock_off_speed, 0.0)
 	move_and_slide()
-	_way.update(global_position, is_on_floor())
-	if not _post_on_floor and is_on_floor() and absf(global_position.x - _post.x) <= POST_REACH:
+	var on_its_floor: bool = is_on_floor() and not _knock_off.is_shoving()
+	_way.update(global_position, on_its_floor)
+	if not _post_on_floor and on_its_floor and absf(global_position.x - _post.x) <= POST_REACH:
 		_post_on_floor = true
 		_post.y = global_position.y
 	_update_hitbox()
@@ -866,16 +883,31 @@ func _stop_at_the_man(delta: float) -> void:
 	velocity.x = signf(velocity.x) * minf(absf(velocity.x), room / delta)
 
 
+## True while the demon's body and the man's overlap with their bodies set to collide, which solid
+## bodies never do: one of them was stopped on top of the other both ways, and they pass through
+## each other until apart (ADR 0047). Set not to collide, as in the aiming tests, they may overlap.
+func _passes_through_the_man() -> bool:
+	var target_box: CollisionShape2D = _target.get_box()
+	if (not is_instance_valid(target_box)
+			or collision_mask & (_target.get_man() as CollisionObject2D).collision_layer == 0):
+		return false
+	var apart: Vector2 = target_box.global_position - _box.global_position
+	var touching: Vector2 = _target.get_half_size() + _half_size
+	return absf(apart.x) < touching.x - OVERLAP_TOLERANCE \
+			and absf(apart.y) < touching.y - OVERLAP_TOLERANCE
+
+
 ## For its states, on each physics frame of delta seconds of the chase: the first of the demon's
 ## attacks it starts at the man, or null. It only attacks from its floor, at a man it sees this
 ## frame and who takes hits, once a bite on the run's Recover Time is over, which this counts down,
-## and when the attack's chance comes up. Each time it becomes able to, it first waits a new draw of
-## up to Max Hesitation (ADR 0027). The chance is rolled before the lunge is aimed and the floor is
-## looked for, which takes many rays: the odds are the same either way.
+## and when the attack's chance comes up, never while its body and his pass through each other (ADR
+## 0047). Each time it becomes able to, it first waits a new draw of up to Max Hesitation (ADR
+## 0027). The chance is rolled before the lunge is aimed and the floor is looked for, which takes
+## many rays: the odds are the same either way.
 func attack_to_start(gap: float, delta: float) -> DemonAttack:
 	_recover_frames_left = maxi(_recover_frames_left - 1, 0)
 	if not is_on_floor() or _target.get_unseen_frames() != 0 or _recover_frames_left > 0 \
-			or target_takes_no_hits():
+			or target_takes_no_hits() or _passes_through_the_man():
 		_hesitation_frames_left = -1
 		return null
 	if _hesitation_frames_left < 0:
@@ -972,10 +1004,11 @@ func change_state(new_state: State) -> void:
 
 
 ## Keeps the Hitbox on only while the attack under way can land: a bite on the run for its Bite
-## Time after its warning, a lunge from take-off until it lands. Turned on, it takes the attack's
-## damage and knockback.
+## Time after its warning, a lunge from take-off until it lands, and neither while its body and the
+## man's pass through each other (ADR 0047). Turned on, it takes the attack's damage and knockback.
 func _update_hitbox() -> void:
-	var can_land: bool = _bite_frames_left > 0 or _current.can_land_hit()
+	var can_land: bool = (_bite_frames_left > 0 or _current.can_land_hit()) \
+			and not _passes_through_the_man()
 	if not can_land:
 		_hitbox.deactivate()
 	elif not _hitbox.is_active():

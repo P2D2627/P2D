@@ -119,6 +119,9 @@ extends Resource
 ## as when both land, stop or hold the man on one spot (ADR 0046): the patrol's, so it reads as
 ## making room, not as being shoved.
 @export_range(10.0, 1000.0, 10.0, "suffix:px/s") var pack_push_speed: float = 150.0
+## Speed, in px/s, at which the demon is shoved sideways off the man's head, never up (ADR 0047): the
+## man's Knock Off Speed off a demon, so the rule reads the same both ways.
+@export_range(10.0, 2000.0, 10.0, "suffix:px/s") var knock_off_speed: float = 600.0
 ## How much, as a share of each, a demon's Chase Speed, Retreat Speed and Retreat Distance can be
 ## above or below these: each demon draws its own Chase Speed once, when it is put in the level, and
 ## its Retreat Speed and Retreat Distance again each time it backs off, so two that come together
