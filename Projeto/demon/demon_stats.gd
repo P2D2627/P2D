@@ -82,9 +82,10 @@ extends Resource
 ## the two stays his alone. It jumps as it lunges, pulled down by its lunge's gravity, so with no
 ## lunge in Attacks it never jumps. At 0 it never jumps, and stays on its own floor.
 @export_range(0.0, 480.0, 1.0, "suffix:px") var jump_height: float = 0.0
-## Height, in px, of the deepest drop the demon walks off the end of its floor into after a man out
-## of its reach below it (ADR 0042), onto the floor it finds below. At 0 it never drops, and stops
-## at the end of its floor.
+## Height, in px, of the deepest drop the demon leaps down off the end of its floor after a man out
+## of its reach below it (ADR 0042), onto the floor its leap lands on. It leaps as it lunges, pulled
+## down by its lunge's gravity, so with no lunge in Attacks it never drops. At 0 it never drops, and
+## stops at the end of its floor.
 @export_range(0.0, 960.0, 1.0, "suffix:px") var max_drop: float = 0.0
 
 @export_group("Attacks")
@@ -222,10 +223,11 @@ func get_hesitation_frames(share: float) -> int:
 	return _to_frames(max_hesitation * share)
 
 
-## Downward acceleration, in px/s², of a jump up a step: the gravity of the first lunge in Attacks,
-## so the demon jumps as it lunges. 0 with no Jump Height or no lunge: it never jumps.
+## Downward acceleration, in px/s², of a jump up a step or a leap down off a ledge: the gravity of
+## the first lunge in Attacks, so the demon jumps as it lunges. 0 with neither Jump Height nor Max
+## Drop, or with no lunge: it never jumps.
 func get_jump_gravity() -> float:
-	if jump_height <= 0.0:
+	if jump_height <= 0.0 and max_drop <= 0.0:
 		return 0.0
 	for attack: DemonAttack in attacks:
 		if attack.animation == &"lunge":

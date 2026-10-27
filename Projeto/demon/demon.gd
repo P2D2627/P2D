@@ -62,14 +62,16 @@ const POST_REACH: float = 1.0
 ## of it.
 const REACH_TOLERANCE: float = 1.0
 ## How far into a step, in px past the demon's front, StepCheck looks down for its top: a sixth of a
-## tile, so the corner's rounding never hides it. Dropping, the demon's body goes this far past the
-## end of its floor, so it never rests on the corner.
+## tile, so the corner's rounding never hides it.
 const STEP_CHECK_INSET: float = 8.0
 ## How much higher than a step's top, in px, the demon's jump peaks, so its feet clear the corner.
 const JUMP_CLEARANCE: float = 12.0
 ## How high over a step's top, in px, the demon's feet are as its front gets to the corner: half
 ## Jump Clearance, which takes up the frame's run by which it may take off nearer the step.
 const CORNER_CLEARANCE: float = JUMP_CLEARANCE / 2.0
+## How far under its floor's top, in px, StepCheck looks back along it for where it ends: past the
+## fraction of a px the demon's feet rest over it.
+const FLOOR_SIDE_DEPTH: float = 2.0
 
 @export var stats: DemonStats
 ## Which way the demon faces at its post: where the level puts it looking, and where it looks again
@@ -127,7 +129,7 @@ var _wall_ahead: KinematicCollision2D = KinematicCollision2D.new()
 ## How far ahead of the demon's middle LedgeCheck looks, in px, set in the scene.
 @onready var _ledge_reach: float = absf(_ledge_check.position.x)
 ## Looks down onto the top of a step just past the demon's front, from Jump Height above its floor,
-## or for the floor below the end of its floor, down to Max Drop.
+## or back along its floor for where it ends.
 @onready var _step_check: RayCast2D = %StepCheck
 @onready var _repellable: Repellable = %Repellable
 @onready var _hitbox: Hitbox = %Hitbox
@@ -380,7 +382,7 @@ func follows_off_its_floor(gap: float, delta: float) -> bool:
 ## wall it cannot jump up onto, or with nothing in its way along its floor to below him, as under a
 ## platform, so no step to jump up.
 func _climbs_after_target(gap: float, delta: float) -> bool:
-	if stats.get_jump_gravity() <= 0.0:
+	if stats.jump_height <= 0.0 or stats.get_jump_gravity() <= 0.0:
 		return false
 	var direction: float = signf(gap)
 	if is_edge_ahead(direction) \
@@ -409,20 +411,27 @@ func _take_off_distance(height: float) -> float:
 	return _chase_speed() * (to_peak - over_the_corner)
 
 
-## With Max Drop, goes after the man below it, and walks off the end of its floor that stops it,
-## onto the floor it finds no deeper than that below. False where there is none, or with him right
-## under it, less than a body width away, with no end of its floor in between.
+## With Max Drop, goes after the man below it, and leaps down off the end of its floor that stops
+## it as it lunges, on the run (ADR 0042): it peaks Jump Clearance over its floor and takes off where
+## its arc, at its Chase Speed, gets its back past the corner with its feet Corner Clearance over
+## it, walking on to there first if it is short of it. It leaps only if the arc lands it on floor no
+## deeper than Max Drop. False where it does not, or with him right under it, less than a body width
+## away, with no end of its floor in between.
 func _drops_after_target(gap: float, delta: float) -> bool:
-	if stats.max_drop <= 0.0:
+	if stats.max_drop <= 0.0 or stats.get_jump_gravity() <= 0.0:
 		return false
 	var direction: float = signf(gap)
 	if is_edge_ahead(direction):
-		var clear: float = _ledge_reach + _half_size.x + STEP_CHECK_INSET
-		if get_drop_depth(direction * clear) <= 0.0:
+		var walk: float = maxf(_to_end_of_floor(direction) + _half_size.x - _leap_distance(), 0.0)
+		var leap: Vector2 = Vector2(direction * _chase_speed(),
+				-stats.get_jump_velocity(JUMP_CLEARANCE) + stats.get_jump_gravity() * delta / 2.0)
+		if not _leap_lands(direction * walk, leap, delta):
 			return false
-		(_states[State.DROP] as DemonDropState).aim(
-				direction * _chase_speed(), clear, global_position)
-		velocity.x = direction * minf(_chase_speed(), clear / delta)
+		(_states[State.DROP] as DemonDropState).aim(leap, walk, global_position)
+		if walk > 0.0:
+			velocity.x = direction * minf(_chase_speed(), walk / delta)
+		else:
+			velocity = leap
 		change_state(State.DROP)
 		return true
 	if absf(gap) < 2.0 * _half_size.x:
@@ -431,16 +440,48 @@ func _drops_after_target(gap: float, delta: float) -> bool:
 	return true
 
 
-## For its states: how deep, in px, the floor is offset_x px from the demon's middle, + to the
-## right, if it is no deeper than Max Drop below the demon's floor, give or take Reach Tolerance,
-## as the demon's feet rest a fraction of a px over its floor; 0 otherwise.
-func get_drop_depth(offset_x: float) -> float:
-	_step_check.position = Vector2(offset_x, -REACH_TOLERANCE)
-	_step_check.target_position = Vector2(0.0, stats.max_drop + 2.0 * REACH_TOLERANCE)
+## How far ahead of the demon's middle, in px going in direction, its floor ends: where StepCheck,
+## run back from LedgeCheck's reach just under the floor's top, meets the floor's side. Meeting none,
+## as off a floor it cannot see the side of, its back, so it takes off at once.
+func _to_end_of_floor(direction: float) -> float:
+	_step_check.position = Vector2(direction * _ledge_reach, FLOOR_SIDE_DEPTH)
+	_step_check.target_position = Vector2(-direction * (_ledge_reach + _half_size.x), 0.0)
 	_step_check.force_raycast_update()
-	if not _step_check.is_colliding() or _step_check.get_collision_normal().y >= 0.0:
-		return 0.0
-	return _step_check.get_collision_point().y - global_position.y
+	if not _step_check.is_colliding():
+		return -_half_size.x
+	return (_step_check.get_collision_point().x - global_position.x) * direction
+
+
+## How far, in px, the demon goes at its Chase Speed in a leap down off a ledge, from take-off until
+## its feet come back down to Corner Clearance over its floor, past its peak Jump Clearance over it.
+func _leap_distance() -> float:
+	var gravity: float = stats.get_jump_gravity()
+	var to_peak: float = sqrt(2.0 * JUMP_CLEARANCE / gravity)
+	var down_to_the_corner: float = sqrt(2.0 * (JUMP_CLEARANCE - CORNER_CLEARANCE) / gravity)
+	return _chase_speed() * (to_peak + down_to_the_corner)
+
+
+## True when the demon, walking walk px along its floor, + to the right, then leaping with take-off
+## velocity leap, lands on floor lower than its own by no more than Max Drop. The leap is played out
+## against the level with test_move, frame by frame of delta seconds, as the physics frames will move
+## it: with no gravity yet on the take-off frame, which starts on its floor. Anything else in the way,
+## a wall or a ceiling, and it does not leap.
+func _leap_lands(walk: float, leap: Vector2, delta: float) -> bool:
+	if test_move(global_transform, Vector2(walk, 0.0)):
+		return false
+	var at: Transform2D = global_transform.translated(Vector2(walk, 0.0))
+	var speed: Vector2 = leap
+	var gravity: float = stats.get_jump_gravity()
+	var deepest: float = global_position.y + stats.max_drop + REACH_TOLERANCE
+	while at.origin.y <= deepest:
+		if test_move(at, speed * delta, _wall_ahead):
+			var depth: float = at.origin.y + _wall_ahead.get_travel().y - global_position.y
+			return _wall_ahead.get_angle(up_direction) <= floor_max_angle \
+					and depth >= DemonDropState.LANDED_LOWER \
+					and depth <= stats.max_drop + REACH_TOLERANCE
+		at = at.translated(speed * delta)
+		speed.y += gravity * delta
+	return false
 
 
 ## For its states: the height, in px, of the top of a step to_wall px past the demon's front, going

@@ -5,10 +5,14 @@
 # jump as, and stands out of his reach instead. With him on a platform right over it, and no
 # step in between, it stands out of his reach below him, with no jump. The crucifix throws it off
 # in the middle of a jump, and a man freed in the middle of one leaves it standing once it lands.
-# With Max Drop, after a man out of its reach below it, it walks off the end of its floor and lands
-# on the floor below, a tile clear of the corner, for a drop of two tiles and of Max Drop, and
-# never off a drop deeper than that. With no Jump Height nor Max Drop, the step and edge cases of
-# test_demon.gd hold.
+# With Max Drop, after a man out of its reach below it, it leaps down off the end of its floor as
+# it lunges, peaking just over its floor, and lands on the floor below past the corner, never
+# touching it, for a drop of two tiles and of Max Drop, and as soon as it finds the end of its
+# floor when it chases fast; it never leaps down a drop deeper than that, nor with no lunge to leap
+# as, nor where a ceiling over the end of its floor is in the way of its leap, and stopped on its
+# way to take off it stands out of his reach. The crucifix throws it off in the middle of a drop,
+# and a man freed in the middle of one leaves it standing once it lands. With no Jump Height nor
+# Max Drop, the step and edge cases of test_demon.gd hold.
 # Run from the repository root; the exit code is 0 on pass and 1 on fail:
 # godot --headless --fixed-fps 60 --path Projeto --script res://tests/test_demon_jump.gd
 extends "res://tests/support/player_test.gd"
@@ -56,6 +60,20 @@ const MAX_DROP: float = 5.0 * TILE
 const EDGE_X: float = 150.0
 const DROP_DEMON_AWAY: float = 60.0
 const DROP_MAN_INSET: float = 6.0 * TILE
+## In the case of the ceiling over the end of its floor: its bottom LOW_CEILING_ROOM px over the
+## demon's head, less than its leap's Jump Clearance, from LOW_CEILING_REACH px short of the corner
+## to as far past it.
+const LOW_CEILING_ROOM: float = 6.0
+const LOW_CEILING_REACH: float = 2.0 * TILE
+## Chase Speeds of the drop cases: fast enough that the demon's leap is longer than the way from its
+## back to the corner as it finds the end of its floor, so it takes off there, with no walk; and slow
+## enough that it walks on for some frames before it takes off.
+const FAST_CHASE_SPEED: float = 600.0
+const SLOW_CHASE_SPEED: float = 100.0
+## In the case of the walk stopped: how far ahead of the demon's front, in px, a block goes up on
+## its floor, and how high.
+const BLOCK_AHEAD: float = 2.0
+const BLOCK_HEIGHT: float = TILE
 ## How far, in px, a demon may be from where it must be.
 const TOLERANCE: float = 6.0
 ## How far over the step's top and the demon's Jump Clearance its peak may go, in px: the frames
@@ -80,6 +98,13 @@ func _initialize() -> void:
 	results.append(await _drops_off_the_end_of_its_floor_and_lands_below(2.0 * TILE))
 	results.append(await _drops_off_the_end_of_its_floor_and_lands_below(MAX_DROP))
 	results.append(await _never_drops_deeper_than_max_drop())
+	results.append(await _drops_off_the_end_of_its_floor_and_lands_below(2.0 * TILE,
+			FAST_CHASE_SPEED))
+	results.append(await _with_no_lunge_it_never_drops())
+	results.append(await _never_drops_where_a_ceiling_is_in_the_way_of_its_leap())
+	results.append(await _stopped_on_its_way_to_take_off_it_stands_out_of_reach())
+	results.append(await _the_crucifix_throws_it_off_in_the_middle_of_a_drop())
+	results.append(await _a_man_freed_in_the_middle_of_a_drop_leaves_it_standing())
 	finish(results)
 
 
@@ -232,24 +257,38 @@ func _a_man_freed_in_the_middle_of_a_jump_leaves_it_standing() -> bool:
 			% [jumped, on_floor, _name_of(state)])
 
 
-## The man on a floor depth px below the end of the demon's: the demon drops off it once, lands on
-## that floor clear of the corner, and chases on.
-func _drops_off_the_end_of_its_floor_and_lands_below(depth: float) -> bool:
+## The man on a floor depth px below the end of the demon's, which chases at chase_speed: the demon
+## leaps down off it once, peaks Jump Clearance over its floor, never touches the corner on the way
+## down, lands on that floor past the corner, and chases on.
+func _drops_off_the_end_of_its_floor_and_lands_below(depth: float,
+		chase_speed: float = CHASE_SPEED) -> bool:
 	var high: StaticBody2D = make_platform(FLOOR_LEFT, EDGE_X)
 	var low: StaticBody2D = make_platform(EDGE_X, FLOOR_RIGHT, depth)
 	var man: Player = await spawn_on_floor(Vector2(EDGE_X + DROP_MAN_INSET, SPAWN_Y + depth))
 	var changes: Array[int] = []
 	var demon: Demon = await _spawn_demon(changes, 0.0, MAX_DROP, EDGE_X - DROP_DEMON_AWAY)
-	await wait_frames(FRAMES_TO_WATCH)
+	demon.stats.chase_speed = chase_speed
+	var highest: float = demon.position.y
+	var touched_the_corner: bool = false
+	var landing_back: float = -INF
+	for _frame: int in FRAMES_TO_WATCH:
+		await physics_frame
+		highest = minf(highest, demon.position.y)
+		if demon.get_state() == Demon.State.DROP and not demon.is_on_floor():
+			touched_the_corner = touched_the_corner or demon.get_slide_collision_count() > 0
+		if landing_back == -INF and absf(demon.position.y - depth) < TOLERANCE:
+			landing_back = demon.position.x - _half_width(demon)
 	var feet: float = demon.position.y
-	var back: float = demon.position.x - _half_width(demon)
 	var state: Demon.State = demon.get_state()
 	await _clear([high, low, man, demon])
 	var drops: int = changes.count(Demon.State.DROP)
-	return report(drops == 1 and absf(feet - depth) < TOLERANCE and back >= EDGE_X
-			and state == Demon.State.CHASE,
-			"Drop of %d px: %d drop, feet at y = %.1f, back at x = %.1f, then %s"
-			% [depth, drops, feet, back, _name_of(state)])
+	var peak: float = -highest
+	return report(drops == 1 and absf(peak - Demon.JUMP_CLEARANCE) <= PEAK_TOLERANCE
+			and not touched_the_corner and landing_back > EDGE_X
+			and absf(feet - depth) < TOLERANCE and state == Demon.State.CHASE,
+			"Drop of %d px at %d px/s: %d drop, peak %.1f px over its floor, touched the corner %s, landed with its back at x = %.1f (corner %d), feet at y = %.1f, then %s"
+			% [depth, chase_speed, drops, peak, touched_the_corner, landing_back, EDGE_X, feet,
+			_name_of(state)])
 
 
 ## The man on a floor a tile deeper than Max Drop below the end of the demon's: it stays on its
@@ -269,6 +308,118 @@ func _never_drops_deeper_than_max_drop() -> bool:
 			"Drop of %d px over Max Drop %d: chased %s, dropped %s, feet at y = %.1f, out of reach %s"
 			% [depth, MAX_DROP, changes.has(Demon.State.CHASE), changes.has(Demon.State.DROP), feet,
 			changes.has(Demon.State.OUT_OF_REACH)])
+
+
+## The man on a floor two tiles below the end of the demon's, with Max Drop but only a bite in
+## Attacks: with no lunge to leap as, the demon stays on its floor and stands out of his reach.
+func _with_no_lunge_it_never_drops() -> bool:
+	var depth: float = 2.0 * TILE
+	var high: StaticBody2D = make_platform(FLOOR_LEFT, EDGE_X)
+	var low: StaticBody2D = make_platform(EDGE_X, FLOOR_RIGHT, depth)
+	var man: Player = await spawn_on_floor(Vector2(EDGE_X + DROP_MAN_INSET, SPAWN_Y + depth))
+	var changes: Array[int] = []
+	var demon: Demon = await _spawn_demon(changes, 0.0, MAX_DROP, EDGE_X - DROP_DEMON_AWAY,
+			&"bite")
+	await wait_frames(FRAMES_TO_WATCH)
+	var feet: float = demon.position.y
+	await _clear([high, low, man, demon])
+	return report(not changes.has(Demon.State.DROP) and absf(feet) < TOLERANCE
+			and changes.has(Demon.State.OUT_OF_REACH),
+			"Only a bite: dropped %s, feet at y = %.1f, out of reach %s"
+			% [changes.has(Demon.State.DROP), feet, changes.has(Demon.State.OUT_OF_REACH)])
+
+
+## The man on a floor two tiles below the end of the demon's, under a ceiling over that end too low
+## for the demon's leap to peak under: it stays on its floor, with no leap, and stands out of his
+## reach.
+func _never_drops_where_a_ceiling_is_in_the_way_of_its_leap() -> bool:
+	var depth: float = 2.0 * TILE
+	var high: StaticBody2D = make_platform(FLOOR_LEFT, EDGE_X)
+	var low: StaticBody2D = make_platform(EDGE_X, FLOOR_RIGHT, depth)
+	var man: Player = await spawn_on_floor(Vector2(EDGE_X + DROP_MAN_INSET, SPAWN_Y + depth))
+	var changes: Array[int] = []
+	var demon: Demon = await _spawn_demon(changes, 0.0, MAX_DROP, EDGE_X - DROP_DEMON_AWAY)
+	var ceiling_bottom: float = -2.0 * _half_height(demon) - LOW_CEILING_ROOM
+	var ceiling: StaticBody2D = make_wall(EDGE_X - LOW_CEILING_REACH, EDGE_X + LOW_CEILING_REACH,
+			ceiling_bottom - CEILING_THICKNESS, ceiling_bottom)
+	await wait_frames(FRAMES_TO_WATCH)
+	var feet: float = demon.position.y
+	await _clear([high, low, ceiling, man, demon])
+	return report(changes.has(Demon.State.CHASE) and not changes.has(Demon.State.DROP)
+			and absf(feet) < TOLERANCE and changes.has(Demon.State.OUT_OF_REACH),
+			"Ceiling %d px over its head at the end of its floor: chased %s, dropped %s, feet at y = %.1f, out of reach %s"
+			% [LOW_CEILING_ROOM, changes.has(Demon.State.CHASE), changes.has(Demon.State.DROP),
+			feet, changes.has(Demon.State.OUT_OF_REACH)])
+
+
+## The man on a floor two tiles below the end of the demon's, which chases slowly: as it walks on to
+## where it takes off, a block goes up on its floor right in front of it. Stopped, it stands out of
+## his reach on its floor instead of staying in DROP.
+func _stopped_on_its_way_to_take_off_it_stands_out_of_reach() -> bool:
+	var depth: float = 2.0 * TILE
+	var high: StaticBody2D = make_platform(FLOOR_LEFT, EDGE_X)
+	var low: StaticBody2D = make_platform(EDGE_X, FLOOR_RIGHT, depth)
+	var man: Player = await spawn_on_floor(Vector2(EDGE_X + DROP_MAN_INSET, SPAWN_Y + depth))
+	var changes: Array[int] = []
+	var demon: Demon = await _spawn_demon(changes, 0.0, MAX_DROP, EDGE_X - DROP_DEMON_AWAY)
+	demon.stats.chase_speed = SLOW_CHASE_SPEED
+	var dropping: bool = await wait_until(
+			func() -> bool: return demon.get_state() == Demon.State.DROP, FRAMES_TO_WATCH)
+	var front: float = demon.position.x + _half_width(demon)
+	var block: StaticBody2D = make_wall(front + BLOCK_AHEAD, front + BLOCK_AHEAD + TILE,
+			-BLOCK_HEIGHT, 0.0)
+	var stood: bool = await wait_until(
+			func() -> bool: return demon.get_state() == Demon.State.OUT_OF_REACH, FRAMES_TO_WATCH)
+	var feet: float = demon.position.y
+	await _clear([high, low, block, man, demon])
+	return report(dropping and stood and absf(feet) < TOLERANCE,
+			"Walk to take-off stopped: dropping %s, then out of reach %s, feet at y = %.1f"
+			% [dropping, stood, feet])
+
+
+## The crucifix's touch as the demon sets off down off the end of its floor: it is thrown off at
+## once, and lands with no drop under way.
+func _the_crucifix_throws_it_off_in_the_middle_of_a_drop() -> bool:
+	var depth: float = 2.0 * TILE
+	var high: StaticBody2D = make_platform(FLOOR_LEFT, EDGE_X)
+	var low: StaticBody2D = make_platform(EDGE_X, FLOOR_RIGHT, depth)
+	var man: Player = await spawn_on_floor(Vector2(EDGE_X + DROP_MAN_INSET, SPAWN_Y + depth))
+	var changes: Array[int] = []
+	var demon: Demon = await _spawn_demon(changes, 0.0, MAX_DROP, EDGE_X - DROP_DEMON_AWAY)
+	var repellable: Repellable = demon.get_node(^"Repellable") as Repellable
+	var dropped: bool = await wait_until(
+			func() -> bool: return demon.get_state() == Demon.State.DROP, FRAMES_TO_WATCH)
+	repellable.repelled.emit(man.global_position)
+	var thrown: bool = demon.get_state() == Demon.State.THROWN
+	await wait_frames(FRAMES_TO_WATCH)
+	var state: Demon.State = demon.get_state()
+	await _clear([high, low, man, demon])
+	return report(dropped and thrown and state != Demon.State.DROP
+			and state != Demon.State.THROWN,
+			"Crucifix in a drop: dropped %s, thrown %s, then %s" % [dropped, thrown, _name_of(state)])
+
+
+## The man freed as the demon sets off down off the end of its floor: it lands and stands, with no
+## man to chase.
+func _a_man_freed_in_the_middle_of_a_drop_leaves_it_standing() -> bool:
+	var depth: float = 2.0 * TILE
+	var high: StaticBody2D = make_platform(FLOOR_LEFT, EDGE_X)
+	var low: StaticBody2D = make_platform(EDGE_X, FLOOR_RIGHT, depth)
+	var man: Player = await spawn_on_floor(Vector2(EDGE_X + DROP_MAN_INSET, SPAWN_Y + depth))
+	var changes: Array[int] = []
+	var demon: Demon = await _spawn_demon(changes, 0.0, MAX_DROP, EDGE_X - DROP_DEMON_AWAY)
+	var dropped: bool = await wait_until(
+			func() -> bool: return demon.get_state() == Demon.State.DROP, FRAMES_TO_WATCH)
+	man.queue_free()
+	await wait_frames(FRAMES_TO_WATCH)
+	var state: Demon.State = demon.get_state()
+	var on_floor: bool = demon.is_on_floor()
+	var feet: float = demon.position.y
+	await _clear([high, low, demon])
+	return report(dropped and on_floor and absf(feet - depth) < TOLERANCE
+			and state == Demon.State.IDLE,
+			"Man freed in a drop: dropped %s, on the floor %s, feet at y = %.1f, then %s"
+			% [dropped, on_floor, feet, _name_of(state)])
 
 
 ## A demon at x with the cases' values, jump_height and max_drop, and one attack of animation, with
@@ -303,6 +454,11 @@ func _spawn_demon(changes: Array[int], jump_height: float, max_drop: float = 0.0
 ## Half the width of the demon's body box, read from its scene.
 func _half_width(demon: Demon) -> float:
 	return (demon.get_node(^"CollisionShape2D") as CollisionShape2D).shape.get_rect().size.x / 2.0
+
+
+## Half the height of the demon's body box, read from its scene.
+func _half_height(demon: Demon) -> float:
+	return (demon.get_node(^"CollisionShape2D") as CollisionShape2D).shape.get_rect().size.y / 2.0
 
 
 func _name_of(state: Demon.State) -> String:
