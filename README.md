@@ -4,8 +4,8 @@ Aventura de plataformas 2D desenvolvida em Godot 4 para a unidade curricular de
 **Projeto de Jogo 2D** (Mestrado em Desenvolvimento de Jogos Digitais, Universidade de Aveiro).
 Tema: *Destroy Yourself*. Título por decidir.
 
-Um homem que se considera tão justo como Job acorda no inferno e tem de subir sete níveis, um por
-pecado capital, sem poder atacar. Cada demónio oferece-lhe um atalho, e o jogo regista o que ele
+Um homem que se considera justo acorda no inferno, convencido de que está ali por engano, e tem de
+subir sete níveis, um por pecado capital, sem poder atacar. Cada demónio oferece-lhe um atalho, e o jogo regista o que ele
 aceita.
 
 > **Estado:** a personagem jogável já anda, salta e tem controlo no ar, desliza nas paredes e salta
@@ -18,6 +18,9 @@ aceita.
 Este documento tem duas partes. A primeira descreve, para toda a equipa, o que já pode ser
 experimentado e as medidas que servem o desenho de níveis. A segunda, "Para quem programa",
 documenta a organização técnica do projeto.
+
+O desenho do nível 1 (as três fases, o comportamento dos cães, as medidas e a lista de verificação de
+cada sala) está em `docs/nivel1_desenho.md`, e os artigos que o fundamentam em `docs/referencias/`.
 
 ## Experimentar
 
@@ -224,7 +227,9 @@ estados:
 
 | Estado | O que o demónio faz |
 |---|---|
-| Parado | Espera onde o nível o colocou, até ver a personagem. |
+| Parado | Espera no seu posto, onde o nível o colocou e virado para onde o nível o virou, até reparar na personagem. Com ronda, é a pausa entre duas idas, sorteada por cada demónio entre 0,8 e 2 s. |
+| Ronda | Vai e vem a passo, a 150 px/s, num troço de 480 px do seu chão, centrado no posto. Vira-se nas pontas, à beira de um desnível e contra uma parede. Fora do ecrã, fica parado. |
+| Alerta | Ao reparar na personagem, vira-se para ela e fica 0,3 s parado onde está, o tempo de ladrar, antes de a perseguir. Por cima da cabeça surge um "!", com um bip agudo; o "!" fica mais 0,5 s já na perseguição, para se conseguir ler. |
 | Perseguir | Segue-a a cerca de 560 px/s, no chão onde está. A personagem corre a 720 px/s, pelo que fugir resulta, mas com pouca margem. |
 | Aviso | Antes de cada ataque, mostra qual vem, para que o jogador tenha tempo de reagir: antes da mordida, alarga-se e baixa durante 0,2 s, sem parar de correr; antes do salto, para e encolhe durante 0,35 s. |
 | Atirar-se | Salta para onde a personagem vai estar, entre 200 e 420 px, e fica 0,35 s parado onde aterra. |
@@ -233,11 +238,19 @@ estados:
 | Atirado | Atirado pelo crucifixo, ou pela personagem quando esta se solta, voa até aterrar. |
 | Repelido | Depois de atirado pelo crucifixo, fica 0,3 s parado onde aterrou e volta a perseguir. |
 | Atordoado | Depois de atirado pela personagem ao soltar-se, fica 1,2 s no chão, achatado e mais escuro, e depois recua ou volta a perseguir. |
+| Fora de alcance | Com a personagem num chão ou numa parede acima ou abaixo do que os seus ataques chegam, não a segue por baixo nem por cima: para virado para ela e ladra, e depois anda para trás e para a frente num troço de 160 px à volta do sítio onde parou e, em cada ponta, volta a parar e a ladrar; contra uma parede ou na borda do seu chão, do lado dela, salta no sítio. Se ela descer ao seu alcance, volta a persegui-la; ao fim de 3 s, desiste e deixa-a em paz enquanto ela lá ficar. |
+| Procurar | Quando uma parede a esconde durante 0,5 s, vai a 300 px/s até onde a viu pela última vez, ou até onde o seu chão deixa, e fareja ali durante 2,5 s, virando-se para o outro lado a meio. Se a vir, fica alerta e volta a persegui-la; se não, desiste. Fora do ecrã, desiste logo. Durante a procura mostra um "?" e, ao começar, toca dois bips a descer. |
+| Voltar | Depois de desistir, volta ao posto a passo, a 200 px/s, e retoma a ronda. Se a vir à frente pelo caminho, fica alerta e volta a persegui-la. |
 
-O demónio vê a personagem a menos de 480 px, se não houver uma parede entre os dois, e continua a
-persegui-la para lá dessa distância. Desiste quando ela se afasta mais de 720 px ou quando uma
-parede a esconde durante 1,5 s, e fica parado onde estiver. Tem dois ataques, e só ataca a
-personagem praticamente à mesma altura (até 24 px de diferença):
+O demónio vê a personagem a menos de 1100 px, mais de meio ecrã, se não houver uma parede entre os
+seus olhos e o meio ou a cabeça dela: um muro baixo ou uma borda que tape só uma das duas não a
+esconde. Só repara nela se estiver à sua frente, ou atrás a menos de 220 px (20 % do alcance), e
+por isso é possível passar-lhe pelas costas. Também só começa e continua a persegui-la enquanto ele
+próprio estiver no ecrã, para que nenhum demónio venha de onde o jogador não o vê; um ataque que já
+começou acaba, mesmo que o demónio saia do ecrã a meio. Continua a persegui-la para lá dos 1100 px, e
+desiste quando ela se afasta mais de 1600 px ou quando ele sai do ecrã; quando uma parede a esconde,
+vai procurá-la. Tem dois ataques, e só ataca a personagem praticamente à mesma altura (até 24 px
+de diferença):
 
 - **Mordida.** A menos de 100 px, morde a correr: continua a persegui-la durante o aviso e morde
   onde está.
@@ -249,7 +262,9 @@ personagem praticamente à mesma altura (até 24 px de diferença):
 
 Em grupo, cada demónio decide sozinho, mas o conjunto lê-se como uma matilha:
 
-- um demónio atrás de outro fica a 24 px dele e ataca dali, saltando-lhe por cima. Os corpos dos
+- um demónio atrás de outro fica a 24 px dele e ataca dali, saltando-lhe por cima. Só conta um
+  demónio que também persegue a personagem, incluindo um em alerta ou à espera fora do alcance: um
+  parado, em ronda, a voltar ou a procurar não trava os outros. Dois que a procurem no mesmo sítio farejam à mesma distância um do outro. Os corpos dos
   demónios não colidem entre si, para que não tremam nem se bloqueiem;
 - cada um persegue e recua ao seu ritmo, até 10 % acima ou abaixo dos valores, para que nunca se
   movam em uníssono;
@@ -268,10 +283,15 @@ calculado a partir do desenho"). Os valores são provisórios e afinam-se a joga
 
 É o desenho do nível que limita os demónios. Um demónio não sobe, não salta para cima e para à beira
 de um desnível. Como nenhum salto passa dos 32 px de altura, um degrau de 48 px, uma largura da
-personagem, trava-o, e uma plataforma dessa altura é um sítio seguro. Quem desenha um nível sabe
+personagem, trava-o, e uma plataforma dessa altura é um sítio seguro. Um demónio que veja a
+personagem num sítio desses para onde está, virado para ela, em vez de a acompanhar por baixo de um
+lado para o outro, e o jogador lê que ali não lhe chega. O mesmo vale ao contrário: um demónio numa
+plataforma alta, de onde não desce, não corre até à borda para a acompanhar lá de cima. Um salto da personagem no chão do demónio
+não conta, porque ela só pode voltar a descer: a perseguição continua. Quem desenha um nível sabe
 assim até onde cada demónio chega, sem limites invisíveis. A exceção é o crucifixo, que pode
 atirar um demónio de uma borda abaixo: o demónio cai, fica no chão onde aterra e, se vir a
-personagem, persegue-a a partir daí. É uma mecânica: o jogador pode gastar o crucifixo para tirar
+personagem, persegue-a a partir daí. Quando desiste, tenta voltar ao posto, e o sítio onde a borda
+ou uma parede o param passa a ser o seu posto; nunca fica a tentar subir. É uma mecânica: o jogador pode gastar o crucifixo para tirar
 um demónio do caminho, e os níveis podem oferecer-lhe bordas e buracos para onde o atirar.
 
 Os valores são os do demónio da luxúria, num ficheiro de dados (`demon/lust_demon_stats.tres`);
@@ -642,9 +662,9 @@ Remote; os restantes valores são lidos sempre que são usados.
     ├── core/          serviços globais: as opções do jogador (autoload Settings), o registo moral (autoload Moral) e os perfis de controlos
     ├── player/        personagem: cena, scripts, valores do movimento, SP e agarrão
     ├── crucifix/      crucifixo: cena, script e valores
-    ├── demon/         demónios que perseguem: cena, scripts e os valores de cada nível
+    ├── demon/         demónios que perseguem: cena, scripts, os estados (states/) e os valores de cada nível
     ├── camera/        câmara do jogo e zonas de câmara
-    ├── debug/         overlay de depuração
+    ├── debug/         overlay de depuração e vista dos demónios da sala de teste
     ├── levels/        salas, níveis e a entrada de cada nível na lista do menu (LevelEntry)
     ├── background/    fundo em camadas: as camadas (BackgroundLayer), o modelo e o fundo de cada nível
     ├── ui/            menus, ecrã das opções e o tema comum (ui_theme.tres)
@@ -704,6 +724,7 @@ godot --headless --fixed-fps 60 --path Projeto --script res://tests/test_wall_sl
 godot --headless --fixed-fps 60 --path Projeto --script res://tests/test_wall_jump.gd
 godot --headless --fixed-fps 60 --path Projeto --script res://tests/test_jump_signals.gd
 godot --headless --fixed-fps 60 --path Projeto --script res://tests/test_debug_overlay.gd
+godot --headless --fixed-fps 60 --path Projeto --script res://tests/test_demon_debug_view.gd
 godot --headless --fixed-fps 60 --path Projeto --script res://tests/test_game_camera.gd
 godot --headless --fixed-fps 60 --path Projeto --script res://tests/test_camera_window.gd
 godot --headless --fixed-fps 60 --path Projeto --script res://tests/test_camera_look_ahead.gd
@@ -724,6 +745,9 @@ godot --headless --fixed-fps 60 --path Projeto --script res://tests/test_control
 godot --headless --fixed-fps 60 --path Projeto --script res://tests/test_background_layer.gd
 godot --headless --fixed-fps 60 --path Projeto --script res://tests/test_soul_points.gd
 godot --headless --fixed-fps 60 --path Projeto --script res://tests/test_demon.gd
+godot --headless --fixed-fps 60 --path Projeto --script res://tests/test_demon_target.gd
+godot --headless --fixed-fps 60 --path Projeto --script res://tests/test_demon_mark.gd
+godot --headless --fixed-fps 60 --path Projeto --script res://tests/test_demon_sounds.gd
 godot --headless --fixed-fps 60 --path Projeto --script res://tests/test_hit_boxes.gd
 godot --headless --fixed-fps 60 --path Projeto --script res://tests/test_knockback.gd
 godot --headless --fixed-fps 60 --path Projeto --script res://tests/test_grab_rules.gd
@@ -1160,10 +1184,27 @@ classe-mãe comum ficaria quase vazia e não serviria uma personagem das duas fa
 que fala e que o crucifixo afasta. Pela mesma razão, o demónio do tutorial, que fala e não persegue,
 não é esta cena com a perseguição desligada.
 
-- **Máquina de estados num só script.** Os nove estados (`IDLE`, `CHASE`, `WARNING`, `LUNGE`,
-  `RETREAT`, `GRAB`, `THROWN`, `REPELLED` e `STUNNED`) são uma enumeração no `demon.gd`, o mesmo
-  padrão da personagem, que o grupo já conhece. A alternativa, um nó e um script por estado, pagaria já por estados que ainda não têm
-  design; justifica-se quando um pecado pedir estados que não caibam nestes.
+- **Um objeto por estado.** Os catorze estados (`IDLE`, `CHASE`, `WARNING`, `LUNGE`, `RETREAT`,
+  `GRAB`, `THROWN`, `REPELLED`, `STUNNED`, `RETURN`, `OUT_OF_REACH`, `PATROL`, `ALERT` e `SEARCH`)
+  continuam a ser uma
+  enumeração no `demon.gd`, que a arte, o som e os testes leem, mas o que o demónio faz em cada um
+  está num objeto próprio, uma classe derivada de `DemonState`, em `demon/states/` (o padrão State).
+  Com a ronda e o "fora de alcance", o `demon.gd` chegou às 825 linhas, e sete estados partilhavam
+  um mesmo contador de passos, posto a zero à mão antes de cada mudança. Agora, cada estado guarda os
+  seus contadores e diz o que prepara ao começar e o que arruma ao sair. O demónio cria os
+  objetos uma vez, ao entrar na cena, e muda de estado só por um método, `change_state`, que liga ou
+  desliga a `Hitbox` e avisa a arte e o som. Os estados usam o corpo, os sentidos e os ataques do
+  demónio pelos métodos cuja documentação começa por "For its states". Os objetos não são nós da
+  cena: assim o `demon.tscn` não muda, cada demónio não ganha doze nós (600 com 50 demónios) e os
+  valores continuam todos no `DemonStats`. O alerta e a procura, que o desenho do nível 1 pedia,
+  entraram assim: dois ficheiros novos, cada um com o seu nome na enumeração e a linha que o cria
+  no `demon.gd` (ADR 0035). O alvo e a memória passaram depois para um componente (ver "Alvo e
+  memória num componente"); a escolha do ataque, a mordida e a perseguição continuam no
+  `demon.gd`. A divisão em objetos não alterou o
+  comportamento: os 105 casos do
+  `test_demon.gd` passam sem alterações. Também não alterou o custo: com 50 demónios a perseguir, o
+  tempo dos scripts por passo foi, em mediana de quatro execuções alternadas, 0,87 ms antes e
+  0,86 ms depois.
 - **Ataques como dados.** Cada `DemonAttack` guarda o alcance, a diferença de altura, o aviso, as
   distâncias, a antecipação (Lead), a altura e o tempo do salto, a recuperação, a probabilidade e a
   animação. A ordem na lista é a prioridade: com a personagem ao alcance dos dois ataques, o demónio
@@ -1189,8 +1230,29 @@ não é esta cena com a perseguição desligada.
   demónio aterrar, ela estiver ao nível dele ou atrás. A pontaria fica fixa até ao fim, como a
   direção. No `test_demon.gd`, com os valores do teste, o salto aterrou a 2,3 px de uma personagem
   parada e a 3,0 px de uma que se afastava a 50 px/s.
-- **Sentidos.** O demónio vê a personagem com uma área circular, do raio do Sight Distance, e
-  confirma com um raio que nenhuma parede está entre os dois. Um segundo raio, curto e à frente dos
+- **Alvo e memória num componente.** O que o demónio sabe da personagem que persegue está no
+  `DemonTarget` (`demon/demon_target.gd`): a caixa e a `Hurtbox` dela, a velocidade a que anda, há
+  quantos passos não a vê, e onde e quando a viu pela última vez. O componente só guarda e conta; é
+  o `demon.gd` que decide desistir, procurar ou atacar. Ao largar a personagem, guarda o último
+  sítio onde a viu, que é para onde a procura vai. Não é um nó da cena, pelas razões dos estados.
+  Testa-se sozinho, sem cena (`test_demon_target.gd`), e os 112 casos do `test_demon.gd` passam sem
+  alterações. Custa cerca de 1,6 µs por demónio e por passo: com 50 a perseguir, o tempo dos
+  scripts foi, em mediana de quatro execuções alternadas, 0,91 ms antes e 0,99 ms depois, dentro do
+  orçamento (ADR 0037).
+- **Sentidos num componente.** O que o demónio percebe da personagem está no `DemonSenses`
+  (`demon/demon_senses.gd`): uma área circular, do raio do Sight Distance, encontra-a, e um raio
+  confirma que nenhuma parede está entre os olhos do demónio e o meio dela ou, se esse estiver
+  tapado, a cabeça. Com um só ponto, uma personagem numa plataforma ficava escondida pela própria
+  plataforma. O componente diz também se o demónio repara nela (à frente, ou atrás até ao Sight
+  Behind Share do alcance) e se ele está no ecrã: o retângulo do ecrã sai da transformação da
+  câmara, que inclui o zoom das zonas. O `VisibleOnScreenNotifier2D` do Godot ficou de lado
+  porque depende do desenho do ecrã, que não existe nos testes sem janela. Sem câmara, como nos
+  testes, todo o mundo conta como ecrã. O componente recebe os nós que já existiam por `@export`,
+  e por isso a cena não mudou de forma. O demónio só lhe faz perguntas, e o componente nunca o
+  move. A cabeça está sempre ligada: só alarga o que o demónio vê, e nenhum dos casos de teste
+  anteriores mudou de resultado. O alcance para trás, o ecrã e o regresso ligam-se por valores no
+  `DemonStats` que, por defeito, mantêm o comportamento antigo (ADR 0032). A cabeça conta só com a
+  personagem dentro da área: numa perseguição para lá do Sight Distance, conta só o meio. Um segundo raio, curto e à frente dos
   pés, procura o chão: deteta as bordas durante a perseguição e, antes do aviso, percorre o caminho
   do salto de 24 em 24 px, meia largura da personagem, para que nenhum buraco escape. Percorre-o até
   ao ponto mais distante onde o salto pode aterrar, a distância pedida mais meio passo de física
@@ -1221,7 +1283,8 @@ não é esta cena com a perseguição desligada.
   som escutam-nos. Hoje, o retângulo
   provisório (`demon_placeholder.gd`) muda de forma e de cor no aviso, por uma ligação feita na
   cena, e sai quando a arte chegar. A forma, e não só a cor, distingue a mordida do salto, para
-  quem não distingue as cores.
+  quem não distingue as cores. A marca por cima da cabeça (`demon_mark.gd`) e os sons
+  (`demon_sounds.gd`) escutam da mesma forma, sem que o `demon.gd` mude (ADR 0040).
 - **Afastamento pelo crucifixo.** O demónio tem o componente `Repellable` (ver "Crucifixo:
   componentes e modificadores de movimento"). O toque do crucifixo erguido atira-o uma vez, em
   qualquer estado, para longe do crucifixo, com os mesmos valores do arremesso de quando a
@@ -1269,7 +1332,98 @@ não é esta cena com a perseguição desligada.
 - **Recomeçar a sala.** Quando a personagem morre, o nível é substituído por uma cópia nova da sua
   cena (ver "Estrutura"). Repor cada sistema à mão (a personagem, os SP, os demónios, a câmara)
   pedia código de reposição em todos eles, e cada sistema novo podia esquecê-lo; a cópia nova está
-  sempre como no início.
+  sempre como no início, e por isso cada demónio recomeça no seu posto.
+- **Posto e regresso.** O posto é a posição horizontal onde o nível pôs o demónio. Com Return Speed
+  acima de 0, quem desiste volta lá a passo; a 0, fica onde desistiu, como antes. Se o fim do chão
+  ou uma parede o parar pelo caminho, como depois de o crucifixo o atirar para outro chão, esse
+  sítio passa a ser o posto. A alternativa, tentar voltar e ficar à borda, deixava-o parado de
+  frente para um chão a que nunca chega, precisamente o que o desenho do nível 1 quer acabar. Só
+  contam as paredes do mundo (corpos estáticos e tiles): o corpo da personagem, que se move, faria
+  de um sítio livre um posto para sempre. Num nível, um posto fica a mais de 30 px de uma borda,
+  o alcance do raio que procura o chão; mais perto, o demónio para antes e o posto muda um pouco.
+- **Fora de alcance e ronda (ADR 0033).** Antes, um demónio que via a personagem num degrau alto
+  corria até ficar por baixo dela e acompanhava-a de um lado para o outro, e sem ninguém à vista
+  ficava imóvel, como se estivesse desligado. O alcance não é um valor novo: é a maior diferença de
+  altura dos seus ataques (hoje 24 px), para que os dois números nunca se contradigam. A personagem
+  conta acima e abaixo do demónio, e só com o demónio no chão: um demónio a cair ainda está a
+  chegar ao seu chão. A personagem
+  só fica fora de alcance quando está num chão, ou a deslizar ou agarrada a uma parede: no ar, ou a
+  roçar uma parede a subir, só pode voltar a descer, e um salto para fugir nunca para a perseguição
+  nem corta uma mordida a meio. Depois de desistir, o demónio ignora-a enquanto ela estiver acima do
+  seu alcance; sem isso, voltava a vê-la no passo seguinte e recomeçava a perseguição de 2 em 2 s. Para voltar a perseguir basta que ela desça ao
+  alcance, mesmo no ar; esta diferença entre a regra de entrada e a de saída evita que o demónio
+  pare e arranque aos solavancos com a personagem numa chaminé. A ronda é um estado próprio
+  (`PATROL`), e o parado (`IDLE`) passa a ser também a pausa nas pontas, para que a arte tenha uma
+  animação para andar e outra para estar parado. Cada demónio sorteia as suas pausas, e por isso
+  dois demónios postos lado a lado depressa deixam de andar ao mesmo ritmo. Em ronda, os demónios
+  não guardam distância entre si: dois troços sobrepostos deixam-nos atravessar-se. Por isso é uma
+  regra do desenho dos níveis que os troços de dois demónios no mesmo chão não se sobreponham, e o
+  teste das regras dos níveis, a fazer com o gerador do nível 1, vai verificá-la. Com Patrol Width a 0, o demónio fica parado no posto,
+  como antes. Fora do ecrã, não anda, para que o jogador encontre cada demónio perto de onde o nível
+  o pôs e para que os demónios que não se veem custem o mínimo.
+- **Alerta e procura (ADR 0035).** Antes, o demónio passava de parado a perseguir no mesmo passo,
+  sem aviso, e quando uma parede escondia a personagem continuava 1,5 s a correr para onde ela
+  estava de facto, sem a ver, e depois esquecia-a. O alerta é o momento em que a arte e o som vão
+  mostrar que a personagem foi vista, com o ladrar e um sinal visível; enquanto o demónio for um
+  retângulo provisório, o alerta vê-se por um "!" e ouve-se por um bip (ADR 0040). A procura troca esse conhecimento que o
+  demónio não devia ter por uma memória: a última posição em que a viu. Por isso, o tempo às cegas
+  desceu para 0,5 s, menos do que os 2,5 s de procura, e o teste dos valores do nível verifica essa
+  ordem. Só uma parede leva à procura; longe demais, fora do ecrã ou com a personagem morta, o
+  demónio desiste como antes. Com Alert Time e Search Time a 0, o demónio comporta-se como antes,
+  e é assim que os casos antigos do `test_demon.gd` o usam.
+- **Borda do ecrã, matilha e personagem destruída (ADR 0038).** Três correções ao comportamento dos
+  passos anteriores. Com um único limite para começar e para continuar a perseguição, um demónio na
+  borda do ecrã alternava entre perseguir e voltar ao posto. Agora começa a perseguir apenas dentro
+  do ecrã, e só desiste quando está a mais de Screen Margin (160 px) fora dele. Um tempo de espera
+  depois de desistir ficou de lado, porque deixaria no ecrã um demónio a ignorar a personagem.
+  Um demónio parado, em ronda, a voltar ou a procurar, entre outro e a personagem, travava a
+  perseguição desse outro, e dois a procurar no mesmo sítio ficavam um em cima do outro (ver a
+  matilha, acima). Com a personagem destruída, como num recomeço que a substitua por uma nova, um
+  demónio a meio do aviso saltava para onde ela estivera, e um que a agarrava ficava preso no
+  agarrão. Agora larga-a e fica no sítio, ou volta ao posto. Hoje, o recomeço recarrega o nível e
+  liberta também os demónios, por isso esta correção protege o caso futuro de um recomeço que
+  substitua apenas a personagem; fica nos estados, e não no código do agarrão, para não alterar o
+  combate. Custo, com 50 demónios a perseguir, em
+  duas execuções alternadas com a versão anterior: o tempo dos scripts passou de cerca de 0,95 ms
+  para 1,03 ms em média, dentro do orçamento, e o pior passo chegou a 1,92 ms, perto dos 2 ms. A
+  ronda não mudou.
+- **Fora de alcance sem ficar hirto (ADR 0039).** Parado e imóvel, um demónio com a personagem fora
+  de alcance não mostrava o que pretendia. O desenho do nível 1 pede que um inimigo seja sempre
+  plausível e que a intenção se leia na animação e no som. Agora, o demónio anda num troço de Out Of
+  Reach Pace Width (160 px) à volta do sítio onde parou, à velocidade da ronda. Ao parar, e em cada
+  ponta, fica entre 0,6 e 1,2 s virado para a personagem e ladra. Se uma parede ou a borda do chão o
+  trava do lado dela, salta no sítio. Seguir o x da personagem por baixo dela ficou de lado, porque
+  a imita e treme quando ela para por cima. O salto é só do desenho, e o corpo fica no chão, para
+  não mudar a física, o alcance nem os ataques. O ladrar é um sinal (`barked`), a que a arte e o
+  som vão responder; até lá, o retângulo provisório dá um pequeno salto, maior junto à parede.
+  Enquanto está fora de alcance, o tempo em que um rebordo ou uma parede esconde a personagem não
+  conta para desistir, porque o demónio sabe que ela subiu ou desceu ali. Sem isto, um demónio
+  que andasse por baixo de uma prateleira perdia-a de vista, ia procurá-la, voltava a vê-la e
+  recomeçava, sem nunca desistir, e não chegava a saltar contra a parede por baixo dela. Desiste ao
+  fim de 3 s (antes 2 s), o que dá tempo a pelo menos dois ladridos. Cada pausa é sorteada, para
+  dois demónios não ladrarem a par; evitar que dois ladridos simultâneos soem como um é tarefa do
+  áudio. Com Out Of Reach Pace Width a 0, o demónio fica parado como antes.
+- **Alerta e procura à vista e ao ouvido (ADR 0040).** O alerta durava 0,3 s e não se via nem se
+  ouvia, pelo que a personagem não sabia que tinha sido descoberta. Agora, o nó `Mark` mostra um "!"
+  no alerta e um "?" na procura, brancos e com contorno escuro, para não se confundirem com as cores
+  do aviso de ataque; distinguem-se pela forma e não pela cor. Cada marca surge maior e encolhe uma
+  única vez, sem piscar. O "!" fica Alert Linger Time (0,5 s) já na perseguição, porque 0,3 s mal
+  chega para ler. Qualquer outro estado apaga a marca no mesmo passo, e uma pausa suspende a
+  contagem. O nó `DemonSounds` toca um bip no alerta e dois bips a descer na procura, e tem um lugar
+  vazio para o ladrido. Cada demónio tem uma voz própria, até 8% acima ou abaixo do tom normal, e
+  cada som varia até 2%. A marca e o som cobrem-se um ao outro: quem não ouve vê a marca, e quem não
+  está a olhar ouve o bip. O som usa um gerador de números próprio. Com o gerador global, o som
+  tirava números de que cada demónio se serve para a sua semente, e mudava o comportamento nos
+  testes com semente fixa. Os valores da marca ficam no Inspector da cena do demónio. Custo, com 50
+  demónios alertados no mesmo passo (headless, à corrente): a marca acrescenta cerca de 0,2 ms
+  nesse passo e nos dois seguintes. Arrancar 50 sons custava cerca de 2 ms nos dois passos
+  seguintes. Por isso, todos os demónios juntos arrancam no máximo Max Notice Sounds Per Step (3)
+  sons de alerta ou de procura por passo de física, e os restantes ficam em silêncio. Os ladridos
+  contam à parte (Max Barks Per Step, 2), para que um ladrido, que só diz que a personagem está fora
+  de alcance, nunca cale um demónio que acabou de a ver. Com o limite, os dois passos depois do
+  alerta custam 0,32 ms (mediana; pior 0,6 ms) para a marca e o som juntos. Um bando que vê a
+  personagem ouve-se como um só, e as marcas continuam a mostrar quais a viram. Um demónio com
+  Alert Time 0 persegue logo, sem alerta, e por isso sem marca nem bip, como antes do ADR 0035.
 
 Antes de decidir se a perseguição precisava de ser otimizada, fixaram-se dois limites para 50
 demónios a perseguir ao mesmo tempo, muitos mais do que um ecrã terá: um limite para a média por
@@ -1320,6 +1474,65 @@ confirma a linha de vista num passo em cada dois ou três, à vez. Os valores fo
 executável do editor do Godot, num só computador, e o pior passo variou entre execuções: com 50
 demónios, de 2,20 a 2,67 ms, e com 200, de 21,9 a 24,5 ms.
 
+Com os sentidos novos e o regresso ao posto (2026-10-26, duas execuções de cada, no mesmo
+computador e no mesmo dia), 50 demónios acrescentaram:
+
+| Versão | Média por passo | Pior passo |
+|---|---|---|
+| Antes, código e valores anteriores | 0,82 ms | 1,42 a 1,47 ms |
+| Código novo, valores anteriores | 0,79 a 0,83 ms | 1,47 a 1,57 ms |
+| Código novo, valores novos | 1,06 ms | 2,24 a 2,26 ms |
+
+O código novo não custa mais. O que sobe o custo são os valores: com só a visão e a perda maiores,
+o pior passo deu 2,16 a 2,26 ms; com só o regresso e os 20 % para trás, 1,88 a 1,99 ms. Com eles,
+há mais demónios ativos ao mesmo tempo, porque largam menos a personagem e andam de volta em vez
+de ficarem parados. O pior passo volta a passar os 2 ms, e mantém-se a decisão anterior: 50
+demónios atrás da mesma personagem são um teste de esforço. Num nível, a regra do ecrã deve
+limitar os ativos aos que estão à vista, mas isso ainda não foi medido: a medida corre sem câmara,
+e por isso todos contam como estando no ecrã. Mede-se com o nível 1. A média continua abaixo do
+limite de 1,5 ms. Para que a medida
+continue a pôr todos os demónios a perseguir, cada um é colocado virado para a personagem.
+
+Com o "fora de alcance" e a ronda (2026-10-26, no mesmo computador e no mesmo dia), a medida ganhou
+duas partes, com 50 demónios em ronda e a personagem fora da vista de todos. Na primeira, sem
+câmara, todos contam como estando no ecrã e todos andam: é um teste de esforço. Na segunda, os
+demónios estão espalhados por dez ecrãs (19 200 px), com uma câmara ao meio, como num nível: só os
+que estão no ecrã andam, 4 dos 50 no fim da medida.
+
+| 50 demónios | Média por passo | Pior passo | Execuções |
+|---|---|---|---|
+| A perseguir, antes | 1,11 ms | 2,20 ms | 1 |
+| A perseguir, depois | 1,07 a 1,23 ms | 1,96 a 4,81 ms | 5 |
+| Em ronda, todos no ecrã | 1,37 a 1,71 ms | 2,36 a 3,04 ms | 5 |
+| Em ronda, espalhados por dez ecrãs | 0,48 a 0,85 ms | 1,05 a 1,52 ms | 5 |
+
+A média a perseguir ficou igual: a nova verificação é uma comparação de alturas por passo. O pior
+passo de 4,81 ms apareceu numa só execução, com a média igual às outras; a causa não foi medida. Em
+ronda, todos no ecrã passam os 2 ms no pior passo em todas as execuções, e a diferença para a
+perseguição está no motor de física (0,64 a 0,80 ms, contra 0,23 a 0,31 ms a perseguir), não nos
+scripts, que custam o mesmo. A hipótese, por medir no Profiler, é que os demónios em ronda se
+atravessam e a área que encontra os outros demónios está sempre a entrar e a sair. Espalhados por
+dez ecrãs, a 384 px uns dos outros, os troços também se sobrepõem, e mesmo assim os 50 ficam dentro
+dos dois limites, porque só os que estão no ecrã andam. Aceita-se, como na perseguição, até haver um
+nível para medir. Nos scripts, cada demónio parado fora do ecrã custa cerca de 13 µs por passo.
+
+Com o ADR 0039 (2026-10-26, ligado à corrente), a medida ganhou uma parte com 50 demónios no chão,
+todos a ver a personagem numa prateleira fora do seu alcance, sem câmara: primeiro parados (troço a
+0, como antes) e depois a andar no troço de 160 px. É um teste de esforço, porque uma sala do nível
+tem poucos demónios.
+
+| 50 demónios fora de alcance | Média por passo | Pior passo | Scripts, média | Execuções |
+|---|---|---|---|---|
+| Parados | 0,93 a 1,07 ms | 1,68 a 2,87 ms | 0,65 a 0,75 ms | 4 |
+| A andar no troço | 1,19 a 1,48 ms | 1,79 a 4,58 ms | 0,76 a 0,98 ms | 4 |
+
+Em cada execução, andar custa 0,23 a 0,41 ms a mais no passo inteiro e 0,11 a 0,23 ms nos
+scripts, cerca de 5 a 8 µs por demónio, sobretudo no motor de física, como na ronda. A média fica
+dentro de 1,5 ms. O pior passo varia muito de execução para execução, também com os demónios
+parados (os valores mais altos de ambas as linhas vêm da mesma execução, com a média também mais
+alta), e passa os 2 ms em três das quatro, como na ronda com todos no ecrã. Aceita-se pelo mesmo
+motivo, até haver um nível para medir; a causa do pior passo fica para o Profiler.
+
 O `test_demon.gd` verifica, com a personagem e o crucifixo verdadeiros, a visão (a distância e as
 paredes), a perseguição e a desistência, a paragem nas bordas e nos degraus, o aviso e o seu tempo,
 a altura, a distância e a direção do salto, também num salto mais rápido e num de metade da
@@ -1338,11 +1551,45 @@ demónio que nunca a viu, e as camadas de colisão. Com a pancada e o agarrão, 
 com a personagem, o recuo depois de cada ataque, a distância entre demónios em matilha e o ritmo
 próprio de cada um, a espera sorteada antes de atacar, a espera enquanto a personagem pisca, o
 agarrão com um e com dois demónios, o terceiro que espera à distância, o arremesso quando a
-personagem se solta e o atordoamento. São 82 casos. Todos menos os quatro últimos usam valores
-próprios, pelo que afinar o `.tres` não os altera. Os quatro últimos leem o `.tres` do nível 1 e
+personagem se solta e o atordoamento. Com os sentidos novos e o posto, verifica a cabeça vista por
+cima de um muro baixo, o alcance para trás com o demónio virado para cada lado, o ecrã (não começa
+a perseguir fora dele e desiste quando sai), o regresso ao posto à velocidade certa, a nova
+perseguição a meio do regresso, o posto novo noutro chão e contra uma parede. Com o "fora de
+alcance", verifica que o demónio para virado para a personagem num degrau alto e não a segue
+quando ela anda por cima, que numa plataforma alta não corre até à borda por ela estar em baixo, que volta a persegui-la quando ela desce ao alcance, ainda no ar, que
+desiste ao fim do tempo mesmo vendo-a e depois a deixa em paz enquanto ela lá ficar, que um salto
+dela no seu chão não para a perseguição e que não avisa de um ataque a uma personagem no ar acima do
+seu alcance. Com a ronda, verifica o vai
+e vem dentro da largura e à velocidade certas, as pausas dentro dos limites, a volta à beira de um
+desnível e contra um degrau, a paragem fora do ecrã, as pausas diferentes de dois demónios, a
+perseguição a meio da ronda e a ronda retomada depois do regresso ao posto. O caso do degrau mudou:
+antes, o demónio corria até ao degrau; agora para onde a vê. Com o alerta e a procura, verifica que
+para virado para ela durante o alerta e só depois a persegue, que a larga se ela morrer a meio,
+que vai à velocidade certa até onde a viu pela última vez, fareja ali o tempo certo virando-se para
+os dois lados e depois volta ao posto, que fica alerta se a vir durante a procura, que desiste da
+procura fora do ecrã e que, perdida de outra forma que não por uma parede, nunca a procura. Com o
+ADR 0038, verifica que um demónio que não persegue a personagem não trava outro que a persegue, que
+dois a procurar no mesmo sítio ficam à distância de matilha, que a perseguição continua dentro da
+margem do ecrã, acaba depois dela e não recomeça fora do ecrã, e que a personagem destruída a meio
+do aviso, fora do alcance ou no agarrão deixa o demónio parado, sem saltar. Com o ADR 0039,
+verifica que, fora de alcance, o demónio anda no seu troço sem o passar e nunca fica parado mais
+do que a pausa mais longa, que ladra virado para a personagem em cada ponta, que salta só contra a
+parede ou na borda do lado dela e não passa nenhuma das duas, que desiste ao fim do mesmo tempo,
+que continua por baixo de uma prateleira que a esconde, que sem troço nunca ladra, que dois
+demónios com as pausas do nível, em três sementes, ladram a menos de 6 passos um do outro menos de
+metade das vezes, que o salto do retângulo deixa o corpo no chão e que uma mudança de estado o
+interrompe e o repõe logo. São 127 casos. Todos menos os oito
+últimos usam valores próprios, pelo que afinar o `.tres` não os altera. Os oito últimos leem o
+`.tres` do nível 1 e
 confirmam o que o desenho dos níveis assume: cada ataque com uma das animações da arte, os saltos e a diferença
 de altura para atacar abaixo de um tile (48 px), o Lose Distance acima do Sight Distance e a
-perseguição mais lenta do que a corrida da personagem.
+perseguição mais lenta do que a corrida da personagem, e a regra do ecrã ligada, com margem, a visão de pelo
+menos meio ecrã, menos alcance para trás do que para a frente e o regresso mais lento do que a
+perseguição, para que um demónio a voltar nunca pareça vir na direção dela, e a ronda ligada e mais
+lenta do que a perseguição, com um degrau de um tile fora do alcance, e o alerta ligado, com o
+tempo às cegas menor do que o de procura e a procura mais lenta do que a perseguição, e o "fora de
+alcance" com troço e com tempo para pelo menos dois ladridos antes de desistir, mesmo com a pausa
+inicial mais longa.
 
 #### Overlay de depuração
 
@@ -1370,6 +1617,20 @@ dependa dele, pelo que a personagem é testada e exportada sem o overlay. Contin
 em pausa e, nas exportações de release, remove-se a si próprio, e o F4 com ele. O
 `test_debug_overlay.gd` verifica o comportamento nas versões de depuração; a remoção na versão de
 release só poderá ser confirmada na primeira exportação.
+
+Na sala de teste, uma segunda vista (`debug/demon_debug_view.gd`) desenha sobre cada demónio o
+estado em que está e há quanto tempo (em frames de física, que param na pausa, como os tempos dos
+estados), e uma seta para onde está virado. Ao longo do chão, desenha o
+posto e o troço da ronda. Enquanto o demónio persegue ou procura, marca com uma cruz o último sítio
+onde viu a personagem, e enquanto a vê, uma linha até ela. Serve para experimentar e afinar os
+estados dos demónios enquanto o retângulo provisório não os mostra, sem mudar o demónio nem os
+níveis, que não a têm. Aparece e desaparece com o F3, junto com o overlay, e remove-se a si própria
+fora das versões de depuração. Para experimentar a procura, a sala tem uma parede de esconderijo no
+chão, em x 1700, à esquerda do demónio do chão (x 2400), com 144 px de altura, mais do que a
+personagem (96 px) e menos do que o seu salto (240 px). Ficou desse lado porque, mais à direita,
+impedia os demónios do chão de chegar aos degraus. O `test_demon_debug_view.gd` verifica a ligação
+aos demónios, o F3, o texto do estado (incluindo que os segundos recomeçam a cada estado e param na
+pausa) e que a parede esconde a personagem logo atrás dela, mas não à frente.
 
 #### Câmara
 
@@ -1632,6 +1893,9 @@ registo para um jogo novo; a gravação fica para quando houver saves.
 
 - Dialogue Manager 4.1.0, de Nathan Hoad. Licença MIT. Plugin de diálogo, em
   `Projeto/addons/dialogue_manager/`. https://github.com/nathanhoad/godot_dialogue_manager
+- `demon_alert.wav` e `demon_search.wav`, em `Projeto/assets/audio/`: bips provisórios gerados
+  por síntese de ondas sinusoidais, sem material de terceiros. Saem quando chegarem os sons
+  definitivos.
 
 ## Licença
 

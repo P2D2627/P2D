@@ -6,6 +6,11 @@
 [ext_resource type="PackedScene" path="res://components/repellable.tscn" id="4_repellable"]
 [ext_resource type="PackedScene" path="res://components/hitbox.tscn" id="5_hitbox"]
 [ext_resource type="Script" path="res://components/sinking_drawing.gd" id="6_sinking_drawing"]
+[ext_resource type="Script" path="res://demon/demon_senses.gd" id="7_senses"]
+[ext_resource type="Script" path="res://demon/demon_mark.gd" id="8_mark"]
+[ext_resource type="Script" path="res://demon/demon_sounds.gd" id="9_sounds"]
+[ext_resource type="AudioStream" uid="uid://d14rquii3j2i3" path="res://assets/audio/demon_alert.wav" id="10_alert"]
+[ext_resource type="AudioStream" uid="uid://bpoa7jbrvdybb" path="res://assets/audio/demon_search.wav" id="11_search"]
 
 [sub_resource type="RectangleShape2D" id="RectangleShape2D_body"]
 size = Vector2(48, 96)
@@ -35,6 +40,35 @@ shape = SubResource("RectangleShape2D_body")
 color = Color(0.55, 0.12, 0.18, 1)
 polygon = PackedVector2Array(-24, -96, 24, -96, 24, 0, -24, 0)
 script = ExtResource("3_placeholder")
+
+[node name="Mark" type="Node2D" parent="." node_paths=PackedStringArray("label")]
+z_index = 2
+position = Vector2(0, -144)
+script = ExtResource("8_mark")
+label = NodePath("Label")
+
+[node name="Label" type="Label" parent="Mark"]
+offset_left = -32.0
+offset_top = -40.0
+offset_right = 32.0
+offset_bottom = 40.0
+theme_override_colors/font_color = Color(1, 1, 1, 1)
+theme_override_colors/font_outline_color = Color(0.08, 0.04, 0.05, 1)
+theme_override_constants/outline_size = 12
+theme_override_font_sizes/font_size = 56
+horizontal_alignment = 1
+vertical_alignment = 1
+
+[node name="DemonSounds" type="Node2D" parent="." node_paths=PackedStringArray("demon", "cue")]
+position = Vector2(0, -48)
+script = ExtResource("9_sounds")
+demon = NodePath("..")
+cue = NodePath("Cue")
+alert_sound = ExtResource("10_alert")
+search_sound = ExtResource("11_search")
+
+[node name="Cue" type="AudioStreamPlayer2D" parent="DemonSounds"]
+bus = &"SFX"
 
 [node name="SinkingDrawing" type="Node" parent="." node_paths=PackedStringArray("drawing")]
 script = ExtResource("6_sinking_drawing")
@@ -69,6 +103,14 @@ enabled = false
 target_position = Vector2(0, 0)
 collision_mask = 1
 
+[node name="Senses" type="Node" parent="." node_paths=PackedStringArray("sight_area", "sight_shape", "line_of_sight", "body_box")]
+unique_name_in_owner = true
+script = ExtResource("7_senses")
+sight_area = NodePath("../SightArea")
+sight_shape = NodePath("../SightArea/SightShape")
+line_of_sight = NodePath("../LineOfSight")
+body_box = NodePath("../CollisionShape2D")
+
 [node name="LedgeCheck" type="RayCast2D" parent="."]
 unique_name_in_owner = true
 position = Vector2(30, -1)
@@ -94,4 +136,6 @@ shape = SubResource("RectangleShape2D_hit")
 
 [connection signal="state_changed" from="." to="Placeholder" method="_on_demon_state_changed"]
 [connection signal="warning_started" from="." to="Placeholder" method="_on_demon_warning_started"]
+[connection signal="barked" from="." to="Placeholder" method="_on_demon_barked"]
+[connection signal="state_changed" from="." to="Mark" method="_on_demon_state_changed"]
 [connection signal="hold_sink_changed" from="Hitbox" to="SinkingDrawing" method="set_sink"]
