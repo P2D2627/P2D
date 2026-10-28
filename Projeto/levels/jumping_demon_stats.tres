@@ -1,0 +1,42 @@
+[gd_resource type="Resource" script_class="DemonStats" format=3]
+
+[ext_resource type="Script" uid="uid://5pjnqw8qfj0x" path="res://demon/demon_stats.gd" id="1_script"]
+[ext_resource type="Script" uid="uid://bghijfm4lswje" path="res://demon/demon_attack.gd" id="2_attack"]
+
+[sub_resource type="Resource" id="Resource_bite"]
+script = ExtResource("2_attack")
+animation = &"bite"
+keeps_chasing = true
+attack_range = 100.0
+warning_time = 0.2
+recover_time = 0.3
+
+[sub_resource type="Resource" id="Resource_lunge"]
+script = ExtResource("2_attack")
+chance_per_second = 0.9
+damage = 20.0
+knockback_distance = 250.0
+knockback_height = 70.0
+
+[resource]
+script = ExtResource("1_script")
+sight_distance = 1100.0
+lose_distance = 1600.0
+give_up_time = 0.5
+alert_time = 0.3
+search_time = 2.5
+out_of_reach_wait = 3.0
+out_of_reach_pace_width = 160.0
+sight_behind_share = 0.2
+chases_only_on_screen = true
+screen_margin = 160.0
+return_speed = 200.0
+patrol_width = 480.0
+attacks = Array[ExtResource("2_attack")]([SubResource("Resource_bite"), SubResource("Resource_lunge")])
+retreat_distance = 130.0
+pack_spacing = 24.0
+pack_variation = 0.1
+max_hesitation = 0.5
+stunned_time = 1.2
+jump_height = 96.0
+max_drop = 240.0

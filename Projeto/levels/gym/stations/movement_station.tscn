@@ -1,0 +1,97 @@
+[gd_scene format=3]
+
+[ext_resource type="PackedScene" path="res://levels/gym/gym_hint.tscn" id="1_hint"]
+
+[sub_resource type="RectangleShape2D" id="RectangleShape2D_floor_left"]
+size = Vector2(900, 200)
+
+[sub_resource type="RectangleShape2D" id="RectangleShape2D_pit"]
+size = Vector2(360, 50)
+
+[sub_resource type="RectangleShape2D" id="RectangleShape2D_floor_right"]
+size = Vector2(660, 200)
+
+[sub_resource type="RectangleShape2D" id="RectangleShape2D_one_way"]
+size = Vector2(240, 24)
+
+[sub_resource type="RectangleShape2D" id="RectangleShape2D_ledge"]
+size = Vector2(300, 200)
+
+[node name="MovementStation" type="Node2D"]
+
+[node name="FloorLeft" type="StaticBody2D" parent="."]
+position = Vector2(450, 1100)
+collision_mask = 0
+
+[node name="CollisionShape2D" type="CollisionShape2D" parent="FloorLeft"]
+shape = SubResource("RectangleShape2D_floor_left")
+
+[node name="Placeholder" type="Polygon2D" parent="FloorLeft"]
+color = Color(0.15, 0.13, 0.18, 1)
+polygon = PackedVector2Array(-450, -100, 450, -100, 450, 100, -450, 100)
+
+[node name="PitFloor" type="StaticBody2D" parent="."]
+position = Vector2(1080, 1175)
+collision_mask = 0
+
+[node name="CollisionShape2D" type="CollisionShape2D" parent="PitFloor"]
+shape = SubResource("RectangleShape2D_pit")
+
+[node name="Placeholder" type="Polygon2D" parent="PitFloor"]
+color = Color(0.15, 0.13, 0.18, 1)
+polygon = PackedVector2Array(-180, -25, 180, -25, 180, 25, -180, 25)
+
+[node name="FloorRight" type="StaticBody2D" parent="."]
+position = Vector2(1590, 1100)
+collision_mask = 0
+
+[node name="CollisionShape2D" type="CollisionShape2D" parent="FloorRight"]
+shape = SubResource("RectangleShape2D_floor_right")
+
+[node name="Placeholder" type="Polygon2D" parent="FloorRight"]
+color = Color(0.15, 0.13, 0.18, 1)
+polygon = PackedVector2Array(-330, -100, 330, -100, 330, 100, -330, 100)
+
+[node name="OneWayPlatform" type="StaticBody2D" parent="."]
+position = Vector2(300, 812)
+collision_layer = 256
+collision_mask = 0
+
+[node name="CollisionShape2D" type="CollisionShape2D" parent="OneWayPlatform"]
+shape = SubResource("RectangleShape2D_one_way")
+one_way_collision = true
+
+[node name="Placeholder" type="Polygon2D" parent="OneWayPlatform"]
+color = Color(0.36, 0.3, 0.42, 1)
+polygon = PackedVector2Array(-120, -12, 120, -12, 120, 12, -120, 12)
+
+[node name="Ledge" type="StaticBody2D" parent="."]
+position = Vector2(1550, 900)
+collision_mask = 0
+
+[node name="CollisionShape2D" type="CollisionShape2D" parent="Ledge"]
+shape = SubResource("RectangleShape2D_ledge")
+
+[node name="Placeholder" type="Polygon2D" parent="Ledge"]
+color = Color(0.15, 0.13, 0.18, 1)
+polygon = PackedVector2Array(-150, -100, 150, -100, 150, 100, -150, 100)
+
+[node name="ShortJumpMark" type="Line2D" parent="."]
+points = PackedVector2Array(520, 920, 760, 920)
+width = 4.0
+default_color = Color(0.85, 0.8, 0.7, 1)
+
+[node name="FullJumpMark" type="Line2D" parent="."]
+points = PackedVector2Array(520, 760, 760, 760)
+width = 4.0
+default_color = Color(0.85, 0.8, 0.7, 1)
+
+[node name="GymHint" parent="." instance=ExtResource("1_hint")]
+position = Vector2(90, 360)
+text = "Movimento
+Salto: um toque curto chega à risca de baixo, mantido chega à de cima e à plataforma à esquerda, que se atravessa por baixo.
+Coyote: no buraco, salta já depois de saíres da borda.
+Buffer: cai do bloco e carrega no salto antes de tocares no chão."
+
+[node name="Start" type="Marker2D" parent="."]
+position = Vector2(640, 900)

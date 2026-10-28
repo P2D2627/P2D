@@ -1,0 +1,33 @@
+[gd_scene format=3]
+
+[ext_resource type="Script" path="res://levels/gym/gym_hint.gd" id="1_script"]
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_panel"]
+content_margin_left = 24.0
+content_margin_top = 16.0
+content_margin_right = 24.0
+content_margin_bottom = 16.0
+bg_color = Color(0.08, 0.06, 0.07, 1)
+border_width_left = 4
+border_width_top = 4
+border_width_right = 4
+border_width_bottom = 4
+border_color = Color(0.85, 0.8, 0.7, 1)
+corner_radius_top_left = 6
+corner_radius_top_right = 6
+corner_radius_bottom_right = 6
+corner_radius_bottom_left = 6
+
+[node name="GymHint" type="Node2D" node_paths=PackedStringArray("label")]
+script = ExtResource("1_script")
+label = NodePath("Label")
+
+[node name="Label" type="Label" parent="."]
+offset_right = 1180.0
+theme_override_colors/font_color = Color(0.97, 0.95, 0.9, 1)
+theme_override_colors/font_outline_color = Color(0.08, 0.06, 0.07, 1)
+theme_override_constants/outline_size = 6
+theme_override_constants/line_spacing = 6
+theme_override_font_sizes/font_size = 36
+theme_override_styles/normal = SubResource("StyleBoxFlat_panel")
+autowrap_mode = 3

@@ -1,0 +1,68 @@
+[gd_scene format=3]
+
+[ext_resource type="PackedScene" path="res://levels/gym/gym_hint.tscn" id="1_hint"]
+
+[sub_resource type="RectangleShape2D" id="RectangleShape2D_floor"]
+size = Vector2(1920, 200)
+
+[sub_resource type="RectangleShape2D" id="RectangleShape2D_tower_wall"]
+size = Vector2(64, 1480)
+
+[sub_resource type="RectangleShape2D" id="RectangleShape2D_top"]
+size = Vector2(266, 24)
+
+[node name="CameraStation" type="Node2D"]
+
+[node name="Floor" type="StaticBody2D" parent="."]
+position = Vector2(960, 1100)
+collision_mask = 0
+
+[node name="CollisionShape2D" type="CollisionShape2D" parent="Floor"]
+shape = SubResource("RectangleShape2D_floor")
+
+[node name="Placeholder" type="Polygon2D" parent="Floor"]
+color = Color(0.15, 0.13, 0.18, 1)
+polygon = PackedVector2Array(-960, -100, 960, -100, 960, 100, -960, 100)
+
+[node name="TowerLeft" type="StaticBody2D" parent="."]
+position = Vector2(1382, 140)
+collision_mask = 0
+
+[node name="CollisionShape2D" type="CollisionShape2D" parent="TowerLeft"]
+shape = SubResource("RectangleShape2D_tower_wall")
+
+[node name="Placeholder" type="Polygon2D" parent="TowerLeft"]
+color = Color(0.15, 0.13, 0.18, 1)
+polygon = PackedVector2Array(-32, -740, 32, -740, 32, 740, -32, 740)
+
+[node name="TowerRight" type="StaticBody2D" parent="."]
+position = Vector2(1566, 140)
+collision_mask = 0
+
+[node name="CollisionShape2D" type="CollisionShape2D" parent="TowerRight"]
+shape = SubResource("RectangleShape2D_tower_wall")
+
+[node name="Placeholder" type="Polygon2D" parent="TowerRight"]
+color = Color(0.15, 0.13, 0.18, 1)
+polygon = PackedVector2Array(-32, -740, 32, -740, 32, 740, -32, 740)
+
+[node name="TowerTop" type="StaticBody2D" parent="."]
+position = Vector2(1667, -588)
+collision_mask = 0
+
+[node name="CollisionShape2D" type="CollisionShape2D" parent="TowerTop"]
+shape = SubResource("RectangleShape2D_top")
+
+[node name="Placeholder" type="Polygon2D" parent="TowerTop"]
+color = Color(0.15, 0.13, 0.18, 1)
+polygon = PackedVector2Array(-133, -12, 133, -12, 133, 12, -133, 12)
+
+[node name="GymHint" parent="." instance=ExtResource("1_hint")]
+position = Vector2(90, 360)
+text = "Câmara
+Corre: a câmara adianta-se para onde vais. Volta para trás um bocado e ela vira.
+Fica parado um momento: a câmara aproxima-se.
+Sobe a torre pela chaminé e salta lá de cima: numa queda longa, a câmara olha para baixo."
+
+[node name="Start" type="Marker2D" parent="."]
+position = Vector2(640, 900)

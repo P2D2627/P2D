@@ -29,9 +29,10 @@ extends Resource
 @export_range(0.0, 10.0, 0.1, "suffix:s") var search_time: float = 0.0
 ## Speed, in px/s, at which it walks to where it last saw the man: slower than the chase.
 @export_range(10.0, 1000.0, 10.0, "suffix:px/s") var search_speed: float = 300.0
-## Seconds the demon stands facing a man out of its reach before it gives up (ADR 0033): him on a
-## floor or a wall higher above or lower below its own than the Max Height Difference of any of its
-## attacks. It never follows him along under him or over him.
+## Seconds a man out of the demon's reach has to stay hidden from it before it gives up (ADR 0033 and
+## 0044): him on a floor or a wall higher above or lower below its own than the Max Height
+## Difference of any of its attacks. While it sees him, it never gives up. It follows him along under
+## him or over him only with Out Of Reach Pace Width, once he is past half that stretch (ADR 0045).
 @export_range(0.0, 10.0, 0.1, "suffix:s") var out_of_reach_wait: float = 2.0
 ## Width, in px, of the stretch the demon paces to and fro across at Patrol Speed, around where it
 ## stopped, while the man is out of its reach, so it never stands stiff (ADR 0039). At 0 it stands
@@ -76,6 +77,18 @@ extends Resource
 ## so running away always works.
 @export_range(0.0, 2000.0, 10.0, "suffix:px/s") var chase_speed: float = 560.0
 
+@export_group("Jump")
+## Height, in px, of the highest step the demon jumps up onto after a man out of its reach above it
+## (ADR 0042): a wall in its way no higher than this. Below the man's own jump, so a ledge between
+## the two stays his alone. It jumps as it lunges, pulled down by its lunge's gravity, so with no
+## lunge in Attacks it never jumps. At 0 it never jumps, and stays on its own floor.
+@export_range(0.0, 480.0, 1.0, "suffix:px") var jump_height: float = 0.0
+## Height, in px, of the deepest drop the demon leaps down off the end of its floor after a man out
+## of its reach below it (ADR 0042), onto the floor its leap lands on. It leaps as it lunges, pulled
+## down by its lunge's gravity, so with no lunge in Attacks it never drops. At 0 it never drops, and
+## stops at the end of its floor.
+@export_range(0.0, 960.0, 1.0, "suffix:px") var max_drop: float = 0.0
+
 @export_group("Attacks")
 ## The demon's attacks, in order: of those it can start at the man, it starts the first in the
 ## list. With none, it only chases.
@@ -95,12 +108,20 @@ extends Resource
 @export_group("Pack")
 ## How far, in px, the demon keeps its body from the body of another demon that stands between it
 ## and the man and is not backing off: it keeps that far behind it, or steps back to it, and attacks
-## from there, so two demons never look like one (ADR 0024). 0 keeps no distance: they can share a
-## spot.
+## from there, so two demons never look like one (ADR 0024). In every other state too, on its floor,
+## it stops or turns that far from another demon as at a wall, and steps away from one nearer than
+## that at Pack Push Speed (ADR 0046). 0 keeps no distance: they can share a spot.
 @export_range(0.0, 500.0, 2.0, "suffix:px") var pack_spacing: float = 0.0:
 	set(value):
 		pack_spacing = value
 		emit_changed()
+## Speed, in px/s, at which the demon steps away from another demon nearer to it than Pack Spacing,
+## as when both land, stop or hold the man on one spot (ADR 0046): the patrol's, so it reads as
+## making room, not as being shoved.
+@export_range(10.0, 1000.0, 10.0, "suffix:px/s") var pack_push_speed: float = 150.0
+## Speed, in px/s, at which the demon is shoved sideways off the man's head, never up (ADR 0047): the
+## man's Knock Off Speed off a demon, so the rule reads the same both ways.
+@export_range(10.0, 2000.0, 10.0, "suffix:px/s") var knock_off_speed: float = 600.0
 ## How much, as a share of each, a demon's Chase Speed, Retreat Speed and Retreat Distance can be
 ## above or below these: each demon draws its own Chase Speed once, when it is put in the level, and
 ## its Retreat Speed and Retreat Distance again each time it backs off, so two that come together
@@ -209,6 +230,23 @@ func get_retreat_max_frames(distance_scale: float = 1.0, speed_scale: float = 1.
 ## A wait of share of Max Hesitation, share from 0 to 1, in whole physics frames.
 func get_hesitation_frames(share: float) -> int:
 	return _to_frames(max_hesitation * share)
+
+
+## Downward acceleration, in px/s², of a jump up a step or a leap down off a ledge: the gravity of
+## the first lunge in Attacks, so the demon jumps as it lunges. 0 with neither Jump Height nor Max
+## Drop, or with no lunge: it never jumps.
+func get_jump_gravity() -> float:
+	if jump_height <= 0.0 and max_drop <= 0.0:
+		return 0.0
+	for attack: DemonAttack in attacks:
+		if attack.animation == &"lunge":
+			return attack.get_lunge_gravity()
+	return 0.0
+
+
+## Upward speed, in px/s, that takes a jump height px up at the jump's gravity.
+func get_jump_velocity(height: float) -> float:
+	return sqrt(2.0 * get_jump_gravity() * height)
 
 
 func _to_frames(seconds: float) -> int:

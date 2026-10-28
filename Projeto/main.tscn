@@ -6,6 +6,7 @@
 [ext_resource type="PackedScene" path="res://ui/main_menu.tscn" id="5_main_menu"]
 [ext_resource type="PackedScene" path="res://ui/pause_menu.tscn" id="6_pause_menu"]
 [ext_resource type="PackedScene" path="res://scenes/levels/Lust/LustLevel_Phase1_Cave.tscn" id="7_lust_level"]
+[ext_resource type="PackedScene" path="res://levels/gym/gym.tscn" id="8_gym"]
 
 [sub_resource type="Resource" id="Resource_test_room"]
 script = ExtResource("2_level_entry")
@@ -17,10 +18,15 @@ script = ExtResource("2_level_entry")
 title = "Level 1: Lust (blockout)"
 scene = ExtResource("7_lust_level")
 
+[sub_resource type="Resource" id="Resource_gym"]
+script = ExtResource("2_level_entry")
+title = "Gym (training room)"
+scene = ExtResource("8_gym")
+
 [node name="Main" type="Node" unique_id=790412383]
 process_mode = 3
 script = ExtResource("1_script")
-levels = Array[ExtResource("2_level_entry")]([SubResource("Resource_test_room"), SubResource("Resource_lust_level")])
+levels = Array[ExtResource("2_level_entry")]([SubResource("Resource_test_room"), SubResource("Resource_lust_level"), SubResource("Resource_gym")])
 
 [node name="LevelSlot" type="Node" parent="." unique_id=719619568]
 unique_name_in_owner = true

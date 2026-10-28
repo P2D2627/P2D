@@ -2,7 +2,9 @@ class_name DemonChaseState
 extends DemonState
 
 ## CHASE: the demon goes after the man at its Chase Speed, along its own floor, facing him. With him
-## standing out of its reach, it stops and faces him (OUT_OF_REACH). With him inside the Attack
+## standing out of its reach, it stops and faces him (OUT_OF_REACH); with Jump Height or Max Drop,
+## only once nothing more takes it nearer him, and a step it can jump up onto (JUMP) or the end of
+## its floor over one it can drop onto (DROP) takes it there (ADR 0042). With him inside the Attack
 ## Range of one of its attacks, on about its own floor, and the attack's chance coming up, it warns
 ## of the attack (WARNING); a lunge's warning stops it, a bite's goes on with the chase. Once a bite
 ## on the run is over, it backs off with Retreat Distance in Stats (RETREAT).
@@ -19,8 +21,9 @@ func physics_update(delta: float) -> void:
 	var gap: float = _demon.get_gap_to_target()
 	if _demon.is_man_out_of_reach():
 		_demon.turn_to(gap)
-		_demon.velocity.x = 0.0
-		_demon.change_state(Demon.State.OUT_OF_REACH)
+		if not _demon.follows_off_its_floor(gap, delta):
+			_demon.velocity.x = 0.0
+			_demon.change_state(Demon.State.OUT_OF_REACH)
 		return
 	if _demon.should_back_off_after_bite():
 		_demon.back_off_or_chase(delta)

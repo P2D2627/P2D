@@ -1,0 +1,30 @@
+[gd_scene format=3]
+
+[ext_resource type="PackedScene" path="res://levels/gym/gym_hint.tscn" id="1_hint"]
+
+[sub_resource type="RectangleShape2D" id="RectangleShape2D_floor"]
+size = Vector2(1920, 80)
+
+[node name="IntroStation" type="Node2D"]
+
+[node name="Floor" type="StaticBody2D" parent="."]
+position = Vector2(960, 1040)
+collision_mask = 0
+
+[node name="CollisionShape2D" type="CollisionShape2D" parent="Floor"]
+shape = SubResource("RectangleShape2D_floor")
+
+[node name="Placeholder" type="Polygon2D" parent="Floor"]
+color = Color(0.15, 0.13, 0.18, 1)
+polygon = PackedVector2Array(-960, -40, 960, -40, 960, 40, -960, 40)
+
+[node name="GymHint" parent="." instance=ExtResource("1_hint")]
+position = Vector2(90, 360)
+text = "Sala de treino
+Cada estação é um ecrã e experimenta uma coisa: lê a placa e joga. Anda para a direita para passar à seguinte.
+Se morreres, voltas ao início da estação onde estavas.
+Teclas 1 a 9: saltas para essa estação.
+F3 mostra e esconde os valores."
+
+[node name="Start" type="Marker2D" parent="."]
+position = Vector2(640, 900)

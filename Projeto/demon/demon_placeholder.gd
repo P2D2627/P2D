@@ -3,8 +3,10 @@ extends Polygon2D
 ## The demon's stand-in until its art arrives: a rectangle that changes shape and lights up while
 ## the demon warns, in another shape for each attack, so the man sees which one is coming, and lies
 ## flat and dark while the demon is stunned, so he sees he has time to get away (ADR 0028), and hops
-## as it barks at a man out of its reach (ADR 0039). It only listens to the demon's state_changed,
-## warning_started and barked, wired in demon.tscn, and goes when the art comes.
+## as it barks at a man out of its reach (ADR 0039), and stretches as it takes off up a step or down
+## off the end of its floor and squashes as it lands (ADR 0042), so the leap shows with no sound. It
+## only listens to the demon's state_changed, warning_started, barked, took_off and landed, wired in
+## demon.tscn, and goes when the art comes.
 
 ## The colour while the demon warns of a lunge: much lighter than the rectangle's own, so the
 ## warning shows also to whom does not tell red from orange; the crouch shows it too.
@@ -37,19 +39,31 @@ extends Polygon2D
 @export_range(0.0, 96.0, 1.0, "suffix:px") var wall_hop_height: float = 24.0
 ## Seconds a hop takes, up and back down.
 @export_range(0.05, 1.0, 0.05, "suffix:s") var hop_time: float = 0.3
+## The rectangle's size as the demon takes off, as a fraction of its own: taller and narrower,
+## stretched by the leap. Its feet stay where they are.
+@export var take_off_scale: Vector2 = Vector2(0.8, 1.25)
+## The rectangle's size as the demon lands, as a fraction of its own: wider and lower, squashed by
+## the landing, but higher than when stunned, so the shape tells the two apart. Its feet stay on
+## the floor.
+@export var land_scale: Vector2 = Vector2(1.25, 0.75)
+## Seconds the rectangle takes to go back to its own size after the take-off or the landing.
+@export_range(0.05, 1.0, 0.01, "suffix:s") var leap_settle_time: float = 0.2
 
 @onready var _rest_color: Color = color
 @onready var _rest_z_index: int = z_index
 @onready var _rest_position: Vector2 = position
 
 var _hop: Tween
+var _leap: Tween
 
 
 ## Flat and dark while stunned, back in its own shape and colour once the warning or the stun is
-## over, drawn over the other demons while it lunges, and over the man while it holds him. A hop
-## under way ends with the state.
+## over, drawn over the other demons while it lunges, and over the man while it holds him. A hop,
+## stretch or squash under way ends with the state.
 func _on_demon_state_changed(_previous: Demon.State, current: Demon.State) -> void:
 	_end_hop()
+	if _leap != null and _leap.is_valid():
+		_leap.kill()
 	match current:
 		Demon.State.LUNGE:
 			z_index = lunge_z_index
@@ -83,6 +97,25 @@ func _on_demon_barked(hops: bool) -> void:
 			.set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_OUT)
 	_hop.tween_property(self, ^"position:y", _rest_position.y, hop_time / 2.0) \
 			.set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_IN)
+
+
+func _on_demon_took_off() -> void:
+	_settle_from(take_off_scale)
+
+
+func _on_demon_landed() -> void:
+	_settle_from(land_scale)
+
+
+## Takes from_scale at once and goes back to its own size over Leap Settle Time, on the physics
+## frames, as the body moves.
+func _settle_from(from_scale: Vector2) -> void:
+	if _leap != null and _leap.is_valid():
+		_leap.kill()
+	scale = from_scale
+	_leap = create_tween().set_process_mode(Tween.TWEEN_PROCESS_PHYSICS)
+	_leap.tween_property(self, ^"scale", Vector2.ONE, leap_settle_time) \
+			.set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_OUT)
 
 
 ## Back at rest at once, with no interpolation from the hop's height, so a cut hop does not slide
