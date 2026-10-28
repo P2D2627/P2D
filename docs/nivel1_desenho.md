@@ -146,7 +146,7 @@ consegue fazer e do que o homem consegue.
 | Peça | Função | Medida |
 |---|---|---|
 | Degrau-refúgio | mostrar que o cão não sobe | 1 tile ou mais acima do chão do cão |
-| Poleiro | esperar que o cão passe, se vire ou desista | 3 a 5 tiles acima do chão dos cães |
+| Poleiro | esperar que o cão passe ou se vire; para o despistar, sair da sua vista (secção 7) | 3 a 5 tiles acima do chão dos cães |
 | Corredor do crucifixo | sem poleiros nem teto alto: só se atravessa pelo chão, com o crucifixo | teto a 4 tiles ou menos |
 | Pista da investida | chão plano e comprido onde o cão salta: perigo | 10 tiles ou mais, sem vãos |
 | Vão que corta | interrompe a perseguição e a investida | 3 a 8 tiles |
@@ -327,13 +327,35 @@ abaixo está implementado e testado no ramo do nível novo; os valores são os d
 | Alerta | ao ver o homem, para 0,3 s virado para ele, com um sinal de exclamação e um som; depois persegue |
 | Perseguição | segue o homem pelo seu chão; com dois ou mais cães, cada um mantém distância ao da frente, se esse também perseguir o homem |
 | Procura | se uma parede tapa o homem, vai a 300 px/s ao último ponto onde o viu e fareja durante 2,5 s, virando-se a meio, com um sinal de interrogação; se o voltar a ver, alerta; se não, regressa |
-| Fora de alcance | se o homem está acima ou abaixo do alcance dos ataques, para virado para ele e ladra; depois anda de um lado para o outro num troço de 160 px e ladra em cada extremo; contra uma parede ou uma borda do lado do homem, salta no sítio; ao fim de 3 s deixa-o, até ele voltar ao alcance |
+| Fora de alcance | se o homem está acima ou abaixo do alcance dos ataques, para virado para ele e ladra; depois anda de um lado para o outro num troço de 160 px e ladra em cada extremo; contra uma parede ou uma borda do lado do homem, salta no sítio; se o homem sair do troço por cima dele, corre por baixo até ficar debaixo dele; enquanto o vê, nunca desiste; se o homem sair da sua vista, ladra mais 3 s e depois procura-o |
 | Regresso | desiste quando perde o homem de vista e a procura não o encontra, quando o homem fica a mais de 1600 px ou quando o cão passa 160 px para lá da borda do ecrã; volta ao posto a passo e retoma a ronda |
 
 A visão usa dois pontos do corpo do homem (cabeça e meio), basta um estar à vista, e alcança muito
 mais para a frente do que para trás, para que o caminho escondido da fase 2 possa passar nas costas
 de um cão. Quando o homem afunda e a sala recomeça, cada cão volta ao posto. Um cão só começa a
 perseguir dentro do ecrã, pelo que nenhum ataca sem o jogador o ver (secção 8).
+
+Dois cães nunca ficam sobrepostos: no mesmo chão, um cão a menos de 24 px de outro afasta-se dele a
+150 px/s, nunca para fora de uma borda, e em ronda, no regresso ou fora de alcance para a essa
+distância, como numa parede. Arrumados assim, ocupam cerca de 73 px cada, 1,5 tiles. Nem o homem
+nem um cão ficam de pé um em cima do outro: quem está em cima é empurrado para o lado.
+
+Existe uma opção, desligada nos cães deste nível, que os deixa subir degraus até Jump Height e
+descer quedas até Max Drop atrás do homem, e voltar ao posto pelo mesmo caminho. Ligá-la contraria
+a regra "o chão é dos cães" (secção 3) e é uma decisão do grupo. Na sala de treino (estação 10),
+os cães usam-na com 96 px e 240 px. Se for ligada, valem os itens 38 a 40 da lista da secção 11.
+
+Consequências para o desenho, válidas desde já:
+
+- **Um sítio alto só é seguro se tiver saída fora da vista dos cães.** O cão nunca desiste enquanto
+  vê o homem: um patamar fora do alcance dos ataques protege-o, mas não o deixa sair, enquanto os
+  cães o virem. Para os despistar, o homem tem de passar para onde nenhum o veja, por exemplo para
+  trás de uma parede, ou subir até os cães saírem do ecrã por baixo.
+- **Os cães acumulam-se por baixo das bordas.** Por baixo de um patamar onde o homem espere, e por
+  baixo das bordas de onde o crucifixo os atira, juntam-se os cães que o veem. Precisam de chão
+  para se arrumar, cerca de 1,5 tiles cada. Sem esse chão, empurram-se sem parar e custam mais (ver
+  "Orçamento por sala"); com muitos de um só lado, a fila estende-se e os últimos perdem o homem e
+  regressam.
 
 Fundamentação:
 
@@ -349,7 +371,8 @@ Fundamentação:
   e o cão fora de alcance que nunca fica imóvel.
 - Diferença assumida: nesse sistema, um guarda alertado não volta ao estado normal; aqui, o cão
   regressa ao posto, porque a sala tem de se poder repor e porque os docentes pediram que os cães
-  desistam.
+  desistam. Desiste quando perde o homem de vista, e não enquanto o vê, para não alternar entre
+  procurar e voltar a vê-lo ao pé de uma plataforma.
 
 Por fazer:
 
@@ -468,6 +491,14 @@ chega a 1,92 ms, dentro dos 2 ms que o projeto aceita por sistema. O limite de c
 isso, de legibilidade e não de custo: até 8 cães ativos no ecrã ao mesmo tempo, valor provisório a
 confirmar no playtest. Uma sala que precise de mais mede-se de novo antes de ser aceite.
 
+Com a separação dos cães (2026-10-28), o custo passou a depender também do chão disponível. Dez
+cães fora de alcance arrumam-se a cerca de 73 px uns dos outros e param, e custam 0,24 ms por passo. Cinquenta, sem chão para se
+arrumarem, empurram-se sem parar e custam, em relação à versão anterior medida no mesmo dia, cerca
+de 15 % mais a perseguir e entre 25 % e 70 % mais fora de alcance; apertados num degrau de 96 px,
+são o caso mais caro medido. Por isso, além do limite de cães ativos, cada sítio onde os cães se
+juntam precisa de chão para eles (item 36). Os valores e o método estão no README, em "Demónio:
+estados, dados e famílias de personagens".
+
 ## 11. Lista de verificação por sala
 
 Cada sala nova, ou alteração a uma sala, verifica-se contra esta lista antes de entrar no ramo do
@@ -499,7 +530,7 @@ regras o pode confirmar a partir da cena, e "à mão" que exige leitura do desen
 | | **Crucifixo** | | |
 | 18 | Onde a sala exige o crucifixo, há chão plano e livre à volta | 9 tiles ou mais | teste |
 | 19 | Um corredor do crucifixo atravessa-se dentro da duração do crucifixo, com margem | até 15 tiles (4 s a 180 px/s; a duração é 5 s) | teste |
-| 20 | Dois usos obrigatórios do crucifixo estão separados pela recarga, ou há entre eles um sítio seguro onde esperar | 15 s | à mão |
+| 20 | Dois usos obrigatórios do crucifixo estão separados pela recarga, ou há entre eles um sítio seguro onde esperar, com saída fora da vista dos cães (item 37) | 15 s | à mão |
 | | **Câmara** | | |
 | 21 | A sala tem uma zona de câmara e o ponto de recomeço está dentro dela | | teste |
 | 22 | Altura livre de um corredor e largura de um poço, com zoom 1 (reduzidas na proporção do zoom da zona) | até 16 e 30 tiles | teste |
@@ -518,6 +549,13 @@ regras o pode confirmar a partir da cena, e "à mão" que exige leitura do desen
 | 33 | A sala ocupa o retângulo do lugar | igual em todas as variantes do lugar | teste |
 | 34 | A intensidade da variante está dentro da faixa do troço | cães ativos e menor distância a um cão pelo chão (baixo e escondido); saltos de perícia (alto) | teste |
 | 35 | Da entrada chega-se à saída pelo caminho obrigatório | com os saltos sempre possíveis da secção 4 | teste |
+| | **Cães acumulados** | | |
+| 36 | Por baixo de cada sítio onde o homem fica fora de alcance à vista dos cães, e de cada borda de onde o crucifixo os atira, há chão plano para os cães que lá se juntem | 1,5 tiles por cão a Sight Distance (1100 px) ou menos, sem rocha pelo meio; com o máximo do item 26, 12 tiles (576 px) | teste |
+| 37 | Cada sítio alto onde o homem possa esperar tem uma saída para fora da vista dos cães | rocha que corte a linha de vista, ou subida até os cães saírem do ecrã | à mão |
+| | **Cães que saltam (só com Jump Height ou Max Drop acima de 0)** | | |
+| 38 | Um refúgio fica acima do que o cão sobe mais o alcance dos ataques | mais de Jump Height + 24 px acima do chão de cada cão (com 96 px, 3 tiles ou mais) | teste |
+| 39 | Uma descida mais funda do que Jump Height existe só onde se aceita que o cão fique lá em baixo, porque não tem volta; lá em baixo há chão livre até onde ele aterra | até Max Drop; à velocidade da perseguição (até 616 px/s), chão livre até 5 tiles depois da quina numa queda de 96 px e até 7 tiles numa de 240 px | teste |
+| 40 | No caminho de um cão, nenhum chão fica à mesma altura do chão do seu posto sem ser o próprio | os chãos distinguem-se só pela altura: o cão ficaria preso ao voltar | teste |
 
 ## 12. Ordem do trabalho
 

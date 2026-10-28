@@ -156,6 +156,9 @@ var _off_its_floor: bool = false
 var _wall_ahead: KinematicCollision2D = KinematicCollision2D.new()
 ## Says which way to shove the demon off a body on Knock Off Layers.
 var _knock_off: KnockOff = KnockOff.new(self)
+## True if the demon was shoved off the man on the last physics frame, so the shove is checked once
+## more after he leaves its sight area, and ends.
+var _was_shoving: bool = false
 
 @onready var _senses: DemonSenses = %Senses
 ## Finds the other demons within Pack Spacing of this one's body, to either side.
@@ -208,11 +211,21 @@ func _ready() -> void:
 func _physics_process(delta: float) -> void:
 	_bite_frames_left = maxi(_bite_frames_left - 1, 0)
 	_target.track(delta)
-	var shove: float = _knock_off.update(knock_off_layers, _state == State.GRAB)
+	# The man is the only body on Knock Off Layers it collides with. On him, or passing through him,
+	# he is inside its sight area, which reaches past its feet unless the Sight Distance is under its
+	# height; elsewhere the shove is not checked, which cost about a microsecond per demon on every
+	# frame. A shove he leaves the area in the middle of, as when he is taken away, is checked once
+	# more, and ends; a pass ends as he comes back into it (ADR 0049).
+	var shove: float = 0.0
+	if _was_shoving or _senses.get_man_in_sight_area() != null \
+			or stats.sight_distance <= 2.0 * _half_size.y:
+		shove = _knock_off.update(knock_off_layers, _state == State.GRAB)
+	_was_shoving = shove != 0.0
 	if not is_on_floor():
 		velocity += _current.get_gravity() * delta
 	_current.physics_update(delta)
-	_keep_apart_from_packmates()
+	if not _packmates.is_empty():
+		_keep_apart_from_packmates()
 	_stop_at_the_man(delta)
 	if shove != 0.0:
 		velocity = Vector2(shove * stats.knock_off_speed, 0.0)

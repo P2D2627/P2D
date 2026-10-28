@@ -46,7 +46,7 @@ cada sala) está em `docs/nivel1_desenho.md`, e os artigos que o fundamentam em 
 6. A sala de treino (Play ▸ Gym (training room)) põe à prova, uma de cada vez, as mecânicas que já
    existem: movimento, paredes e chaminés, câmara, zona fixa da câmara, cães, matilha e agarrão,
    crucifixo, SP e morte. Cada estação ocupa um ecrã e tem uma placa que explica o que experimentar.
-   As teclas 1 a 9 levam ao início da estação com esse número. Quem morre recomeça
+   As teclas 1 a 9 levam ao início da estação com esse número, e o 0 à décima. Quem morre recomeça
    no início da estação onde estava. Ver "Sala de treino".
 
 Os controlos de teclado e rato escolhem-se em Options ▸ Controls, entre três perfis. O comando é
@@ -243,7 +243,7 @@ estados:
 | Atirado | Atirado pelo crucifixo, ou pela personagem quando esta se solta, voa até aterrar. |
 | Repelido | Depois de atirado pelo crucifixo, fica 0,3 s parado onde aterrou e volta a perseguir. |
 | Atordoado | Depois de atirado pela personagem ao soltar-se, fica 1,2 s no chão, achatado e mais escuro, e depois recua ou volta a perseguir. |
-| Fora de alcance | Com a personagem num chão ou numa parede acima ou abaixo do que os seus ataques chegam, não a segue por baixo nem por cima: para virado para ela e ladra, e depois anda para trás e para a frente num troço de 160 px à volta do sítio onde parou e, em cada ponta, volta a parar e a ladrar; contra uma parede ou na borda do seu chão, do lado dela, salta no sítio. Se ela descer ao seu alcance, volta a persegui-la; ao fim de 3 s, desiste e deixa-a em paz enquanto ela lá ficar. |
+| Fora de alcance | Com a personagem num chão ou numa parede acima ou abaixo do que os seus ataques chegam, não a segue por baixo nem por cima: para virado para ela e ladra, e depois anda para trás e para a frente num troço de 160 px à volta do sítio onde parou e, em cada ponta, volta a parar e a ladrar; contra uma parede ou na borda do seu chão, do lado dela, salta no sítio. Se ela sair do troço por cima dele, corre por baixo à velocidade da perseguição até ficar debaixo dela e anda aí. Se ela descer ao seu alcance, volta a persegui-la. Enquanto a vir, nunca desiste; se ela sair da sua vista, ladra mais 3 s para onde ela estava e depois vai procurá-la. |
 | Procurar | Quando uma parede a esconde durante 0,5 s, vai a 300 px/s até onde a viu pela última vez, ou até onde o seu chão deixa, e fareja ali durante 2,5 s, virando-se para o outro lado a meio. Se a vir, fica alerta e volta a persegui-la; se não, desiste. Fora do ecrã, desiste logo. Durante a procura mostra um "?" e, ao começar, toca dois bips a descer. |
 | Voltar | Depois de desistir, volta ao posto a passo, a 200 px/s, e retoma a ronda. Se a vir à frente pelo caminho, fica alerta e volta a persegui-la. |
 
@@ -270,7 +270,13 @@ Em grupo, cada demónio decide sozinho, mas o conjunto lê-se como uma matilha:
 - um demónio atrás de outro fica a 24 px dele e ataca dali, saltando-lhe por cima. Só conta um
   demónio que também persegue a personagem, incluindo um em alerta ou à espera fora do alcance: um
   parado, em ronda, a voltar ou a procurar não trava os outros. Dois que a procurem no mesmo sítio farejam à mesma distância um do outro. Os corpos dos
-  demónios não colidem entre si, para que não tremam nem se bloqueiem;
+  demónios não colidem entre si, para que não tremam nem se bloqueiem. Em vez disso, um demónio a
+  menos de 24 px de outro, no mesmo chão, afasta-se dele a 150 px/s, seja qual for o seu estado,
+  exceto a meio de uma investida, de um salto, de uma descida ou de um arremesso, e nunca para fora
+  de uma borda; em ronda, a voltar
+  ou fora de alcance, para a essa distância de outro, como numa parede. É a regra de separação dos
+  bandos de Reynolds (1987). Assim, dois demónios nunca ficam um em cima do outro, e cada um
+  lê-se como um animal à parte;
 - cada um persegue e recua ao seu ritmo, até 10 % acima ou abaixo dos valores, para que nunca se
   movam em uníssono;
 - sempre que fica em condições de atacar, cada um espera um tempo sorteado entre 0 e 0,5 s, para
@@ -286,9 +292,11 @@ cerca de 0,31 s, pela conta; o de 200 px, medido pelo `measure_demon.gd` contra 
 parada, sobe 15,22 px (15,2 pela conta) e está de novo no chão 0,22 s depois de partir (ver "Salto
 calculado a partir do desenho"). Os valores são provisórios e afinam-se a jogar.
 
-É o desenho do nível que limita os demónios. Um demónio não sobe, não salta para cima e para à beira
-de um desnível. Como nenhum salto passa dos 32 px de altura, um degrau de 48 px, uma largura da
-personagem, trava-o, e uma plataforma dessa altura é um sítio seguro. Um demónio que veja a
+É o desenho do nível que limita os demónios. Por omissão, um demónio não sobe, não salta para cima
+e para à beira de um desnível (ver a seguir a opção que o deixa subir e descer). Como nenhum salto passa dos 32 px de altura, um degrau de 48 px, uma largura da
+personagem, trava-o, e uma plataforma dessa altura protege-a dos ataques. Só é um refúgio se tiver
+uma saída para fora da vista dos demónios, porque um demónio que a vê nunca desiste (ver "Nunca
+desiste enquanto a vê", em "Para quem programa"). Um demónio que veja a
 personagem num sítio desses para onde está, virado para ela, em vez de a acompanhar por baixo de um
 lado para o outro, e o jogador lê que ali não lhe chega. O mesmo vale ao contrário: um demónio numa
 plataforma alta, de onde não desce, não corre até à borda para a acompanhar lá de cima. Um salto da personagem no chão do demónio
@@ -299,6 +307,31 @@ personagem, persegue-a a partir daí. Quando desiste, tenta voltar ao posto, e f
 uma parede o param, fazendo aí a ronda; nunca fica a tentar subir. O posto não muda: de cada vez que
 desiste, volta a tentar chegar-lhe. É uma mecânica: o jogador pode gastar o crucifixo para tirar
 um demónio do caminho, e os níveis podem oferecer-lhe bordas e buracos para onde o atirar.
+
+Uma opção, desligada no demónio da luxúria, deixa um demónio subir e descer atrás da personagem,
+com alturas a que só ela chega (o salto dela sobe 240 px). Liga-se com dois valores do ficheiro de
+dados: Jump Height, o degrau mais alto que o demónio sobe, e Max Drop, a queda mais funda que
+desce; a 0, o demónio comporta-se como acima. Ligá-la num nível contraria a regra "o chão é dos
+cães" do nível 1 e é uma decisão do grupo. Na sala de testes e na estação 10 da sala de treino, os
+demónios usam-na com 96 px e 240 px:
+
+- **Subir.** Com a personagem acima do seu alcance e um degrau no caminho, o demónio salta-o a
+  correr, com a gravidade do seu salto de ataque, e passa a quina com 6 px de folga. Sem aviso: o
+  aviso diria ao jogador que vem um ataque. Um degrau mais alto do que Jump Height, uma plataforma
+  por cima dele ou a borda do seu chão deixam-no fora de alcance, como antes.
+- **Descer.** Com a personagem abaixo do seu alcance, desce a borda aos saltos, com o mesmo salto.
+  Antes de descolar, joga o arco passo a passo e só salta se aterrar num chão até Max Drop mais
+  abaixo; uma parede, um teto ou o vazio deixam-no fora de alcance. À velocidade da perseguição
+  (560 px/s, até 616 px/s com a variação da matilha), o corpo aterra todo até cerca de 220 px
+  depois da quina numa queda de 96 px, e até cerca de 315 px numa de 240 px; lá em baixo, esse chão
+  tem de estar livre.
+- **Voltar.** O demónio guarda o caminho por onde saiu do seu chão, até 8 passos, e no regresso
+  refá-lo do último para o primeiro. Um passo que não consegue desfazer, como uma queda mais funda
+  do que o seu salto, deixa-o nesse chão (ver "Posto e regresso"). Ao procurar a personagem, sobe e
+  desce até ao chão onde a viu pela última vez.
+
+Ao descolar, o retângulo provisório estica (0,8 × 1,25) e, ao aterrar, encolhe (1,25 × 0,75),
+voltando ao tamanho em 0,2 s; cada um tem um bip provisório.
 
 Os valores são os do demónio da luxúria, num ficheiro de dados (`demon/lust_demon_stats.tres`);
 mudam sem alterar código e são provisórios. O aviso é, por agora, um retângulo que muda de forma e
@@ -334,7 +367,10 @@ personagem fica ainda 1 s invulnerável, para não ser agarrada de novo logo a s
 A personagem e os demónios não se atravessam: param encostados, também a meio de um salto. A
 personagem nunca fica de pé em cima de um demónio: é empurrada para o lado a 600 px/s, sem correr
 nem saltar até pisar outra coisa. Assim, a cabeça de um demónio, onde a mordida não chega, nunca é
-um sítio seguro.
+um sítio seguro. O mesmo vale ao contrário: um demónio nunca fica de pé em cima da personagem, e é
+empurrado para o lado a 600 px/s. Se os dois ficarem presos, porque o empurrão bate em paredes dos
+dois lados, como num buraco da largura de um corpo, atravessam-se ao fim de 0,1 s até se
+separarem; enquanto se sobrepõem, o demónio não ataca.
 
 Os valores estão em `player/grab_stats.tres` (o agarrão), no ficheiro de dados dos demónios (o dano
 e os arremessos) e na cena da personagem (a invulnerabilidade), e são provisórios. Soltar-se
@@ -652,6 +688,8 @@ Remote; os restantes valores são lidos sempre que são usados.
   https://gameprogrammingpatterns.com/
 - Pittman, K. (2016). *Math for Game Programmers: Building A Better Jump*. Game Developers
   Conference. https://www.gdcvault.com/play/1023559/Math-for-Game-Programmers-Building
+- Reynolds, C. W. (1987). Flocks, herds and schools: A distributed behavioral model. *ACM SIGGRAPH
+  Computer Graphics*, *21*(4), 25–34. https://doi.org/10.1145/37402.37406
 
 ## Para quem programa
 
@@ -674,7 +712,7 @@ Remote; os restantes valores são lidos sempre que são usados.
     ├── levels/        salas, níveis e a entrada de cada nível na lista do menu (LevelEntry)
     ├── background/    fundo em camadas: as camadas (BackgroundLayer), o modelo e o fundo de cada nível
     ├── ui/            menus, ecrã das opções e o tema comum (ui_theme.tres)
-    ├── components/    componentes usados por mais de um sistema: Repellable, Hitbox, Hurtbox e SinkingDrawing
+    ├── components/    componentes usados por mais de um sistema: Repellable, Hitbox, Hurtbox, SinkingDrawing e KnockOff
     ├── tests/         testes e medidas que correm sem janela
     │   └── support/   preparação comum aos testes
     └── assets/        sprites, audio, fonts
@@ -758,6 +796,7 @@ godot --headless --fixed-fps 60 --path Projeto --script res://tests/test_demon_m
 godot --headless --fixed-fps 60 --path Projeto --script res://tests/test_demon_sounds.gd
 godot --headless --fixed-fps 60 --path Projeto --script res://tests/test_hit_boxes.gd
 godot --headless --fixed-fps 60 --path Projeto --script res://tests/test_knockback.gd
+godot --headless --fixed-fps 60 --path Projeto --script res://tests/test_stacked_bodies.gd
 godot --headless --fixed-fps 60 --path Projeto --script res://tests/test_grab_rules.gd
 godot --headless --fixed-fps 60 --path Projeto --script res://tests/test_grab_escape.gd
 godot --headless --fixed-fps 60 --path Projeto --script res://tests/test_crucifix_block.gd
@@ -826,7 +865,8 @@ godot --headless --fixed-fps 60 --path Projeto --script res://tests/measure_soul
 
 O `measure_demon.gd` também não verifica resultados: mede quanto acrescentam a cada passo de física
 10, 50 e 200 demónios a perseguir a personagem, em média e no pior passo, e compara o custo de 50 com
-os limites de 1,5 ms em média e 2 ms no pior passo. Cada parte começa com uma personagem nova, porque
+os limites de 1,5 ms em média e 2 ms no pior passo. Mede ainda 50 em ronda, 50 fora de alcance e 50
+com o salto ligado, a subir um bloco ou ao pé de um bloco alto demais. Cada parte começa com uma personagem nova, porque
 os demónios lhe gastam o SP e, sem um nível que recomece, uma personagem morta num agarrão ficava
 presa até ao fim. Os números e a decisão estão em "Demónio: estados,
 dados e famílias de personagens".
@@ -1036,9 +1076,10 @@ crucifixo afasta. A camada está definida na cena, no Inspector, e não no códi
 apenas nessa camada, pelo que um demónio ou uma alma só é afastado se tiver o componente.
 
 A camada `enemy` é a do corpo dos demónios, que colide com `world`, `one_way_platform` e `player`.
-Os demónios atravessam-se uns aos outros, para que não tremam nem se bloqueiem. A personagem e os
-demónios não se atravessam: param encostados, e a personagem nunca fica de pé em cima de um
-demónio (ver "Pancada e agarrão"). Um demónio que caia de uma borda em cima da personagem, ou dois
+Os corpos dos demónios atravessam-se uns aos outros, para que não tremam nem se bloqueiem; é a
+separação da matilha que os mantém afastados (ver "Demónios"). A personagem e os demónios não se
+atravessam: param encostados, e nenhum dos dois fica de pé em cima do outro (ver "Pancada e
+agarrão"); só presos dos dois lados se atravessam, durante uma fração de segundo. Um demónio que caia de uma borda em cima da personagem, ou dois
 demónios dos dois lados, podem encurralá-la; é intencional, porque encostar a um demónio é ficar ao
 alcance da mordida, e vigia-se nos playtests.
 
@@ -1369,16 +1410,18 @@ não é esta cena com a perseguição desligada.
   chegar ao seu chão. A personagem
   só fica fora de alcance quando está num chão, ou a deslizar ou agarrada a uma parede: no ar, ou a
   roçar uma parede a subir, só pode voltar a descer, e um salto para fugir nunca para a perseguição
-  nem corta uma mordida a meio. Depois de desistir, o demónio ignora-a enquanto ela estiver acima do
-  seu alcance; sem isso, voltava a vê-la no passo seguinte e recomeçava a perseguição de 2 em 2 s. Para voltar a perseguir basta que ela desça ao
+  nem corta uma mordida a meio. Depois de desistir, o demónio passou a ignorá-la enquanto ela
+  estivesse acima do seu alcance, porque voltava a vê-la no passo seguinte e recomeçava a
+  perseguição de 2 em 2 s; o ADR 0044 tirou essa trava (ver abaixo). Para voltar a perseguir basta que ela desça ao
   alcance, mesmo no ar; esta diferença entre a regra de entrada e a de saída evita que o demónio
   pare e arranque aos solavancos com a personagem numa chaminé. A ronda é um estado próprio
   (`PATROL`), e o parado (`IDLE`) passa a ser também a pausa nas pontas, para que a arte tenha uma
   animação para andar e outra para estar parado. Cada demónio sorteia as suas pausas, e por isso
   dois demónios postos lado a lado depressa deixam de andar ao mesmo ritmo. Em ronda, os demónios
-  não guardam distância entre si: dois troços sobrepostos deixam-nos atravessar-se. Por isso é uma
-  regra do desenho dos níveis que os troços de dois demónios no mesmo chão não se sobreponham, e o
-  teste das regras dos níveis, a fazer com o gerador do nível 1, vai verificá-la. Com Patrol Width a 0, o demónio fica parado no posto,
+  não guardavam distância entre si, e dois troços sobrepostos deixavam-nos atravessar-se; desde o
+  ADR 0046, viram a Pack Spacing de outro, como numa parede. Continua a ser regra do desenho dos
+  níveis que os troços de dois demónios no mesmo chão não se sobreponham, e o teste das regras dos
+  níveis, a fazer com o gerador do nível 1, vai verificá-la. Com Patrol Width a 0, o demónio fica parado no posto,
   como antes. Fora do ecrã, não anda, para que o jogador encontre cada demónio perto de onde o nível
   o pôs e para que os demónios que não se veem custem o mínimo.
 - **Alerta e procura (ADR 0035).** Antes, o demónio passava de parado a perseguir no mesmo passo,
@@ -1419,8 +1462,9 @@ não é esta cena com a perseguição desligada.
   Enquanto está fora de alcance, o tempo em que um rebordo ou uma parede esconde a personagem não
   conta para desistir, porque o demónio sabe que ela subiu ou desceu ali. Sem isto, um demónio
   que andasse por baixo de uma prateleira perdia-a de vista, ia procurá-la, voltava a vê-la e
-  recomeçava, sem nunca desistir, e não chegava a saltar contra a parede por baixo dela. Desiste ao
-  fim de 3 s (antes 2 s), o que dá tempo a pelo menos dois ladridos. Cada pausa é sorteada, para
+  recomeçava, sem nunca desistir, e não chegava a saltar contra a parede por baixo dela. Desistia
+  ao fim de 3 s (antes 2 s), o que dá tempo a pelo menos dois ladridos; desde o ADR 0044, os 3 s só
+  contam com a personagem fora da sua vista. Cada pausa é sorteada, para
   dois demónios não ladrarem a par; evitar que dois ladridos simultâneos soem como um é tarefa do
   áudio. Com Out Of Reach Pace Width a 0, o demónio fica parado como antes.
 - **Alerta e procura à vista e ao ouvido (ADR 0040).** O alerta durava 0,3 s e não se via nem se
@@ -1444,6 +1488,56 @@ não é esta cena com a perseguição desligada.
   alerta custam 0,32 ms (mediana; pior 0,6 ms) para a marca e o som juntos. Um bando que vê a
   personagem ouve-se como um só, e as marcas continuam a mostrar quais a viram. Um demónio com
   Alert Time 0 persegue logo, sem alerta, e por isso sem marca nem bip, como antes do ADR 0035.
+- **Subir e descer atrás da personagem (ADR 0042).** Dois estados próprios, `JUMP` e `DROP`, para
+  que a arte e o som distingam a subida da descida, e dois valores no `DemonStats`, Jump Height e
+  Max Drop, a 0 por omissão: desligado, o custo é uma comparação por passo e o demónio faz o que
+  fazia. A perseguição pergunta primeiro ao `follows_off_its_floor()` se ainda pode ir atrás da
+  personagem fora de alcance; a regra do alcance não mudou. Para subir, um `test_move` procura uma
+  parede no caminho ao nível do chão e o raio `StepCheck` mede o topo do degrau; o salto usa a
+  gravidade da primeira estocada dos ataques, para ser o mesmo salto (sem estocada, não salta), e
+  descola onde os pés passam a quina 6 px acima do topo. Para descer, antes de descolar joga o arco
+  passo a passo com `test_move` e a mesma integração do motor, e só salta se aterrar num chão mais
+  baixo e até Max Drop: 17 a 23 µs por tentativa numa queda de 240 px (três execuções), e a
+  perseguição só a pede ao chegar à borda. Um salto que aterra no chão de onde partiu deixa-o fora
+  de alcance, para nunca saltitar contra o mesmo degrau. O caminho de volta está na classe pura
+  `DemonPath` (um passo por chão com outro y, até 8, esquecendo o mais antigo), e o `RETURN`
+  desfaz o último passo. Ficaram de lado: um salto de ataque sem sair do chão, barato, mas que não
+  vai atrás dela; saltar buracos, porque os refúgios não precisam deles; e mudar o posto para onde
+  a perde, porque espalha os demónios e tira a quem desenha o sítio de cada um. O demónio emite
+  `took_off` e `landed`, a que o retângulo provisório e o `DemonSounds` respondem (no máximo 2 bips
+  por passo de física, para todos), e o F3 desenha o caminho guardado, numerado pela ordem em que
+  se desfaz. Limites conhecidos: dois chãos à mesma altura contam como o mesmo; fora de alcance, não
+  volta a tentar se a personagem andar para cima de um degrau a que chega; sem testes a 120 Hz nem
+  com plataformas de sentido único como chão de partida ou de chegada.
+- **Nunca desiste enquanto a vê (ADR 0044 e 0045).** Desistir ao fim de 3 s com a personagem à
+  vista trazia de volta o ciclo procura e alerta do ADR 0039: a quina de uma plataforma esconde-a
+  ao pé dela e o demónio perdia-a 0,5 s depois. Saiu a trava que a ignorava depois de desistir; o
+  tempo sem a ver conta contra Out Of Reach Wait (3 s) fora de alcance e contra Give Up Time no
+  resto. Consequência para o desenho: um sítio alto deixa de ser seguro por si; para fugir, a
+  personagem tem de sair da vista. Quando ela sai do troço de 160 px por cima dele, o demónio corre
+  pela perseguição até debaixo do último x visto e anda aí; os passos dela dentro do troço não o
+  mexem, para não a espelhar.
+- **Separação da matilha (ADR 0046).** Antes, dois demónios podiam ficar sobrepostos, parados ou em
+  ronda. Agora, no chão e fora de uma investida, de um salto, de uma descida ou de um arremesso,
+  cada demónio afasta-se a Pack Push Speed (150 px/s, a da ronda) do vizinho mais próximo a menos
+  de Pack Spacing do seu corpo, nunca para fora de uma borda; no mesmo x, desempatam pelo
+  identificador. A ronda, o regresso e o troço fora de alcance param ou viram a essa distância. As
+  exceções da matilha (ADR 0024) mantêm-se: quem recua e quem ele atravessa não se empurram, nem
+  dois com o corpo da personagem entre eles. É a separação de Reynolds (1987), só no eixo x. Ficam
+  sobreposições de passagem (cruzamentos ao recuar) ou sem espaço, como num buraco de um corpo.
+- **Ninguém fica em cima de ninguém (ADR 0047).** O componente `KnockOff`
+  (`components/knock_off.gd`) diz para que lado empurrar quem está de pé em cima da personagem ou
+  de um demónio; quem o usa põe a velocidade (600 px/s nos dois). Antes, o demónio não tinha
+  empurrão e podia ficar para sempre na cabeça da personagem. Num buraco de um corpo, o empurrão
+  batia nas duas paredes e virava a cada passo: agora, se continuar em cima 6 passos (0,1 s) depois
+  de bater dos dois lados, os dois corpos deixam de colidir até as caixas estarem a mais de 2 px.
+  Com as caixas sobrepostas, o demónio não começa ataques e a `Hitbox` não acerta. Escolheu-se dar
+  ao demónio o empurrão que a personagem já tinha (ADR 0022), num componente partilhado, para que
+  haja uma só regra para os dois; projetar o demónio e uma regra de desenho dos níveis ficaram de
+  lado. O demónio só pergunta ao `KnockOff` com a personagem dentro da sua área de visão, onde ela
+  tem sempre de estar para ele lhe estar em cima, ou no passo a seguir a ter sido empurrado: se ela
+  desaparecer de baixo dele, por um respawn ou pelas teclas da sala de treino, o empurrão acaba em
+  vez de ficar preso (ADR 0049; o custo medido vem mais abaixo, nesta secção).
 
 Antes de decidir se a perseguição precisava de ser otimizada, fixaram-se dois limites para 50
 demónios a perseguir ao mesmo tempo, muitos mais do que um ecrã terá: um limite para a média por
@@ -1553,6 +1647,58 @@ parados (os valores mais altos de ambas as linhas vêm da mesma execução, com 
 alta), e passa os 2 ms em três das quatro, como na ronda com todos no ecrã. Aceita-se pelo mesmo
 motivo, até haver um nível para medir; a causa do pior passo fica para o Profiler.
 
+Com o salto, a separação e o empurrão (ADR 0042, 0046 e 0047; 2026-10-28), a medida ganhou duas
+partes com 50 demónios com o salto ligado (96 px e 240 px), metade de cada lado de um bloco com a
+personagem ao meio: um bloco de 96 px, que sobem, e um de 144 px, mais alto do que o salto.
+
+O computador passou a medir mais devagar do que a 26 de outubro, sem causa conhecida. O mesmo código
+que nesse dia deu 0,95 a 1,03 ms de scripts com 50 demónios a perseguir deu 1,40 a 1,64 ms, depois
+de reiniciar, ligado à corrente, sem outros programas abertos e com a poupança de energia ligada e
+desligada. Na mesma sessão, os valores subiram até cerca de um terço à medida que o computador
+aquecia. Por isso, os limites absolutos deixaram de servir de critério (ADR 0048): a versão do `dev`
+e a deste trabalho correm alternadas na mesma sessão (seis execuções de cada), e um trabalho não
+pode somar ao `dev` mais do que a margem do limite, cerca de um quarto, nos casos que um nível tem.
+A tabela mostra o passo inteiro, em média; a diferença é a mediana das seis comparações.
+
+| 50 demónios, passo inteiro em média | `dev` | Com o salto, a separação e o empurrão | Diferença |
+|---|---|---|---|
+| Espalhados por dez ecrãs, como num nível | 0,68 a 0,82 ms | 0,79 a 0,96 ms | +13 % |
+| A perseguir | 1,99 a 2,31 ms | 2,62 a 3,08 ms | +33 % |
+| Em ronda, todos no ecrã | 1,14 a 1,46 ms | 1,38 a 2,10 ms | +22 % |
+| Fora de alcance, parados | 1,17 a 1,59 ms | 2,33 a 2,88 ms | +73 % |
+| Fora de alcance, a andar no troço | 1,71 a 2,06 ms | 2,57 a 3,08 ms | +54 % |
+| Com salto, sobem um bloco de 96 px | | 5,40 a 6,03 ms | |
+| Com salto, ao pé de um bloco de 144 px | | 3,31 a 3,53 ms | |
+
+Com 10 demónios a perseguir, o `dev` deu 0,29 a 0,39 ms e este trabalho 0,33 a 0,53 ms: +26 %, no
+limite da margem, com cerca de 0,09 ms de diferença.
+
+Antes de otimizar, o caso espalhado por dez ecrãs subia +29 %, acima da margem. Medido por fase do
+`_physics_process`, numa cópia instrumentada, cada demónio pagava cerca de 3 µs por passo em
+qualquer estado, mesmo parado fora do ecrã: 2 µs na verificação do empurrão, 0,5 µs na da separação
+e 0,5 µs no registo do caminho de regresso. Duas condições cortaram as duas primeiras (ADR 0049): um demónio só verifica o empurrão com a
+personagem dentro da sua área de visão, onde ela tem de estar para ele lhe estar em cima, e só
+procura afastar-se de outros quando tem algum por perto. Com 50 demónios e a personagem longe, a
+verificação do empurrão passou de cerca de 100 µs para 21 a 33 µs por passo, e a da separação de 34
+a 41 µs para 8 µs; com eles juntos e a personagem perto, o custo ficou igual, porque aí o trabalho é
+real. Os cerca de 0,1 ms poupados batem com a descida de +29 % para +13 % no passo inteiro, mas a
+variação entre execuções, até ±30 %, não deixa atribuí-la toda a esta alteração. O registo do
+caminho de regresso ficou: cortá-lo obrigava a
+mudar a forma como o caminho é registado, com risco de perder um degrau, por um ganho pequeno.
+
+Nos outros casos, a subida é o comportamento novo, sobretudo a separação, que custa cerca de 0,4 ms
+por passo com 50 demónios a perseguir, medida por fase. Ler as posições uma vez por ciclo não mudou
+o custo e foi revertido. A causa é o comportamento:
+arrumados, os demónios ficam a cerca de 73 px uns dos outros (medidos; 48 px de corpo e 24 px de
+espaço); 50 precisariam de cerca de 3650 px de chão, não os têm e empurram-se sem fim (os 50
+continuam a andar no fim da medida, contra 0 no `dev`). A medida com 10 demónios fora de alcance,
+que têm chão, mostra-os todos parados no fim, com 0,24 ms. Os 50 apertados em cima do bloco de
+96 px são o caso mais caro. Aceita-se a perseguição e o fora de alcance acima da margem porque 50
+demónios juntos à volta da personagem, ou sem chão, não são um caso que um nível tenha, e trata-se como regra de desenho, e não como otimização: até 8
+demónios ativos no ecrã e chão para cada um onde se juntam (itens 26 e 36 da lista do
+`docs/nivel1_desenho.md`). Com 50 demónios do mesmo lado de um degrau, a fila estende-se por
+mais de 1200 px, e os últimos ficam a mais de Lose Distance da personagem e voltam ao posto.
+
 O `test_demon.gd` verifica, com a personagem e o crucifixo verdadeiros, a visão (a distância e as
 paredes), a perseguição e a desistência, a paragem nas bordas e nos degraus, o aviso e o seu tempo,
 a altura, a distância e a direção do salto, também num salto mais rápido e num de metade da
@@ -1578,7 +1724,7 @@ perseguição a meio do regresso, a paragem noutro chão e contra uma parede sem
 regresso a casa depois de a parede sair e a ronda à volta do sítio onde parou. Com o "fora de
 alcance", verifica que o demónio para virado para a personagem num degrau alto e não a segue
 quando ela anda por cima, que numa plataforma alta não corre até à borda por ela estar em baixo, que volta a persegui-la quando ela desce ao alcance, ainda no ar, que
-desiste ao fim do tempo mesmo vendo-a e depois a deixa em paz enquanto ela lá ficar, que um salto
+nunca desiste enquanto a vê e, escondida, vai procurá-la ao fim da espera, que um salto
 dela no seu chão não para a perseguição e que não avisa de um ataque a uma personagem no ar acima do
 seu alcance. Com a ronda, verifica o vai
 e vem dentro da largura e à velocidade certas, as pausas dentro dos limites, a volta à beira de um
@@ -1595,11 +1741,15 @@ margem do ecrã, acaba depois dela e não recomeça fora do ecrã, e que a perso
 do aviso, fora do alcance ou no agarrão deixa o demónio parado, sem saltar. Com o ADR 0039,
 verifica que, fora de alcance, o demónio anda no seu troço sem o passar e nunca fica parado mais
 do que a pausa mais longa, que ladra virado para a personagem em cada ponta, que salta só contra a
-parede ou na borda do lado dela e não passa nenhuma das duas, que desiste ao fim do mesmo tempo,
-que continua por baixo de uma prateleira que a esconde, que sem troço nunca ladra, que dois
+parede ou na borda do lado dela e não passa nenhuma das duas, que continua por baixo de uma
+prateleira que a esconde, que sem troço nunca ladra, que dois
 demónios com as pausas do nível, em três sementes, ladram a menos de 6 passos um do outro menos de
 metade das vezes, que o salto do retângulo deixa o corpo no chão e que uma mudança de estado o
-interrompe e o repõe logo. São 129 casos. Todos menos os oito
+interrompe e o repõe logo. Com os ADRs 0044 a 0046, verifica que segue por baixo quando ela sai do
+troço, mais depressa do que a ronda, e que os passos dela dentro do troço não o mexem, e que dois
+demónios no mesmo sítio, na ponta de um chão, no troço, em ronda e a agarrar do mesmo lado se
+separam. Os casos alterados por estas decisões (seis) foram-no com autorização e estão
+registados nos ADRs. São 137 casos. Todos menos os oito
 últimos usam valores próprios, pelo que afinar o `.tres` não os altera. Os oito últimos leem o
 `.tres` do nível 1 e
 confirmam o que o desenho dos níveis assume: cada ataque com uma das animações da arte, os saltos e a diferença
@@ -1611,6 +1761,15 @@ lenta do que a perseguição, com um degrau de um tile fora do alcance, e o aler
 tempo às cegas menor do que o de procura e a procura mais lenta do que a perseguição, e o "fora de
 alcance" com troço e com tempo para pelo menos dois ladridos antes de desistir, mesmo com a pausa
 inicial mais longa.
+
+O `test_demon_jump.gd` (30 casos) verifica a subida (degraus de 48 e 96 px sem tocar a parede, com
+o pico 12 px acima do topo; 144 px, sem estocada, teto baixo e plataforma por cima não), a descida
+(96 e 240 px, a 300 e a 600 px/s; 288 px e teto por cima não), o crucifixo e a personagem destruída
+a meio, o regresso pelo caminho guardado, a procura a subir e a descer, e a imagem e os sinais ao
+descolar e aterrar. O `test_demon_path.gd` (6 casos) verifica a pilha do caminho sem física. O
+`test_stacked_bodies.gd` (15 casos) verifica que nem a personagem nem um demónio ficam um em cima
+do outro: saem para o lado, nunca para cima, também num buraco de um corpo, num canto, durante um
+agarrão e com o demónio a andar, e com os corpos sobrepostos nenhum ataque acerta.
 
 #### Overlay de depuração
 
@@ -1910,9 +2069,17 @@ recomeço cria uma cópia nova do nível, a estação fica guardada numa variáv
 `GymStations`, que sobrevive à troca. A estação só é guardada quando o nível pede para recomeçar:
 quem morre e sai para o menu antes disso volta a entrar na primeira estação. Este comportamento
 pertence apenas à sala, e não é o checkpoint do jogo. As teclas 1 a 9 levam a personagem ao início
-da estação correspondente, mantendo os SP; não funcionam durante um agarrão, depois da morte, nem
+da estação correspondente, e o 0 à décima, mantendo os SP; não funcionam durante um agarrão, depois da morte, nem
 quando a tecla está atribuída a uma ação no perfil Custom. Lêem as teclas diretamente, sem ações no
 mapa de controlos, porque servem apenas para depuração; por isso não há equivalente no comando.
+
+A estação 10 mostra os cães que saltam (ADR 0042), com os valores de `levels/jumping_demon_stats.tres`:
+o cão sobe um degrau de 96 px e não chega ao pilar de 144 px. O degrau vai até ao fim da estação,
+porque os chãos se distinguem só pela altura: um cão que passasse para outro chão à mesma altura
+do seu posto ficava preso à parede ao voltar. A queda de 240 px não aparece na sala, porque é mais
+funda do que o salto e não tem volta. Esse ficheiro é uma cópia dos valores do cão da luxúria com
+o salto ligado, usada só pela sala de testes e por esta estação, e não acompanha as mudanças do
+original.
 
 Ficam de fora as armadilhas, o checkpoint, que ainda não existe, e o diálogo, que ainda não é
 iniciado por nada no jogo. A estação de cada uma acrescenta-se quando a mecânica entrar no jogo.

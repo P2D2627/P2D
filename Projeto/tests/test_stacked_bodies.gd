@@ -5,7 +5,9 @@
 # one on top comes off on the open side. A demon holding the man in a grab keeps holding him while
 # another drops onto his head and comes off it. The man dropped onto a demon that walks after him
 # comes off it and can run and jump. With the two bodies overlapping in the hole, no bite and no grab
-# lands on the man. The demons are demon.tscn with stats made here, so their bodies are the game's.
+# lands on the man. A demon on the man's head as he leaves keeps its way back, and one that
+# sees less than its height still comes off his head (ADR 0049). The demons are demon.tscn with stats
+# made here, so their bodies are the game's.
 # Run from the repository root; the exit code is 0 on pass and 1 on fail:
 # godot --headless --fixed-fps 60 --path Projeto --script res://tests/test_stacked_bodies.gd
 extends "res://tests/support/player_test.gd"
@@ -57,6 +59,16 @@ const PACK_SIZE: int = 3
 const PACK_SPACING: float = 24.0
 ## Frames after a press of Jump in which the man must jump.
 const JUMP_FRAMES: int = PRESS_DELAY_FRAMES + 2
+## The ledge of the case where the man leaves, away from where the demon falls, and the demon put
+## above its middle. Two bodies high, so it is not at the height of the man's head, a floor the
+## demon stood on, which its way back would take as a floor it came back to.
+const LEDGE_LEFT: float = 400.0
+const LEDGE_RIGHT: float = 800.0
+const LEDGE_HEIGHT_IN_BODIES: float = 2.0
+## Frames the case where the man leaves waits for the demon to land, each time: a second and a half.
+const LAND_FRAMES: int = 90
+## A Sight Distance under a demon's height, so its sight area does not reach the man under its feet.
+const SHORT_SIGHT: float = 10.0
 
 ## True on the last _longest_stacked_run() if upper was ever resting on lower.
 var _was_ever_stacked: bool = false
@@ -72,6 +84,8 @@ func _initialize() -> void:
 	results.append(await _the_man_dropped_onto_a_walking_demon_comes_off_and_runs_and_jumps())
 	results.append(await _the_man_dropped_onto_a_pack_comes_off_it_and_runs_and_jumps())
 	results.append(await _with_the_bodies_overlapping_in_a_hole_no_hit_lands())
+	results.append(await _a_demon_on_the_man_s_head_as_he_is_taken_away_keeps_its_way_back())
+	results.append(await _a_demon_that_sees_less_than_its_height_comes_off_the_man_s_head())
 	finish(results)
 
 
@@ -322,6 +336,60 @@ func _with_the_bodies_overlapping_in_a_hole_no_hit_lands() -> bool:
 	return report(after_him and hits_while_overlapping[0] == 0,
 			"Hole one body wide, demon with a bite dropped onto the man: after him while overlapping %s, hits that landed then %d"
 			% [after_him, hits_while_overlapping[0]])
+
+
+## A demon dropped onto the man's head is on it when the man leaves its sight area on that very
+## frame, as a respawn or the gym's station keys take him away; here he is taken out of the scene, so
+## the demon cannot follow him back into it. It falls to the floor, and once put above a ledge, it
+## lands there and its way back gains that step: its shove off him ended as he left, so it stands on
+## its floors again (ADR 0049).
+func _a_demon_on_the_man_s_head_as_he_is_taken_away_keeps_its_way_back() -> bool:
+	var ledge_top: float = -LEDGE_HEIGHT_IN_BODIES * _body_height()
+	var ground: StaticBody2D = make_platform(FLOOR_LEFT, FLOOR_RIGHT)
+	var ledge: StaticBody2D = make_platform(LEDGE_LEFT, LEDGE_RIGHT, ledge_top)
+	var man: Player = await spawn_on_floor(Vector2(0.0, SPAWN_Y))
+	var height: float = body_size(man).y
+	var demon: Demon = _spawn_demon(Vector2(DROP_OFF_CENTRE, -height - DROP_HEIGHT), _make_stats())
+	var was_on_him: bool = false
+	for _frame: int in WATCH_FRAMES:
+		await physics_frame
+		if _is_stacked(demon, man):
+			was_on_him = true
+			man.queue_free()
+			break
+	await wait_frames(LAND_FRAMES)
+	var fell_to_the_floor: bool = demon.is_on_floor() and absf(demon.position.y) <= STACK_TOLERANCE
+	var steps_before: int = demon.get_way_back().size()
+	demon.position = Vector2((LEDGE_LEFT + LEDGE_RIGHT) / 2.0, ledge_top - DROP_HEIGHT)
+	await wait_frames(LAND_FRAMES)
+	var on_the_ledge: bool = demon.is_on_floor() \
+			and absf(demon.position.y - ledge_top) <= STACK_TOLERANCE
+	var steps: int = demon.get_way_back().size()
+	await _clear([ground, ledge, man, demon])
+	return report(was_on_him and fell_to_the_floor and on_the_ledge and steps == steps_before + 1,
+			("Demon on the man's head as he leaves: was on him %s, fell to the floor %s, landed on a "
+			+ "ledge %.0f px high %s, steps on its way back %d, then %d (one more)") % [was_on_him,
+			fell_to_the_floor, -ledge_top, on_the_ledge, steps_before, steps])
+
+
+## A demon whose Sight Distance is under its height, so its sight area never holds the man under its
+## feet, still comes off his head when dropped onto it: on it for MOST_FRAMES_STACKED at most, and
+## on the floor after (ADR 0049).
+func _a_demon_that_sees_less_than_its_height_comes_off_the_man_s_head() -> bool:
+	var ground: StaticBody2D = make_platform(FLOOR_LEFT, FLOOR_RIGHT)
+	var man: Player = await spawn_on_floor(Vector2(0.0, SPAWN_Y))
+	var height: float = body_size(man).y
+	var stats: DemonStats = _make_stats()
+	stats.sight_distance = SHORT_SIGHT
+	var demon: Demon = _spawn_demon(Vector2(DROP_OFF_CENTRE, -height - DROP_HEIGHT), stats)
+	var longest: int = await _longest_stacked_run(demon, man)
+	var ever_on_him: bool = _was_ever_stacked
+	var on_floor: bool = demon.is_on_floor() and absf(demon.position.y) <= STACK_TOLERANCE
+	await _clear([ground, man, demon])
+	return report(ever_on_him and longest <= MOST_FRAMES_STACKED and on_floor,
+			("Demon that sees %.0f px dropped onto the man's head: was on him %s, on it %d frames in "
+			+ "a row (at most %d), on the floor %s") % [SHORT_SIGHT, ever_on_him, longest,
+			MOST_FRAMES_STACKED, on_floor])
 
 
 ## Watches upper and lower for WATCH_FRAMES and hands back the longest run of frames upper rests on
