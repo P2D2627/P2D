@@ -1,7 +1,7 @@
 # Checks DemonTarget on its own, without a demon (ADR 0037): what it keeps as it takes the man, his
 # speed along the floor, the frames unseen and where he was last seen, that letting go of him keeps
 # where he was last seen, that taking him again starts over, and that a man freed while the demon is
-# after him counts as let go.
+# after him counts as let go, and that where he was last seen keeps the height of his feet.
 # Run from the repository root; the exit code is 0 on pass and 1 on fail:
 # godot --headless --fixed-fps 60 --path Projeto --script res://tests/test_demon_target.gd
 extends "res://tests/support/base_test.gd"
@@ -24,6 +24,7 @@ func _initialize() -> void:
 		_take_again_starts_over(),
 		_freed_man_is_let_go(),
 		_man_without_hurtbox_takes_hits(),
+		_last_seen_keeps_his_height(),
 	]
 	quit(0 if not results.has(false) else 1)
 
@@ -92,6 +93,22 @@ func _memory_counts_unseen_frames() -> bool:
 	man.free()
 	return _report(passed, "two misses count 2 unseen frames; seeing him starts over, moves the "
 			+ "last seen x, and counts as seeing him for %d frame after" % DemonTarget.SEEN_FRAMES)
+
+
+func _last_seen_keeps_his_height() -> bool:
+	var man: CharacterBody2D = _make_man()
+	var target: DemonTarget = DemonTarget.new()
+	target.take(man)
+	var on_take: float = target.get_last_seen_y()
+	man.position.y -= STEP
+	target.saw_him(SEEN_FRAME)
+	man.position.y -= STEP
+	target.missed_him()
+	target.forget()
+	var passed: bool = on_take == MAN_START.y and target.get_last_seen_y() == MAN_START.y - STEP
+	man.free()
+	return _report(passed, "where he was last seen keeps the height of his feet, from taking him "
+			+ "to letting go, for a search off the demon's floor")
 
 
 func _forget_keeps_the_last_seen_x() -> bool:

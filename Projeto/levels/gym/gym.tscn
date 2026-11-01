@@ -1,0 +1,97 @@
+[gd_scene format=3]
+
+[ext_resource type="Script" path="res://levels/level.gd" id="1_level"]
+[ext_resource type="PackedScene" path="res://levels/gym/stations/intro_station.tscn" id="2_intro"]
+[ext_resource type="Script" path="res://levels/gym/gym_stations.gd" id="3_gym_stations"]
+[ext_resource type="PackedScene" path="res://player/player.tscn" id="4_player"]
+[ext_resource type="PackedScene" path="res://debug/debug_overlay.tscn" id="5_debug_overlay"]
+[ext_resource type="Script" path="res://debug/demon_debug_view.gd" id="6_demon_debug_view"]
+[ext_resource type="PackedScene" path="res://camera/game_camera.tscn" id="7_game_camera"]
+[ext_resource type="PackedScene" path="res://levels/gym/stations/movement_station.tscn" id="8_movement"]
+[ext_resource type="PackedScene" path="res://levels/gym/stations/wall_station.tscn" id="9_wall"]
+[ext_resource type="PackedScene" path="res://levels/gym/stations/camera_station.tscn" id="10_camera"]
+[ext_resource type="PackedScene" path="res://levels/gym/stations/camera_zone_station.tscn" id="11_camera_zone"]
+[ext_resource type="PackedScene" path="res://levels/gym/stations/dogs_station.tscn" id="12_dogs"]
+[ext_resource type="PackedScene" path="res://levels/gym/stations/pack_station.tscn" id="13_pack"]
+[ext_resource type="PackedScene" path="res://levels/gym/stations/crucifix_station.tscn" id="14_crucifix"]
+[ext_resource type="PackedScene" path="res://levels/gym/stations/soul_points_station.tscn" id="15_soul_points"]
+[ext_resource type="PackedScene" path="res://levels/gym/stations/jumping_dogs_station.tscn" id="16_jumping_dogs"]
+
+[sub_resource type="RectangleShape2D" id="RectangleShape2D_wall"]
+size = Vector2(64, 1200)
+
+[node name="Gym" type="Node2D" node_paths=PackedStringArray("player")]
+script = ExtResource("1_level")
+player = NodePath("Player")
+
+[node name="WallLeft" type="StaticBody2D" parent="."]
+position = Vector2(-32, 600)
+collision_mask = 0
+
+[node name="CollisionShape2D" type="CollisionShape2D" parent="WallLeft"]
+shape = SubResource("RectangleShape2D_wall")
+
+[node name="WallRight" type="StaticBody2D" parent="."]
+position = Vector2(19232, 600)
+collision_mask = 0
+
+[node name="CollisionShape2D" type="CollisionShape2D" parent="WallRight"]
+shape = SubResource("RectangleShape2D_wall")
+
+[node name="Stations" type="Node2D" parent="."]
+
+[node name="IntroStation" parent="Stations" instance=ExtResource("2_intro")]
+
+[node name="MovementStation" parent="Stations" instance=ExtResource("8_movement")]
+position = Vector2(1920, 0)
+
+[node name="WallStation" parent="Stations" instance=ExtResource("9_wall")]
+position = Vector2(3840, 0)
+
+[node name="CameraStation" parent="Stations" instance=ExtResource("10_camera")]
+position = Vector2(5760, 0)
+
+[node name="CameraZoneStation" parent="Stations" instance=ExtResource("11_camera_zone")]
+position = Vector2(7680, 0)
+
+[node name="DogsStation" parent="Stations" instance=ExtResource("12_dogs")]
+position = Vector2(9600, 0)
+
+[node name="PackStation" parent="Stations" instance=ExtResource("13_pack")]
+position = Vector2(11520, 0)
+
+[node name="CrucifixStation" parent="Stations" instance=ExtResource("14_crucifix")]
+position = Vector2(13440, 0)
+
+[node name="SoulPointsStation" parent="Stations" instance=ExtResource("15_soul_points")]
+position = Vector2(15360, 0)
+
+[node name="JumpingDogsStation" parent="Stations" instance=ExtResource("16_jumping_dogs")]
+position = Vector2(17280, 0)
+
+[node name="GymStations" type="Node" parent="." node_paths=PackedStringArray("player", "level", "grab_escape", "starts")]
+script = ExtResource("3_gym_stations")
+player = NodePath("../Player")
+level = NodePath("..")
+grab_escape = NodePath("../Player/GrabEscape")
+starts = [NodePath("../Stations/IntroStation/Start"), NodePath("../Stations/MovementStation/Start"), NodePath("../Stations/WallStation/Start"), NodePath("../Stations/CameraStation/Start"), NodePath("../Stations/CameraZoneStation/Start"), NodePath("../Stations/DogsStation/Start"), NodePath("../Stations/PackStation/Start"), NodePath("../Stations/CrucifixStation/Start"), NodePath("../Stations/SoulPointsStation/Start"), NodePath("../Stations/JumpingDogsStation/Start")]
+
+[node name="Player" parent="." instance=ExtResource("4_player")]
+
+[node name="DebugOverlay" parent="." node_paths=PackedStringArray("player", "camera") instance=ExtResource("5_debug_overlay")]
+player = NodePath("../Player")
+camera = NodePath("../GameCamera")
+
+[node name="DemonDebugView" type="Node2D" parent="." node_paths=PackedStringArray("overlay", "demons", "player")]
+process_mode = 3
+script = ExtResource("6_demon_debug_view")
+overlay = NodePath("../DebugOverlay")
+demons = [NodePath("../Stations/DogsStation/Dog"), NodePath("../Stations/PackStation/NearDog"), NodePath("../Stations/PackStation/FarDog"), NodePath("../Stations/CrucifixStation/Dog"), NodePath("../Stations/SoulPointsStation/Dog"), NodePath("../Stations/JumpingDogsStation/Dog")]
+player = NodePath("../Player")
+
+[node name="GameCamera" parent="." node_paths=PackedStringArray("player") instance=ExtResource("7_game_camera")]
+limit_left = 0
+limit_top = -800
+limit_right = 19200
+limit_bottom = 1200
+player = NodePath("../Player")

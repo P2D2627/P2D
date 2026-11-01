@@ -6,7 +6,8 @@
 # screen, which with no camera is all of the world, and then spread along ten screens with a camera,
 # as in a level, where those off its screen stand. Between the two, 50 below the man on a shelf out
 # of their reach, first standing, with no Out Of Reach Pace Width, and then pacing with that of
-# lust_demon_stats.tres (ADR 0039). Each part starts with a new
+# lust_demon_stats.tres (ADR 0039); and 50 that jump (ADR 0042) below the man on a block, one they
+# climb and one too high for them. Each part starts with a new
 # man, with full SP: the demons drain it, and a grab that killed him would hold him for good, since
 # only a Level starts the room over. Each cost is what the demons add to the same room with no
 # demons, on average and on the worst frame. The whole frame: the time from one physics frame to the
@@ -105,9 +106,27 @@ const OUT_OF_REACH_NEAREST: float = 320.0
 const OUT_OF_REACH_FARTHEST: float = 950.0
 const OUT_OF_REACH_HELD: float = 10.0
 const LUST_DEMON_STATS: String = "res://demon/lust_demon_stats.tres"
+## How many demons stand out of reach below the shelf in a measure with room for all of them to
+## keep Pack Spacing (ADR 0046): they settle and stop, where BUDGET_DEMONS keep pushing each other
+## (ADR 0048).
+const ROOMY_DEMONS: int = 10
+## The measures of jumping demons (ADR 0042), with the Jump Height of 96 px and Max Drop of 240 px
+## of the test room's demons: the man in the middle of a block where the shelf was, as far in from
+## each end as he was on the shelf, so the demons see him over its corners, and the demons as far
+## out as they were below the shelf, every other one on each side; all on one side would queue
+## over 1200 px at its foot, and the last would lose him past Lose Distance and go home. On a block
+## of STEP_HEIGHT they climb to him, attack him, and drop after him when he is thrown off; one of
+## PILLAR_HEIGHT is over their Jump Height, so they chase him to its foot and stay out of his reach
+## for as long as they see him (ADR 0044). The measure starts as they see him, so it takes in their
+## walk there and their take-offs.
+const JUMPING_DEMON_STATS: String = "res://levels/jumping_demon_stats.tres"
+const STEP_HEIGHT: float = 96.0
+const PILLAR_HEIGHT: float = 144.0
 
 ## Demons that started their warning since the last physics frame was read.
 var _warnings: int = 0
+## Demons that left their floor in JUMP or DROP since the measure of jumping demons started.
+var _take_offs: int = 0
 
 
 func _initialize() -> void:
@@ -182,11 +201,21 @@ func _initialize() -> void:
 	await wait_until_on_floor(player)
 	for width: float in [0.0, pace_width]:
 		stats.out_of_reach_pace_width = width
-		if not await _measure_out_of_reach(first, last, empty, width):
+		if not await _measure_out_of_reach(first, last, empty, width, BUDGET_DEMONS):
 			return
+	stats.out_of_reach_pace_width = 0.0
+	if not await _measure_out_of_reach(first, last, empty, 0.0, ROOMY_DEMONS):
+		return
 	stats.out_of_reach_pace_width = pace_width
 	stats.out_of_reach_wait = wait
 	shelf.queue_free()
+	var jumping: DemonStats = load(JUMPING_DEMON_STATS) as DemonStats
+	for height: float in [STEP_HEIGHT, PILLAR_HEIGHT]:
+		player = await _fresh_player(player)
+		if player == null:
+			return
+		if not await _measure_jumping(first, last, empty, jumping, height, player):
+			return
 	make_platform(-LEVEL_HALF_WIDTH, LEVEL_HALF_WIDTH)
 	make_platform(-FLOOR_HALF_WIDTH, FLOOR_HALF_WIDTH, MAN_BELOW)
 	player.position = Vector2(0.0, MAN_BELOW + FLOOR_START.y)
@@ -237,15 +266,16 @@ func _spawn_demons_across(count: int) -> Array[Demon]:
 	return demons
 
 
-## Measures and prints BUDGET_DEMONS demons below the man on the shelf, with Out Of Reach Pace Width
-## width already set; false if one is not out of his reach when the measure starts, after saying so
-## and quitting with 1.
-func _measure_out_of_reach(first: Stamp, last: Stamp, empty: Cost, width: float) -> bool:
+## Measures and prints count demons below the man on the shelf, with Out Of Reach Pace Width width
+## already set; false if one is not out of his reach when the measure starts, after saying so and
+## quitting with 1.
+func _measure_out_of_reach(first: Stamp, last: Stamp, empty: Cost, width: float,
+		count: int) -> bool:
 	var demons: Array[Demon] = []
-	for index: int in BUDGET_DEMONS:
+	for index: int in count:
 		var demon: Demon = DEMON_SCENE.instantiate() as Demon
 		demon.position = FLOOR_START + Vector2(SHELF_LEFT - lerpf(OUT_OF_REACH_FARTHEST,
-				OUT_OF_REACH_NEAREST, float(index) / BUDGET_DEMONS), 0.0)
+				OUT_OF_REACH_NEAREST, float(index) / count), 0.0)
 		root.add_child(demon)
 		demons.append(demon)
 	await wait_frames(SETTLE_FRAMES)
@@ -258,11 +288,57 @@ func _measure_out_of_reach(first: Stamp, last: Stamp, empty: Cost, width: float)
 	var walking: int = demons.filter(
 			func(demon: Demon) -> bool: return demon.velocity.x != 0.0).size()
 	print("%d demons out of reach, pacing %.0f px, %d walking at the end: whole frame %.0f us on average, %.0f us on the worst; scripts %.0f and %.0f us"
-			% [BUDGET_DEMONS, width, walking, cost.frame - empty.frame,
+			% [count, width, walking, cost.frame - empty.frame,
 					cost.worst_frame - empty.frame, cost.scripts - empty.scripts,
 					cost.worst_scripts - empty.scripts])
 	for demon: Demon in demons:
 		demon.queue_free()
+	await wait_frames(SETTLE_FRAMES)
+	return true
+
+
+## Measures and prints BUDGET_DEMONS demons with stats below the man on a block height px high, put
+## where the shelf was, and how many took off, stood out of his reach or on the block at the end;
+## false if one never saw him, after saying so and quitting with 1.
+func _measure_jumping(first: Stamp, last: Stamp, empty: Cost, stats: DemonStats, height: float,
+		player: Player) -> bool:
+	var block: StaticBody2D = make_wall(SHELF_LEFT, SHELF_LEFT + 2.0 * SHELF_INSET, -height)
+	var middle: float = SHELF_LEFT + SHELF_INSET
+	player.position = Vector2(middle, -height + FLOOR_START.y)
+	await wait_until_on_floor(player)
+	var demons: Array[Demon] = []
+	for index: int in BUDGET_DEMONS:
+		var side: float = 1.0 if index % 2 == 0 else -1.0
+		var demon: Demon = DEMON_SCENE.instantiate() as Demon
+		demon.stats = stats
+		demon.faces_left = side > 0.0
+		demon.position = FLOOR_START + Vector2(middle + side * (SHELF_INSET
+				+ lerpf(OUT_OF_REACH_NEAREST, OUT_OF_REACH_FARTHEST, float(index) / BUDGET_DEMONS)),
+				0.0)
+		demon.took_off.connect(_on_demon_took_off)
+		root.add_child(demon)
+		demons.append(demon)
+	await wait_frames(SETTLE_FRAMES)
+	if demons.any(func(demon: Demon) -> bool: return demon.get_state() == Demon.State.IDLE):
+		printerr("Jumping demons below a block of %.0f px: one never saw the man." % height)
+		quit(1)
+		return false
+	_take_offs = 0
+	var cost: Cost = await _measure(first, last)
+	var on_block: int = demons.filter(func(demon: Demon) -> bool:
+			return demon.is_on_floor() and demon.global_position.y < -height / 2.0).size()
+	var states: Dictionary[String, int] = {}
+	for demon: Demon in demons:
+		var state: String = Demon.State.keys()[demon.get_state()]
+		states[state] = states.get(state, 0) + 1
+	print("%d jumping demons below the man on a block of %.0f px, %d take-offs in %.0f s, at the end %d on the block, %s: whole frame %.0f us on average, %.0f us on the worst; scripts %.0f and %.0f us"
+			% [BUDGET_DEMONS, height, _take_offs,
+					float(MEASURED_FRAMES) / Engine.physics_ticks_per_second, on_block, states,
+					cost.frame - empty.frame, cost.worst_frame - empty.frame,
+					cost.scripts - empty.scripts, cost.worst_scripts - empty.scripts])
+	for demon: Demon in demons:
+		demon.queue_free()
+	block.queue_free()
 	await wait_frames(SETTLE_FRAMES)
 	return true
 
@@ -382,3 +458,7 @@ func _print_attacks() -> void:
 func _on_demon_state_changed(_previous: Demon.State, current: Demon.State) -> void:
 	if current == Demon.State.WARNING:
 		_warnings += 1
+
+
+func _on_demon_took_off() -> void:
+	_take_offs += 1

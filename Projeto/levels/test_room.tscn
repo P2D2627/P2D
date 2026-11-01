@@ -8,6 +8,7 @@
 [ext_resource type="PackedScene" path="res://demon/demon.tscn" id="5_demon"]
 [ext_resource type="Script" path="res://levels/level.gd" id="6_level"]
 [ext_resource type="Script" path="res://debug/demon_debug_view.gd" id="7_demon_debug_view"]
+[ext_resource type="Resource" path="res://levels/jumping_demon_stats.tres" id="8_demon_stats"]
 
 [sub_resource type="RectangleShape2D" id="RectangleShape2D_floor"]
 size = Vector2(5824, 80)
@@ -202,15 +203,19 @@ shape = SubResource("RectangleShape2D_open_zone")
 
 [node name="FloorDemon" parent="." instance=ExtResource("5_demon")]
 position = Vector2(2400, 1000)
+stats = ExtResource("8_demon_stats")
 
 [node name="WalkwayDemon" parent="." instance=ExtResource("5_demon")]
 position = Vector2(3600, -500)
+stats = ExtResource("8_demon_stats")
 
 [node name="FloorDemon2" parent="." instance=ExtResource("5_demon")]
 position = Vector2(2800, 1000)
+stats = ExtResource("8_demon_stats")
 
 [node name="LeftFloorDemon" parent="." instance=ExtResource("5_demon")]
 position = Vector2(480, 1000)
+stats = ExtResource("8_demon_stats")
 
 [node name="OneWayPlatform" type="StaticBody2D" parent="." unique_id=325517482]
 position = Vector2(2400, 832)

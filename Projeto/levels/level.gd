@@ -7,8 +7,11 @@ extends Node2D
 ## on restart_requested; run on its own, with F6, it is the current scene and reloads itself. The
 ## wait pauses with the level. The man keeps the crucifix only while GameState says he holds it, and
 ## GameState hears when he loses it, since the level starts over without what it knew.
+## on restart_requested; run on its own, with F6, it is the current scene and reloads itself, after
+## saying so with the same signal. The wait pauses with the level.
 
-## A new copy of this level should take its place. Main listens.
+## A new copy of this level should take its place. Main listens, and so does what must outlive the
+## copy, as the gym's station. Not said when the level is left before the wait is over.
 signal restart_requested
 
 @export var player: Player
@@ -47,7 +50,6 @@ func _on_player_died() -> void:
 
 
 func _restart() -> void:
+	restart_requested.emit()
 	if get_tree().current_scene == self:
 		get_tree().reload_current_scene()
-	else:
-		restart_requested.emit()

@@ -3,8 +3,10 @@ extends CharacterBody2D
 
 ## A demon that chases the man: the one scene of every level's demons (ADR 0019). What kind of
 ## demon it is comes from Stats, such as lust_demon_stats.tres, and where it lives is where the
-## level puts it. It never jumps up nor climbs: it chases along its own floor, stops at an edge, and
-## a step stops it, so the level's own shape keeps it in its place. Its Senses (ADR 0032) see the man
+## level puts it. It chases along its own floor, stops at an edge, and a step stops it, so the
+## level's own shape keeps it in its place; after a man out of its reach, with Jump Height it jumps
+## up a step no higher than that, and with Max Drop it walks off the end of its floor onto one no
+## deeper than that (ADR 0042). Its Senses (ADR 0032) see the man
 ## inside Sight Distance with no wall between its eyes and his middle or his head; it notices him,
 ## and starts the chase, only if he is ahead of it or no further behind than Sight Behind Share of
 ## that, and with Chases Only On Screen only while it is on the screen. It keeps on chasing him past
@@ -28,8 +30,11 @@ extends CharacterBody2D
 ## warning, and through a lunge from take-off until it lands, never once thrown off; on, it carries
 ## the attack's damage and knockback to the man's Hurtbox. When the hit holds him instead, it holds
 ## on until he breaks free and throws it off, away from him (ADR 0028). Its body and the man's stop
-## each other, so it never gets on his spot (ADR 0022). It only tells what it does, by
-## state_changed, warning_started, attack_landed and barked: the art and the sounds listen, and it
+## each other, so it never gets on his spot (ADR 0022), and it never stands on him: on his head it
+## is shoved off sideways at Knock Off Speed, whatever its state, unless it holds him (ADR 0047), and
+## his head is never a floor on its way. It only tells what it does, by
+## state_changed, warning_started, attack_landed, barked, took_off and landed: the art and the
+## sounds listen, and it
 ## never touches them.
 
 ## The demon changed from previous to current this physics frame.
@@ -43,27 +48,61 @@ signal attack_landed(attack: DemonAttack)
 ## The demon barked this physics frame at a man out of its reach (ADR 0039), hopping at a wall or
 ## the end of its floor that stops it on his side if hops, so the art and the sounds can show it.
 signal barked(hops: bool)
+## The demon left its floor this physics frame, jumping up a step or leaping down off its end (ADR
+## 0042), right after state_changed to JUMP or DROP, so the art and the sounds can show it.
+signal took_off
+## The demon landed this physics frame from a jump up a step or a leap down off the end of its
+## floor (ADR 0042), right after state_changed to what it does next, so the art and the sounds can
+## show it. Never without took_off first, nor after the crucifix threw it off in the air.
+signal landed
 
 ## What the demon is doing, as the art, the sounds and the tests read it. Each has its own
 ## DemonState in states/, whose doc says when it starts and how long it lasts.
 enum State {
 	IDLE, CHASE, WARNING, LUNGE, REPELLED, RETREAT, GRAB, THROWN, STUNNED, RETURN, OUT_OF_REACH,
-	PATROL, ALERT, SEARCH,
+	PATROL, ALERT, SEARCH, JUMP, DROP,
 }
 
 ## How far apart, in px, the floor is looked for along a lunge: half a tile, so no hole is missed.
 const FLOOR_CHECK_STEP: float = 24.0
 ## How near its post, in px, a demon walking back has to be to be there.
 const POST_REACH: float = 1.0
+## How far above or below its post, in px, a demon there may stand and still be on its post's floor:
+## its feet rest a fraction of a px over the floor.
+const POST_HEIGHT_TOLERANCE: float = 1.0
 ## How much higher than its reach, in px, the man has to stand to be out of it: two bodies on one
 ## floor can stand a fraction of a px apart, which with no attacks, a reach of 0, would put him out
 ## of it.
 const REACH_TOLERANCE: float = 1.0
+## How far into each other, in px, the demon's body and the man's may be and still only touch: past
+## it, they pass through each other (ADR 0047).
+const OVERLAP_TOLERANCE: float = 1.0
+## How far into a step, in px past the demon's front, StepCheck looks down for its top: a sixth of a
+## tile, so the corner's rounding never hides it.
+const STEP_CHECK_INSET: float = 8.0
+## How much higher than a step's top, in px, the demon's jump peaks, so its feet clear the corner.
+const JUMP_CLEARANCE: float = 12.0
+## How far past Pack Spacing, in px, another demon still counts as in this one's way, and how far
+## short of it as too near: a demon right at it neither stops for it nor steps away, so the two never
+## take turns at it.
+const PACK_TOLERANCE: float = 1.0
+## The states in which the demon's own move carries it, a lunge, a throw or a leap, so it never steps
+## aside from another demon in them (ADR 0046).
+const STATES_THAT_CARRY_IT: Array[State] = [State.LUNGE, State.THROWN, State.JUMP, State.DROP]
+## How high over a step's top, in px, the demon's feet are as its front gets to the corner: half
+## Jump Clearance, which takes up the frame's run by which it may take off nearer the step.
+const CORNER_CLEARANCE: float = JUMP_CLEARANCE / 2.0
+## How far under its floor's top, in px, StepCheck looks back along it for where it ends: past the
+## fraction of a px the demon's feet rest over it.
+const FLOOR_SIDE_DEPTH: float = 2.0
 
 @export var stats: DemonStats
 ## Which way the demon faces at its post: where the level puts it looking, and where it looks again
 ## once it is back.
 @export var faces_left: bool = false
+## Bodies on these physics layers can't be stood on: standing on one shoves the demon off it
+## sideways, at Knock Off Speed in Stats. The scene puts the man's layer here (ADR 0047).
+@export_flags_2d_physics var knock_off_layers: int = 0
 
 var _state: State = State.IDLE
 ## One DemonState of each State, at its State's index (ADR 0034), made in _ready, and the one the
@@ -96,12 +135,30 @@ var _retreat_distance_draw: float = 0.0
 ## Physics frames the demon still waits, able to attack, before it may (Max Hesitation); -1 while it
 ## can't attack, so it draws a new wait as soon as it can.
 var _hesitation_frames_left: int = -1
-## Where along the floor the demon walks back to once it gives up: where the level put it, or where
-## its floor or a wall last stopped it on the way back.
-var _post_x: float = 0.0
-## True once it gave up on a man out of its reach, until it notices him back within its reach: up
-## there, it leaves him alone, instead of starting the chase again on the next frame.
-var _gave_up_out_of_reach: bool = false
+## The demon's post, its home, which never changes (ADR 0043): where the level put it, with the y of
+## the floor it first stands on there, below where it was put; thrown before it lands, it takes that
+## y once it first stands there.
+var _post: Vector2 = Vector2.ZERO
+## True once the demon has stood on the floor at its post, and so has the y of its post.
+var _post_on_floor: bool = false
+## Where along its floor the demon stands and patrols around for now: its post's x, or, where its
+## floor or a wall stopped it on the way back, there, until it next gives up and tries for home
+## again.
+var _stand_x: float = 0.0
+## The way the demon came from its post's floor to the one it stands on, which its way back undoes.
+var _way: DemonPath = DemonPath.new()
+## True from the frame the demon takes off up a step or down off the end of its floor until it
+## changes state, as when it lands, so it tells landed only after took_off. Set after the change to
+## JUMP or DROP, which clears it like any other.
+var _off_its_floor: bool = false
+## Where test_move finds the wall in the demon's way to a man above it, kept so the chase allocates
+## nothing per frame.
+var _wall_ahead: KinematicCollision2D = KinematicCollision2D.new()
+## Says which way to shove the demon off a body on Knock Off Layers.
+var _knock_off: KnockOff = KnockOff.new(self)
+## True if the demon was shoved off the man on the last physics frame, so the shove is checked once
+## more after he leaves its sight area, and ends.
+var _was_shoving: bool = false
 
 @onready var _senses: DemonSenses = %Senses
 ## Finds the other demons within Pack Spacing of this one's body, to either side.
@@ -112,6 +169,9 @@ var _gave_up_out_of_reach: bool = false
 @onready var _ledge_check: RayCast2D = %LedgeCheck
 ## How far ahead of the demon's middle LedgeCheck looks, in px, set in the scene.
 @onready var _ledge_reach: float = absf(_ledge_check.position.x)
+## Looks down onto the top of a step just past the demon's front, from Jump Height above its floor,
+## or back along its floor for where it ends.
+@onready var _step_check: RayCast2D = %StepCheck
 @onready var _repellable: Repellable = %Repellable
 @onready var _hitbox: Hitbox = %Hitbox
 @onready var _box: CollisionShape2D = $CollisionShape2D
@@ -131,7 +191,8 @@ func _ready() -> void:
 	_chase_speed_draw = _rng.randf_range(-1.0, 1.0)
 	_retreat_speed_draw = _rng.randf_range(-1.0, 1.0)
 	_retreat_distance_draw = _rng.randf_range(-1.0, 1.0)
-	_post_x = global_position.x
+	_post = global_position
+	_stand_x = _post.x
 	_facing = post_facing()
 	_make_states()
 	_pack_area.body_entered.connect(_on_pack_area_body_entered)
@@ -144,14 +205,36 @@ func _ready() -> void:
 	_apply_stats()
 
 
+## Its state moves it, then it keeps apart from the pack and from the man's side; standing on a body
+## on Knock Off Layers, the shove off it takes over the move. The man's head is never a floor on its
+## way back nor where its post's floor is found.
 func _physics_process(delta: float) -> void:
 	_bite_frames_left = maxi(_bite_frames_left - 1, 0)
 	_target.track(delta)
+	# The man is the only body on Knock Off Layers it collides with. On him, or passing through him,
+	# he is inside its sight area, which reaches past its feet unless the Sight Distance is under its
+	# height; elsewhere the shove is not checked, which cost about a microsecond per demon on every
+	# frame. A shove he leaves the area in the middle of, as when he is taken away, is checked once
+	# more, and ends; a pass ends as he comes back into it (ADR 0049).
+	var shove: float = 0.0
+	if _was_shoving or _senses.get_man_in_sight_area() != null \
+			or stats.sight_distance <= 2.0 * _half_size.y:
+		shove = _knock_off.update(knock_off_layers, _state == State.GRAB)
+	_was_shoving = shove != 0.0
 	if not is_on_floor():
 		velocity += _current.get_gravity() * delta
 	_current.physics_update(delta)
+	if not _packmates.is_empty():
+		_keep_apart_from_packmates()
 	_stop_at_the_man(delta)
+	if shove != 0.0:
+		velocity = Vector2(shove * stats.knock_off_speed, 0.0)
 	move_and_slide()
+	var on_its_floor: bool = is_on_floor() and not _knock_off.is_shoving()
+	_way.update(global_position, on_its_floor)
+	if not _post_on_floor and on_its_floor and absf(global_position.x - _post.x) <= POST_REACH:
+		_post_on_floor = true
+		_post.y = global_position.y
 	_update_hitbox()
 
 
@@ -175,6 +258,8 @@ func _make_states() -> void:
 	_states[State.PATROL] = DemonPatrolState.new(self)
 	_states[State.ALERT] = DemonAlertState.new(self)
 	_states[State.SEARCH] = DemonSearchState.new(self)
+	_states[State.JUMP] = DemonJumpState.new(self)
+	_states[State.DROP] = DemonDropState.new(self)
 	assert(not _states.has(null), "Demon: every State needs its object in _make_states.")
 	_current = _states[_state]
 
@@ -192,14 +277,31 @@ func sees_target() -> bool:
 	return _target.sees_him_on(Engine.get_physics_frames())
 
 
-## For its states: where along the floor the demon walks back to once it gives up.
-func get_post_x() -> float:
-	return _post_x
+## For its states: the demon's post, where it walks back to once it gives up (ADR 0043).
+func get_post() -> Vector2:
+	return _post
 
 
-## For its states: makes where the demon stands its post from now on.
-func make_post_here() -> void:
-	_post_x = global_position.x
+## For its states: true when the demon stands at its post, on its post's floor.
+func is_at_post() -> bool:
+	return absf(_post.x - global_position.x) <= POST_REACH \
+			and absf(_post.y - global_position.y) <= POST_HEIGHT_TOLERANCE
+
+
+## For its states and the debug view: the way the demon came from its post's floor to the one it
+## stands on (ADR 0042).
+func get_way_back() -> DemonPath:
+	return _way
+
+
+## For its states: where along its floor the demon stands and patrols around for now.
+func get_stand_x() -> float:
+	return _stand_x
+
+
+## For its states: makes where the demon stands the middle of its patrol until it next gives up.
+func stand_here() -> void:
+	_stand_x = global_position.x
 
 
 ## For its states: true while the demon is on the screen.
@@ -221,10 +323,6 @@ func chase_if_it_notices_the_man() -> bool:
 	if man == null or not may_chase_from_here() or not _senses.can_notice(
 			man, _facing, stats.sight_distance * stats.sight_behind_share):
 		return false
-	if _gave_up_out_of_reach:
-		if _height_of(man) > stats.get_reach_height():
-			return false
-		_gave_up_out_of_reach = false
 	_target.take(man)
 	change_state(State.ALERT if stats.alert_time > 0.0 else State.CHASE)
 	return true
@@ -308,13 +406,6 @@ func end_bite() -> void:
 	_retreat_after_bite = false
 
 
-## For its states: gives up on a man out of its reach (ADR 0033), and leaves him alone up there
-## until it notices him back within its reach.
-func give_up_out_of_reach() -> void:
-	_gave_up_out_of_reach = true
-	_stop_chasing()
-
-
 ## For its states: changes to new_state, and lets it act on this same physics frame of delta
 ## seconds, as when a warning ends and the chase goes on at once.
 func change_state_and_act(new_state: State, delta: float) -> void:
@@ -344,6 +435,238 @@ func _height_of(man: Node2D) -> float:
 	return absf(global_position.y - man.global_position.y)
 
 
+## For its states, with the man out of its reach, gap px away along the floor: goes after him off
+## its floor on this physics frame of delta seconds, if it can (ADR 0042), up a step with Jump
+## Height, down off the end of its floor with Max Drop. False, with nothing done, where nothing more
+## takes it nearer him.
+func follows_off_its_floor(gap: float, delta: float) -> bool:
+	var feet: float = global_position.y
+	if _target.get_man().global_position.y < feet:
+		return goes_off_its_floor(gap, feet - stats.jump_height - REACH_TOLERANCE,
+				feet - DemonJumpState.LANDED_HIGHER, State.CHASE, delta)
+	return goes_off_its_floor(gap, feet + DemonDropState.LANDED_LOWER,
+			feet + stats.max_drop + REACH_TOLERANCE, State.CHASE, delta)
+
+
+## For its states: goes off its floor toward a spot gap px away along it, onto a floor whose top is
+## between the heights highest and lowest, in px down, on this physics frame of delta seconds (ADR
+## 0042): above it, up a step with Jump Height; below it, down off the end of its floor with Max
+## Drop; in for_state, which it goes back to once it lands there. False, with nothing done, where
+## nothing takes it there.
+func goes_off_its_floor(gap: float, highest: float, lowest: float, for_state: State,
+		delta: float) -> bool:
+	if lowest < global_position.y:
+		return _climbs_toward(gap, highest, lowest, for_state, delta)
+	return _drops_toward(gap, highest, lowest, for_state, delta)
+
+
+## For JUMP and DROP: the demon landed after going off its floor in for_state, on the floor it went
+## for if got_there; otherwise it got nowhere, as when something in the way stopped it, and stands
+## out of the man's reach, so it never hops at the same step or end of its floor over and over.
+## On its way back, it stops there, as at any other step it cannot get past (ADR 0043); in its
+## search, it sniffs there.
+func land_off_its_floor(for_state: State, got_there: bool) -> void:
+	var was_off_its_floor: bool = _off_its_floor
+	velocity.x = 0.0
+	if got_there:
+		change_state(for_state)
+	elif for_state == State.RETURN:
+		stop_returning_here()
+	elif for_state == State.SEARCH:
+		change_state(State.SEARCH)
+		(_states[State.SEARCH] as DemonSearchState).sniff_here()
+	else:
+		change_state(State.OUT_OF_REACH)
+	if was_off_its_floor:
+		landed.emit()
+
+
+## For its states and itself: the demon leaves its floor on this physics frame, in JUMP or DROP,
+## with the velocity it takes off at already set.
+func take_off() -> void:
+	_off_its_floor = true
+	took_off.emit()
+
+
+## For its states, on its way back with steps left on its way (ADR 0042): goes toward where it left
+## the floor it came from onto this one, up or down onto that floor and no other, on this physics
+## frame of delta seconds, in RETURN. False, with nothing done, where it cannot, as down a drop
+## deeper than Max Drop or up a step higher than Jump Height.
+func goes_back_a_step(delta: float) -> bool:
+	var from: Vector2 = _way.get_last_from()
+	var gap: float = from.x - global_position.x
+	turn_to(gap)
+	return goes_off_its_floor(gap, from.y - DemonPath.SAME_FLOOR_TOLERANCE,
+			from.y + DemonPath.SAME_FLOOR_TOLERANCE, State.RETURN, delta)
+
+
+## For its states: stops on its way back where it is, which it stands and patrols around for now,
+## facing the way it was put, until it next gives up and tries for home again (ADR 0043).
+func stop_returning_here() -> void:
+	stand_here()
+	velocity.x = 0.0
+	turn_to(post_facing())
+	change_state(State.IDLE)
+
+
+## With Jump Height, goes toward the spot above it, and jumps up the step in its way as it lunges,
+## on the run (ADR 0042): it takes off where its arc, at its Chase Speed, gets its feet over the
+## step's corner as its front gets there, peaks Jump Clearance over the top, and lands on the step.
+## Against the step, it takes off from there, and slides up it. False at the end of its floor, at a
+## wall it cannot jump up onto, or whose top is not between highest and lowest, or with nothing in
+## its way along its floor to below the spot, as under a platform, so no step to jump up.
+func _climbs_toward(gap: float, highest: float, lowest: float, for_state: State,
+		delta: float) -> bool:
+	if stats.jump_height <= 0.0 or stats.get_jump_gravity() <= 0.0:
+		return false
+	var direction: float = signf(gap)
+	if is_edge_ahead(direction) \
+			or not test_move(global_transform, Vector2(gap, 0.0), _wall_ahead):
+		return false
+	var to_wall: float = absf(_wall_ahead.get_travel().x)
+	if to_wall <= _take_off_distance(stats.jump_height):
+		var step: float = get_step_height(direction, to_wall)
+		var top: float = global_position.y - step
+		var fits: bool = step > 0.0 and top >= highest and top <= lowest
+		if fits and to_wall <= _take_off_distance(step):
+			_jump_up(direction, step, for_state, delta)
+			return true
+		if not fits and is_against_a_wall(direction):
+			return false
+	_walk_toward(gap, for_state, delta)
+	return true
+
+
+## Walks toward the spot gap px away along its floor, in for_state, on this physics frame of delta
+## seconds: after the man as it chases him; at Search Speed in its search; at Return Speed on its
+## way back.
+func _walk_toward(gap: float, for_state: State, delta: float) -> void:
+	if for_state == State.CHASE:
+		go_after(gap, delta)
+		return
+	var speed: float = stats.search_speed if for_state == State.SEARCH else stats.return_speed
+	velocity.x = signf(gap) * minf(speed, absf(gap) / delta)
+
+
+## How far from a step height px high, in px from its front, the demon takes off to get its feet
+## Corner Clearance over the corner as its front gets there: the way it goes at its Chase Speed
+## while its jump rises that high, short of the peak by the time it takes to fall the rest of Jump
+## Clearance.
+func _take_off_distance(height: float) -> float:
+	var gravity: float = stats.get_jump_gravity()
+	var to_peak: float = sqrt(2.0 * (height + JUMP_CLEARANCE) / gravity)
+	var over_the_corner: float = sqrt(2.0 * (JUMP_CLEARANCE - CORNER_CLEARANCE) / gravity)
+	return _chase_speed() * (to_peak - over_the_corner)
+
+
+## With Max Drop, goes toward the spot below it, and leaps down off the end of its floor that stops
+## it as it lunges, on the run (ADR 0042): it peaks Jump Clearance over its floor and takes off where
+## its arc, at its Chase Speed, gets its back past the corner with its feet Corner Clearance over
+## it, walking on to there first if it is short of it. It leaps only if the arc lands it on floor
+## whose top is between highest and lowest, and no deeper than Max Drop. False where it does not, or
+## with the spot right under it, less than a body width away, with no end of its floor in between.
+func _drops_toward(gap: float, highest: float, lowest: float, for_state: State,
+		delta: float) -> bool:
+	if stats.max_drop <= 0.0 or stats.get_jump_gravity() <= 0.0:
+		return false
+	var direction: float = signf(gap)
+	if is_edge_ahead(direction):
+		var walk: float = maxf(_to_end_of_floor(direction) + _half_size.x - _leap_distance(), 0.0)
+		var leap: Vector2 = Vector2(direction * _chase_speed(),
+				-stats.get_jump_velocity(JUMP_CLEARANCE) + stats.get_jump_gravity() * delta / 2.0)
+		var deepest: float = minf(lowest, global_position.y + stats.max_drop + REACH_TOLERANCE)
+		if not _leap_lands(direction * walk, leap, highest, deepest, delta):
+			return false
+		(_states[State.DROP] as DemonDropState).aim(leap, walk, global_position, for_state)
+		if walk > 0.0:
+			velocity.x = direction * minf(_chase_speed(), walk / delta)
+		else:
+			velocity = leap
+		change_state(State.DROP)
+		if walk <= 0.0:
+			take_off()
+		return true
+	if absf(gap) < 2.0 * _half_size.x:
+		return false
+	_walk_toward(gap, for_state, delta)
+	return true
+
+
+## How far ahead of the demon's middle, in px going in direction, its floor ends: where StepCheck,
+## run back from LedgeCheck's reach just under the floor's top, meets the floor's side. Meeting none,
+## as off a floor it cannot see the side of, its back, so it takes off at once.
+func _to_end_of_floor(direction: float) -> float:
+	_step_check.position = Vector2(direction * _ledge_reach, FLOOR_SIDE_DEPTH)
+	_step_check.target_position = Vector2(-direction * (_ledge_reach + _half_size.x), 0.0)
+	_step_check.force_raycast_update()
+	if not _step_check.is_colliding():
+		return -_half_size.x
+	return (_step_check.get_collision_point().x - global_position.x) * direction
+
+
+## How far, in px, the demon goes at its Chase Speed in a leap down off a ledge, from take-off until
+## its feet come back down to Corner Clearance over its floor, past its peak Jump Clearance over it.
+func _leap_distance() -> float:
+	var gravity: float = stats.get_jump_gravity()
+	var to_peak: float = sqrt(2.0 * JUMP_CLEARANCE / gravity)
+	var down_to_the_corner: float = sqrt(2.0 * (JUMP_CLEARANCE - CORNER_CLEARANCE) / gravity)
+	return _chase_speed() * (to_peak + down_to_the_corner)
+
+
+## True when the demon, walking walk px along its floor, + to the right, then leaping with take-off
+## velocity leap, lands on floor whose top is between the heights highest and lowest, in px down.
+## The leap is played out against the level with test_move, frame by frame of delta seconds, as the
+## physics frames will move it: with no gravity yet on the take-off frame, which starts on its floor.
+## Anything else in the way, a wall or a ceiling, and it does not leap.
+func _leap_lands(walk: float, leap: Vector2, highest: float, lowest: float, delta: float) -> bool:
+	if test_move(global_transform, Vector2(walk, 0.0)):
+		return false
+	var at: Transform2D = global_transform.translated(Vector2(walk, 0.0))
+	var speed: Vector2 = leap
+	var gravity: float = stats.get_jump_gravity()
+	while at.origin.y <= lowest:
+		if test_move(at, speed * delta, _wall_ahead):
+			var top: float = at.origin.y + _wall_ahead.get_travel().y
+			return _wall_ahead.get_angle(up_direction) <= floor_max_angle \
+					and top >= highest and top <= lowest
+		at = at.translated(speed * delta)
+		speed.y += gravity * delta
+	return false
+
+
+## For its states: the height, in px, of the top of a step to_wall px past the demon's front, going
+## in direction, if it is no higher than Jump Height and the demon has room to jump up onto it: up
+## from where it stands, and across from there onto the step; 0 otherwise. A wall higher than that
+## has no top within StepCheck, which starts inside it and so never finds it.
+func get_step_height(direction: float, to_wall: float = 0.0) -> float:
+	_step_check.position = Vector2(direction * (_half_size.x + to_wall + STEP_CHECK_INSET),
+			-stats.jump_height - REACH_TOLERANCE)
+	_step_check.target_position = Vector2(0.0, stats.jump_height)
+	_step_check.force_raycast_update()
+	if not _step_check.is_colliding() or _step_check.get_collision_normal().y >= 0.0:
+		return 0.0
+	var height: float = global_position.y - _step_check.get_collision_point().y
+	var rise: Vector2 = Vector2.UP * (height + JUMP_CLEARANCE)
+	if test_move(global_transform, rise) or test_move(global_transform.translated(rise),
+			Vector2(direction * (to_wall + 2.0 * _half_size.x), 0.0)):
+		return 0.0
+	return height
+
+
+## Takes off up a step height px high, going in direction at its Chase Speed, on this physics frame
+## of delta seconds, in for_state. The take-off frame moves it up with no gravity yet, so half a
+## frame of gravity off the take-off speed keeps the peak on Jump Clearance over the step, as the
+## man's jump does.
+func _jump_up(direction: float, height: float, for_state: State, delta: float) -> void:
+	(_states[State.JUMP] as DemonJumpState).aim(direction * _chase_speed(), global_position.y,
+			for_state)
+	velocity = Vector2(direction * _chase_speed(),
+			-stats.get_jump_velocity(height + JUMP_CLEARANCE)
+			+ stats.get_jump_gravity() * delta / 2.0)
+	change_state(State.JUMP)
+	take_off()
+
+
 ## For its states, after an attack: backs off from the man with Retreat Distance in Stats, and
 ## starts on this same physics frame of delta seconds; with none, or with him already that far,
 ## chases him again. Each time, it draws its Retreat Distance and Retreat Speed anew, so two demons
@@ -368,10 +691,10 @@ func has_target() -> bool:
 ## For its states: true while the man is still there to chase, not past Lose Distance, nor hidden
 ## by a wall for Give Up Time, and, with Chases Only On Screen, the demon no further off the screen
 ## than Screen Margin. Otherwise the demon stops chasing him; hidden by a wall, with Search Time, it
-## goes to look for him where it last saw him (ADR 0035). With counts_unseen off, as out of his
-## reach, the time he is hidden does not count, since he is up or down where it saw him go (ADR
-## 0039).
-func keeps_after_target(counts_unseen: bool = true) -> bool:
+## goes to look for him where it last saw him (ADR 0035). With out_of_reach, as with him out of its
+## reach, he has to be hidden for Out Of Reach Wait instead, since he is up or down where it saw him
+## go and a ledge's corner hides him on and off; while it sees him, it never gives up (ADR 0044).
+func keeps_after_target(out_of_reach: bool = false) -> bool:
 	var man: Node2D = _target.get_man()
 	if not _target.has_man() or not may_keep_on_from_here() \
 			or global_position.distance_to(man.global_position) > stats.lose_distance:
@@ -379,9 +702,11 @@ func keeps_after_target(counts_unseen: bool = true) -> bool:
 		return false
 	if _senses.can_see(man):
 		_target.saw_him(Engine.get_physics_frames())
-	elif counts_unseen:
+	else:
 		_target.missed_him()
-	if _target.get_unseen_frames() >= stats.get_give_up_frames():
+	var blind_frames: int = stats.get_out_of_reach_frames() if out_of_reach \
+			else stats.get_give_up_frames()
+	if _target.get_unseen_frames() >= blind_frames:
 		if stats.search_time > 0.0:
 			_forget_target()
 			change_state(State.SEARCH)
@@ -394,6 +719,29 @@ func keeps_after_target(counts_unseen: bool = true) -> bool:
 ## For its states: the man's x the last time the demon saw him.
 func get_last_seen_x() -> float:
 	return _target.get_last_seen_x()
+
+
+## For its states: true when where the demon last saw the man is out of its reach in height, more
+## than Reach Height above or below its feet, so its search has to go off its floor to get there.
+func last_seen_off_its_floor() -> bool:
+	return absf(_target.get_last_seen_y() - global_position.y) \
+			> stats.get_reach_height() + REACH_TOLERANCE
+
+
+## For its states, in SEARCH, with where it last saw the man off its floor (ADR 0042): goes toward
+## there, up or down onto a floor no further past his height than Reach Height, so the next floor
+## never takes it out of his reach the other way, on this physics frame of delta seconds. False,
+## with nothing done, where it cannot.
+func searches_off_its_floor(delta: float) -> bool:
+	var spot: Vector2 = Vector2(_target.get_last_seen_x(), _target.get_last_seen_y())
+	var gap: float = spot.x - global_position.x
+	var reach: float = stats.get_reach_height() + REACH_TOLERANCE
+	turn_to(gap)
+	if spot.y < global_position.y:
+		return goes_off_its_floor(gap, spot.y - reach,
+				global_position.y - DemonJumpState.LANDED_HIGHER, State.SEARCH, delta)
+	return goes_off_its_floor(gap, global_position.y + DemonDropState.LANDED_LOWER,
+			spot.y + reach, State.SEARCH, delta)
 
 
 ## For its states: faces the man, or a spot, gap px away along the floor, + to the right. Right
@@ -476,6 +824,20 @@ func _packmate_ahead(gap: float) -> Demon:
 	return nearest
 
 
+## For its states: true when, with Pack Spacing, another demon on its floor stands that way, 1 for
+## right and -1 for left, no further than Pack Spacing from its body, so it stops or turns there as
+## at a wall (ADR 0046).
+func is_packmate_in_the_way(direction: float) -> bool:
+	if stats.pack_spacing <= 0.0:
+		return false
+	for mate: Demon in _packmates:
+		var ahead: float = (mate.global_position.x - global_position.x) * direction
+		if ahead > 0.0 and ahead <= _apart_from_packmates() + PACK_TOLERANCE \
+				and _shares_floor_with(mate):
+			return true
+	return false
+
+
 ## For its states: with Pack Spacing, how far, in px, this demon can walk towards a spot gap px away
 ## along the floor before it is Pack Spacing behind the body of the nearest other searching demon
 ## that way, or 0 if it already is; with none, INF. So two demons that search one spot sniff side by
@@ -508,10 +870,10 @@ func _forget_target() -> void:
 	velocity.x = 0.0
 
 
-## For its states: with Return Speed, walks back to its post; with none, or already there, stands
-## where it is.
+## For its states: with Return Speed, walks back to its post, from wherever it stands for now; with
+## none, or already there, stands where it is.
 func stand_or_return() -> void:
-	if stats.return_speed > 0.0 and absf(_post_x - global_position.x) > POST_REACH:
+	if stats.return_speed > 0.0 and not is_at_post():
 		change_state(State.RETURN)
 	else:
 		change_state(State.IDLE)
@@ -534,16 +896,31 @@ func _stop_at_the_man(delta: float) -> void:
 	velocity.x = signf(velocity.x) * minf(absf(velocity.x), room / delta)
 
 
+## True while the demon's body and the man's overlap with their bodies set to collide, which solid
+## bodies never do: one of them was stopped on top of the other both ways, and they pass through
+## each other until apart (ADR 0047). Set not to collide, as in the aiming tests, they may overlap.
+func _passes_through_the_man() -> bool:
+	var target_box: CollisionShape2D = _target.get_box()
+	if (not is_instance_valid(target_box)
+			or collision_mask & (_target.get_man() as CollisionObject2D).collision_layer == 0):
+		return false
+	var apart: Vector2 = target_box.global_position - _box.global_position
+	var touching: Vector2 = _target.get_half_size() + _half_size
+	return absf(apart.x) < touching.x - OVERLAP_TOLERANCE \
+			and absf(apart.y) < touching.y - OVERLAP_TOLERANCE
+
+
 ## For its states, on each physics frame of delta seconds of the chase: the first of the demon's
 ## attacks it starts at the man, or null. It only attacks from its floor, at a man it sees this
 ## frame and who takes hits, once a bite on the run's Recover Time is over, which this counts down,
-## and when the attack's chance comes up. Each time it becomes able to, it first waits a new draw of
-## up to Max Hesitation (ADR 0027). The chance is rolled before the lunge is aimed and the floor is
-## looked for, which takes many rays: the odds are the same either way.
+## and when the attack's chance comes up, never while its body and his pass through each other (ADR
+## 0047). Each time it becomes able to, it first waits a new draw of up to Max Hesitation (ADR
+## 0027). The chance is rolled before the lunge is aimed and the floor is looked for, which takes
+## many rays: the odds are the same either way.
 func attack_to_start(gap: float, delta: float) -> DemonAttack:
 	_recover_frames_left = maxi(_recover_frames_left - 1, 0)
 	if not is_on_floor() or _target.get_unseen_frames() != 0 or _recover_frames_left > 0 \
-			or target_takes_no_hits():
+			or target_takes_no_hits() or _passes_through_the_man():
 		_hesitation_frames_left = -1
 		return null
 	if _hesitation_frames_left < 0:
@@ -630,6 +1007,7 @@ func _apply_stats() -> void:
 ## attack in the same frame. Changing to the state it is in starts that state again.
 func change_state(new_state: State) -> void:
 	var previous: State = _state
+	_off_its_floor = false
 	_current.exit()
 	_state = new_state
 	_current = _states[new_state]
@@ -639,10 +1017,11 @@ func change_state(new_state: State) -> void:
 
 
 ## Keeps the Hitbox on only while the attack under way can land: a bite on the run for its Bite
-## Time after its warning, a lunge from take-off until it lands. Turned on, it takes the attack's
-## damage and knockback.
+## Time after its warning, a lunge from take-off until it lands, and neither while its body and the
+## man's pass through each other (ADR 0047). Turned on, it takes the attack's damage and knockback.
 func _update_hitbox() -> void:
-	var can_land: bool = _bite_frames_left > 0 or _current.can_land_hit()
+	var can_land: bool = (_bite_frames_left > 0 or _current.can_land_hit()) \
+			and not _passes_through_the_man()
 	if not can_land:
 		_hitbox.deactivate()
 	elif not _hitbox.is_active():
@@ -650,6 +1029,61 @@ func _update_hitbox() -> void:
 		_hitbox.knockback_distance = _attack.knockback_distance
 		_hitbox.knockback_height = _attack.knockback_height
 		_hitbox.activate()
+
+
+## With Pack Spacing, on its floor, steps away at Pack Push Speed from the nearest other demon on it
+## that its body is nearer to than Pack Spacing and that it yields to, whatever its state asked of
+## it, unless its own move carries it or its floor ends that way; of two on one spot, the one put in
+## the scene first steps left. Where neither can step away, they stay as they are (ADR 0046).
+func _keep_apart_from_packmates() -> void:
+	if stats.pack_spacing <= 0.0 or not is_on_floor() or _state in STATES_THAT_CARRY_IT:
+		return
+	var nearest: Demon = null
+	var nearest_apart: float = _apart_from_packmates() - PACK_TOLERANCE
+	for mate: Demon in _packmates:
+		var apart: float = absf(mate.global_position.x - global_position.x)
+		if apart < nearest_apart and _shares_floor_with(mate) and _yields_to(mate):
+			nearest = mate
+			nearest_apart = apart
+	if nearest == null:
+		return
+	var away: float = signf(global_position.x - nearest.global_position.x)
+	if away == 0.0:
+		away = -1.0 if get_instance_id() < nearest.get_instance_id() else 1.0
+	if is_edge_ahead(away):
+		return
+	velocity.x = away * maxf(stats.pack_push_speed, velocity.x * away)
+
+
+## True when this demon steps away from the other one, too near it, keeping the chase's rules (ADR
+## 0024): not while either of them backs off, since one backing off crosses the other; not with the
+## body of the man it chases between them, each at least touching him, not over him, since his body
+## keeps theirs apart; and not, after the man, from one that is not, since only a demon after him
+## holds back another: that one steps away instead.
+func _yields_to(mate: Demon) -> bool:
+	if _state == State.RETREAT or mate.get_state() == State.RETREAT:
+		return false
+	if not has_target():
+		return true
+	var man_x: float = _target.get_man().global_position.x
+	var to_me: float = man_x - global_position.x
+	var to_mate: float = man_x - mate.global_position.x
+	var touching: float = _target.get_half_size().x + _half_size.x - PACK_TOLERANCE
+	if to_me * to_mate < 0.0 and absf(to_me) >= touching and absf(to_mate) >= touching:
+		return false
+	return mate.has_target()
+
+
+## How far apart, in px, two demons' middles stand with Pack Spacing between their bodies.
+func _apart_from_packmates() -> float:
+	return 2.0 * _half_size.x + stats.pack_spacing
+
+
+## True when the other demon stands on about this one's floor: on a floor, less than half a body
+## higher or lower.
+func _shares_floor_with(mate: Demon) -> bool:
+	return is_instance_valid(mate) and mate.is_on_floor() \
+			and absf(mate.global_position.y - global_position.y) < _half_size.y
 
 
 func _on_pack_area_body_entered(body: Node2D) -> void:

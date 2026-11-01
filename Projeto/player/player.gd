@@ -55,13 +55,9 @@ var _jump_height_multiplier: float = 1.0
 var _jump_blocked: bool = false
 ## Physics frames left of a hit's knockback, which landing ends sooner.
 var _knockback_frames_left: int = 0
-## The way a shove carries the player along the top of a body he can't stand on, 1 to the right and
-## -1 to the left, and 0 while he isn't on one. Being on that floor doesn't end the knockback,
-## leaving it does.
-var _slide_off_direction: float = 0.0
-## The body the player stands on, from the slide collisions; null off the floor. A frame that also
-## hits something else, such as a wall, can leave the floor out of them, so it keeps the last one.
-var _floor_body: CollisionObject2D = null
+## Says which way to shove the player off a body on Knock Off Layers. Being on that floor doesn't
+## end the knockback, leaving it does.
+var _knock_off: KnockOff = KnockOff.new(self)
 ## True from hold_still() to let_go(): nothing shoves the player off what he stands on, and off the
 ## floor he is in the air, never on a wall.
 var _held_still: bool = false
@@ -84,7 +80,7 @@ func _ready() -> void:
 func _physics_process(delta: float) -> void:
 	_update_state()
 	_shove_off_what_cannot_be_stood_on()
-	if is_on_floor() and velocity.y >= 0.0 and _slide_off_direction == 0.0:
+	if is_on_floor() and velocity.y >= 0.0 and not _knock_off.is_shoving():
 		_knockback_frames_left = 0
 	if is_knocked_back():
 		_physics_knocked_back(delta)
@@ -207,37 +203,16 @@ func _update_facing() -> void:
 	var direction: float = input.get_run_direction()
 	if direction != 0.0:
 		_sprite.flip_h = direction > 0.0
-## On every frame he stands on a body on Knock Off Layers, shoves the player off it: along its top
-## at Knock Off Speed, as a knockback that lasts until he lands on something else. The shove goes to
-## the side of the body he is on, to the right from right over its middle, and keeps that way onto
-## another such body; when something stops it, such as another demon in a lunge, it turns the other
-## way. Landing is not the only way onto one: a shove that is stopped, or a demon that gets under
+## On every frame he stands on a body on Knock Off Layers, shoves the player off it the way KnockOff
+## says: along its top at Knock Off Speed, as a knockback that lasts until he lands on something
+## else. Landing is not the only way onto one: a shove that is stopped, or a demon that gets under
 ## him, leaves him there too (ADR 0022). Held still, he is not shoved.
 func _shove_off_what_cannot_be_stood_on() -> void:
-	_update_floor_body()
-	if (_held_still or not is_instance_valid(_floor_body)
-			or _floor_body.collision_layer & knock_off_layers == 0):
-		_slide_off_direction = 0.0
+	var direction: float = _knock_off.update(knock_off_layers, _held_still)
+	if direction == 0.0:
 		return
-	if _slide_off_direction == 0.0:
-		_slide_off_direction = 1.0 if global_position.x >= _floor_body.global_position.x else -1.0
-	elif is_on_wall() and get_wall_normal().x * _slide_off_direction < 0.0:
-		_slide_off_direction = -_slide_off_direction
-	velocity = Vector2(_slide_off_direction * stats.knock_off_speed, 0.0)
+	velocity = Vector2(direction * stats.knock_off_speed, 0.0)
 	_knockback_frames_left = stats.get_knockback_max_frames()
-
-
-## Keeps _floor_body up to date from the last move_and_slide(). On the floor, its collisions hold
-## the floor on most frames, one or two of them to look at.
-func _update_floor_body() -> void:
-	if not is_on_floor():
-		_floor_body = null
-		return
-	for index: int in get_slide_collision_count():
-		var collision: KinematicCollision2D = get_slide_collision(index)
-		if collision.get_angle(up_direction) <= floor_max_angle:
-			_floor_body = collision.get_collider() as CollisionObject2D
-			return
 
 
 ## True when the last move_and_slide() touched a wall and the run input points into it.

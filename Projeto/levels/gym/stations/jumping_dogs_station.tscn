@@ -1,0 +1,63 @@
+[gd_scene format=3]
+
+[ext_resource type="PackedScene" path="res://levels/gym/gym_hint.tscn" id="1_hint"]
+[ext_resource type="PackedScene" path="res://demon/demon.tscn" id="2_demon"]
+[ext_resource type="Resource" path="res://levels/jumping_demon_stats.tres" id="3_stats"]
+
+[sub_resource type="RectangleShape2D" id="RectangleShape2D_floor"]
+size = Vector2(1920, 200)
+
+[sub_resource type="RectangleShape2D" id="RectangleShape2D_step"]
+size = Vector2(1420, 96)
+
+[sub_resource type="RectangleShape2D" id="RectangleShape2D_pillar"]
+size = Vector2(240, 144)
+
+[node name="JumpingDogsStation" type="Node2D"]
+
+[node name="Floor" type="StaticBody2D" parent="."]
+position = Vector2(960, 1100)
+collision_mask = 0
+
+[node name="CollisionShape2D" type="CollisionShape2D" parent="Floor"]
+shape = SubResource("RectangleShape2D_floor")
+
+[node name="Placeholder" type="Polygon2D" parent="Floor"]
+color = Color(0.15, 0.13, 0.18, 1)
+polygon = PackedVector2Array(-960, -100, 960, -100, 960, 100, -960, 100)
+
+[node name="Step" type="StaticBody2D" parent="."]
+position = Vector2(1210, 952)
+collision_mask = 0
+
+[node name="CollisionShape2D" type="CollisionShape2D" parent="Step"]
+shape = SubResource("RectangleShape2D_step")
+
+[node name="Placeholder" type="Polygon2D" parent="Step"]
+color = Color(0.15, 0.13, 0.18, 1)
+polygon = PackedVector2Array(-710, -48, 710, -48, 710, 48, -710, 48)
+
+[node name="Pillar" type="StaticBody2D" parent="."]
+position = Vector2(800, 832)
+collision_mask = 0
+
+[node name="CollisionShape2D" type="CollisionShape2D" parent="Pillar"]
+shape = SubResource("RectangleShape2D_pillar")
+
+[node name="Placeholder" type="Polygon2D" parent="Pillar"]
+color = Color(0.15, 0.13, 0.18, 1)
+polygon = PackedVector2Array(-120, -72, 120, -72, 120, 72, -120, 72)
+
+[node name="Dog" parent="." instance=ExtResource("2_demon")]
+position = Vector2(250, 1000)
+stats = ExtResource("3_stats")
+
+[node name="GymHint" parent="." instance=ExtResource("1_hint")]
+position = Vector2(90, 360)
+text = "Cães que saltam
+Este cão sobe o degrau baixo atrás de ti e salta da borda quando desces.
+O pilar é alto demais para ele: aí em cima ladra por baixo.
+Quando te perde, refaz o caminho até casa (F3 mostra-o)."
+
+[node name="Start" type="Marker2D" parent="."]
+position = Vector2(800, 740)
