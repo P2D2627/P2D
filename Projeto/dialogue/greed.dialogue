@@ -1,0 +1,234 @@
+# Chapter 3, Greed. One cue per encounter; the level shows what the Ren'Py narration described.
+# Stealing a toll is the temptation that skips its vault, so the later lines read it from Moral.
+
+~ arrival
+{{GameState.player_name}}: [i](dragging himself up the last step)[/i] Third floor. No grease, no food. Maybe this one is quiet.
+=> END
+
+~ tally_and_chip
+Tally: [i](squinting at him)[/i] Name?
+{{GameState.player_name}}: {{GameState.player_name}}.
+Tally: Page four hundred and twelve. That's a long page.
+Chip: Another customer! I'm Chip, I run the tables. He's Tally, he runs the numbers. I take your money; he writes down how much.
+Tally: Nobody leaves Greed with a balance on the books. Most never leave at all.
+{{GameState.player_name}}: I do not owe anybody anything.
+Tally: That is a bold sentence to say in front of the ledger.
+- Check your numbers, small fry.
+	$> Moral.record_tone(&"arrogant")
+	Tally: I have. Four hundred and twelve pages.
+	Chip: Same confidence he had when he doubled on red.
+- Maybe I owe more than I thought. Just tell me how to get out.
+	$> Moral.record_tone(&"humble")
+	Chip: Ooh, polite! The polite ones always pay the most.
+	Tally: Out? You stay until the balance is zero. It never is.
+Tally: House policy: every new arrival sees his account. Look at the screen.
+=> END
+
+~ ledger
+Tally: The twenty-eighth of every month. Salary lands at nine. By five it was in the app. Rent and groceries come second.
+Chip: Everything was greed! Greed, greed, greed!
+Tally: And then, a Tuesday.
+Chip: Seventy thousand! You cried! And you said: “That's it. I'm stopping.”
+{{GameState.player_name}}: [i](quietly)[/i] I was going to stop.
+Tally: At three in the morning you were at seventy-one. By breakfast… Nothing.
+Chip: A few hours! I've seen collapses with more dignity, but never with more speed.
+Tally: And my favorite entry. Not the loss. The loan. You did not think “I lost seventy thousand.” You thought, “I just need to win it back.” So you borrowed.
+Chip: All in on the comeback! But hey… he went to church after! A true angel.
+- Bad luck. The system was rigged.
+	$> Moral.record_tone(&"arrogant")
+	Tally: The house edge is not a conspiracy. It is arithmetic. It was on page one, in the small letters.
+	Chip: He blames the machine. They all do. The machine loves it.
+- I remember... I did not tell anyone.
+	$> Moral.record_tone(&"humble")
+	Tally: Silence. Yes. That is the one entry that is not in currency.
+	Chip: Don't look at me like that. I'm just Chip! I don't have feelings. Only interest.
+Chip: He's up.
+Tally: He always is.
+Chip: Hope you brought money, customer. You didn't.
+=> END
+
+~ gate_1
+Mammon: So. The man who was going to stop. I am Mammon. I own everything on this floor, which is to say, everything anyone ever wanted too much.
+if GameState.has_crucifix
+	Mammon: [i](wincing)[/i] That cross itches my gold. Keep it. It buys nothing here.
+else
+	Mammon: No cross. Nothing to pawn, nothing to hold on to. I like that, but you won't.
+{{GameState.player_name}}: What do you want from me?
+Mammon: What I want from everyone: that you stay, and pay. Forever, ideally. Your other dues are with God.
+Mammon: But if you insist on leaving, there are three gates between you and the stairs, and every one has a toll. This one is ten thousand.
+{{GameState.player_name}}: With what? I am dead.
+Mammon: Two ways to pay. Beside every gate there is a vault, and up in it, old coins nobody has found. Climb for them, if you have the legs. It's a long way up, and a longer way down.
+Mammon: Or take them from my imps. There are always a couple by the gate, counting what they skimmed. Much quicker. Both pay the same.
+- They would do the same to me. I just have to do it first.
+	$> Moral.record_tone(&"arrogant")
+	$> Offers.accept(&"greed_toll_1")
+	Mammon: Everyone down here says that. It's a lovely mistake.
+- I hate it. But I do not see another way.
+	$> Moral.record_tone(&"humble")
+	$> Offers.accept(&"greed_toll_1")
+	Mammon: [i](smiling)[/i] Hate it all you like. You'll still do it. Everybody steals in the end.
+- I have taken enough shortcuts. I will earn it.
+	$> Moral.record_tone(&"humble")
+	Mammon: How quaint. The vault is cold, but I'd hate to dissuade a customer.
+- I do not need anybody's pockets. I will find it myself and bring double.
+	$> Moral.record_tone(&"arrogant")
+	Mammon: [i](laughing)[/i] Double! He already talks like me.
+if not Moral.has_taken(&"greed_toll_1")
+	Mammon: The vault is right there. The coins are up high, where only a climb can reach them. Try not to fall; it makes a mess of the books.
+=> END
+
+~ toll_1_stolen
+if Moral.stage() >= 1
+	{{GameState.player_name}}: That was easy. They are slower than they look.
+else
+	{{GameState.player_name}}: [i](looking at the coins in his hand)[/i] Love your enemies. And I just robbed mine.
+=> END
+
+~ toll_1_climbed
+{{GameState.player_name}}: [i](out of breath, his clothes torn)[/i] Every coin was on an edge. Every one, where reaching for it could make you fall.
+Mammon: Greed always builds on edges. Nobody learns that on the first climb.
+=> END
+
+~ toll_1_paid
+if Moral.has_taken(&"greed_toll_1")
+	Mammon: My own coins, stolen from my own imps, paid back to me. I love this job.
+else
+	Mammon: Climbed for with your own hands. A working man. It fits you badly.
+Mammon: Toll one: paid.
+=> END
+
+~ gate_2
+Mammon: Every door on this floor is the same door, {{GameState.player_name}}. Only the price changes.
+Mammon: Did I mention interest? You of all people know about interest. Ten thousand becomes twenty-five.
+{{GameState.player_name}}: You never said—
+Mammon: It was in the small letters. You scrolled past those too.
+if Moral.has_taken(&"greed_toll_1")
+	{{GameState.player_name}}: [i](staring at his hand)[/i] It was so easy. Why was it so easy?
+	Mammon: Because it always is. Stay, and it will always be this easy.
+else
+	{{GameState.player_name}}: [i](staring at the next vault)[/i] I cannot climb like that again. I can barely stand.
+	Mammon: Then sit. Stay. Nobody is making you climb.
+- Steal again. You make it too easy.
+	$> Moral.record_tone(&"arrogant")
+	$> Offers.accept(&"greed_toll_2")
+- Steal again... I am so tired.
+	$> Moral.record_tone(&"humble")
+	$> Offers.accept(&"greed_toll_2")
+- I will climb again. I will do it right.
+	$> Moral.record_tone(&"humble")
+- I will find it myself. I am not letting you win.
+	$> Moral.record_tone(&"arrogant")
+if Moral.has_taken(&"greed_toll_2") == Moral.has_taken(&"greed_toll_1")
+	Mammon: Again? A creature of habit. A method that wins once is a method you bet on.
+else
+	Mammon: Changing strategy! Superstition. Very much like a gambler.
+if not Moral.has_taken(&"greed_toll_2")
+	Mammon: The second vault is higher. The ledges are narrower, and the coins are further out.
+=> END
+
+~ toll_2_stolen
+if Moral.stage() >= 1
+	{{GameState.player_name}}: [i](under his breath)[/i] Not my problem.
+else
+	{{GameState.player_name}}: [i](under his breath)[/i] I know the feeling.
+=> END
+
+~ toll_2_climbed
+{{GameState.player_name}}: [i](leaning on the gate to stay on his feet)[/i] There was one more coin. Right at the edge. I left it.
+Mammon: You left it. At seventy-one thousand, you couldn't leave anything.
+{{GameState.player_name}}: ...No. But I can now.
+=> END
+
+~ toll_2_paid
+Mammon: Twenty-five. Paid in full. Most customers pay once, and ask to bet the rest.
+=> END
+
+~ gate_3
+Mammon: One more gate. The last one, I promise. And interest, of course. Twenty-five becomes sixty.
+{{GameState.player_name}}: [i](sinking to his knees)[/i] Sixty... I have nothing left. I cannot even stand.
+Mammon: Then stay down there. Sit, count, pay. It's a quiet life. It never ends.
+- Then I will take it from your imps. All of it.
+	$> Moral.record_tone(&"arrogant")
+	$> Offers.accept(&"greed_toll_3")
+- I will steal again. God forgive me, I will steal again.
+	$> Moral.record_tone(&"humble")
+	$> Offers.accept(&"greed_toll_3")
+- I will climb one last time. I will do it honestly.
+	$> Moral.record_tone(&"humble")
+- I will climb for it. You will not see me beg.
+	$> Moral.record_tone(&"arrogant")
+if Moral.has_taken(&"greed_toll_3") == Moral.has_taken(&"greed_toll_2")
+	Mammon: The same road again. Habit is the only currency that never loses value.
+else
+	Mammon: Another change! Gamblers always switch at the end.
+if not Moral.has_taken(&"greed_toll_3")
+	Mammon: The last vault is a staircase of coins. It shifts underfoot. Try not to fall; down here, nobody ever stops falling.
+=> END
+
+~ toll_3_stolen
+if Moral.stage() >= 1
+	{{GameState.player_name}}: [i](counting)[/i] They will find more. They always do.
+else
+	{{GameState.player_name}}: [i](counting)[/i] Three gates, and I have become one of them.
+=> END
+
+~ toll_3_climbed
+{{GameState.player_name}}: [i](holding up a coin, laughing and crying at once)[/i] The coins were in the steps. I was climbing on money the whole way up.
+=> END
+
+~ toll_3_paid
+{{GameState.player_name}}: [i](on his knees)[/i] Sixty. Count it. Count it and let me go.
+if Moral.has_taken(&"greed_toll_1") and Moral.has_taken(&"greed_toll_2") and Moral.has_taken(&"greed_toll_3")
+	Mammon: Three for three. A natural thief. You'd do well here. Stay.
+elif not Moral.has_taken(&"greed_toll_1") and not Moral.has_taken(&"greed_toll_2") and not Moral.has_taken(&"greed_toll_3")
+	Mammon: Three climbs on your own two feet. I almost don't recognize you. Pity.
+else
+	Mammon: Some roads dirty, some clean. A man who can't decide who he is. Charming.
+Mammon: Sixty. Paid in full. The gate is yours.
+=> END
+
+~ mammon_gift
+Mammon: One more thing before you go. Every one of us gives a gift on the way out. Gifts are how I collect.
+Mammon: Claim. Drop this coin anywhere, and that spot is yours. And what is yours always comes back to you.
+Mammon: Or you go back to it. One thought, and you are standing on it again, wherever you were.
+Mammon: The cost? Hardly anything. A little of your soul for every trip back. And after a while, nothing feels like yours until you have marked it.
+if GameState.has_crucifix
+	Mammon: And the cross will burn as long as you carry my coin. One or the other.
+- Take it.
+	if Moral.stage() >= 1
+		{{GameState.player_name}}: About time something on this floor paid me back.
+	else
+		{{GameState.player_name}}: [i](softly)[/i] I do not know if I should. But I need all the help I can get.
+	$> Offers.accept(&"claim")
+	Mammon: One soul. Slightly used. Mine.
+	Mammon: Everything with my mark comes back to me in the end. It always does.
+- Leave it.
+	if Moral.stage() >= 1
+		{{GameState.player_name}}: I do not take presents from the house.
+		Mammon: “Take.” Present tense. Lovely.
+	else
+		{{GameState.player_name}}: Every time I took what was offered, I lost more.
+		Mammon: [i](a thin smile)[/i] You'll come back for it. With interest.
+=> END
+
+~ stairs
+Mammon: Where do you think you are going? Look at you. You can barely stand.
+Mammon: Sit down. Stay. Up there is more of the same, and worse. Here, at least, you know the price of everything.
+{{GameState.player_name}}: [i](dragging himself towards the stairs)[/i] I am leaving. This is a mistake. All of it. I should never have been here.
+Mammon: [i](a dry laugh, like coins)[/i] A mistake. You still believe that? After three floors?
+Mammon: Every page of your file is in your own hand. The bridesmaids. The cake. The seventy thousand. Nobody down here made you do any of it.
+{{GameState.player_name}}: I asked for forgiveness. Every time. He forgives. He has to know that I—
+Mammon: [i](softly, and that is worse)[/i] Oh, He knows.
+Mammon: [speed=0.4]He knows. He knows very well. He always did.
+{{GameState.player_name}}: No.
+{{GameState.player_name}}: No. If He knew, He would not leave me here. He would come for me. He would...
+Mammon: He knows exactly where you are, {{GameState.player_name}}. And He has not come.
+{{GameState.player_name}}: [i](shouting)[/i] You are lying! That is all you do down here!
+Mammon: [i](unmoved)[/i] Then stay and prove it. You'll have all the time in the world.
+=> END
+
+~ climbing_away
+{{GameState.player_name}}: [speed=0.5][i]And forgive us our debts, as we forgive our debtors...[/i]
+{{GameState.player_name}}: He does not know. He cannot know.
+{{GameState.player_name}}: [speed=0.3]Because if He knows...
+=> END

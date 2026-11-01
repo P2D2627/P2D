@@ -1,0 +1,153 @@
+# Chapter 2, Gluttony. One cue per encounter; the level shows what the Ren'Py narration described.
+
+~ arrival
+{{GameState.player_name}}: [i](catching his breath at the top of the stairs)[/i] One more floor. Could this be the one with the way out?
+=> END
+
+~ crumb
+Crumb: Well, well, fresh meat! Sorry, fresh visitor. Sorry again, it is hunger talking.
+{{GameState.player_name}}: Another demon. I have lost count.
+Crumb: I am Crumb. Small, and always at the table. I serve Lord Beelzebub, lord of flies and of the big table. Second floor: Gluttony.
+Crumb: Nobody goes hungry here, and nobody leaves. The exit is at the far end, beyond the hall, and you only leave the hall with a full stomach. Or as food.
+Crumb: [i](patting his belly)[/i] Oof. I am so full. I could not eat another bite.
+if not GameState.has_crucifix
+	Crumb: You smell like someone who left something behind. That makes my life easier: I do not need to close my eyes to look at you.
+- I am not hungry at all. I am a righteous man, and I am here by mistake. Get away from me, dwarf.
+	$> Moral.record_tone(&"arrogant")
+	Crumb: A mistake! Velvet warned me you would say that. The third mistake this week. The other one cried more and was sweeter.
+	Crumb: And notice, 'dwarf' is unfair. I am a demon of convenient size.
+- This really is Hell... I just want to get through. Can you tell me how to get out?
+	$> Moral.record_tone(&"humble")
+	Crumb: Polite! The polite ones are the most tender. [i](licking his lips)[/i] Out? You do not get out. You sit down and you eat, like everybody else.
+=> crumb_wedding
+
+~ crumb_wedding
+Crumb: I know you better than you think. The first floor passed us your file, and my favorite part is the stomach. Small, but it works well, does it not?
+Crumb: Do you remember your sister's wedding?
+{{GameState.player_name}}: The wedding? Again?
+Crumb: Oh, the first floor only did the bridesmaids. We do the food.
+Crumb: June fourteenth, a farm by the river. Sun, wine, your sister in white. You arrived late, with your shirt tucked into your trousers only until the first appetizer.
+Crumb: You emptied the shrimp basket before the guests reached the table. Then you had dinner twice: your plate and the plate of the groom's grandmother, Grandma Ruth, who, according to you, 'was no longer hungry'.
+Crumb: And then came the cake. Grandma Ruth had spent seven days making it. You cut the first slice before your sister and Tom could take the knife. No photograph, no applause, nobody else.
+Crumb: And the toast, oh, the toast. Forty minutes. Your sister asked you through sobs if you could stop, and you talked about your career.
+- It was a magnificent party. I paid for the open bar and made use of what was there. My sister always exaggerates.
+	$> Moral.record_tone(&"arrogant")
+	Crumb: [i](clapping)[/i] What a liar! With that much conviction, you almost convince me.
+	Crumb: It was such a generous speech that your sister left crying tears of gratitude, right?
+- It was a cake. That is not a sin, it is an appetite. You know nothing about this.
+	$> Moral.record_tone(&"arrogant")
+	Crumb: Appetite, of course! Is that what you told Grandma Ruth when she found your hand inside the cake?
+	Crumb: That is right, she still talks about it. Up there, where grandmothers go.
+- I... remember her crying. I was drunk, I was not thinking. That was not what I wanted.
+	$> Moral.record_tone(&"humble")
+	Crumb: Regret. Do you know that is delicious? It is one of the sweetest things there is here.
+	Crumb: But do not confuse things: I do not feel sorry for you. I am hungry.
+=> END
+
+~ crumb_bite
+Crumb: Do you know what you lack? Knowing where you are. Here, everything you did at the table comes back to the table.
+Crumb: And you look so appetizing...
+{{GameState.player_name}}: Do not come any closer. I am warning you.
+Crumb: Just one bite. I am small, so my bites are small. A sample. That is how it always starts.
+{{GameState.player_name}}: Back off!
+=> END
+
+~ crumb_repelled
+if GameState.has_crucifix
+	Crumb: Hot! Hot! Who brings that to a dinner?
+	Crumb: Run, then! Every step you take is one step closer to the table!
+else
+	Crumb: [i](dreamily)[/i] Oh... oh, you are... lovely...
+=> END
+
+~ beelzebub_offer
+{{GameState.player_name}}: [i](out of breath, hands on his knees)[/i] No more... No more halls.
+Beelzebub: You came through my whole hall and did not eat a thing. Nobody does that. Sit.
+{{GameState.player_name}}: You are Beelzebub.
+Beelzebub: I am the master of the house. Sit down; nobody dies at the table here. You are already dead, remember?
+Beelzebub: Here, what matters is your sister's wedding. Do you recognize this cake?
+{{GameState.player_name}}: [i](staring at it)[/i] ...That is Grandma Ruth's cake.
+Beelzebub: Seven days making it, and you ate the first slice. Imagine how she felt.
+{{GameState.player_name}}: [i](pulling his hand back)[/i] No...
+Beelzebub: Never mind her. Nobody is judged here. We eat here. Sit down, taste one bite, and I will save you half of Hell.
+Beelzebub: Going up is hard, {{GameState.player_name}}. The upper floors do not forgive, and you are already tired.
+Beelzebub: So, a deal. One slice, and one bite of you. Not of the body; there is not much left of that. A bite of your soul. Then I carry you to the stairs myself.
+Beelzebub: Or sit down and stay. Forever is a long dinner, but nobody at my table ever goes hungry.
+- All right. I deserve this after everything I have been through. One slice cannot hurt anyone.
+	$> Moral.record_tone(&"arrogant")
+	Beelzebub: That is the way. Eat, eat. I have never seen anyone eat so well without being hungry.
+	{{GameState.player_name}}: This... is just like the cake. Exactly like it. How is that possible?
+	Beelzebub: Everything you ever ate is stored here. All it needed was someone to serve it to.
+	$> Offers.accept(&"gluttony_shortcut")
+- I am so hungry... Just one slice. Then I go.
+	$> Moral.record_tone(&"humble")
+	Beelzebub: [i](pushing the plate towards him)[/i] Just one. They always say just one.
+	$> Offers.accept(&"gluttony_shortcut")
+- No. I already ruined one cake; I will not ruin another. Let me pass.
+	$> Moral.record_tone(&"humble")
+	Beelzebub: How tiresome. Regret ruins the appetite.
+- I am a righteous man. This is a trap and I will not fall for it. Get those crumbs out of my way.
+	$> Moral.record_tone(&"arrogant")
+	Beelzebub: 'Righteous.' Such a heavy word for such a light man.
+=> END
+
+~ beelzebub_second_offer
+{{GameState.player_name}}: [i](barely standing)[/i] The same table. I went through all of that... for the same table.
+Beelzebub: Every corridor on this floor ends at my table. Upstairs it was a bed, I hear. Sit.
+Beelzebub: Shall I tell you the rest of the wedding? After the toast, your sister found you at the buffet. Her hands were shaking. Something had gone wrong, and she needed her brother.
+Beelzebub: You had a plate in each hand. You said, 'Give me five minutes.' Then you went back for dessert.
+{{GameState.player_name}}: I... went to find her. Later.
+Beelzebub: Later. When the cake was gone. She said, 'It is fine now,' and you believed her, because it was more comfortable.
+Beelzebub: Up there it only gets worse. The next floor is Greed: every door has a price, and you have nothing to pay with. Stay here. At least here you eat.
+Beelzebub: My offer stands. One slice and one bite of your soul, and I carry you to the stairs. Or stay at my table. Either way, you are mine.
+- All right! But let it be clear that this is an exchange; I do not owe anyone anything.
+	$> Moral.record_tone(&"arrogant")
+	Beelzebub: Of course. A fair exchange. I always win those.
+	$> Offers.accept(&"gluttony_shortcut")
+- All right... I cannot take it anymore. I do not want to be eaten.
+	$> Moral.record_tone(&"humble")
+	Beelzebub: [i](already chewing)[/i] See? Giving up is the easiest thing on this floor.
+	$> Offers.accept(&"gluttony_shortcut")
+- No. If I accept, I will not be able to look my sister in the eye. Even dead.
+	$> Moral.record_tone(&"humble")
+	Beelzebub: How beautiful. Such beautiful foolishness. But my offer does not expire.
+- No. I will get through on my own. Keep your stairs and your table!
+	$> Moral.record_tone(&"arrogant")
+	Beelzebub: Look at him, the hero! Go on. I will keep your chair warm.
+=> END
+
+~ beelzebub_gift
+if Moral.has_taken(&"gluttony_shortcut")
+	Beelzebub: You see? I keep my word. And you were delicious.
+else
+	Beelzebub: You crossed my whole floor without a single bite. How rude.
+Beelzebub: Every one of us gives a gift on the way out. Mine is a demon's stomach. You swallow an ordinary demon whole, in one bite, and keep everything it knew. It takes time to digest, and there is no way to give it back.
+Beelzebub: The price? Hardly anything. You do not need to eat anymore, so every bite will be too much. And you will want every one.
+if GameState.has_crucifix
+	Beelzebub: That crucifix around your neck burns whenever I am near. You keep one thing or the other.
+	{{GameState.player_name}}: If I accept... I lose it.
+	Beelzebub: You do. A bit of wood. You will not even notice it is gone.
+else
+	Beelzebub: And you have no cross left to lose. That saves us both time.
+- Yes.
+	if Moral.stage() >= 1
+		{{GameState.player_name}}: Give it to me. I deserve it. Whatever it takes to get out of here.
+	else
+		{{GameState.player_name}}: Forgive me, sister. I cannot do this any other way.
+	$> Offers.accept(&"stomach")
+	Beelzebub: You ate, {{GameState.player_name}}. For the first time, you truly ate.
+- No.
+	if GameState.has_crucifix
+		{{GameState.player_name}}: I do not need your charity. I will keep the faith I have.
+	else
+		{{GameState.player_name}}: No. I have already lost too much.
+	Beelzebub: Leave, then. Whoever refuses Beelzebub's gift carries a new hunger that only he knows.
+=> END
+
+~ stairs
+Beelzebub: Up you go, {{GameState.player_name}}. Everybody comes back to my table in the end. Hungrier.
+{{GameState.player_name}}: I will not be back. I am not hungry.
+Beelzebub: [i](laughing, his mouth full)[/i] That is what they all say.
+{{GameState.player_name}}: [speed=0.5][i]Give us this day our daily bread...[/i]
+{{GameState.player_name}}: [i](he swallows)[/i] I am not hungry. I am not.
+=> END

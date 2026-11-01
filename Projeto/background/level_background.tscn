@@ -1,0 +1,28 @@
+[gd_scene format=3]
+
+[ext_resource type="Script" path="res://background/background_layer.gd" id="1_layer"]
+
+[node name="LevelBackground" type="Node2D"]
+editor_description = "The template of a level's background, back to front. A level starts its background from this scene (Scene > New Inherited Scene) and puts each gray picture or piece, as a Sprite2D, in the layer of its distance. Each layer is a BackgroundLayer: Scroll Scale is the distance, Cover how it fills the screen, Ramp its colors. README, Fundo em camadas."
+
+[node name="Far" type="Parallax2D" parent="."]
+editor_description = "Far away, such as the cave walls or the sky: one picture. Cover FIT if it does not repeat; REPEAT if it was painted to repeat without a seam (2560 x 1440)."
+scroll_scale = Vector2(0.25, 0.25)
+script = ExtResource("1_layer")
+cover = 1
+
+[node name="Middle" type="Parallax2D" parent="."]
+editor_description = "Large shapes in the distance, such as rocks or towers: loose pieces placed by hand, darker and less saturated than the play plane."
+scroll_scale = Vector2(0.5, 0.5)
+script = ExtResource("1_layer")
+
+[node name="Near" type="Parallax2D" parent="."]
+editor_description = "Between the middle layer and the play plane: loose pieces placed by hand."
+scroll_scale = Vector2(0.75, 0.75)
+script = ExtResource("1_layer")
+
+[node name="Front" type="Parallax2D" parent="."]
+editor_description = "In front of the play plane and drawn over the player (Z Index 10): dark, blurred loose pieces that never hide what the player needs to see."
+z_index = 10
+scroll_scale = Vector2(1.2, 1.2)
+script = ExtResource("1_layer")

@@ -1,0 +1,6 @@
+[gd_resource type="Resource" script_class="SoulPointsStats" format=3 uid="uid://cvanoow0v8qrd"]
+
+[ext_resource type="Script" uid="uid://c4yg15abdeqng" path="res://player/soul_points_stats.gd" id="1_script"]
+
+[resource]
+script = ExtResource("1_script")

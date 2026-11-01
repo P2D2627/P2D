@@ -1,0 +1,29 @@
+[gd_scene format=3]
+
+[ext_resource type="Script" path="res://platforms/cycle_platform.gd" id="1_platform"]
+
+[sub_resource type="RectangleShape2D" id="RectangleShape2D_platform"]
+size = Vector2(192, 24)
+
+[sub_resource type="RectangleShape2D" id="RectangleShape2D_rider"]
+size = Vector2(184, 16)
+
+[node name="CyclePlatform" type="AnimatableBody2D"]
+script = ExtResource("1_platform")
+
+[node name="CollisionShape2D" type="CollisionShape2D" parent="."]
+shape = SubResource("RectangleShape2D_platform")
+
+[node name="Placeholder" type="Polygon2D" parent="."]
+color = Color(0.75, 0.3, 0.75, 1)
+polygon = PackedVector2Array(-96, -12, 96, -12, 96, 12, -96, 12)
+
+[node name="RiderSensor" type="Area2D" parent="."]
+unique_name_in_owner = true
+collision_layer = 0
+collision_mask = 2
+monitorable = false
+
+[node name="CollisionShape2D" type="CollisionShape2D" parent="RiderSensor"]
+position = Vector2(0, -20)
+shape = SubResource("RectangleShape2D_rider")

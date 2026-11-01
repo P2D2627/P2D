@@ -8,6 +8,7 @@ export.cfg
 export_credentials.cfg
 *.tmp
 
+
 # Imported translations (automatically generated from CSV files)
 *.translation
 
@@ -15,3 +16,12 @@ export_credentials.cfg
 .mono/
 data_*/
 mono_crash.*.json
+
+# Export / build output
+builds/
+export/
+# export_presets.cfg versiona-se: num grupo, os presets de export sao partilhados.
+# As credenciais ficam noutro ficheiro (export_credentials.cfg), ja ignorado acima.
+
+# NAO ignorar: *.import e *.uid versionam-se sempre.
+# Sem eles, quem clonar reimporta tudo e as referencias entre recursos partem.
