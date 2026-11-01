@@ -121,16 +121,16 @@ func _custom_starts_as_the_default_and_remaps_one_action() -> bool:
 			% [starts_as_default, wrong])
 
 
-## Jump to E, which Interact had alone: Interact takes Space, Jump's old key. Move left to D, which
+## Jump to R, which Interact had alone: Interact takes Space, Jump's old key. Move left to D, which
 ## Move right shared with the right arrow: Move right keeps the right arrow only.
 func _a_binding_another_action_had_swaps_over() -> bool:
 	_delete_test_file()
 	var settings: GameSettings = await _new_settings()
 	settings.set_input_profile(InputProfiles.CUSTOM)
-	settings.set_custom_binding(&"jump", InputProfiles.key(KEY_E))
+	settings.set_custom_binding(&"jump", InputProfiles.key(KEY_R))
 	settings.set_custom_binding(&"move_left", InputProfiles.key(KEY_D))
 	var wrong: PackedStringArray = _differences({
-		&"jump": [KEY_E], &"interact": [KEY_SPACE],
+		&"jump": [KEY_R], &"interact": [KEY_SPACE],
 		&"move_left": [KEY_D], &"move_right": [KEY_RIGHT],
 	})
 	settings.queue_free()

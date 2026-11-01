@@ -5,7 +5,8 @@ extends Node2D
 ## and then the level starts over as a new copy of itself, so everything is as at the start: the
 ## man, the demons and the camera. In the game, Main put it in its level slot and makes the swap,
 ## on restart_requested; run on its own, with F6, it is the current scene and reloads itself. The
-## wait pauses with the level.
+## wait pauses with the level. The man keeps the crucifix only while GameState says he holds it, and
+## GameState hears when he loses it, since the level starts over without what it knew.
 
 ## A new copy of this level should take its place. Main listens.
 signal restart_requested
@@ -24,6 +25,18 @@ func _ready() -> void:
 	_restart_timer.timeout.connect(_restart)
 	add_child(_restart_timer)
 	player.died.connect(_on_player_died)
+	_follow_the_crucifix()
+
+
+func _follow_the_crucifix() -> void:
+	var progress: GameProgress = get_node(^"/root/GameState") as GameProgress
+	var crucifix: Crucifix = player.get_node_or_null(^"Crucifix") as Crucifix
+	if crucifix == null:
+		return
+	if progress.has_crucifix:
+		crucifix.lost.connect(progress.lose_crucifix)
+	else:
+		crucifix.lose()
 
 
 func _on_player_died() -> void:

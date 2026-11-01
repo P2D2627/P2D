@@ -38,11 +38,14 @@ cada sala) está em `docs/nivel1_desenho.md`, e os artigos que o fundamentam em 
    Durante o jogo, a tecla F3 mostra e esconde o texto de depuração descrito em "Overlay de
    depuração", e a tecla F4 retira 10 SP à personagem, como um golpe, para experimentar a
    regeneração descrita em "SP".
-5. O nível 1 em blockout (Play ▸ Level 1: Lust (blockout)) tem as fases 1 e 2, com tiles
-   provisórios de 48 px, cada uma na sua cena. A fase 1 sobe da esquerda para a direita e termina
-   numa sala com uma porta; ao atravessá-la, o ecrã escurece e a fase 2 começa no canto inferior
-   direito. Os retângulos amarelos assinalam os checkpoints provisórios e o verde a porta para a
-   fase seguinte. Cada fase também corre sozinha com F6.
+5. O nível 1 em blockout (Play ▸ Level 1: Lust (blockout)) tem as fases 1, 2 e 3, com tiles
+   provisórios de 48 px, cada uma na sua cena. A fase 1 começa no tutorial, que ensina os controlos
+   e continua sem cortes para a sala inicial. Depois sobe da esquerda para a direita e termina numa
+   sala com uma porta; ao atravessá-la, o ecrã escurece e a fase 2 começa no canto inferior direito.
+   O retângulo verde assinala a porta para a fase seguinte. Cada fase também corre sozinha com F6,
+   sem gravar nada.
+6. Entrar numa fase grava o jogo, o que é indicado por "Saving..." no canto do ecrã, e o menu
+   principal passa a mostrar Continue, descrito em "Gravação do jogo".
 
 Os controlos de teclado e rato escolhem-se em Options ▸ Controls, entre três perfis. O comando é
 igual em todos.
@@ -659,7 +662,7 @@ Remote; os restantes valores são lidos sempre que são usados.
     ├── project.godot
     ├── main.tscn      cena principal: menus, pausa e o nível em jogo (script main.gd)
     ├── default_bus_layout.tres   buses de áudio
-    ├── core/          serviços globais: as opções do jogador (autoload Settings), o registo moral (autoload Moral) e os perfis de controlos
+    ├── core/          serviços globais: as opções do jogador (autoload Settings), o registo moral (autoload Moral), o progresso do jogo (autoload GameState), o ficheiro da gravação e os perfis de controlos
     ├── player/        personagem: cena, scripts, valores do movimento, SP e agarrão
     ├── crucifix/      crucifixo: cena, script e valores
     ├── demon/         demónios que perseguem: cena, scripts, os estados (states/) e os valores de cada nível
@@ -981,7 +984,7 @@ teclado, e não pela letra impressa, pelo que o WASD se mantém num teclado AZER
 | `move_left` / `move_right` | A / D, setas | stick esquerdo (eixo 0) |
 | `move_up` / `move_down` | W / S, setas | stick esquerdo (eixo 1) |
 | `jump` | Espaço | A / Cross |
-| `interact` | E | B / Circle |
+| `interact` | R | carregar no stick direito (R3) |
 | `crucifix` | botão esquerdo do rato | RT / R2 (eixo 5) |
 | `pause` | Escape | Start |
 | `toggle_debug_overlay` | F3 | — |
@@ -1861,7 +1864,39 @@ difíceis de afinar e de explicar.
 São valores de referência, a afinar em jogo. Com eles, um atalho basta para a fala piorar, e as
 três portagens juntas pesam pouco mais do que um atalho. As regras estão numa classe sem nós
 (`MoralRecord`), testada isoladamente; o autoload limita-se a disponibilizá-la. O `reset()` limpa o
-registo para um jogo novo; a gravação fica para quando houver saves.
+registo para um jogo novo, e o registo entra na gravação do jogo.
+
+#### Gravação do jogo
+
+O jogo tem uma só gravação automática, sem pontos de gravação visíveis no cenário: chegar ao fim de
+uma fase é o checkpoint. Um jogo novo e cada entrada numa fase gravam, e o tutorial conta como uma
+fase: ao passar dele para a sala inicial, o nó `SavePoint` grava, e dali em diante a fase 1 começa
+nessa sala. O Continue do menu principal, que só aparece quando há uma gravação utilizável, regressa
+ao ponto da última gravação. O fluxo está no
+`main.gd`; os dados estão em `user://save.cfg`, um `ConfigFile`, o mesmo recurso do Godot que guarda
+as opções.
+
+| Guarda-se | Porquê |
+|---|---|
+| A fase | É o ponto para onde o Continue regressa. |
+| O registo moral | O julgamento final depende de tudo o que o homem fez. |
+| Se ainda tem o crucifixo | Perdê-lo é definitivo. |
+| Os acontecimentos únicos, como já ter falado com a Velvet | Não se repetem, nem contam duas vezes. |
+| O nome do homem | As falas usam-no; o ecrã do nome ainda não existe. |
+
+Não se guardam os SP, os demónios, a câmara nem as tolerâncias do movimento: cada fase é uma cena
+nova e reconstrói-os. As opções do jogador ficam em ficheiro próprio, porque não pertencem a uma
+partida.
+
+Até à gravação seguinte, o que o homem faz conta como não feito. A morte não grava: recomeça a fase
+e repõe o autoload `GameState` e o registo moral tal como estavam na última gravação, e sair e usar
+o Continue tem o mesmo efeito. As fases são curtas, pelo que não se perde muito. Um nível que não
+inicia o jogo, como o Test room, fica fora disto: não grava nem repõe nada.
+A gravação escreve primeiro uma cópia e só depois a coloca no lugar da anterior, para que um jogo
+fechado a meio não destrua a última gravação. Uma gravação danificada, de outra versão ou de uma
+cena que já não existe conta como inexistente. Escolher o nível que inicia o jogo (`LevelEntry`,
+Starts Game) começa uma nova partida: havendo gravação, o jogo pede confirmação antes de a substituir,
+com a opção de a manter já selecionada.
 
 ### Convenções de código
 

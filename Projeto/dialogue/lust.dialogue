@@ -70,6 +70,10 @@ Velvet: You want out? Asmodeus decides who leaves, at the top of the floor. Most
 Velvet: [i](her tail swaying)[/i] Oh, I'll take you there myself. Closer.
 => END
 
+~ velvet_again
+Velvet: You want out? Asmodeus decides who leaves, at the top of the floor. Most decide to stay.
+=> END
+
 ~ velvet_advance
 Velvet: [i](from inside the fog)[/i] Shh. Nobody up there is watching anymore. Let your body decide, for once.
 {{GameState.player_name}}: [i](slurring)[/i] Get... away... from me...

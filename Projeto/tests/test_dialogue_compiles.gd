@@ -10,7 +10,7 @@ const DIALOGUE_EXTENSION: String = "dialogue"
 const EXPECTED_CUES: Dictionary = {
 	"lust.dialogue": [
 		"waking", "name_empty", "named", "velvet", "velvet_questions", "velvet_argument",
-		"velvet_advance", "velvet_burned", "asmodeus_offer", "asmodeus_second_offer",
+		"velvet_again", "velvet_advance", "velvet_burned", "asmodeus_offer", "asmodeus_second_offer",
 		"asmodeus_gift", "stairs",
 	],
 	"gluttony.dialogue": [

@@ -9,6 +9,7 @@ extends SceneTree
 
 func _init() -> void:
 	GameSettings.ignore_player_file = true
+	SaveFile.default_path = ""
 
 
 ## Whether the player's settings file exists and, if it does, its text and the time it was last

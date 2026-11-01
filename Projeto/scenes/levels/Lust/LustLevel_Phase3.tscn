@@ -1,5 +1,6 @@
 [gd_scene format=4 uid="uid://o2u0186bvdtx"]
 
+[ext_resource type="Script" path="res://levels/level.gd" id="level_script"]
 [ext_resource type="TileSet" uid="uid://drm8v88csh0jd" path="res://scenes/levels/Lust/cave_placeholder_tiles.tres" id="1_tiles"]
 [ext_resource type="PackedScene" path="res://debug/debug_overlay.tscn" id="2_debug"]
 [ext_resource type="PackedScene" uid="uid://b1g88pca2y1w4" path="res://player/player.tscn" id="3_player"]
@@ -76,7 +77,9 @@ size = Vector2(259, 218)
 [sub_resource type="RectangleShape2D" id="RectangleShape2D_lookoutstairs"]
 size = Vector2(624, 288)
 
-[node name="LustPhase3" type="Node2D" unique_id=448267584]
+[node name="LustPhase3" type="Node2D" node_paths=PackedStringArray("player") unique_id=448267584]
+script = ExtResource("level_script")
+player = NodePath("Player")
 
 [node name="CaveBackground" type="Polygon2D" parent="." unique_id=176574421]
 color = Color(0.34, 0.29, 0.33, 1)
@@ -107,34 +110,6 @@ polygon = PackedVector2Array(4896, 2112, 6340, 2400, 4896, 2400)
 [node name="Placeholder" type="Polygon2D" parent="Slides/RampSlide" unique_id=922897454]
 color = Color(0.55, 0.47, 0.45, 1)
 polygon = PackedVector2Array(4896, 2112, 6340, 2400, 4896, 2400)
-
-[node name="Checkpoints" type="Node2D" parent="." unique_id=470543609]
-
-[node name="Start" type="Area2D" parent="Checkpoints" unique_id=1506513749]
-position = Vector2(7224, 5304)
-collision_layer = 0
-collision_mask = 2
-monitorable = false
-
-[node name="CollisionShape2D" type="CollisionShape2D" parent="Checkpoints/Start" unique_id=1311838566]
-shape = SubResource("RectangleShape2D_checkpoint")
-
-[node name="Placeholder" type="Polygon2D" parent="Checkpoints/Start" unique_id=612923479]
-color = Color(1, 0.84, 0, 0.6)
-polygon = PackedVector2Array(-48, -72, 48, -72, 48, 72, -48, 72)
-
-[node name="End" type="Area2D" parent="Checkpoints" unique_id=1715023231]
-position = Vector2(3096, 312)
-collision_layer = 0
-collision_mask = 2
-monitorable = false
-
-[node name="CollisionShape2D" type="CollisionShape2D" parent="Checkpoints/End" unique_id=1890986610]
-shape = SubResource("RectangleShape2D_checkpoint")
-
-[node name="Placeholder" type="Polygon2D" parent="Checkpoints/End" unique_id=215443002]
-color = Color(1, 0.84, 0, 0.6)
-polygon = PackedVector2Array(-48, -72, 48, -72, 48, 72, -48, 72)
 
 [node name="CameraZones" type="Node2D" parent="." unique_id=1849726518]
 
