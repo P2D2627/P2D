@@ -7,3 +7,6 @@ extends Resource
 @export var title: String = ""
 ## The level's scene.
 @export var scene: PackedScene
+## On, this level is the start of the game: choosing it starts a new game, and the save follows it
+## from there. Off, as in a test room, it plays with nothing saved.
+@export var starts_game: bool = false

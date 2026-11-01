@@ -41,6 +41,16 @@ func stage() -> int:
 	return _record.stage()
 
 
-## Back to an empty record, for a new game. Saving it waits for the saves.
+## Back to an empty record, for a new game.
 func reset() -> void:
 	_record.reset()
+
+
+## Everything he did, as plain values a save can keep.
+func to_save() -> Dictionary:
+	return _record.to_save()
+
+
+## Puts back what to_save() gave.
+func from_save(data: Dictionary) -> void:
+	_record.from_save(data)

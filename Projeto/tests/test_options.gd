@@ -1,5 +1,6 @@
-# Checks the options screen, through the main scene. The main menu has Options between Play and
-# Quit, and Options opens the screen with the first volume selected, writing nothing. The screen
+# Checks the options screen, through the main scene. With no save, the main menu shows Options
+# between Play and Quit, and Options opens the screen with the first volume selected, writing
+# nothing. The screen
 # shows what Settings holds. Each control changes Settings: the arrows move a volume, Enter turns
 # full screen and V-Sync on and off, and the frame rate list picks a cap. Reset brings back the
 # defaults, on the screen and in Settings. Back, Esc and B close the screen onto the Options button,
@@ -34,7 +35,7 @@ func _the_main_menu_has_options_between_play_and_quit() -> bool:
 	var panel: Node = main_menu_node(main, ^"%MainPanel")
 	if panel != null:
 		for child: Node in panel.get_children():
-			if child is Button:
+			if child is Button and (child as Button).visible:
 				order.append((child as Button).text)
 	await tap(KEY_DOWN)
 	var selected: bool = has_focus(main_menu_node(main, ^"%OptionsButton"))

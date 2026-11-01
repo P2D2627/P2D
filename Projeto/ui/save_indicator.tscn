@@ -1,0 +1,27 @@
+[gd_scene format=3]
+
+[ext_resource type="Script" path="res://ui/save_indicator.gd" id="1_script"]
+[ext_resource type="Theme" path="res://ui/ui_theme.tres" id="2_theme"]
+
+[node name="SaveIndicator" type="CanvasLayer"]
+layer = 101
+script = ExtResource("1_script")
+
+[node name="Label" type="Label" parent="."]
+unique_name_in_owner = true
+anchors_preset = 3
+anchor_left = 1.0
+anchor_top = 1.0
+anchor_right = 1.0
+anchor_bottom = 1.0
+offset_left = -340.0
+offset_top = -100.0
+offset_right = -40.0
+offset_bottom = -40.0
+grow_horizontal = 0
+grow_vertical = 0
+mouse_filter = 2
+theme = ExtResource("2_theme")
+text = "Saving..."
+horizontal_alignment = 2
+vertical_alignment = 2

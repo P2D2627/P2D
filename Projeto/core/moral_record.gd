@@ -6,7 +6,8 @@ extends RefCounted
 ## he does adds to one total of points, by the values in MoralStats: each accepted temptation, each
 ## arrogant answer, and each offer he listened to for too long before refusing it. Two totals in
 ## the stats pick the stage, 0 to 2, that chooses how badly he speaks. Points never go down, so his
-## speech never mends; only reset() starts over. Nothing here is ever shown on screen.
+## speech never mends; only reset() starts over, and a save puts back what he had then, since what
+## he did after it counts as not done. Nothing here is ever shown on screen.
 
 ## The stage went up after something he did, or back to 0 on reset().
 signal stage_changed(stage: int)
@@ -124,6 +125,43 @@ func reset() -> void:
 	_humble_answers = 0
 	_arrogant_answers = 0
 	_listening.clear()
+	_update_stage()
+
+
+## Everything he did, as plain values a save can keep.
+func to_save() -> Dictionary:
+	var taken: PackedStringArray = []
+	for id: StringName in _taken:
+		taken.append(String(id))
+	var listening: Dictionary = {}
+	for id: StringName in _listening:
+		listening[String(id)] = _listening[id]
+	return {
+		"taken": taken,
+		"humble": _humble_answers,
+		"arrogant": _arrogant_answers,
+		"listening": listening,
+	}
+
+
+## Puts back what to_save() gave, in place of what he did so far. Says stage_changed if the stage
+## changes. Anything missing or of the wrong type counts as nothing done.
+func from_save(data: Dictionary) -> void:
+	_taken.clear()
+	var taken: Variant = data.get("taken")
+	if taken is PackedStringArray:
+		for id: String in taken:
+			_taken.append(StringName(id))
+	var humble: Variant = data.get("humble")
+	_humble_answers = humble if humble is int else 0
+	var arrogant: Variant = data.get("arrogant")
+	_arrogant_answers = arrogant if arrogant is int else 0
+	_listening.clear()
+	var listening: Variant = data.get("listening")
+	if listening is Dictionary:
+		for id: Variant in listening:
+			if id is String and listening[id] is float:
+				_listening[StringName(id)] = listening[id]
 	_update_stage()
 
 

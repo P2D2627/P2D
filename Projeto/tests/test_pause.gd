@@ -229,8 +229,9 @@ func _space_held_through_the_pause_and_esc_to_resume_does_not_jump() -> bool:
 			% [on_the_floor, resumed, jumps])
 
 
-## B, the gamepad's back button, is also Interact. In the game, B goes past the hidden pause to the
-## game. A B that went down in the game and comes up in the pause leaves the pause open; a B pressed
+## B, the gamepad's back button, was also Interact until Interact moved to R3; the check that a B
+## pressed in the pause leaves Interact unpressed stays, should B ever be both again. In the game,
+## B goes past the hidden pause to the game. A B that went down in the game and comes up in the pause leaves the pause open; a B pressed
 ## in the pause closes it and stops there. The probe sits in the level, so it only runs while the
 ## game does.
 func _b_closes_the_pause_and_leaves_interact_unpressed() -> bool:

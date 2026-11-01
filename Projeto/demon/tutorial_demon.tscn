@@ -1,0 +1,57 @@
+[gd_scene format=3 uid="uid://dn2lh7knydy5j"]
+
+[ext_resource type="Script" uid="uid://dk7gbxbjswifi" path="res://demon/tutorial_demon.gd" id="1_script"]
+[ext_resource type="Resource" uid="uid://cpsgq8t821mct" path="res://dialogue/lust.dialogue" id="2_lust"]
+[ext_resource type="PackedScene" uid="uid://73jm5qjy52vq" path="res://addons/dialogue_manager/example_balloon/example_balloon.tscn" id="3_balloon"]
+[ext_resource type="PackedScene" path="res://levels/key_prompt.tscn" id="4_key_prompt"]
+
+[sub_resource type="RectangleShape2D" id="RectangleShape2D_g4v7s"]
+size = Vector2(55, 72)
+
+[sub_resource type="RectangleShape2D" id="RectangleShape2D_talk"]
+size = Vector2(480, 240)
+
+[sub_resource type="LabelSettings" id="LabelSettings_caption"]
+font_size = 40
+font_color = Color(0.8, 0.75, 0.85, 1)
+outline_size = 10
+outline_color = Color(0.1, 0.08, 0.12, 1)
+
+[node name="TutorialDemon" type="Node2D" unique_id=1272659333]
+script = ExtResource("1_script")
+dialogue_resource = ExtResource("2_lust")
+balloon_scene = ExtResource("3_balloon")
+
+[node name="CharacterBody2D" type="CharacterBody2D" parent="." unique_id=2107806335]
+
+[node name="CollisionShape2D" type="CollisionShape2D" parent="CharacterBody2D" unique_id=1689564683]
+position = Vector2(-0.5, -36)
+shape = SubResource("RectangleShape2D_g4v7s")
+
+[node name="Placeholder" type="Polygon2D" parent="CharacterBody2D" unique_id=2088678931]
+color = Color(0.62, 0.3, 0.6, 1)
+polygon = PackedVector2Array(-28, -72, 28, -72, 28, 0, -28, 0)
+
+[node name="TalkArea" type="Area2D" parent="." unique_id=1942465212]
+unique_name_in_owner = true
+collision_layer = 0
+collision_mask = 2
+monitorable = false
+
+[node name="TalkShape" type="CollisionShape2D" parent="TalkArea" unique_id=1127783819]
+position = Vector2(0, -120)
+shape = SubResource("RectangleShape2D_talk")
+
+[node name="TalkKey" parent="." unique_id=2022991321 instance=ExtResource("4_key_prompt")]
+unique_name_in_owner = true
+position = Vector2(0, -150)
+action = &"interact"
+
+[node name="TalkText" type="Label" parent="TalkKey" unique_id=1905331253]
+offset_left = -200.0
+offset_top = -110.0
+offset_right = 200.0
+offset_bottom = -50.0
+text = "Talk"
+label_settings = SubResource("LabelSettings_caption")
+horizontal_alignment = 1

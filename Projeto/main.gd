@@ -5,7 +5,11 @@ extends Node
 ## was chosen, through their signals, and this script decides what happens. The scene runs Main
 ## while the game is paused (process mode Always), so Esc can resume it; the level slot is the part
 ## that pauses. When the player walks into a phase's exit, the next phase takes the level's place
-## behind a fade to black.
+## behind a fade to black. Reaching the end of a phase is the game's checkpoint: a new game, each
+## phase change and each SavePoint save, the Save Indicator says so, and the menu's Continue comes
+## back there. Until the next save, what the man does is as if he had not done it: a death starts
+## the phase over from the save, not only the level but GameState too. A level that does not start
+## the game plays outside the run, with nothing saved and nothing put back.
 
 ## The levels the main menu offers, in this order: each one a title and a scene. One left empty, or
 ## with no scene, stays out of the menu, with a warning.
@@ -20,11 +24,17 @@ var _playable_levels: Array[LevelEntry] = []
 ## True from a phase's exit until the next phase has faded in. Meanwhile the level is frozen and the
 ## game does not pause.
 var _changing_phase: bool = false
+## The game's save.
+var _save_file: SaveFile = SaveFile.new()
+## True while the level in the slot is part of the saved game: from a new game or from Continue.
+var _in_the_run: bool = false
 
 @onready var _level_slot: Node = %LevelSlot
 @onready var _main_menu: MainMenu = %MainMenu
 @onready var _pause_menu: PauseMenu = %PauseMenu
 @onready var _fade: ColorRect = %Fade
+@onready var _save_indicator: SaveIndicator = %SaveIndicator
+@onready var _progress: GameProgress = get_node(^"/root/GameState") as GameProgress
 
 
 func _ready() -> void:
@@ -38,9 +48,12 @@ func _ready() -> void:
 		titles.append(level.title)
 	_main_menu.add_levels(titles)
 	_main_menu.level_chosen.connect(_on_level_chosen)
+	_main_menu.continue_requested.connect(_on_continue_requested)
+	_main_menu.new_game_confirmed.connect(_play_level)
 	_main_menu.quit_requested.connect(_on_quit_requested)
 	_pause_menu.resume_requested.connect(_resume)
 	_pause_menu.main_menu_requested.connect(_on_main_menu_requested)
+	_main_menu.set_can_continue(_save_file.exists())
 
 
 ## The Pause action, Esc or Start, pauses a running level and resumes a paused one.
@@ -61,8 +74,47 @@ func _notification(what: int) -> void:
 
 ## The level goes in before the menu hides, so a level that fails to load leaves the menu on screen.
 func _on_level_chosen(index: int) -> void:
-	_start_level(_playable_levels[index].scene)
+	if _playable_levels[index].starts_game and _save_file.exists():
+		_main_menu.ask_to_replace_save(index)
+	else:
+		_play_level(index)
+
+
+## A level that starts the game is a new run: the state starts over, and so does the save.
+func _play_level(index: int) -> void:
+	var entry: LevelEntry = _playable_levels[index]
+	_in_the_run = entry.starts_game
+	if _in_the_run:
+		_progress.reset()
+	_start_level(entry.scene)
 	_main_menu.hide()
+	if _save(entry.scene.resource_path):
+		_save_indicator.show_saved()
+
+
+## Back to the saved phase, with the state as it was saved. A save that went bad since the menu
+## opened takes Continue away and leaves the menu on screen.
+func _on_continue_requested() -> void:
+	var saved: Dictionary = _save_file.read()
+	if saved.is_empty():
+		_main_menu.set_can_continue(false)
+		return
+	_in_the_run = true
+	_progress.from_save(saved["state"])
+	_start_level(load(saved["scene"]) as PackedScene)
+	_main_menu.hide()
+
+
+## True once the phase at scene_path and the state are on disk. Outside the run, nothing is saved.
+func _save(scene_path: String) -> bool:
+	return _in_the_run and _save_file.write(scene_path, _progress.to_save())
+
+
+## A save point of the level in the slot was reached.
+func _on_save_point_reached() -> void:
+	for level: Node in _level_slot.get_children():
+		if _save(level.scene_file_path):
+			_save_indicator.show_saved()
 
 
 ## A new copy of scene in the level slot. When it asks to start over, another new copy takes its
@@ -85,7 +137,17 @@ func _restart_level(level: Node, scene: PackedScene) -> void:
 	if not is_instance_valid(level) or level.get_parent() != _level_slot:
 		return
 	_clear_level()
+	_go_back_to_the_save()
 	_start_level(scene)
+
+
+## What the man did since the save is as if he had not done it.
+func _go_back_to_the_save() -> void:
+	if not _in_the_run:
+		return
+	var saved: Dictionary = _save_file.read()
+	if not saved.is_empty():
+		_progress.from_save(saved["state"])
 
 
 ## The next phase starts loading on another thread as the screen goes black, and is usually loaded
@@ -103,12 +165,16 @@ func _on_phase_exit_reached(next_scene_path: String) -> void:
 	_level_slot.set_deferred(&"process_mode", Node.PROCESS_MODE_DISABLED)
 	await _fade_to(1.0)
 	var next: PackedScene = ResourceLoader.load_threaded_get(next_scene_path) as PackedScene
+	var saved: bool = false
 	if next == null:
 		push_error("Main: the next phase, %s, is not a scene." % next_scene_path)
 	else:
 		_clear_level()
 		_start_level(next)
+		saved = _save(next_scene_path)
 	_level_slot.process_mode = Node.PROCESS_MODE_PAUSABLE
+	if saved:
+		_save_indicator.show_saved()
 	await _fade_to(0.0)
 	_changing_phase = false
 
@@ -120,15 +186,19 @@ func _on_quit_requested() -> void:
 func _on_main_menu_requested() -> void:
 	_resume()
 	_clear_level()
+	_main_menu.set_can_continue(_save_file.exists())
 	_main_menu.open()
 
 
-## Puts level in the slot and listens to the exits of its phases.
+## Puts level in the slot and listens to the exits of its phases and to its save points.
 func _add_level(level: Node) -> void:
 	_level_slot.add_child(level)
 	for node: Node in get_tree().get_nodes_in_group(PhaseExit.GROUP):
 		if level.is_ancestor_of(node):
 			(node as PhaseExit).reached.connect(_on_phase_exit_reached)
+	for node: Node in get_tree().get_nodes_in_group(SavePoint.GROUP):
+		if level.is_ancestor_of(node):
+			(node as SavePoint).reached.connect(_on_save_point_reached)
 
 
 ## The level leaves the tree at once and is freed at the end of the frame, so the level that comes

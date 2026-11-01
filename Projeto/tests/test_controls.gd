@@ -94,18 +94,18 @@ func _in_custom_a_key_or_mouse_button_remaps_an_action() -> bool:
 			% [custom, enabled, waiting, jump_text, crucifix_text, bindings, still_open])
 
 
-## In Custom, Jump goes to E, Interact's key: the screen then shows E on Jump and Space, Jump's old
+## In Custom, Jump goes to R, Interact's key: the screen then shows R on Jump and Space, Jump's old
 ## key, on Interact.
 func _a_key_another_action_had_swaps_over_on_the_screen() -> bool:
 	var main: Node = await _new_main_with_default_controls()
 	var controls: Control = _controls(await _open_controls_in_the_main_menu(main))
 	await _pick_profile(controls, InputProfiles.CUSTOM)
-	await _remap(controls, &"jump", KEY_E)
+	await _remap(controls, &"jump", KEY_R)
 	var texts: Array[String] = [_binding_button(controls, &"jump").text,
 			_binding_button(controls, &"interact").text]
 	await _back_to_default_controls()
 	await remove_main(main)
-	return report(texts == ["E", "Space"],
+	return report(texts == ["R", "Space"],
 			"A swap on the screen: Jump and Interact show %s" % [texts])
 
 
