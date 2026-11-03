@@ -25,6 +25,7 @@
 [ext_resource type="AudioStream" uid="uid://bis457scowalr" path="res://assets/audio/hard_land_2.wav" id="12_hard_land_2"]
 [ext_resource type="Script" uid="uid://cluvnfuwg430j" path="res://components/sinking_drawing.gd" id="13_sinking_drawing"]
 [ext_resource type="Script" uid="uid://cnf6ppd87trgl" path="res://player/player_animation.gd" id="14_animation"]
+[ext_resource type="Texture2D" path="res://assets/sprites/player/main_character_jump_384.png" id="15_jump"]
 
 [sub_resource type="RectangleShape2D" id="RectangleShape2D_player"]
 size = Vector2(48, 96)
@@ -93,6 +94,26 @@ region = Rect2(3840, 0, 384, 384)
 atlas = ExtResource("4_g4c7l")
 region = Rect2(4224, 0, 384, 384)
 
+[sub_resource type="AtlasTexture" id="AtlasTexture_jump0"]
+atlas = ExtResource("15_jump")
+region = Rect2(0, 0, 384, 384)
+
+[sub_resource type="AtlasTexture" id="AtlasTexture_jump1"]
+atlas = ExtResource("15_jump")
+region = Rect2(384, 0, 384, 384)
+
+[sub_resource type="AtlasTexture" id="AtlasTexture_jump2"]
+atlas = ExtResource("15_jump")
+region = Rect2(768, 0, 384, 384)
+
+[sub_resource type="AtlasTexture" id="AtlasTexture_jump3"]
+atlas = ExtResource("15_jump")
+region = Rect2(1152, 0, 384, 384)
+
+[sub_resource type="AtlasTexture" id="AtlasTexture_jump4"]
+atlas = ExtResource("15_jump")
+region = Rect2(1536, 0, 384, 384)
+
 [sub_resource type="SpriteFrames" id="SpriteFrames_g4v7s"]
 animations = [{
 "frames": [{
@@ -152,6 +173,26 @@ animations = [{
 "loop": 1,
 "name": &"walk",
 "speed": 18.0
+}, {
+"frames": [{
+"duration": 1.0,
+"texture": SubResource("AtlasTexture_jump0")
+}, {
+"duration": 1.0,
+"texture": SubResource("AtlasTexture_jump1")
+}, {
+"duration": 1.0,
+"texture": SubResource("AtlasTexture_jump2")
+}, {
+"duration": 1.0,
+"texture": SubResource("AtlasTexture_jump3")
+}, {
+"duration": 1.0,
+"texture": SubResource("AtlasTexture_jump4")
+}],
+"loop": 0,
+"name": &"jump",
+"speed": 5.0
 }]
 
 [node name="Player" type="CharacterBody2D" unique_id=1108148048 node_paths=PackedStringArray("input", "soul_points")]
