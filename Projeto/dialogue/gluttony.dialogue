@@ -71,6 +71,7 @@ Beelzebub: Seven days making it, and you ate the first slice. Imagine how she fe
 {{GameState.player_name}}: [i](pulling his hand back)[/i] No...
 Beelzebub: Never mind her. Nobody is judged here. We eat here. Sit down, taste one bite, and I will save you half of Hell.
 Beelzebub: Going up is hard, {{GameState.player_name}}. The upper floors do not forgive, and you are already tired.
+$> Offers.present(&"gluttony_shortcut")
 Beelzebub: So, a deal. One slice, and one bite of you. Not of the body; there is not much left of that. A bite of your soul. Then I carry you to the stairs myself.
 Beelzebub: Or sit down and stay. Forever is a long dinner, but nobody at my table ever goes hungry.
 - All right. I deserve this after everything I have been through. One slice cannot hurt anyone.
@@ -84,9 +85,11 @@ Beelzebub: Or sit down and stay. Forever is a long dinner, but nobody at my tabl
 	Beelzebub: [i](pushing the plate towards him)[/i] Just one. They always say just one.
 	$> Offers.accept(&"gluttony_shortcut")
 - No. I already ruined one cake; I will not ruin another. Let me pass.
+	$> Offers.refuse(&"gluttony_shortcut")
 	$> Moral.record_tone(&"humble")
 	Beelzebub: How tiresome. Regret ruins the appetite.
 - I am a righteous man. This is a trap and I will not fall for it. Get those crumbs out of my way.
+	$> Offers.refuse(&"gluttony_shortcut")
 	$> Moral.record_tone(&"arrogant")
 	Beelzebub: 'Righteous.' Such a heavy word for such a light man.
 => END
@@ -99,6 +102,7 @@ Beelzebub: You had a plate in each hand. You said, 'Give me five minutes.' Then 
 {{GameState.player_name}}: I... went to find her. Later.
 Beelzebub: Later. When the cake was gone. She said, 'It is fine now,' and you believed her, because it was more comfortable.
 Beelzebub: Up there it only gets worse. The next floor is Greed: every door has a price, and you have nothing to pay with. Stay here. At least here you eat.
+$> Offers.present(&"gluttony_shortcut")
 Beelzebub: My offer stands. One slice and one bite of your soul, and I carry you to the stairs. Or stay at my table. Either way, you are mine.
 - All right! But let it be clear that this is an exchange; I do not owe anyone anything.
 	$> Moral.record_tone(&"arrogant")
@@ -109,9 +113,11 @@ Beelzebub: My offer stands. One slice and one bite of your soul, and I carry you
 	Beelzebub: [i](already chewing)[/i] See? Giving up is the easiest thing on this floor.
 	$> Offers.accept(&"gluttony_shortcut")
 - No. If I accept, I will not be able to look my sister in the eye. Even dead.
+	$> Offers.refuse(&"gluttony_shortcut")
 	$> Moral.record_tone(&"humble")
 	Beelzebub: How beautiful. Such beautiful foolishness. But my offer does not expire.
 - No. I will get through on my own. Keep your stairs and your table!
+	$> Offers.refuse(&"gluttony_shortcut")
 	$> Moral.record_tone(&"arrogant")
 	Beelzebub: Look at him, the hero! Go on. I will keep your chair warm.
 => END
@@ -121,6 +127,7 @@ if Moral.has_taken(&"gluttony_shortcut")
 	Beelzebub: You see? I keep my word. And you were delicious.
 else
 	Beelzebub: You crossed my whole floor without a single bite. How rude.
+$> Offers.present(&"stomach")
 Beelzebub: Every one of us gives a gift on the way out. Mine is a demon's stomach. You swallow an ordinary demon whole, in one bite, and keep everything it knew. It takes time to digest, and there is no way to give it back.
 Beelzebub: The price? Hardly anything. You do not need to eat anymore, so every bite will be too much. And you will want every one.
 if GameState.has_crucifix
@@ -137,6 +144,7 @@ else
 	$> Offers.accept(&"stomach")
 	Beelzebub: You ate, {{GameState.player_name}}. For the first time, you truly ate.
 - No.
+	$> Offers.refuse(&"stomach")
 	if GameState.has_crucifix
 		{{GameState.player_name}}: I do not need your charity. I will keep the faith I have.
 	else

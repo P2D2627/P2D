@@ -711,7 +711,8 @@ Remote; os restantes valores são lidos sempre que são usados.
     ├── demon/         demónios que perseguem: cena, scripts, os estados (states/) e os valores de cada nível
     ├── camera/        câmara do jogo e zonas de câmara
     ├── debug/         overlay de depuração e vista dos demónios da sala de teste
-    ├── levels/        salas, níveis e a entrada de cada nível na lista do menu (LevelEntry)
+    ├── levels/        salas, níveis, a entrada de cada nível na lista do menu (LevelEntry) e os pontos de chegada (ArrivalPoint)
+    ├── offers/        tentações: o autoload Offers, uma oferta por ficheiro (OfferData), o catálogo e os efeitos
     ├── background/    fundo em camadas: as camadas (BackgroundLayer), o modelo e o fundo de cada nível
     ├── ui/            menus, ecrã das opções e o tema comum (ui_theme.tres)
     ├── components/    componentes usados por mais de um sistema: Repellable, Hitbox, Hurtbox, SinkingDrawing e KnockOff
@@ -1039,6 +1040,8 @@ teclado, e não pela letra impressa, pelo que o WASD se mantém num teclado AZER
 | `crucifix` | botão esquerdo do rato | RT / R2 (eixo 5) |
 | `pause` | Escape | Start |
 | `toggle_debug_overlay` | F3 | — |
+| `debug_accept_offer` / `debug_refuse_offer` | F7 / F8 | — |
+| `debug_reset_run` | F9 | — |
 | `ui_accept` | Enter, Espaço | A / Cross |
 | `ui_cancel` | Escape | B / Circle |
 
@@ -1793,6 +1796,13 @@ ligada à personagem num só sentido, e sai das exportações de release, pelo q
 dele. O F4 está reservado nos perfis de controlos, como o F3, porque uma ação do jogo atribuída a
 essa tecla feriria a personagem sempre que fosse usada nas versões de depuração.
 
+As teclas F7 e F8 aceitam e recusam a última oferta feita, ou, se ainda não houve nenhuma, a primeira
+do catálogo ainda por aceitar, tal como as falas o fariam. Permitem experimentar o atalho ou um dom
+sem jogar até lá. A tecla F9 recomeça o estado da partida: ofertas, registo moral, upgrades e
+crucifixo. O overlay mostra a oferta em causa, se já foi aceite, as recusas, o estádio moral e se o
+homem ainda tem o crucifixo. As três teclas estão reservadas nos perfis de controlos, pelas mesmas
+razões do F4.
+
 O overlay é uma cena própria, `debug/debug_overlay.tscn`, num `CanvasLayer`, pelo que não se
 desloca com a câmara. Recebe a personagem pelo Inspector e lê-a, ou fere-a com o F4, sem que ela
 dependa dele, pelo que a personagem é testada e exportada sem o overlay. Continua ativo com o jogo
@@ -2012,9 +2022,10 @@ nó define o seu próprio tamanho de letra: uma futura opção de tamanho do tex
 
 O jogo julga o homem pela forma como se joga, sem o mostrar. O autoload `Moral` guarda esse registo
 num único sítio, e nada no ecrã o lê. As falas (ficheiros `.dialogue`) e as ofertas dos demónios
-comunicam com ele apenas por seis nomes: aceitar uma tentação, o tom de uma resposta (humilde ou
-arrogante), o tempo que o homem ouviu uma proposta antes de a recusar, se já aceitou uma dada
-tentação, o estádio atual e o aviso de que o estádio mudou.
+comunicam com ele apenas por sete nomes: aceitar uma tentação, recusá-la, o tom de uma resposta
+(humilde ou arrogante), o tempo que o homem ouviu uma proposta antes de a recusar, se já aceitou uma
+dada tentação, o estádio atual e o aviso de que o estádio mudou. Uma recusa fica contada para o
+julgamento, mas não soma nem retira pontos.
 
 Tudo o que o homem faz soma pontos a um único total. Uma tentação aceite soma o valor indicado para
 ela, contando uma só vez, mesmo que volte a ser aceite. Cada portagem roubada no nível 3 vale menos
@@ -2032,10 +2043,11 @@ deixaria de medir o que o jogador escolhe. A soma única foi preferida a contar 
 que ignoraria a soberba nas respostas, e a ter um limiar por categoria, que daria seis valores
 difíceis de afinar e de explicar.
 
-| Valor (`core/moral_stats.tres`) | Referência |
+| Valor | Referência |
 |---|---|
-| Atalho ou dom de um demónio | 1 ponto |
-| Cada portagem roubada | 0,4 pontos |
+| Atalho ou dom de um demónio (Moral Weight, no ficheiro da oferta em `offers/`) | 1 ponto |
+| Cada portagem roubada (idem) | 0,4 pontos |
+| Tentação sem ficheiro de oferta (`core/moral_stats.tres`, tal como os seguintes) | 1 ponto |
 | Resposta arrogante | 0,15 pontos |
 | Ouvir uma proposta | 0,1 pontos por segundo além de 3 s, até 0,5 por proposta |
 | Estádio 1 / estádio 2 | a partir de 1 / de 3 pontos |
@@ -2044,6 +2056,41 @@ São valores de referência, a afinar em jogo. Com eles, um atalho basta para a 
 três portagens juntas pesam pouco mais do que um atalho. As regras estão numa classe sem nós
 (`MoralRecord`), testada isoladamente; o autoload limita-se a disponibilizá-la. O `reset()` limpa o
 registo para um jogo novo, e o registo entra na gravação do jogo.
+
+#### Ofertas: tentações em dados
+
+Todas as tentações do jogo passam por um único sistema, o autoload `Offers`. Cada oferta é um
+ficheiro de dados (`OfferData`, em `offers/`) com quem a faz, o que oferece, o custo tal como o
+demónio o diz, o efeito de a aceitar e o peso moral. O catálogo (`offers/offer_catalog.tres`)
+reúne-as todas. Os níveis 2 e 3 acrescentam ficheiros e falas, sem código novo.
+
+As falas usam três chamadas: `Offers.present` quando a proposta é feita, e `Offers.accept` ou
+`Offers.refuse` com a resposta. Aceitar conta a tentação no registo moral uma só vez e emite o sinal
+`accepted`. Recusar conta a recusa e o tempo que o homem ouviu a proposta, e emite `refused`. Quem
+precisa de reagir ouve estes sinais, e o `Offers` não conhece nenhum deles: o `Main` muda de fase
+num atalho e o nível retira o crucifixo das mãos do homem.
+
+O efeito de uma oferta aceite só se aplica quando o balão de diálogo fecha. Assim, um atalho nunca
+muda a fase com uma conversa aberta. Há dois tipos de efeito: ir para outra fase, que é o atalho,
+e receber um upgrade, que são os dons. O atalho de Asmodeu leva à fase 3 da luxúria, com a mesma
+passagem a preto das saídas de fase, e põe o homem no ponto de chegada (`ArrivalPoint`) junto à
+tenda, no fim do túnel final. A gravação guarda esse ponto, pelo que uma morte ou o Continue o
+devolvem à tenda, e não ao início da fase. Perder o crucifixo não é o custo de uma oferta em
+particular: é uma regra do jogo, guardada no `GameState`. O primeiro upgrade aceite, seja ele qual
+for, tira o crucifixo.
+
+Foi preferido um sistema único com dados a um script por oferta, porque, com sete níveis, cada
+tentação nova obrigaria a escrever e testar código. O peso moral passou do `MoralStats` para o
+ficheiro de cada oferta, para que cada valor exista num só sítio. Cada resposta acrescenta ainda
+uma linha a `user://offers_log.csv`, com a oferta, a escolha, os segundos de escuta e o tempo de
+jogo. Serve os playtests: permite verificar se quem aceita o atalho é quem está a ter
+dificuldades.
+
+O `test_offers.gd` verifica aceitar, recusar, aceitar duas vezes, uma oferta inexistente, o efeito
+adiado até o balão fechar e o crucifixo perdido com o primeiro upgrade. O `test_offer_catalog.gd`
+verifica os dados: ids únicos, todos os ids das falas presentes no catálogo, e um atalho que aponta
+para uma fase e um ponto de chegada que existem. O `test_offer_shortcut.gd` percorre o atalho no
+jogo, e o `test_dialogue_calls.gd` confirma que todas as funções chamadas pelas falas existem.
 
 #### Gravação do jogo
 
@@ -2060,6 +2107,8 @@ as opções.
 | A fase | É o ponto para onde o Continue regressa. |
 | O registo moral | O julgamento final depende de tudo o que o homem fez. |
 | Se ainda tem o crucifixo | Perdê-lo é definitivo. |
+| Os upgrades aceites | Os dons dos demónios ficam para os níveis seguintes. |
+| O ponto de chegada na fase, se houver | Depois de um atalho, a morte e o Continue voltam lá, e não ao início da fase. |
 | Os acontecimentos únicos, como já ter falado com a Velvet | Não se repetem, nem contam duas vezes. |
 | O nome do homem | As falas usam-no; o ecrã do nome ainda não existe. |
 

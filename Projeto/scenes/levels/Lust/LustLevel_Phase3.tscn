@@ -13,6 +13,7 @@
 [ext_resource type="Script" uid="uid://dy6i0pkh5hbec" path="res://platforms/platform_cycle.gd" id="10_cycle"]
 [ext_resource type="Script" uid="uid://cyx7iod6v0x4h" path="res://levels/slide.gd" id="12_slide"]
 [ext_resource type="Script" uid="uid://b0wosaq7rvdek" path="res://camera/camera_lookout.gd" id="cl_script"]
+[ext_resource type="Script" path="res://levels/arrival_point.gd" id="13_arrival"]
 
 [sub_resource type="RectangleShape2D" id="RectangleShape2D_checkpoint"]
 size = Vector2(96, 144)
@@ -648,3 +649,8 @@ limit_right = 7824
 limit_bottom = 5808
 player = NodePath("../Player")
 level_tiles = NodePath("../Cave")
+
+[node name="AsmodeusTent" type="Marker2D" parent="."]
+position = Vector2(3144, 360)
+script = ExtResource("13_arrival")
+id = &"asmodeus_tent"

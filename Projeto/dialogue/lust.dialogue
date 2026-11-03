@@ -96,6 +96,7 @@ Asmodeus: And take that little cross off. It's rude to bring a chaperone.
 {{GameState.player_name}}: The Lord is not a chaperone.
 Asmodeus: No. A chaperone would have stopped you.
 {{GameState.player_name}}: Your hound said you decide who leaves.
+$> Offers.present(&"lust_shortcut")
 Asmodeus: I do. And tonight I'm generous. Spend the night with me, and in the morning I'll walk you to the stairs myself. No running. No demons. No more of... [i](a lazy wave at the floor)[/i] ...this.
 {{GameState.player_name}}: And if I refuse?
 Asmodeus: Then you walk. It's a long floor, darling, and everyone on it wants a piece of you. Or you stay. Here, with me. Nobody would ever know.
@@ -108,9 +109,11 @@ Asmodeus: Then you walk. It's a long floor, darling, and everyone on it wants a 
 	Asmodeus: [i](smiling)[/i] Home. To her. Of course. They all want to go home afterwards. None of them ever do.
 	$> Offers.accept(&"lust_shortcut")
 - I made a vow before God. I will find the way myself.
+	$> Offers.refuse(&"lust_shortcut")
 	$> Moral.record_tone(&"humble")
 	Asmodeus: A vow. Making it was the easy part, darling.
 - Find yourself a weaker man. I am not like the others you have here.
+	$> Offers.refuse(&"lust_shortcut")
 	$> Moral.record_tone(&"arrogant")
 	Asmodeus: [i](laughing)[/i] Not like the others. They all say that. Then the candles burn down, and they come crawling back.
 => END
@@ -123,10 +126,11 @@ Asmodeus: Let me tell you a story. Your sister's wedding.
 Asmodeus: A farm by the river. Wine since noon. Two bridesmaids, one night.
 {{GameState.player_name}}: That is a lie.
 Asmodeus: You were single then. Single, and very generous with yourself. Neither of them knew about the other.
-$> GameState.set_flag(&"heard_wedding")
+$> GameState.mark_event(&"heard_wedding")
 {{GameState.player_name}}: [i](closing his eyes)[/i] Damn that wedding.
 {{GameState.player_name}}: [i](at once)[/i] Forgive me, Lord. Language.
 Asmodeus: [i](delighted)[/i] Oh, I like you better already.
+$> Offers.present(&"lust_shortcut")
 Asmodeus: My offer stands. One night. Then the stairs.
 - Fine. But this changes nothing. I am still a good man.
 	$> Moral.record_tone(&"arrogant")
@@ -137,9 +141,11 @@ Asmodeus: My offer stands. One night. Then the stairs.
 	Asmodeus: [i](holding out her hand)[/i] There. Was that so hard?
 	$> Offers.accept(&"lust_shortcut")
 - I did those things. I will not do them again.
+	$> Offers.refuse(&"lust_shortcut")
 	$> Moral.record_tone(&"humble")
 	Asmodeus: [i](for once, she doesn't smile)[/i] Hm. That's new. It won't last.
 - You know nothing about me. Get out of my way.
+	$> Offers.refuse(&"lust_shortcut")
 	$> Moral.record_tone(&"arrogant")
 	Asmodeus: I know everything about you, darling. I was there. Both times.
 => END
@@ -147,14 +153,15 @@ Asmodeus: My offer stands. One night. Then the stairs.
 ~ asmodeus_gift
 if Moral.has_taken(&"lust_shortcut")
 	Asmodeus: You see? I keep my promises. Unlike some.
-	if not GameState.has_flag(&"heard_wedding")
+	if not GameState.has_event(&"heard_wedding")
 		Asmodeus: Your sister's wedding, for instance. Two bridesmaids, one night, and a promise to each.
-		$> GameState.set_flag(&"heard_wedding")
+		$> GameState.mark_event(&"heard_wedding")
 		{{GameState.player_name}}: [i](closing his eyes)[/i] Damn that wedding.
 		{{GameState.player_name}}: [i](at once)[/i] Forgive me, Lord. Language.
 else
 	Asmodeus: You walked the whole floor and still ended up here. They always do. It's almost rude.
 Asmodeus: Every one of us gives a gift on the way out. It's how we make sure you come back.
+$> Offers.present(&"charm")
 Asmodeus: Charm. Look at a demon, and it stops and stares at you. The way those two bridesmaids did.
 Asmodeus: The price? Hardly anything. You'll never know again if they want you, or the gift.
 if GameState.has_crucifix
@@ -167,6 +174,7 @@ if GameState.has_crucifix
 	$> Offers.accept(&"charm")
 	Asmodeus: There. Now nobody will look away from you again.
 - Keep it.
+	$> Offers.refuse(&"charm")
 	if Moral.stage() >= 1
 		{{GameState.player_name}}: I have the Lord. I do not need your tricks.
 		Asmodeus: Faith. How sweet. It's always the faithful who fall the furthest.

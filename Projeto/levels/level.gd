@@ -6,7 +6,8 @@ extends Node2D
 ## man, the demons and the camera. In the game, Main put it in its level slot and makes the swap,
 ## on restart_requested; run on its own, with F6, it is the current scene and reloads itself. The
 ## wait pauses with the level. The man keeps the crucifix only while GameState says he holds it, and
-## GameState hears when he loses it, since the level starts over without what it knew.
+## GameState hears when he loses it, since the level starts over without what it knew; when the
+## first upgrade costs it in GameState, the one in his hands goes at once.
 ## on restart_requested; run on its own, with F6, it is the current scene and reloads itself, after
 ## saying so with the same signal. The wait pauses with the level.
 
@@ -38,7 +39,15 @@ func _follow_the_crucifix() -> void:
 		return
 	if progress.has_crucifix:
 		crucifix.lost.connect(progress.lose_crucifix)
+		progress.upgrade_granted.connect(_on_upgrade_granted.bind(crucifix))
 	else:
+		crucifix.lose()
+
+
+## The first upgrade cost him the crucifix, in GameState: the one in his hands goes too.
+func _on_upgrade_granted(_id: StringName, crucifix: Crucifix) -> void:
+	var progress: GameProgress = get_node(^"/root/GameState") as GameProgress
+	if is_instance_valid(crucifix) and not progress.has_crucifix:
 		crucifix.lose()
 
 

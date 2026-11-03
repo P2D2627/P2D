@@ -1,0 +1,17 @@
+[gd_resource type="Resource" script_class="OfferData" format=3]
+
+[ext_resource type="Script" path="res://offers/offer_data.gd" id="1_data"]
+[ext_resource type="Script" path="res://offers/grant_upgrade_effect.gd" id="2_effect"]
+
+[sub_resource type="Resource" id="Resource_effect"]
+script = ExtResource("2_effect")
+upgrade = &"stomach"
+
+[resource]
+script = ExtResource("1_data")
+id = &"stomach"
+offerer = "Beelzebub"
+what = "A demon's stomach: Beelzebub's gift on the way out."
+cost = "He no longer needs to eat, so every bite is too much."
+effect = SubResource("Resource_effect")
+moral_weight = 1.0

@@ -2,12 +2,23 @@ class_name DebugOverlay
 extends CanvasLayer
 
 ## Text in a corner of the screen with the numbers that help tune the game while playing. The
-## Toggle Debug Overlay action shows and hides it, and Debug Damage hurts the player. Outside debug
-## builds it frees itself, so a release export never shows it and nothing hurts through it. Its
-## scene sets the process mode to Always, so it keeps working while the game is paused.
+## Toggle Debug Overlay action shows and hides it, and Debug Damage hurts the player. Debug Accept
+## Offer and Debug Refuse Offer answer the last offer made, or the first not yet accepted, as the
+## lines would, so a shortcut or a gift can be tried without playing up to it; Debug Reset Run
+## starts the run state over, offers and moral record included. Outside debug builds it frees
+## itself, so a release export never shows it and nothing happens through it. Its scene sets the
+## process mode to Always, so it keeps working while the game is paused.
 
 const TOGGLE_ACTION: StringName = &"toggle_debug_overlay"
 const DAMAGE_ACTION: StringName = &"debug_damage"
+# TEMPORARY, debug only: Debug Accept Offer (F7), Debug Refuse Offer (F8) and Debug Reset Run (F9)
+# try the offers before the lines reach them in play. Once every offer is answered in its
+# .dialogue and the levels lead up to it, remove them: these three constants, their branches in
+# _unhandled_input, _answer_offer, _offer_to_answer, the three actions in project.godot, F7 to F9
+# in RESERVED_KEYS of core/input_profiles.gd, and their rows in the README.
+const ACCEPT_OFFER_ACTION: StringName = &"debug_accept_offer"
+const REFUSE_OFFER_ACTION: StringName = &"debug_refuse_offer"
+const RESET_RUN_ACTION: StringName = &"debug_reset_run"
 const MS_PER_SECOND: float = 1000.0
 
 ## Whether the text shows when the scene starts.
@@ -30,6 +41,9 @@ var _take_off_y: float = 0.0
 var _peak_y: float = 0.0
 
 @onready var _label: Label = %Label
+@onready var _offers: GameOffers = get_node_or_null(^"/root/Offers") as GameOffers
+@onready var _moral: GameMoral = get_node_or_null(^"/root/Moral") as GameMoral
+@onready var _progress: GameProgress = get_node_or_null(^"/root/GameState") as GameProgress
 
 
 func _ready() -> void:
@@ -51,11 +65,23 @@ func _unhandled_input(event: InputEvent) -> void:
 	elif event.is_action_pressed(DAMAGE_ACTION):
 		_hurt_player()
 		get_viewport().set_input_as_handled()
+	elif _is_pressed(event, ACCEPT_OFFER_ACTION):
+		_answer_offer(true)
+		get_viewport().set_input_as_handled()
+	elif _is_pressed(event, REFUSE_OFFER_ACTION):
+		_answer_offer(false)
+		get_viewport().set_input_as_handled()
+	elif _is_pressed(event, RESET_RUN_ACTION) and _progress != null:
+		_progress.reset()
+		if _offers != null:
+			_offers.clear()
+		get_viewport().set_input_as_handled()
 
 
 ## Rewrites the text on every frame while it shows, with new strings each time, which only debug
 ## builds pay for. Each section is its own function. The player's sections need a player that still
-## exists, and the camera's a camera: none may be linked, or it may have been freed.
+## exists, and the camera's a camera: none may be linked, or it may have been freed. The offers'
+## section is about his run, so it shows with a player too, and with the autoloads Offers and Moral.
 func _process(_delta: float) -> void:
 	var text: String = _performance_section()
 	if is_instance_valid(player):
@@ -66,6 +92,8 @@ func _process(_delta: float) -> void:
 		text += "\n" + _camera_section()
 	if is_instance_valid(player) and not _last_jump.is_empty():
 		text += "\n" + _jump_section()
+	if is_instance_valid(player) and _offers != null and _moral != null:
+		text += "\n" + _offers_section()
 	_label.text = text
 
 
@@ -86,6 +114,35 @@ func _hurt_player() -> void:
 	if get_tree().paused or not is_instance_valid(player) or not is_instance_valid(player.soul_points):
 		return
 	player.soul_points.take_damage(debug_damage)
+
+
+## Accepts or refuses the offer the debug keys answer, unless the game is paused.
+func _answer_offer(accept: bool) -> void:
+	var offer: OfferData = _offer_to_answer()
+	if get_tree().paused or offer == null:
+		return
+	if accept:
+		_offers.accept(offer.id)
+	else:
+		_offers.refuse(offer.id)
+
+
+## The last offer made, or else the first in the catalog not yet accepted; null with no Offers or
+## with every offer accepted.
+func _offer_to_answer() -> OfferData:
+	if _offers == null:
+		return null
+	if _offers.last_presented != null:
+		return _offers.last_presented
+	for offer: OfferData in GameOffers.get_catalog().offers:
+		if offer != null and not _moral.has_taken(offer.id):
+			return offer
+	return null
+
+
+## Whether event presses action, and false, with no error, while the Input Map lacks it.
+func _is_pressed(event: InputEvent, action: StringName) -> bool:
+	return InputMap.has_action(action) and event.is_action_pressed(action)
 
 
 ## While hidden, _process does not run, so the text costs nothing per frame. Jumps are still
@@ -135,6 +192,20 @@ func _camera_section() -> String:
 ## and stays once it stops.
 func _jump_section() -> String:
 	return "%s   peak %.0f px" % [_last_jump, _take_off_y - _peak_y]
+
+
+## The offer the debug keys answer and whether it was accepted, the moral stage and the points, and
+## whether he still holds the crucifix.
+func _offers_section() -> String:
+	var offer: OfferData = _offer_to_answer()
+	var answered: String = "every offer accepted"
+	if offer != null:
+		answered = "offer %s (%s)   refused %d" % [offer.id,
+				"accepted" if _moral.has_taken(offer.id) else "open", _moral.get_refusal_count(offer.id)]
+	var crucifix: String = ""
+	if _progress != null:
+		crucifix = "   crucifix %s" % ("held" if _progress.has_crucifix else "lost")
+	return "%s   moral stage %d%s" % [answered, _moral.stage(), crucifix]
 
 
 ## One of the engine's time monitors, in ms instead of seconds.

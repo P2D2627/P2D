@@ -2,25 +2,14 @@ class_name MoralStats
 extends Resource
 
 ## The values of the man's hidden moral record (#169): what each thing he does adds to one total of
-## points, and the totals at which his speech gets worse. MoralRecord reads them each time it adds
-## the points up, so they can be tuned in the Remote tab while the game runs; the stage then
+## points, and the totals at which his speech gets worse. What each temptation weighs is in its
+## offer, in offers/; only what an unknown one weighs is here. MoralRecord reads them each time it
+## adds the points up, so they can be tuned in the Remote tab while the game runs; the stage then
 ## changes with the next thing he does.
 
 @export_group("Temptations")
-## Points each accepted temptation adds, by the id the offers and the lines use. Each toll stolen
-## in Greed weighs less than a shortcut, since that level has three.
-@export var temptation_points: Dictionary[StringName, float] = {
-	&"lust_shortcut": 1.0,
-	&"charm": 1.0,
-	&"gluttony_shortcut": 1.0,
-	&"stomach": 1.0,
-	&"greed_toll_1": 0.4,
-	&"greed_toll_2": 0.4,
-	&"greed_toll_3": 0.4,
-	&"claim": 1.0,
-}
-## Points a temptation missing from Temptation Points adds. It still counts, with a warning, so a
-## new offer is never free while its id waits to be added above.
+## Points a temptation missing from the offer catalog adds. It still counts, with a warning, so a
+## new offer is never free while its file waits to be made.
 @export_range(0.0, 5.0, 0.05) var unknown_temptation_points: float = 1.0
 
 @export_group("Tone")
