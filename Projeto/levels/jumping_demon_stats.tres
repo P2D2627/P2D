@@ -1,4 +1,4 @@
-[gd_resource type="Resource" script_class="DemonStats" format=3 uid="uid://vsyvrg8uxdwl"]
+[gd_resource type="Resource" script_class="DemonStats" format=3]
 
 [ext_resource type="Script" uid="uid://5pjnqw8qfj0x" path="res://demon/demon_stats.gd" id="1_script"]
 [ext_resource type="Script" uid="uid://bghijfm4lswje" path="res://demon/demon_attack.gd" id="2_attack"]
@@ -32,11 +32,11 @@ chases_only_on_screen = true
 screen_margin = 160.0
 return_speed = 200.0
 patrol_width = 480.0
-jump_height = 96.0
-max_drop = 240.0
 attacks = Array[ExtResource("2_attack")]([SubResource("Resource_bite"), SubResource("Resource_lunge")])
 retreat_distance = 130.0
 pack_spacing = 24.0
 pack_variation = 0.1
 max_hesitation = 0.5
 stunned_time = 1.2
+jump_height = 96.0
+max_drop = 240.0

@@ -25,11 +25,14 @@ signal land_played(hard: bool)
 @export_group("Footsteps")
 ## Plays the footsteps. Its own stream is replaced by one of Footstep Sounds on each step.
 @export var footstep: AudioStreamPlayer2D
-## Where the steps come from: a step plays each time its walk plants a foot, so the sound lands with
-## the drawing. How far apart they are, and where the first one falls, is the walk cycle's, there.
-@export var animation: PlayerAnimation
 ## The step sounds. Each step picks one at random, never the same as the step before.
 @export var footstep_sounds: Array[AudioStream] = []
+## How far the player runs on the floor between two steps. The first step after a landing comes at
+## half this distance, so it does not crowd the landing's sound.
+@export_range(20.0, 1000.0, 10.0, "suffix:px") var step_distance: float = 220.0
+## How far the player runs from standing still before the first step. 0 plays it on the first frame
+## the player moves, so starting to run is heard at once.
+@export_range(0.0, 1000.0, 10.0, "suffix:px") var first_step_distance: float = 0.0
 ## How far each step's amplitude can move from the normal, either way: 0.01 is 1% up or down.
 @export_range(0.0, 0.5, 0.005) var footstep_volume_variation: float = 0.01
 
@@ -50,6 +53,8 @@ signal land_played(hard: bool)
 ## off a wall always lands with a sound, however short the last drop.
 @export_range(0.0, 200.0, 1.0, "suffix:px") var min_land_height: float = 16.0
 
+## How far the player has run on the floor since the last step, in px.
+var _distance_since_step: float = 0.0
 ## The index in footstep_sounds of the last step played, -1 before the first.
 var _last_footstep_index: int = -1
 ## The highest y of the current fall: the player's y on the floor or on a wall, and the smallest y
@@ -63,7 +68,6 @@ func _ready() -> void:
 	assert(player != null, "PlayerSounds: assign the Player to Player.")
 	assert(wall_slide != null, "PlayerSounds: assign an AudioStreamPlayer2D to Wall Slide.")
 	assert(footstep != null, "PlayerSounds: assign an AudioStreamPlayer2D to Footstep.")
-	assert(animation != null, "PlayerSounds: assign the PlayerAnimation to Animation.")
 	assert(not footstep_sounds.is_empty(), "PlayerSounds: add the step sounds to Footstep Sounds.")
 	assert(jump != null, "PlayerSounds: assign an AudioStreamPlayer2D to Jump.")
 	assert(land != null, "PlayerSounds: assign an AudioStreamPlayer2D to Land.")
@@ -76,13 +80,14 @@ func _ready() -> void:
 	player.jumped.connect(_on_jumped.unbind(2))
 	player.wall_jumped.connect(_on_jumped.unbind(2))
 	player.landed.connect(_on_landed)
-	animation.stepped.connect(_play_footstep)
+	_distance_since_step = step_distance / 2.0
 	_fall_top_y = player.global_position.y
 
 
-func _physics_process(_delta: float) -> void:
+func _physics_process(delta: float) -> void:
 	_update_fall_top()
 	_update_wall_slide()
+	_update_footsteps(delta)
 
 
 ## On the floor or on a wall the fall starts again from where the player is, so sliding down a wall
@@ -106,6 +111,23 @@ func _update_wall_slide() -> void:
 			_play(wall_slide)
 	elif wall_slide.playing:
 		wall_slide.stop()
+
+
+## Counts the distance run on the floor and plays a step every step_distance. Standing still starts
+## the count again so the first step comes after first_step_distance; leaving the floor starts it
+## again from half a step, for the steps after the landing.
+func _update_footsteps(delta: float) -> void:
+	if player.get_state() != Player.State.ON_FLOOR:
+		_distance_since_step = step_distance / 2.0
+		return
+	var running_speed: float = absf(player.velocity.x)
+	if running_speed == 0.0:
+		_distance_since_step = step_distance - first_step_distance
+		return
+	_distance_since_step += running_speed * delta
+	if _distance_since_step >= step_distance:
+		_distance_since_step -= step_distance
+		_play_footstep()
 
 
 ## One of the step sounds at random, never the last one again, with its pitch and amplitude moved a
