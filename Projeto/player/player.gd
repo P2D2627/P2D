@@ -14,12 +14,16 @@ signal wall_jumped(late_frames: int, buffered_frames: int)
 ## is already ON_FLOOR for whoever hears it; that is on the physics frame after the one that touched
 ## the floor. The camera uses it to reframe on the new floor.
 signal landed
-## The man died; today only when a grab runs out of time, which the scene passes on from his
-## GrabEscape to _on_grab_escape_died(). The level listens and starts over (ADR 0026).
+## The man died: when a grab runs out of time, which the scene passes on from his GrabEscape to
+## _on_grab_escape_died(), or when something calls die(), such as spikes. The level listens and starts
+## over (ADR 0026). His scene closes his Hurtbox on it, since the room starts over.
 signal died
 
 ## Where the player is. Each state runs its own physics, and only _update_state() changes it.
 enum State { ON_FLOOR, IN_AIR, ON_WALL }
+
+## Name of death's modifier on the player.
+const DEATH_SOURCE: StringName = &"death"
 
 ## Movement values. Every player that uses the same file shares them.
 @export var stats: PlayerMovementStats
@@ -61,6 +65,8 @@ var _knock_off: KnockOff = KnockOff.new(self)
 ## True from hold_still() to let_go(): nothing shoves the player off what he stands on, and off the
 ## floor he is in the air, never on a wall.
 var _held_still: bool = false
+## True once he has died, so he dies once.
+var _is_dead: bool = false
 
 ## The drawing faces left; it is mirrored while the player faces right.
 @onready var _sprite: AnimatedSprite2D = $Sprite
@@ -171,8 +177,23 @@ func let_go() -> void:
 	_held_still = false
 
 
-func _on_grab_escape_died() -> void:
+## The man dies at once, as on spikes, whatever his SP: he stops where he is, with no run and no jump,
+## and says so with died, once. The level listens and starts over.
+func die() -> void:
+	if _is_dead:
+		return
+	_is_dead = true
+	add_movement_modifier(DEATH_SOURCE, MovementModifier.new(0.0, 1.0, true))
+	hold_still()
 	died.emit()
+
+
+func is_dead() -> bool:
+	return _is_dead
+
+
+func _on_grab_escape_died() -> void:
+	die()
 
 
 ## Changes the state from what the last move_and_slide() found, so the take-off frame still runs

@@ -294,5 +294,6 @@ grab_escape = NodePath("../GrabEscape")
 [connection signal="healed" from="Crucifix" to="SoulPoints" method="heal"]
 [connection signal="broke_free" from="GrabEscape" to="Crucifix" method="unblock" binds= [&"grab"]]
 [connection signal="died" from="GrabEscape" to="." method="_on_grab_escape_died"]
+[connection signal="died" from="." to="Hurtbox" method="set_closed" binds= [true]]
 [connection signal="grabbed" from="GrabEscape" to="Crucifix" method="block" binds= [&"grab"]]
 [connection signal="sink_changed" from="GrabEscape" to="SinkingDrawing" method="set_sink"]

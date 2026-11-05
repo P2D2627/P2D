@@ -1,0 +1,18 @@
+[gd_scene format=3]
+
+[ext_resource type="Script" path="res://traps/lethal_spikes.gd" id="1_script"]
+
+[sub_resource type="RectangleShape2D" id="RectangleShape2D_spikes"]
+resource_local_to_scene = true
+size = Vector2(88, 24)
+
+[node name="LethalSpikes" type="Area2D"]
+collision_layer = 0
+collision_mask = 2
+monitorable = false
+script = ExtResource("1_script")
+
+[node name="Shape" type="CollisionShape2D" parent="."]
+unique_name_in_owner = true
+position = Vector2(0, -12)
+shape = SubResource("RectangleShape2D_spikes")

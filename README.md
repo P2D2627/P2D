@@ -379,6 +379,23 @@ e os arremessos) e na cena da personagem (a invulnerabilidade), e são provisór
 mantendo o salto premido, em vez de o premir repetidamente, já existe no código e chega às opções
 numa tarefa seguinte, para quem não consegue premir depressa.
 
+### Portões, picos letais e plataformas que desabam
+
+Quatro elementos para qualquer nível, cada um numa cena própria, que se coloca na cena do nível e se
+ajusta no Inspector. Por agora são formas provisórias, até chegar a arte.
+
+| Elemento | Cena | Comportamento | Medida |
+|---|---|---|---|
+| Portão | `gates/gate.tscn` | barra uma passagem à personagem, aos demónios e à visão destes; desbloqueado, sobe a sua própria altura, por trás da rocha | sobe em 0,8 s (48 passos de física) |
+| Desbloqueador | `gates/gate_unlocker.tscn` | ativa-se uma vez, com o crucifixo erguido ao pé dele, e abre os portões da lista Gates; o crucifixo não sabe que ele existe, porque o reconhece como mais um elemento repelível (`components/crucifix_sensor.gd`), que não se move | alcance de 200 px, o raio do crucifixo |
+| Picos letais | `traps/lethal_spikes.tscn` | um toque mata a personagem de imediato, com qualquer valor de SP; os demónios passam por cima sem efeito | parte que mata com 24 px de altura e 4 px de folga em cada ponta, para um salto que passe à vista passar mesmo |
+| Plataforma que desaba | `platforms/collapsing_platform.tscn` | usa o mesmo tile das plataformas de sentido único; pousar nela faz com que pisque e desapareça; saltar através dela, de baixo, não a ativa; volta ao fim de Come Back Time, com 0 fica desaparecida até o nível recomeçar | desaparece em 0,6 s (36 passos) e volta ao fim de 3 s |
+
+A largura e a altura destes elementos definem-se em tiles, no Inspector. A morte imediata é o método
+`die()` da personagem, que a imobiliza e fecha a sua caixa de dano, enquanto o nível recomeça. O cão
+grande (`demon/big_demon.tscn`) é, por agora, um demónio normal pintado de preto, para se distinguir
+no mapa.
+
 ## Medidas para o desenho de níveis
 
 | Medida | Valor | Em dimensões da personagem |
@@ -529,6 +546,32 @@ nenhuma zona mostra outro caminho, com a personagem em qualquer ponto da zona e 
 para os dois lados, nem o nível de baixo através do chão, que nenhuma zona com o limite horizontal
 ligado mostra mais ar para lá dos seus lados do que mostraria com a âncora trocada, e que a
 personagem começa numa zona ancorada em baixo.
+
+A nova fase 2 do nível 1 (`levels/lust/lust_phase_2.tscn`, 142 × 257 tiles) é construída a partir do
+texto `levels/lust/lust_phase_2.txt` por `levels/lust/build_lust_phase_2.gd`, que também coloca as 77
+zonas de câmara. Todas têm o limite horizontal ligado, para que o ecrã só mostre outra passagem através
+da rocha, que tem pelo menos 9 tiles entre passagens lado a lado e 6 entre passagens sobrepostas. O
+`test_lust_phase_2.gd` aplica as mesmas verificações de câmara e confirma que cada portão só se alcança
+depois do seu desbloqueador. O `test_lust_phase_2_route.gd` joga o nível do início ao fim, sem os cães,
+com a personagem real: 107 movimentos, os dois desbloqueadores e a saída.
+
+O nível 1 completo (`levels/lust/level1.tscn`, 371 × 379 tiles) junta numa só cena o tutorial, a nova fase 1 e a
+fase 2, sem carregamentos entre elas. É construído a partir do texto `levels/lust/level1.txt` por
+`levels/lust/build_level1.gd`, que acrescenta as 124 zonas de câmara e copia os avisos, a Velvet e o demónio do
+corredor da cena onde o tutorial foi feito, que fica como estava. O tutorial liga à fase 1 por um corredor de 12
+tiles, e a fase 1 liga à fase 2 por uma chaminé de 8 tiles de altura e 3 de largura. Dois pontos de gravação
+definem onde a morte recomeça: depois do tutorial, no início da fase 1; dentro da fase 2, no início da fase 2. A
+cópia da fase 2 tem três plataformas deslocadas um tile, porque deixavam exatamente a altura da personagem por
+baixo da rocha e a podiam prender. O `test_level1.gd` aplica as verificações de câmara às 124 zonas, confirma as
+ligações e os pontos de gravação e deixa os 88 cães a patrulhar durante 5 s, sem que nenhum caia do seu chão. O
+`test_level1_route.gd` joga, sem os cães, o caminho curto do início ao fim e depois o caminho longo da fase 1: 184
+movimentos com a personagem real.
+
+| Medida em headless, sem o custo de desenhar | Fase 2 sozinha (33 cães) | Nível 1 completo (88 cães) |
+|---|---|---|
+| Recomeçar depois de uma morte (instanciar e entrar na árvore) | cerca de 25 ms | cerca de 90 ms |
+| Física por fotograma, de 16,7 ms disponíveis | 2,6 ms | 4,8 ms |
+| Restante processamento por fotograma | 2,0 ms | 3,3 ms |
 
 Para afinar uma zona não é preciso mexer em código: no editor, selecionar a zona (ou um dos seus
 retângulos) mostra a azul o que o ecrã pode mostrar nela e a branco um ecrã ao zoom dessa zona,
@@ -782,6 +825,13 @@ godot --headless --fixed-fps 60 --path Projeto --script res://tests/test_camera_
 godot --headless --fixed-fps 60 --path Projeto --script res://tests/test_main_flow.gd
 godot --headless --fixed-fps 60 --path Projeto --script res://tests/test_pause.gd
 godot --headless --fixed-fps 60 --path Projeto --script res://tests/test_phase_exit.gd
+godot --headless --fixed-fps 60 --path Projeto --script res://tests/test_lethal_spikes.gd
+godot --headless --fixed-fps 60 --path Projeto --script res://tests/test_gate.gd
+godot --headless --fixed-fps 60 --path Projeto --script res://tests/test_collapsing_platform.gd
+godot --headless --fixed-fps 60 --path Projeto --script res://tests/test_lust_phase_2.gd
+godot --headless --fixed-fps 60 --path Projeto --script res://tests/test_lust_phase_2_route.gd
+godot --headless --fixed-fps 60 --path Projeto --script res://tests/test_level1.gd
+godot --headless --fixed-fps 60 --path Projeto --script res://tests/test_level1_route.gd
 godot --headless --fixed-fps 60 --path Projeto --script res://tests/test_settings.gd
 godot --headless --fixed-fps 60 --path Projeto --script res://tests/test_options.gd
 godot --headless --fixed-fps 60 --path Projeto --script res://tests/test_crucifix.gd
