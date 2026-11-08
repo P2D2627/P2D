@@ -2118,7 +2118,9 @@ partida.
 
 Até à gravação seguinte, o que o homem faz conta como não feito. A morte não grava: recomeça a fase
 e repõe o autoload `GameState` e o registo moral tal como estavam na última gravação, e sair e usar
-o Continue tem o mesmo efeito. As fases são curtas, pelo que não se perde muito. Um nível que não
+o Continue tem o mesmo efeito. As fases são curtas, pelo que não se perde muito. A exceção é um
+upgrade aceite: não se pode desfazer, por isso o jogo grava logo que o homem o recebe, e uma morte
+antes do checkpoint seguinte não o tira nem devolve o crucifixo. Um nível que não
 inicia o jogo, como o Test room, fica fora disto: não grava nem repõe nada.
 A gravação escreve primeiro uma cópia e só depois a coloca no lugar da anterior, para que um jogo
 fechado a meio não destrua a última gravação. Uma gravação danificada, de outra versão ou de uma

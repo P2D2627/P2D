@@ -9,8 +9,9 @@ extends Node
 ## ArrivalPoint. Reaching the end of a phase is the game's checkpoint: a new game, each
 ## phase change and each SavePoint save, the Save Indicator says so, and the menu's Continue comes
 ## back there. Until the next save, what the man does is as if he had not done it: a death starts
-## the phase over from the save, not only the level but GameState too. A level that does not start
-## the game plays outside the run, with nothing saved and nothing put back.
+## the phase over from the save, not only the level but GameState too. An accepted upgrade is the
+## exception: it can never be taken back, so it saves at once. A level that does not start the game
+## plays outside the run, with nothing saved and nothing put back.
 
 ## The levels the main menu offers, in this order: each one a title and a scene. One left empty, or
 ## with no scene, stays out of the menu, with a warning.
@@ -36,6 +37,7 @@ var _in_the_run: bool = false
 @onready var _fade: ColorRect = %Fade
 @onready var _save_indicator: SaveIndicator = %SaveIndicator
 @onready var _progress: GameProgress = get_node(^"/root/GameState") as GameProgress
+@onready var _offers: GameOffers = get_node_or_null(^"/root/Offers") as GameOffers
 
 
 func _ready() -> void:
@@ -54,9 +56,9 @@ func _ready() -> void:
 	_main_menu.quit_requested.connect(_on_quit_requested)
 	_pause_menu.resume_requested.connect(_resume)
 	_pause_menu.main_menu_requested.connect(_on_main_menu_requested)
-	var offers: GameOffers = get_node_or_null(^"/root/Offers") as GameOffers
-	if offers != null:
-		offers.scene_requested.connect(_on_offer_scene_requested)
+	_progress.upgrade_granted.connect(_on_upgrade_granted)
+	if _offers != null:
+		_offers.scene_requested.connect(_on_offer_scene_requested)
 	else:
 		push_warning("Main: no autoload Offers, so no offer can change the phase.")
 	_main_menu.set_can_continue(_save_file.exists())
@@ -119,6 +121,18 @@ func _save(scene_path: String) -> bool:
 
 ## A save point of the level in the slot was reached.
 func _on_save_point_reached() -> void:
+	_save_the_current_phase()
+
+
+## An upgrade can never be taken back, so the save keeps it at once: a death before the next
+## checkpoint does not undo it. In a phase change, the next phase's save keeps it.
+func _on_upgrade_granted(_id: StringName) -> void:
+	if not _changing_phase:
+		_save_the_current_phase()
+
+
+## Saves the phase in the level slot, as it stands; with no level there, nothing.
+func _save_the_current_phase() -> void:
 	for level: Node in _level_slot.get_children():
 		if _save(level.scene_file_path):
 			_save_indicator.show_saved()
@@ -243,11 +257,14 @@ func _add_level(level: Node) -> void:
 
 
 ## The level leaves the tree at once and is freed at the end of the frame, so the level that comes
-## next never shares a frame with it.
+## next never shares a frame with it. The offers waiting on it go too: a balloon is part of the
+## level, and one freed half way never says its lines are over.
 func _clear_level() -> void:
 	for level: Node in _level_slot.get_children():
 		_level_slot.remove_child(level)
 		level.queue_free()
+	if _offers != null:
+		_offers.clear()
 
 
 func _fade_to(alpha: float) -> void:

@@ -115,8 +115,14 @@ func grant_upgrade(id: StringName) -> void:
 	_progress.grant_upgrade(id)
 
 
-## Forgets the offers waiting for an answer or for their effect, as when a new game starts or the
-## phase changes under an open balloon.
+## For the effects: asks whoever listens, Main, to take him to the phase at scene_path, at its
+## ArrivalPoint arrival, or at its start if arrival is empty.
+func request_scene(scene_path: String, arrival: StringName) -> void:
+	scene_requested.emit(scene_path, arrival)
+
+
+## Forgets the offers waiting for an answer or for their effect. Main calls it each time a level
+## leaves the slot, since a balloon freed with its level never says its lines are over.
 func clear() -> void:
 	_presented_at.clear()
 	_pending.clear()
