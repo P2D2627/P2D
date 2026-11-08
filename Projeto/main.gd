@@ -5,11 +5,13 @@ extends Node
 ## was chosen, through their signals, and this script decides what happens. The scene runs Main
 ## while the game is paused (process mode Always), so Esc can resume it; the level slot is the part
 ## that pauses. When the player walks into a phase's exit, the next phase takes the level's place
-## behind a fade to black. Reaching the end of a phase is the game's checkpoint: a new game, each
+## behind a fade to black, and so does the phase an accepted shortcut leads to, with the man at its
+## ArrivalPoint. Reaching the end of a phase is the game's checkpoint: a new game, each
 ## phase change and each SavePoint save, the Save Indicator says so, and the menu's Continue comes
 ## back there. Until the next save, what the man does is as if he had not done it: a death starts
-## the phase over from the save, not only the level but GameState too. A level that does not start
-## the game plays outside the run, with nothing saved and nothing put back.
+## the phase over from the save, not only the level but GameState too. An accepted upgrade is the
+## exception: it can never be taken back, so it saves at once. A level that does not start the game
+## plays outside the run, with nothing saved and nothing put back.
 
 ## The levels the main menu offers, in this order: each one a title and a scene. One left empty, or
 ## with no scene, stays out of the menu, with a warning.
@@ -35,6 +37,7 @@ var _in_the_run: bool = false
 @onready var _fade: ColorRect = %Fade
 @onready var _save_indicator: SaveIndicator = %SaveIndicator
 @onready var _progress: GameProgress = get_node(^"/root/GameState") as GameProgress
+@onready var _offers: GameOffers = get_node_or_null(^"/root/Offers") as GameOffers
 
 
 func _ready() -> void:
@@ -53,6 +56,11 @@ func _ready() -> void:
 	_main_menu.quit_requested.connect(_on_quit_requested)
 	_pause_menu.resume_requested.connect(_resume)
 	_pause_menu.main_menu_requested.connect(_on_main_menu_requested)
+	_progress.upgrade_granted.connect(_on_upgrade_granted)
+	if _offers != null:
+		_offers.scene_requested.connect(_on_offer_scene_requested)
+	else:
+		push_warning("Main: no autoload Offers, so no offer can change the phase.")
 	_main_menu.set_can_continue(_save_file.exists())
 
 
@@ -86,6 +94,7 @@ func _play_level(index: int) -> void:
 	_in_the_run = entry.starts_game
 	if _in_the_run:
 		_progress.reset()
+	_progress.arrival_point = &""
 	_start_level(entry.scene)
 	_main_menu.hide()
 	if _save(entry.scene.resource_path):
@@ -112,6 +121,18 @@ func _save(scene_path: String) -> bool:
 
 ## A save point of the level in the slot was reached.
 func _on_save_point_reached() -> void:
+	_save_the_current_phase()
+
+
+## An upgrade can never be taken back, so the save keeps it at once: a death before the next
+## checkpoint does not undo it. In a phase change, the next phase's save keeps it.
+func _on_upgrade_granted(_id: StringName) -> void:
+	if not _changing_phase:
+		_save_the_current_phase()
+
+
+## Saves the phase in the level slot, as it stands; with no level there, nothing.
+func _save_the_current_phase() -> void:
 	for level: Node in _level_slot.get_children():
 		if _save(level.scene_file_path):
 			_save_indicator.show_saved()
@@ -122,6 +143,7 @@ func _on_save_point_reached() -> void:
 ## without the Level script at its root can't ask, and the warning says so.
 func _start_level(scene: PackedScene) -> void:
 	var level: Node = scene.instantiate()
+	_place_at_the_arrival(level)
 	if level is Level:
 		(level as Level).restart_requested.connect(_restart_level.bind(level, scene),
 				CONNECT_DEFERRED)
@@ -129,6 +151,26 @@ func _start_level(scene: PackedScene) -> void:
 		push_warning("Main: %s has no Level script at its root, so it never starts over."
 				% scene.resource_path)
 	_add_level(level)
+
+
+## Before level joins the tree, puts its player on the ArrivalPoint GameState names, so the camera
+## starts there too. With no point named, he stays at the phase's start; with one the phase lacks,
+## too, with a warning.
+func _place_at_the_arrival(level: Node) -> void:
+	var arrival: StringName = _progress.arrival_point
+	if arrival.is_empty() or not level is Level:
+		return
+	var player: Player = (level as Level).player
+	var point: ArrivalPoint = ArrivalPoint.find_in(level, arrival)
+	if point == null or player == null:
+		push_warning("Main: %s has no ArrivalPoint %s, so he starts at the phase's start."
+				% [level.scene_file_path, arrival])
+		return
+	if player.get_parent() != level:
+		push_warning("Main: the player of %s is not a child of its root, so he starts at the start."
+				% level.scene_file_path)
+		return
+	player.position = point.position_in(level)
 
 
 ## Only while level is still in the slot: had Main Menu taken it out on the same frame, a level
@@ -156,6 +198,18 @@ func _go_back_to_the_save() -> void:
 ## from inside one, and the engine does not let collisions be switched off there. A path that cannot
 ## load leaves the player in the current phase.
 func _on_phase_exit_reached(next_scene_path: String) -> void:
+	_change_phase(next_scene_path, &"")
+
+
+## An accepted offer, as Lust's shortcut, takes him to the phase at scene_path, at its ArrivalPoint
+## arrival, behind the same fade as a phase's exit.
+func _on_offer_scene_requested(scene_path: String, arrival: StringName) -> void:
+	_change_phase(scene_path, arrival)
+
+
+## The phase at next_scene_path takes the current one's place, with the man at its ArrivalPoint
+## arrival, or at its start if arrival is empty; the save then brings him back there.
+func _change_phase(next_scene_path: String, arrival: StringName) -> void:
 	if _changing_phase:
 		return
 	if ResourceLoader.load_threaded_request(next_scene_path) != OK:
@@ -170,6 +224,7 @@ func _on_phase_exit_reached(next_scene_path: String) -> void:
 		push_error("Main: the next phase, %s, is not a scene." % next_scene_path)
 	else:
 		_clear_level()
+		_progress.arrival_point = arrival
 		_start_level(next)
 		saved = _save(next_scene_path)
 	_level_slot.process_mode = Node.PROCESS_MODE_PAUSABLE
@@ -202,11 +257,14 @@ func _add_level(level: Node) -> void:
 
 
 ## The level leaves the tree at once and is freed at the end of the frame, so the level that comes
-## next never shares a frame with it.
+## next never shares a frame with it. The offers waiting on it go too: a balloon is part of the
+## level, and one freed half way never says its lines are over.
 func _clear_level() -> void:
 	for level: Node in _level_slot.get_children():
 		_level_slot.remove_child(level)
 		level.queue_free()
+	if _offers != null:
+		_offers.clear()
 
 
 func _fade_to(alpha: float) -> void:

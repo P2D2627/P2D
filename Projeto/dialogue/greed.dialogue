@@ -58,6 +58,7 @@ Mammon: What I want from everyone: that you stay, and pay. Forever, ideally. You
 Mammon: But if you insist on leaving, there are three gates between you and the stairs, and every one has a toll. This one is ten thousand.
 {{GameState.player_name}}: With what? I am dead.
 Mammon: Two ways to pay. Beside every gate there is a vault, and up in it, old coins nobody has found. Climb for them, if you have the legs. It's a long way up, and a longer way down.
+$> Offers.present(&"greed_toll_1")
 Mammon: Or take them from my imps. There are always a couple by the gate, counting what they skimmed. Much quicker. Both pay the same.
 - They would do the same to me. I just have to do it first.
 	$> Moral.record_tone(&"arrogant")
@@ -68,9 +69,11 @@ Mammon: Or take them from my imps. There are always a couple by the gate, counti
 	$> Offers.accept(&"greed_toll_1")
 	Mammon: [i](smiling)[/i] Hate it all you like. You'll still do it. Everybody steals in the end.
 - I have taken enough shortcuts. I will earn it.
+	$> Offers.refuse(&"greed_toll_1")
 	$> Moral.record_tone(&"humble")
 	Mammon: How quaint. The vault is cold, but I'd hate to dissuade a customer.
 - I do not need anybody's pockets. I will find it myself and bring double.
+	$> Offers.refuse(&"greed_toll_1")
 	$> Moral.record_tone(&"arrogant")
 	Mammon: [i](laughing)[/i] Double! He already talks like me.
 if not Moral.has_taken(&"greed_toll_1")
@@ -90,6 +93,7 @@ Mammon: Greed always builds on edges. Nobody learns that on the first climb.
 => END
 
 ~ toll_1_paid
+$> Offers.present(&"greed_toll_2")
 if Moral.has_taken(&"greed_toll_1")
 	Mammon: My own coins, stolen from my own imps, paid back to me. I love this job.
 else
@@ -115,8 +119,10 @@ else
 	$> Moral.record_tone(&"humble")
 	$> Offers.accept(&"greed_toll_2")
 - I will climb again. I will do it right.
+	$> Offers.refuse(&"greed_toll_2")
 	$> Moral.record_tone(&"humble")
 - I will find it myself. I am not letting you win.
+	$> Offers.refuse(&"greed_toll_2")
 	$> Moral.record_tone(&"arrogant")
 if Moral.has_taken(&"greed_toll_2") == Moral.has_taken(&"greed_toll_1")
 	Mammon: Again? A creature of habit. A method that wins once is a method you bet on.
@@ -146,6 +152,7 @@ Mammon: Twenty-five. Paid in full. Most customers pay once, and ask to bet the r
 ~ gate_3
 Mammon: One more gate. The last one, I promise. And interest, of course. Twenty-five becomes sixty.
 {{GameState.player_name}}: [i](sinking to his knees)[/i] Sixty... I have nothing left. I cannot even stand.
+$> Offers.present(&"greed_toll_3")
 Mammon: Then stay down there. Sit, count, pay. It's a quiet life. It never ends.
 - Then I will take it from your imps. All of it.
 	$> Moral.record_tone(&"arrogant")
@@ -154,8 +161,10 @@ Mammon: Then stay down there. Sit, count, pay. It's a quiet life. It never ends.
 	$> Moral.record_tone(&"humble")
 	$> Offers.accept(&"greed_toll_3")
 - I will climb one last time. I will do it honestly.
+	$> Offers.refuse(&"greed_toll_3")
 	$> Moral.record_tone(&"humble")
 - I will climb for it. You will not see me beg.
+	$> Offers.refuse(&"greed_toll_3")
 	$> Moral.record_tone(&"arrogant")
 if Moral.has_taken(&"greed_toll_3") == Moral.has_taken(&"greed_toll_2")
 	Mammon: The same road again. Habit is the only currency that never loses value.
@@ -189,6 +198,7 @@ Mammon: Sixty. Paid in full. The gate is yours.
 
 ~ mammon_gift
 Mammon: One more thing before you go. Every one of us gives a gift on the way out. Gifts are how I collect.
+$> Offers.present(&"claim")
 Mammon: Claim. Drop this coin anywhere, and that spot is yours. And what is yours always comes back to you.
 Mammon: Or you go back to it. One thought, and you are standing on it again, wherever you were.
 Mammon: The cost? Hardly anything. A little of your soul for every trip back. And after a while, nothing feels like yours until you have marked it.
@@ -203,6 +213,7 @@ if GameState.has_crucifix
 	Mammon: One soul. Slightly used. Mine.
 	Mammon: Everything with my mark comes back to me in the end. It always does.
 - Leave it.
+	$> Offers.refuse(&"claim")
 	if Moral.stage() >= 1
 		{{GameState.player_name}}: I do not take presents from the house.
 		Mammon: “Take.” Present tense. Lovely.

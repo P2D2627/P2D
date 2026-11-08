@@ -1,22 +1,25 @@
 # Checks MoralRecord on its own, without the autoload or any line (#169). A new record is at stage 0
-# with nothing taken. In the stats file, every temptation id the .dialogue files name has its
-# points, each toll weighs less than a shortcut, and one shortcut is enough for stage 1. A
-# temptation adds its points once, however often it is taken; one missing from Temptation Points
-# counts Unknown Temptation Points. An arrogant answer adds points and a humble one only counts;
+# with nothing taken. In the offer catalog, every temptation id the .dialogue files name has an
+# offer, each toll weighs less than a shortcut, and one shortcut is enough for stage 1. A
+# temptation adds its offer's Moral Weight once, however often it is taken; one missing from the
+# catalog counts Unknown Temptation Points. A refusal only counts, adds no points, and is kept and
+# put back by a save. An arrogant answer adds points and a humble one only counts;
 # any other tone changes nothing. Listening adds nothing within the grace, then points per second,
 # up to the most an offer can add; the same offer heard again keeps only its longest time, and
 # negative, infinite and nan seconds change nothing. stage_changed says each new stage once, in
 # order, and nothing when the stage stays. A total that lands on a threshold reaches it, though
 # sums like 0.7 + 0.1 come out a hair short; with Stage 2 Points below Stage 1 Points, stage 2
-# starts at Stage 1 Points. Values tuned in the stats count at once. reset() empties the record and
-# says stage 0 once, and nothing if it was already there. Six warnings are printed on purpose: an
-# unknown temptation taken and asked about, an unknown tone, and negative, infinite and nan
-# listening.
+# starts at Stage 1 Points. Values tuned in the stats and in an offer count at once. reset()
+# empties the record and says stage 0 once, and nothing if it was already there. Seven warnings are
+# printed on purpose: an unknown temptation taken and asked about, an unknown tone, negative,
+# infinite and nan listening, and a refusal with no id.
 # Run from the repository root; the exit code is 0 on pass and 1 on fail:
 # godot --headless --fixed-fps 60 --path Projeto --script res://tests/test_moral_record.gd
 extends "res://tests/support/player_test.gd"
 
 const STATS: MoralStats = preload("res://core/moral_stats.tres")
+## The game's catalog. Loaded, not preloaded, as Offers explains.
+var _game_catalog: OfferCatalog = GameOffers.get_catalog()
 const DIALOGUE_FOLDER: String = "res://dialogue/"
 ## How the lines name a temptation: an offer accepted, or one asked about.
 const TEMPTATION_PATTERN: String = ("(?:Offers\\.accept|Moral\\.has_taken|Moral\\.take_temptation)"
@@ -41,9 +44,10 @@ const TOLERANCE: float = 0.0001
 func _initialize() -> void:
 	var results: Array[bool] = []
 	results.append(_a_new_record_is_empty_at_stage_0())
-	results.append(_the_stats_file_has_every_id_and_a_shortcut_reaches_stage_1())
+	results.append(_the_catalog_has_every_id_and_a_shortcut_reaches_stage_1())
 	results.append(_a_temptation_counts_once())
 	results.append(_an_unknown_temptation_counts_unknown_points())
+	results.append(_a_refusal_only_counts_and_is_saved())
 	results.append(_arrogant_adds_humble_only_counts_and_others_change_nothing())
 	results.append(_listening_has_a_grace_a_rate_and_a_cap())
 	results.append(_the_same_offer_keeps_its_longest_time())
@@ -57,7 +61,7 @@ func _initialize() -> void:
 
 
 func _a_new_record_is_empty_at_stage_0() -> bool:
-	var record: MoralRecord = MoralRecord.new(_test_stats())
+	var record: MoralRecord = MoralRecord.new(_test_stats(), _test_catalog())
 	return report(record.stage() == 0 and is_zero_approx(record.get_points())
 			and not record.has_taken(SHORTCUT)
 			and record.get_tone_count(MoralRecord.HUMBLE) == 0
@@ -66,25 +70,25 @@ func _a_new_record_is_empty_at_stage_0() -> bool:
 			% [record.stage(), record.get_points()])
 
 
-func _the_stats_file_has_every_id_and_a_shortcut_reaches_stage_1() -> bool:
+func _the_catalog_has_every_id_and_a_shortcut_reaches_stage_1() -> bool:
 	var used: Array[StringName] = _temptations_in_the_lines()
 	var missing: Array[StringName] = []
 	for id: StringName in used:
-		if not STATS.temptation_points.has(id):
+		if not _game_catalog.has(id):
 			missing.append(id)
-	var shortcut: float = STATS.temptation_points.get(&"lust_shortcut", 0.0)
+	var shortcut: float = _weight_in_the_catalog(&"lust_shortcut", 0.0)
 	var tolls_lighter: bool = TOLLS.all(func(toll: StringName) -> bool:
-			return STATS.temptation_points.get(toll, shortcut) < shortcut)
-	var record: MoralRecord = MoralRecord.new(STATS)
+			return _weight_in_the_catalog(toll, shortcut) < shortcut)
+	var record: MoralRecord = MoralRecord.new(STATS, _game_catalog)
 	record.take_temptation(&"lust_shortcut")
 	return report(not used.is_empty() and missing.is_empty() and tolls_lighter
 			and record.stage() == 1,
-			"The stats file: %d ids in the lines, missing %s; tolls lighter %s; a shortcut: stage %d"
+			"The catalog: %d ids in the lines, missing %s; tolls lighter %s; a shortcut: stage %d"
 			% [used.size(), missing, tolls_lighter, record.stage()])
 
 
 func _a_temptation_counts_once() -> bool:
-	var record: MoralRecord = MoralRecord.new(_test_stats())
+	var record: MoralRecord = MoralRecord.new(_test_stats(), _test_catalog())
 	record.take_temptation(TOLL)
 	record.take_temptation(TOLL)
 	record.take_temptation(TOLL)
@@ -97,17 +101,35 @@ func _a_temptation_counts_once() -> bool:
 
 func _an_unknown_temptation_counts_unknown_points() -> bool:
 	print("Two warnings about test_unknown follow, on purpose: taken, then asked about.")
-	var record: MoralRecord = MoralRecord.new(_test_stats())
+	var record: MoralRecord = MoralRecord.new(_test_stats(), _test_catalog())
 	record.take_temptation(&"test_unknown")
 	return report(is_equal_approx(record.get_points(), UNKNOWN_POINTS)
 			and record.has_taken(&"test_unknown"),
-			"An id missing from Temptation Points: %s points, expected %s"
+			"An id missing from the catalog: %s points, expected %s"
 			% [record.get_points(), UNKNOWN_POINTS])
+
+
+func _a_refusal_only_counts_and_is_saved() -> bool:
+	print("A warning about a refusal with no id follows, on purpose.")
+	var record: MoralRecord = MoralRecord.new(_test_stats(), _test_catalog())
+	record.record_refusal(SHORTCUT)
+	record.record_refusal(SHORTCUT)
+	record.record_refusal(&"")
+	var copy: MoralRecord = MoralRecord.new(_test_stats(), _test_catalog())
+	copy.from_save(record.to_save())
+	var counted: int = record.get_refusal_count(SHORTCUT)
+	record.reset()
+	return report(counted == 2 and copy.get_refusal_count(SHORTCUT) == 2
+			and copy.get_refusal_count(TOLL) == 0 and is_zero_approx(copy.get_points())
+			and record.get_refusal_count(SHORTCUT) == 0,
+			"Two refusals: %d counted, %d after a save, %s points; %d after reset()"
+			% [counted, copy.get_refusal_count(SHORTCUT), copy.get_points(),
+			record.get_refusal_count(SHORTCUT)])
 
 
 func _arrogant_adds_humble_only_counts_and_others_change_nothing() -> bool:
 	print("A warning about the tone test_proud follows, on purpose.")
-	var record: MoralRecord = MoralRecord.new(_test_stats())
+	var record: MoralRecord = MoralRecord.new(_test_stats(), _test_catalog())
 	record.record_tone(MoralRecord.HUMBLE)
 	record.record_tone(MoralRecord.HUMBLE)
 	var after_humble: float = record.get_points()
@@ -124,7 +146,7 @@ func _arrogant_adds_humble_only_counts_and_others_change_nothing() -> bool:
 
 
 func _listening_has_a_grace_a_rate_and_a_cap() -> bool:
-	var record: MoralRecord = MoralRecord.new(_test_stats())
+	var record: MoralRecord = MoralRecord.new(_test_stats(), _test_catalog())
 	record.record_listening(&"test_within", GRACE)
 	var within: float = record.get_points()
 	record.record_listening(&"test_past", GRACE + 1.0)
@@ -138,7 +160,7 @@ func _listening_has_a_grace_a_rate_and_a_cap() -> bool:
 
 
 func _the_same_offer_keeps_its_longest_time() -> bool:
-	var record: MoralRecord = MoralRecord.new(_test_stats())
+	var record: MoralRecord = MoralRecord.new(_test_stats(), _test_catalog())
 	record.record_listening(&"test_offer", GRACE + 1.0)
 	record.record_listening(&"test_offer", GRACE + 0.5)
 	record.record_listening(&"test_offer", GRACE + 1.0)
@@ -151,7 +173,7 @@ func _the_same_offer_keeps_its_longest_time() -> bool:
 
 func _bad_listening_times_change_nothing() -> bool:
 	print("Three warnings about listening times follow, on purpose.")
-	var record: MoralRecord = MoralRecord.new(_test_stats())
+	var record: MoralRecord = MoralRecord.new(_test_stats(), _test_catalog())
 	record.record_listening(&"test_offer", -GRACE - 10.0)
 	record.record_listening(&"test_offer", INF)
 	record.record_listening(&"test_offer", NAN)
@@ -162,7 +184,7 @@ func _bad_listening_times_change_nothing() -> bool:
 
 
 func _each_new_stage_is_said_once_in_order() -> bool:
-	var record: MoralRecord = MoralRecord.new(_test_stats())
+	var record: MoralRecord = MoralRecord.new(_test_stats(), _test_catalog())
 	var said: Array[int] = []
 	record.stage_changed.connect(func(stage: int) -> void: said.append(stage))
 	record.take_temptation(TOLL)
@@ -185,12 +207,11 @@ func _each_new_stage_is_said_once_in_order() -> bool:
 func _a_total_on_a_threshold_reaches_it_despite_rounding() -> bool:
 	var stats: MoralStats = _test_stats()
 	var points: Dictionary[StringName, float] = {&"test_most": 0.7, &"test_rest": 0.1}
-	stats.temptation_points = points
 	stats.stage_1_points = 0.8
-	var record: MoralRecord = MoralRecord.new(stats)
+	var record: MoralRecord = MoralRecord.new(stats, _test_catalog(points))
 	record.take_temptation(&"test_most")
 	record.take_temptation(&"test_rest")
-	var from_file: MoralRecord = MoralRecord.new(STATS)
+	var from_file: MoralRecord = MoralRecord.new(STATS, _game_catalog)
 	for toll: StringName in TOLLS:
 		from_file.take_temptation(toll)
 	var answers: int = ceili((STATS.stage_2_points - from_file.get_points())
@@ -205,7 +226,7 @@ func _a_total_on_a_threshold_reaches_it_despite_rounding() -> bool:
 func _stage_2_below_stage_1_starts_with_stage_1() -> bool:
 	var stats: MoralStats = _test_stats()
 	stats.stage_2_points = STAGE_1_POINTS - TOLL_POINTS
-	var record: MoralRecord = MoralRecord.new(stats)
+	var record: MoralRecord = MoralRecord.new(stats, _test_catalog())
 	record.take_temptation(TOLL)
 	var below_both: int = record.stage()
 	record.take_temptation(SHORTCUT)
@@ -216,11 +237,12 @@ func _stage_2_below_stage_1_starts_with_stage_1() -> bool:
 
 func _tuned_values_count_at_once() -> bool:
 	var stats: MoralStats = _test_stats()
-	var record: MoralRecord = MoralRecord.new(stats)
+	var catalog: OfferCatalog = _test_catalog()
+	var record: MoralRecord = MoralRecord.new(stats, catalog)
 	record.take_temptation(TOLL)
 	var before: int = record.stage()
 	stats.stage_1_points = TOLL_POINTS
-	stats.temptation_points[TOLL] = STAGE_2_POINTS
+	catalog.find(TOLL).moral_weight = STAGE_2_POINTS
 	return report(before == 0 and is_equal_approx(record.get_points(), STAGE_2_POINTS)
 			and record.stage() == 2,
 			"A toll: stage %d; with the toll worth %s, %s points and stage %d"
@@ -228,7 +250,7 @@ func _tuned_values_count_at_once() -> bool:
 
 
 func _reset_empties_the_record_and_says_stage_0_once() -> bool:
-	var record: MoralRecord = MoralRecord.new(_test_stats())
+	var record: MoralRecord = MoralRecord.new(_test_stats(), _test_catalog())
 	var said: Array[int] = []
 	record.stage_changed.connect(func(stage: int) -> void: said.append(stage))
 	record.reset()
@@ -264,11 +286,29 @@ func _temptations_in_the_lines() -> Array[StringName]:
 	return ids
 
 
+## The Moral Weight of the offer id in the game's catalog, or otherwise if there is none.
+func _weight_in_the_catalog(id: StringName, otherwise: float) -> float:
+	var offer: OfferData = _game_catalog.find(id)
+	return offer.moral_weight if offer != null else otherwise
+
+
+## A catalog of the cases' own, with one offer for each id in points, weighing what it says; by
+## default the shortcut and the toll of the constants above.
+func _test_catalog(points: Dictionary[StringName, float] = {}) -> OfferCatalog:
+	if points.is_empty():
+		points = {SHORTCUT: SHORTCUT_POINTS, TOLL: TOLL_POINTS}
+	var catalog: OfferCatalog = OfferCatalog.new()
+	for id: StringName in points:
+		var offer: OfferData = OfferData.new()
+		offer.id = id
+		offer.moral_weight = points[id]
+		catalog.offers.append(offer)
+	return catalog
+
+
 ## Stats of the cases' own, with the values in the constants above.
 func _test_stats() -> MoralStats:
 	var stats: MoralStats = MoralStats.new()
-	var points: Dictionary[StringName, float] = {SHORTCUT: SHORTCUT_POINTS, TOLL: TOLL_POINTS}
-	stats.temptation_points = points
 	stats.unknown_temptation_points = UNKNOWN_POINTS
 	stats.arrogant_answer_points = ARROGANT_POINTS
 	stats.listening_grace = GRACE
