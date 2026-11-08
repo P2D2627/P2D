@@ -26,6 +26,9 @@ const PHASE_2_START_CELL: Vector2i = Vector2i(351, 246)
 ## The man's event in the tutorial's save, as in the old scene, so a game already past it stays past it.
 const TUTORIAL_DONE_EVENT: StringName = &"tutorial_done"
 const PHASE_2_REACHED_EVENT: StringName = &"lust_phase_2_reached"
+## The node with the level's painted pieces, placed by hand in the editor right over the rock tiles. The map
+## does not know them, so building again carries this node over from the scene it overwrites.
+const ART_NODE: NodePath = ^"Art"
 
 
 func _init() -> void:
@@ -36,6 +39,10 @@ func _init() -> void:
 
 
 func _add_level_parts(root: Node2D, player: Player) -> void:
+	var art: Node2D = art_from_old_scene()
+	root.add_child(art)
+	# Right over the rock and behind everything else, so the man, the dogs and the traps stay in front.
+	root.move_child(art, root.get_node(^"Tiles").get_index() + 1)
 	var tutorial: Node2D = _tutorial(player)
 	root.add_child(tutorial)
 	# Behind the man, as in its old scene, so he walks in front of the prompts.
@@ -46,12 +53,32 @@ func _add_level_parts(root: Node2D, player: Player) -> void:
 			PHASE_2_START_CELL, player))
 
 
+## The Art node of the scene about to be overwritten, with its pieces as they were placed, or an empty one when
+## there is no scene yet or it has no Art. Public so that a test can check it without building.
+func art_from_old_scene() -> Node2D:
+	if ResourceLoader.exists(_scene_path):
+		# Uncached, so the scene saved over it afterwards is not the one held in memory.
+		var old_scene: PackedScene = ResourceLoader.load(_scene_path, "",
+				ResourceLoader.CACHE_MODE_IGNORE) as PackedScene
+		var old: Node = old_scene.instantiate(EDIT_STATE)
+		var art: Node2D = old.get_node_or_null(ART_NODE) as Node2D
+		if art != null:
+			old.remove_child(art)
+		old.free()
+		if art != null:
+			return art
+	var empty: Node2D = Node2D.new()
+	empty.name = String(ART_NODE)
+	return empty
+
+
 func _tutorial(player: Player) -> Node2D:
 	var source: Node = TUTORIAL_SCENE.instantiate(EDIT_STATE)
 	var tutorial: Node2D = source.get_node(^"Tutorial") as Node2D
 	source.remove_child(tutorial)
 	source.free()
 	tutorial.position = TUTORIAL_POSITION
+	(tutorial as TutorialHints).player = player
 	var velvet: TutorialDemon = tutorial.get_node(^"TutorialDemon") as TutorialDemon
 	velvet.player = player
 	velvet.crucifix = player.get_node(^"Crucifix") as Crucifix
