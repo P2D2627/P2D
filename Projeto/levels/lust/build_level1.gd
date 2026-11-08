@@ -2,7 +2,8 @@
 # with no load between them. The map's rock, platforms, dogs and the rest go in as in phase 2's builder. The
 # tutorial's prompts, Velvet and the corridor's demon come from the scene they were made in, which stays as it
 # is. Two save points hold where a death starts over: past the tutorial, at phase 1's start; inside phase 2,
-# at phase 2's start. It overwrites the scene, so the text stays the map's only source. From the repository
+# at phase 2's start. The camera's zones and lookouts come from their own file, level1_camera.txt, so a map made
+# again elsewhere keeps them. It overwrites the scene, so the text stays the map's only source. From the repository
 # root, with the editor closed:
 # godot --headless --path Projeto --script res://levels/lust/build_level1.gd
 # The exit code is 0 when the scene was saved.
@@ -30,6 +31,7 @@ const PHASE_2_REACHED_EVENT: StringName = &"lust_phase_2_reached"
 func _init() -> void:
 	_map_path = "res://levels/lust/level1.txt"
 	_scene_path = "res://levels/lust/level1.tscn"
+	_camera_path = "res://levels/lust/level1_camera.txt"
 	_root_name = "Level1"
 
 

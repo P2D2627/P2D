@@ -11,6 +11,7 @@ const MAP_PATH: String = "res://levels/lust/lust_phase_2.txt"
 const SCENE_PATH: String = "res://levels/lust/lust_phase_2.tscn"
 const LEVEL_SCRIPT: Script = preload("res://levels/level.gd")
 const CAMERA_ZONE_SCRIPT: Script = preload("res://camera/camera_zone.gd")
+const CAMERA_LOOKOUT_SCRIPT: Script = preload("res://camera/camera_lookout.gd")
 const PHASE_EXIT_SCRIPT: Script = preload("res://levels/phase_exit.gd")
 const DEMON_DEBUG_VIEW_SCRIPT: Script = preload("res://debug/demon_debug_view.gd")
 const TILE_SET: TileSet = preload("res://scenes/levels/Lust/cave_placeholder_tiles.tres")
@@ -48,6 +49,9 @@ const ROCK_ALTERNATIVE: int = 0
 const ONE_WAY_ALTERNATIVE: int = 1
 ## Camera zones sit on layer 10, CameraZones, and monitor nothing (README, collision layers).
 const CAMERA_ZONE_LAYER: int = 1 << 9
+## A lookout's View as the cave's old scene drew it in the editor.
+const LOOKOUT_VIEW_COLOR: Color = Color(1.0, 0.8, 0.2)
+const LOOKOUT_VIEW_LINE: float = 6.0
 ## The exit looks for the man, on layer 2.
 const PLAYER_LAYER: int = 2
 const EXIT_SIZE: Vector2 = Vector2(96.0, 144.0)
@@ -63,6 +67,10 @@ var _width: int = 0
 var _height: int = 0
 ## The "key: value" lines before the grid, in their order, as [key, value] pairs.
 var _entries: Array[PackedStringArray] = []
+## The camera's own file, with the zone and lookout lines, apart from the map so that a map made again
+## elsewhere keeps them. Empty: the map's own zone lines.
+var _camera_path: String = ""
+var _camera_entries: Array[PackedStringArray] = []
 
 
 func _initialize() -> void:
@@ -101,6 +109,23 @@ func _load_map() -> bool:
 	if _height == 0:
 		printerr("build_lust_phase_2.gd: no grid after a %s line" % GRID_START)
 		return false
+	return _load_camera()
+
+
+## The camera file's "key: value" lines. With one, the map's own zone lines are left out, with a warning.
+func _load_camera() -> bool:
+	if _camera_path.is_empty():
+		return true
+	if not FileAccess.file_exists(_camera_path):
+		printerr("build_lust_phase_2.gd: no camera file at %s" % _camera_path)
+		return false
+	for line: String in FileAccess.get_file_as_string(_camera_path).split("\n"):
+		if line.contains(":") and not line.get_slice(":", 0).contains(" "):
+			_camera_entries.append(PackedStringArray([line.get_slice(":", 0).strip_edges(),
+					line.substr(line.find(":") + 1).strip_edges()]))
+	if not _values_of("zone").is_empty():
+		push_warning("build_lust_phase_2.gd: the zone lines of %s are left out: the camera's are in %s"
+				% [_map_path, _camera_path])
 	return true
 
 
@@ -164,8 +189,13 @@ func _build() -> Error:
 		unlockers_node.add_child(unlocker)
 
 	var zones: Node2D = _group("CameraZones", root)
-	for value: String in _values_of("zone"):
+	for value: String in _camera_values_of("zone"):
 		zones.add_child(_zone(value))
+	var lookout_values: PackedStringArray = _camera_values_of("lookout")
+	if not lookout_values.is_empty():
+		var lookouts: Node2D = _group("CameraLookouts", root)
+		for value: String in lookout_values:
+			lookouts.add_child(_lookout(value))
 
 	var dogs: Array[Demon] = []
 	var dogs_node: Node2D = _group("Dogs", root)
@@ -323,6 +353,43 @@ func _zone(value: String) -> Area2D:
 	return zone
 
 
+## A camera lookout from a line "name first_column first_row last_column last_row view=first_column,first_row,
+## last_column,last_row": the trigger, where the player stands, and the View the camera pulls back to show.
+func _lookout(value: String) -> Area2D:
+	var words: PackedStringArray = value.split(" ", false)
+	var lookout: Area2D = Area2D.new()
+	lookout.name = "Lookout%s" % words[0]
+	lookout.set_script(CAMERA_LOOKOUT_SCRIPT)
+	lookout.collision_layer = CAMERA_ZONE_LAYER
+	lookout.collision_mask = 0
+	lookout.monitoring = false
+	lookout.monitorable = false
+	var trigger: Rect2i = _cell_box(words[1].to_int(), words[2].to_int(), words[3].to_int(), words[4].to_int())
+	var shape: CollisionShape2D = CollisionShape2D.new()
+	shape.name = "Trigger"
+	var rectangle: RectangleShape2D = RectangleShape2D.new()
+	rectangle.size = Vector2(trigger.size) * TILE
+	shape.shape = rectangle
+	shape.position = (Vector2(trigger.position) + Vector2(trigger.size) / 2.0) * TILE
+	lookout.add_child(shape)
+	var corners: PackedStringArray = words[5].get_slice("=", 1).split(",")
+	var box: Rect2i = _cell_box(corners[0].to_int(), corners[1].to_int(), corners[2].to_int(), corners[3].to_int())
+	var view: ReferenceRect = ReferenceRect.new()
+	view.name = "View"
+	view.position = Vector2(box.position) * TILE
+	view.size = Vector2(box.size) * TILE
+	view.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	view.border_color = LOOKOUT_VIEW_COLOR
+	view.border_width = LOOKOUT_VIEW_LINE
+	lookout.add_child(view)
+	return lookout
+
+
+## The tiles from the first to the last, both in.
+func _cell_box(first_column: int, first_row: int, last_column: int, last_row: int) -> Rect2i:
+	return Rect2i(first_column, first_row, last_column - first_column + 1, last_row - first_row + 1)
+
+
 ## Where something standing on the tile under cell has its feet: its origin, as for the man and the dogs.
 func _feet(cell: Vector2i) -> Vector2:
 	return Vector2((cell.x + 0.5) * TILE, (cell.y + 1) * TILE)
@@ -361,6 +428,17 @@ func _value_of(key: String) -> String:
 		if entry[0] == key:
 			return entry[1]
 	return ""
+
+
+## The camera file's lines for key; without a camera file, the map's.
+func _camera_values_of(key: String) -> PackedStringArray:
+	if _camera_path.is_empty():
+		return _values_of(key)
+	var values: PackedStringArray = PackedStringArray()
+	for entry: PackedStringArray in _camera_entries:
+		if entry[0] == key:
+			values.append(entry[1])
+	return values
 
 
 func _values_of(key: String) -> PackedStringArray:
