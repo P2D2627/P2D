@@ -1,0 +1,17 @@
+[gd_resource type="Resource" script_class="OfferData" format=3]
+
+[ext_resource type="Script" path="res://offers/offer_data.gd" id="1_data"]
+[ext_resource type="Script" path="res://offers/grant_upgrade_effect.gd" id="2_effect"]
+
+[sub_resource type="Resource" id="Resource_effect"]
+script = ExtResource("2_effect")
+upgrade = &"claim"
+
+[resource]
+script = ExtResource("1_data")
+id = &"claim"
+offerer = "Mammon"
+what = "Claim: a coin that marks a spot to go back to, wherever he is."
+cost = "A little of his soul for every trip back."
+effect = SubResource("Resource_effect")
+moral_weight = 1.0

@@ -10,8 +10,9 @@
 # how high it went: a full jump peaks at Jump Height. A player freed in the middle of a jump stops
 # the overlay following it. With Start Visible off, the overlay starts hidden. In the test room the
 # overlay is linked to the camera too, and a camera line shows the zone the player is in and the
-# camera's look ahead and look down. That it frees itself outside debug builds can only be checked
-# on a release export.
+# camera's look ahead and look down. With a player, a line also shows the offer the debug keys
+# answer, the moral stage and whether he holds the crucifix. That it frees itself outside debug
+# builds can only be checked on a release export.
 # Run from the repository root; the exit code is 0 on pass and 1 on fail:
 # godot --headless --fixed-fps 60 --path Projeto --script res://tests/test_debug_overlay.gd
 extends "res://tests/support/player_test.gd"
@@ -26,6 +27,9 @@ const SP_LINE: String = "(?m)^SP .*$"
 const REGEN_IN_SP_LINE: String = "(?m)^SP .*   regen (\\d+\\.\\d) SP/s"
 const CAMERA_LINE: String = (
 		"(?m)^camera zone (\\S+)   look ahead ([+-]\\d+) px   look down ([+-]\\d+) px$")
+## The offers' line, with the autoloads Offers and Moral.
+const OFFERS_LINE: String = ("(?m)^(offer \\w+ \\((open|accepted)\\)   refused \\d+|every offer accepted)"
+		+ "   moral stage \\d+   crucifix (held|lost)$")
 ## A spot on the test room's floor, right of the first screen.
 const FLOOR_SPOT: Vector2 = Vector2(3000.0, 998.0)
 ## Physics frames for the room's camera to settle after the player moves: 3 s.
@@ -46,8 +50,9 @@ const SPEED_TOLERANCE: float = 1.0
 const FULL_JUMP_FRAMES: int = 60
 ## Physics frames the jump line must stay unchanged after the last jump.
 const LATCH_FRAMES: int = 30
-## Lines in the text with a player and no jump yet: the frame rate's, the player's and the SP's.
-const LINES_BEFORE_ANY_JUMP: int = 3
+## Lines in the text with a player and no jump yet: the frame rate's, the player's, the SP's and
+## the offers'.
+const LINES_BEFORE_ANY_JUMP: int = 4
 ## Repeats the keyboard sends while F3 is held down, in the held-key case.
 const KEY_REPEATS: int = 3
 ## The SP values of the SP line case, set on its own copy of the stats so the .tres can change.
@@ -341,6 +346,7 @@ func _the_jump_line_says_what_each_jump_was_and_keeps_it() -> bool:
 	var overlay: DebugOverlay = await _spawn_overlay(true, player)
 	await _wait_process_frames(TEXT_FRAMES)
 	var lines_before: int = _text(overlay).split("\n").size()
+	var has_offers_line: bool = RegEx.create_from_string(OFFERS_LINE).search(_text(overlay)) != null
 	var coyote: int = player.stats.get_coyote_frames()
 	var buffer: int = player.stats.get_jump_buffer_frames()
 	var heard: PackedStringArray = []
@@ -364,9 +370,9 @@ func _the_jump_line_says_what_each_jump_was_and_keeps_it() -> bool:
 	await _remove(overlay)
 	await _remove(player)
 	await _remove(platform)
-	return report(lines_before == LINES_BEFORE_ANY_JUMP and heard == expected,
-			"Jump line: %d lines before any jump; then \"%s\""
-			% [lines_before, "\", \"".join(heard)])
+	return report(lines_before == LINES_BEFORE_ANY_JUMP and has_offers_line and heard == expected,
+			"Jump line: %d lines before any jump, the offers' one %s; then \"%s\""
+			% [lines_before, has_offers_line, "\", \"".join(heard)])
 
 
 ## Holding F3 down sends repeats after the first press, and only that first press toggles.

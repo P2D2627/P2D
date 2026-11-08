@@ -3,11 +3,13 @@ extends RefCounted
 
 ## The rules of the man's hidden moral record (#169), with no nodes, so they can be tested on their
 ## own; the autoload Moral only puts them where the lines and the offers can reach them. Everything
-## he does adds to one total of points, by the values in MoralStats: each accepted temptation, each
-## arrogant answer, and each offer he listened to for too long before refusing it. Two totals in
-## the stats pick the stage, 0 to 2, that chooses how badly he speaks. Points never go down, so his
-## speech never mends; only reset() starts over, and a save puts back what he had then, since what
-## he did after it counts as not done. Nothing here is ever shown on screen.
+## he does adds to one total of points: each accepted temptation, by the Moral Weight of its offer
+## in the catalog, and each arrogant answer and each offer he listened to for too long before
+## refusing it, by the values in MoralStats. Two totals in the stats pick the stage, 0 to 2, that
+## chooses how badly he speaks. Points never go down, so his speech never mends, and a refusal adds
+## none and takes none away: it only counts, for the judgment. Only reset() starts over, and a save
+## puts back what he had then, since what he did after it counts as not done. Nothing here is ever
+## shown on screen.
 
 ## The stage went up after something he did, or back to 0 on reset().
 signal stage_changed(stage: int)
@@ -19,35 +21,54 @@ const ARROGANT: StringName = &"arrogant"
 const POINTS_TOLERANCE: float = 0.0001
 
 var _stats: MoralStats
+var _catalog: OfferCatalog
 ## The temptations taken, each once, in the order he took them.
 var _taken: Array[StringName] = []
 var _humble_answers: int = 0
 var _arrogant_answers: int = 0
 ## The longest he listened to each offer before refusing it, in seconds.
 var _listening: Dictionary[StringName, float] = {}
+## How many times he refused each offer.
+var _refusals: Dictionary[StringName, int] = {}
 ## The stage after the last thing he did, to say when it changes.
 var _stage: int = 0
 
 
-## Starts an empty record, with the values in stats.
-func _init(stats: MoralStats) -> void:
+## Starts an empty record, with the values in stats and the temptations' weights in catalog.
+func _init(stats: MoralStats, catalog: OfferCatalog) -> void:
 	assert(stats != null, "MoralRecord: give it the MoralStats to use.")
+	assert(catalog != null, "MoralRecord: give it the OfferCatalog with the temptations' weights.")
 	_stats = stats
+	_catalog = catalog
 
 
-## He accepted the temptation id. One already taken does not count twice. An id missing from
-## Temptation Points counts Unknown Temptation Points, with a warning.
+## He accepted the temptation id. One already taken does not count twice. An id missing from the
+## catalog counts Unknown Temptation Points, with a warning.
 func take_temptation(id: StringName) -> void:
 	if id.is_empty():
 		push_warning("MoralRecord: a temptation with no id was left out.")
 		return
 	if _taken.has(id):
 		return
-	if not _stats.temptation_points.has(id):
-		push_warning("MoralRecord: temptation %s is not in Temptation Points, so it counts %s."
+	if not _catalog.has(id):
+		push_warning("MoralRecord: temptation %s is not in the offer catalog, so it counts %s."
 				% [id, _stats.unknown_temptation_points])
 	_taken.append(id)
 	_update_stage()
+
+
+## He refused the offer id once more. It adds no points; an empty id changes nothing, with a
+## warning.
+func record_refusal(id: StringName) -> void:
+	if id.is_empty():
+		push_warning("MoralRecord: a refusal with no offer id was left out.")
+		return
+	_refusals[id] = _refusals.get(id, 0) + 1
+
+
+## How many times he refused the offer id; for the judgment.
+func get_refusal_count(id: StringName) -> int:
+	return _refusals.get(id, 0)
 
 
 ## He answered in tone, HUMBLE or ARROGANT. Any other tone changes nothing, with a warning.
@@ -73,11 +94,11 @@ func record_listening(offer_id: StringName, seconds: float) -> void:
 	_update_stage()
 
 
-## Whether he accepted the temptation id. An id missing from Temptation Points, likely mistyped in
-## a line, says so with a warning.
+## Whether he accepted the temptation id. An id missing from the catalog, likely mistyped in a
+## line, says so with a warning.
 func has_taken(id: StringName) -> bool:
-	if not _stats.temptation_points.has(id):
-		push_warning("MoralRecord: has_taken asks for %s, which is not in Temptation Points." % id)
+	if not _catalog.has(id):
+		push_warning("MoralRecord: has_taken asks for %s, which is not in the offer catalog." % id)
 	return _taken.has(id)
 
 
@@ -96,7 +117,8 @@ func stage() -> int:
 func get_points() -> float:
 	var points: float = _arrogant_answers * _stats.arrogant_answer_points
 	for id: StringName in _taken:
-		points += _stats.temptation_points.get(id, _stats.unknown_temptation_points)
+		var offer: OfferData = _catalog.find(id)
+		points += offer.moral_weight if offer != null else _stats.unknown_temptation_points
 	for seconds: float in _listening.values():
 		points += clampf((seconds - _stats.listening_grace) * _stats.listening_points_per_second,
 				0.0, _stats.most_listening_points)
@@ -125,6 +147,7 @@ func reset() -> void:
 	_humble_answers = 0
 	_arrogant_answers = 0
 	_listening.clear()
+	_refusals.clear()
 	_update_stage()
 
 
@@ -136,11 +159,15 @@ func to_save() -> Dictionary:
 	var listening: Dictionary = {}
 	for id: StringName in _listening:
 		listening[String(id)] = _listening[id]
+	var refusals: Dictionary = {}
+	for id: StringName in _refusals:
+		refusals[String(id)] = _refusals[id]
 	return {
 		"taken": taken,
 		"humble": _humble_answers,
 		"arrogant": _arrogant_answers,
 		"listening": listening,
+		"refusals": refusals,
 	}
 
 
@@ -162,6 +189,12 @@ func from_save(data: Dictionary) -> void:
 		for id: Variant in listening:
 			if id is String and listening[id] is float:
 				_listening[StringName(id)] = listening[id]
+	_refusals.clear()
+	var refusals: Variant = data.get("refusals")
+	if refusals is Dictionary:
+		for id: Variant in refusals:
+			if id is String and refusals[id] is int:
+				_refusals[StringName(id)] = refusals[id]
 	_update_stage()
 
 

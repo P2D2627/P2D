@@ -4,11 +4,11 @@ extends Node2D
 ## The root of every level (ADR 0026). When its man dies, it waits Restart Delay, so the death shows,
 ## and then the level starts over as a new copy of itself, so everything is as at the start: the
 ## man, the demons and the camera. In the game, Main put it in its level slot and makes the swap,
-## on restart_requested; run on its own, with F6, it is the current scene and reloads itself. The
-## wait pauses with the level. The man keeps the crucifix only while GameState says he holds it, and
-## GameState hears when he loses it, since the level starts over without what it knew.
 ## on restart_requested; run on its own, with F6, it is the current scene and reloads itself, after
-## saying so with the same signal. The wait pauses with the level.
+## saying so with the same signal. The wait pauses with the level. The man keeps the crucifix only
+## while GameState says he holds it, and GameState hears when he loses it, since the level starts
+## over without what it knew; when the first upgrade costs it in GameState, the one in his hands
+## goes at once.
 
 ## A new copy of this level should take its place. Main listens, and so does what must outlive the
 ## copy, as the gym's station. Not said when the level is left before the wait is over.
@@ -38,7 +38,15 @@ func _follow_the_crucifix() -> void:
 		return
 	if progress.has_crucifix:
 		crucifix.lost.connect(progress.lose_crucifix)
+		progress.upgrade_granted.connect(_on_upgrade_granted.bind(crucifix))
 	else:
+		crucifix.lose()
+
+
+## The first upgrade cost him the crucifix, in GameState: the one in his hands goes too.
+func _on_upgrade_granted(_id: StringName, crucifix: Crucifix) -> void:
+	var progress: GameProgress = get_node(^"/root/GameState") as GameProgress
+	if is_instance_valid(crucifix) and not progress.has_crucifix:
 		crucifix.lose()
 
 

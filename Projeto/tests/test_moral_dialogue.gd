@@ -23,10 +23,10 @@ class StandInGameState extends RefCounted:
 	var player_name: String = PLAYER_NAME
 	var has_crucifix: bool = true
 
-	func has_flag(_flag: StringName) -> bool:
+	func has_event(_event: StringName) -> bool:
 		return true
 
-	func set_flag(_flag: StringName) -> void:
+	func mark_event(_event: StringName) -> void:
 		pass
 
 
