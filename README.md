@@ -811,6 +811,7 @@ godot --headless --fixed-fps 60 --path Projeto --script res://tests/test_gym_hin
 godot --headless --fixed-fps 60 --path Projeto --script res://tests/test_gym_stations.gd
 godot --headless --fixed-fps 60 --path Projeto --script res://tests/test_gym.gd
 godot --headless --fixed-fps 60 --path Projeto --script res://tests/test_gym_dogs.gd
+godot --headless --fixed-fps 60 --path Projeto --script res://tests/test_resources_load.gd
 ```
 
 O `test_input_profiles.gd` escreve seis ERROR, das tentativas de atribuir teclas inválidas, todos
