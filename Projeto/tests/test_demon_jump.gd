@@ -63,11 +63,15 @@ const SHELF_THICKNESS: float = 20.0
 const PLATFORM_LEFT: float = 200.0
 const PLATFORM_RIGHT: float = 400.0
 ## In the drop cases: Max Drop of five tiles; the demon's floor ends at x = EDGE_X, with the demon
-## put DROP_DEMON_AWAY px short of it and the man DROP_MAN_INSET px on from it, on the floor below,
+## put DROP_DEMON_AWAY px short of it (its front 36 px short, with the dog's body 112 px long) and
+## the man DROP_MAN_INSET px on from it, on the floor below,
 ## where the corner never hides his head from the demon, down to the deepest drop.
 const MAX_DROP: float = 5.0 * TILE
 const EDGE_X: float = 150.0
-const DROP_DEMON_AWAY: float = 60.0
+const DROP_DEMON_AWAY: float = 92.0
+## Over a drop deeper than Max Drop, the demon starts nearer the end of its floor, so the corner does
+## not hide the man's head, that far down, from its eyes.
+const DEEP_DROP_DEMON_AWAY: float = 60.0
 const DROP_MAN_INSET: float = 6.0 * TILE
 ## In the case of the ceiling over the end of its floor: its bottom LOW_CEILING_ROOM px over the
 ## demon's head, less than its leap's Jump Clearance, from LOW_CEILING_REACH px short of the corner
@@ -339,7 +343,7 @@ func _never_drops_deeper_than_max_drop() -> bool:
 	var low: StaticBody2D = make_platform(EDGE_X, FLOOR_RIGHT, depth)
 	var man: Player = await spawn_on_floor(Vector2(EDGE_X + DROP_MAN_INSET, SPAWN_Y + depth))
 	var changes: Array[int] = []
-	var demon: Demon = await _spawn_demon(changes, 0.0, MAX_DROP, EDGE_X - DROP_DEMON_AWAY)
+	var demon: Demon = await _spawn_demon(changes, 0.0, MAX_DROP, EDGE_X - DEEP_DROP_DEMON_AWAY)
 	await wait_frames(FRAMES_TO_WATCH)
 	var feet: float = demon.position.y
 	await _clear([high, low, man, demon])
@@ -492,7 +496,8 @@ func _kept_off_its_post_on_a_higher_floor_it_leaps_back_down_and_walks_home() ->
 
 
 ## After a leap down off the end of its floor after the man, its way back keeps one step: from its
-## own floor, short of the corner, to the floor below, past it.
+## own floor, with its back short of the corner (its middle may stand past it, the body lying over
+## the edge), to the floor below, past it.
 func _its_leap_down_is_a_step_of_its_way() -> bool:
 	var depth: float = 2.0 * TILE
 	var high: StaticBody2D = make_platform(FLOOR_LEFT, EDGE_X)
@@ -507,9 +512,10 @@ func _its_leap_down_is_a_step_of_its_way() -> bool:
 	var steps: int = way.size()
 	var from: Vector2 = way.get_from(0) if steps > 0 else Vector2.INF
 	var to: Vector2 = way.get_to(0) if steps > 0 else Vector2.INF
+	var half_width: float = _half_width(demon)
 	await _clear([high, low, man, demon])
 	return report(empty_before and down and steps == 1 and absf(from.y) < TOLERANCE
-			and from.x < EDGE_X and absf(to.y - depth) < TOLERANCE and to.x > EDGE_X,
+			and from.x - half_width < EDGE_X and absf(to.y - depth) < TOLERANCE and to.x > EDGE_X,
 			"Leap down: empty before %s, down %s, %d steps, from %s, to %s (corner x = %d)"
 			% [empty_before, down, steps, from, to, EDGE_X])
 

@@ -366,6 +366,18 @@ func get_gap_to_target() -> float:
 	return _target.get_man().global_position.x - global_position.x
 
 
+## For its states: how fast the man moves, Vector2.ZERO with no man or one that is not a body.
+func get_target_velocity() -> Vector2:
+	var man: CharacterBody2D = _target.get_man() as CharacterBody2D if _target.has_man() else null
+	return man.velocity if man != null else Vector2.ZERO
+
+
+## For its states: true when the man is a body off any floor.
+func is_target_in_the_air() -> bool:
+	var man: CharacterBody2D = _target.get_man() as CharacterBody2D if _target.has_man() else null
+	return man != null and not man.is_on_floor()
+
+
 ## For its states: how far apart, in px, the man's feet and the demon's are in height.
 func get_target_height() -> float:
 	return _height_of(_target.get_man())
@@ -836,6 +848,20 @@ func is_packmate_in_the_way(direction: float) -> bool:
 				and _shares_floor_with(mate):
 			return true
 	return false
+
+
+## For its states: with Pack Spacing, how far, in px, this demon can walk that way, 1 for right and
+## -1 for left, before it is Pack Spacing from the body of the nearest other demon on its floor that
+## way, or 0 if it already is; with none, INF.
+func room_before_a_packmate(direction: float) -> float:
+	var room: float = INF
+	if stats.pack_spacing <= 0.0:
+		return room
+	for mate: Demon in _packmates:
+		var ahead: float = (mate.global_position.x - global_position.x) * direction
+		if ahead > 0.0 and _shares_floor_with(mate):
+			room = minf(room, maxf(ahead - _apart_from_packmates(), 0.0))
+	return room
 
 
 ## For its states: with Pack Spacing, how far, in px, this demon can walk towards a spot gap px away

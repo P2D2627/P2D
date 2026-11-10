@@ -13,12 +13,15 @@
 [ext_resource type="AudioStream" uid="uid://bpoa7jbrvdybb" path="res://assets/audio/demon_search.wav" id="11_search"]
 [ext_resource type="AudioStream" uid="uid://b5dy3n1l8novm" path="res://assets/audio/demon_take_off.wav" id="12_take_off"]
 [ext_resource type="AudioStream" uid="uid://bnaebg4uygkcb" path="res://assets/audio/demon_land.wav" id="13_land"]
+[ext_resource type="Texture2D" path="res://assets/sprites/demon/dog_run.png" id="14_dog_run"]
+[ext_resource type="Script" path="res://demon/demon_animation.gd" id="15_animation"]
+[ext_resource type="Texture2D" path="res://assets/sprites/demon/dog_idle_cell.png" id="16_dog_idle"]
 
 [sub_resource type="RectangleShape2D" id="RectangleShape2D_body"]
-size = Vector2(48, 96)
+size = Vector2(112, 56)
 
 [sub_resource type="RectangleShape2D" id="RectangleShape2D_hit"]
-size = Vector2(96, 96)
+size = Vector2(160, 56)
 
 [sub_resource type="CircleShape2D" id="CircleShape2D_sight"]
 resource_local_to_scene = true
@@ -26,7 +29,79 @@ radius = 480.0
 
 [sub_resource type="RectangleShape2D" id="RectangleShape2D_pack"]
 resource_local_to_scene = true
-size = Vector2(240, 96)
+size = Vector2(304, 56)
+
+[sub_resource type="AtlasTexture" id="AtlasTexture_run0"]
+atlas = ExtResource("14_dog_run")
+region = Rect2(0, 0, 432, 202)
+
+[sub_resource type="AtlasTexture" id="AtlasTexture_run1"]
+atlas = ExtResource("14_dog_run")
+region = Rect2(432, 0, 432, 202)
+
+[sub_resource type="AtlasTexture" id="AtlasTexture_run2"]
+atlas = ExtResource("14_dog_run")
+region = Rect2(864, 0, 432, 202)
+
+[sub_resource type="AtlasTexture" id="AtlasTexture_run3"]
+atlas = ExtResource("14_dog_run")
+region = Rect2(1296, 0, 432, 202)
+
+[sub_resource type="AtlasTexture" id="AtlasTexture_run4"]
+atlas = ExtResource("14_dog_run")
+region = Rect2(1728, 0, 432, 202)
+
+[sub_resource type="AtlasTexture" id="AtlasTexture_run5"]
+atlas = ExtResource("14_dog_run")
+region = Rect2(2160, 0, 432, 202)
+
+[sub_resource type="AtlasTexture" id="AtlasTexture_run6"]
+atlas = ExtResource("14_dog_run")
+region = Rect2(2592, 0, 432, 202)
+
+[sub_resource type="AtlasTexture" id="AtlasTexture_run7"]
+atlas = ExtResource("14_dog_run")
+region = Rect2(3024, 0, 432, 202)
+
+[sub_resource type="SpriteFrames" id="SpriteFrames_dog"]
+animations = [{
+"frames": [{
+"duration": 1.0,
+"texture": ExtResource("16_dog_idle")
+}],
+"loop": true,
+"name": &"idle",
+"speed": 5.0
+}, {
+"frames": [{
+"duration": 1.0,
+"texture": SubResource("AtlasTexture_run0")
+}, {
+"duration": 1.0,
+"texture": SubResource("AtlasTexture_run1")
+}, {
+"duration": 1.0,
+"texture": SubResource("AtlasTexture_run2")
+}, {
+"duration": 1.0,
+"texture": SubResource("AtlasTexture_run3")
+}, {
+"duration": 1.0,
+"texture": SubResource("AtlasTexture_run4")
+}, {
+"duration": 1.0,
+"texture": SubResource("AtlasTexture_run5")
+}, {
+"duration": 1.0,
+"texture": SubResource("AtlasTexture_run6")
+}, {
+"duration": 1.0,
+"texture": SubResource("AtlasTexture_run7")
+}],
+"loop": true,
+"name": &"run",
+"speed": 12.0
+}]
 
 [node name="Demon" type="CharacterBody2D"]
 collision_layer = 4
@@ -36,17 +111,30 @@ stats = ExtResource("2_stats")
 knock_off_layers = 2
 
 [node name="CollisionShape2D" type="CollisionShape2D" parent="."]
-position = Vector2(0, -48)
+position = Vector2(0, -28)
 shape = SubResource("RectangleShape2D_body")
 
 [node name="Placeholder" type="Polygon2D" parent="."]
+self_modulate = Color(1, 1, 1, 0)
 color = Color(0.55, 0.12, 0.18, 1)
-polygon = PackedVector2Array(-24, -96, 24, -96, 24, 0, -24, 0)
+polygon = PackedVector2Array(-56, -56, 56, -56, 56, 0, -56, 0)
 script = ExtResource("3_placeholder")
+
+[node name="Sprite" type="AnimatedSprite2D" parent="Placeholder"]
+editor_description = "dog_run.png and dog_idle_cell.png: 432 x 202 cells, the body's middle on the cell's middle and the feet on y = 194. Offset puts the feet on the demon's y = 0; Scale 0.5 halves the art, drawn at twice the size for the zoom."
+scale = Vector2(0.5, 0.5)
+sprite_frames = SubResource("SpriteFrames_dog")
+animation = &"idle"
+offset = Vector2(0, -93)
+
+[node name="DemonAnimation" type="Node" parent="." node_paths=PackedStringArray("demon", "sprite")]
+script = ExtResource("15_animation")
+demon = NodePath("..")
+sprite = NodePath("../Placeholder/Sprite")
 
 [node name="Mark" type="Node2D" parent="." node_paths=PackedStringArray("label")]
 z_index = 2
-position = Vector2(0, -144)
+position = Vector2(0, -112)
 script = ExtResource("8_mark")
 label = NodePath("Label")
 
@@ -63,7 +151,7 @@ horizontal_alignment = 1
 vertical_alignment = 1
 
 [node name="DemonSounds" type="Node2D" parent="." node_paths=PackedStringArray("demon", "cue")]
-position = Vector2(0, -48)
+position = Vector2(0, -28)
 script = ExtResource("9_sounds")
 demon = NodePath("..")
 cue = NodePath("Cue")
@@ -77,7 +165,7 @@ bus = &"SFX"
 
 [node name="SinkingDrawing" type="Node" parent="." node_paths=PackedStringArray("drawing")]
 script = ExtResource("6_sinking_drawing")
-drawing = NodePath("../Placeholder")
+drawing = NodePath("../Placeholder/Sprite")
 
 [node name="SightArea" type="Area2D" parent="."]
 unique_name_in_owner = true
@@ -92,7 +180,7 @@ shape = SubResource("CircleShape2D_sight")
 
 [node name="PackArea" type="Area2D" parent="."]
 unique_name_in_owner = true
-position = Vector2(0, -48)
+position = Vector2(0, -28)
 collision_layer = 0
 collision_mask = 4
 monitorable = false
@@ -118,14 +206,14 @@ body_box = NodePath("../CollisionShape2D")
 
 [node name="LedgeCheck" type="RayCast2D" parent="."]
 unique_name_in_owner = true
-position = Vector2(30, -1)
+position = Vector2(62, -1)
 enabled = false
 target_position = Vector2(0, 25)
 collision_mask = 257
 
 [node name="StepCheck" type="RayCast2D" parent="."]
 unique_name_in_owner = true
-position = Vector2(32, -1)
+position = Vector2(64, -1)
 enabled = false
 target_position = Vector2(0, 0)
 collision_mask = 257
@@ -136,14 +224,14 @@ target = NodePath("..")
 along_floor = true
 
 [node name="RepellableShape" type="CollisionShape2D" parent="Repellable"]
-position = Vector2(0, -48)
+position = Vector2(0, -28)
 shape = SubResource("RectangleShape2D_body")
 
 [node name="Hitbox" parent="." instance=ExtResource("5_hitbox")]
 unique_name_in_owner = true
 
 [node name="HitboxShape" type="CollisionShape2D" parent="Hitbox"]
-position = Vector2(0, -48)
+position = Vector2(0, -28)
 shape = SubResource("RectangleShape2D_hit")
 
 [connection signal="state_changed" from="." to="Placeholder" method="_on_demon_state_changed"]

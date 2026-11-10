@@ -54,8 +54,8 @@ func physics_update(delta: float) -> void:
 		return
 	if not _demon.is_on_floor():
 		return
-	if _follows or absf(_demon.get_last_seen_x() - _anchor_x) \
-			> _demon.stats.out_of_reach_pace_width / 2.0:
+	if _follows or (absf(_demon.get_last_seen_x() - _anchor_x) \
+			> _demon.stats.out_of_reach_pace_width / 2.0 and not _packmate_holds_its_spot()):
 		_follow(delta)
 	else:
 		_pace(delta)
@@ -82,15 +82,27 @@ func _follow(delta: float) -> void:
 	_follows = true
 	var gap: float = _demon.get_last_seen_x() - _demon.global_position.x
 	var direction: float = signf(gap)
-	if absf(gap) > Demon.POST_REACH and not _demon.is_against_a_wall(direction):
+	if absf(gap) > Demon.POST_REACH and not _demon.is_against_a_wall(direction) \
+			and not _demon.is_packmate_in_the_way(direction):
 		_demon.turn_to(direction)
 		_demon.go_after(gap, delta)
+		# No further in a frame than Pack Spacing from a packmate that way, so it never steps into it.
+		_demon.velocity.x = direction * minf(absf(_demon.velocity.x),
+				_demon.room_before_a_packmate(direction) / delta)
 		if _demon.velocity.x != 0.0:
 			return
 	_demon.velocity.x = 0.0
 	_follows = false
 	_anchor_x = _demon.global_position.x
 	_stop(-direction if direction != 0.0 else _direction)
+
+
+## True when, with Pack Spacing, another demon stands between it and below where it last saw the man,
+## Pack Spacing from its body: that one holds the spot, so it paces where it is instead of pushing on
+## and being pushed back on every frame (ADR 0046).
+func _packmate_holds_its_spot() -> bool:
+	var way: float = signf(_demon.get_last_seen_x() - _demon.global_position.x)
+	return way != 0.0 and _demon.is_packmate_in_the_way(way)
 
 
 ## Pauses where it stopped and barks, to set off the way given next, 1 for right and -1 for left.

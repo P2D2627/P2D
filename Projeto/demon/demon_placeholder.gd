@@ -6,7 +6,9 @@ extends Polygon2D
 ## as it barks at a man out of its reach (ADR 0039), and stretches as it takes off up a step or down
 ## off the end of its floor and squashes as it lands (ADR 0042), so the leap shows with no sound. It
 ## only listens to the demon's state_changed, warning_started, barked, took_off and landed, wired in
-## demon.tscn, and goes when the art comes.
+## demon.tscn. With the art in, the rectangle no longer shows (its Self Modulate is clear) and the
+## art is its child: the shapes, hops and Z Index move the art with it, and each colour also tints
+## everything under it through Modulate, by its own Tint below.
 
 ## The colour while the demon warns of a lunge: much lighter than the rectangle's own, so the
 ## warning shows also to whom does not tell red from orange; the crouch shows it too.
@@ -49,6 +51,13 @@ extends Polygon2D
 ## Seconds the rectangle takes to go back to its own size after the take-off or the landing.
 @export_range(0.05, 1.0, 0.01, "suffix:s") var leap_settle_time: float = 0.2
 
+@export_group("Tints")
+## What the colours do to the art under the rectangle, through Modulate: lighter while it warns of a
+## lunge or a bite, darker while stunned, white (no change) at rest.
+@export var warning_tint: Color = Color(1.35, 1.25, 1.1)
+@export var bite_warning_tint: Color = Color(1.4, 1.35, 1.0)
+@export var stunned_tint: Color = Color(0.45, 0.45, 0.5)
+
 @onready var _rest_color: Color = color
 @onready var _rest_z_index: int = z_index
 @onready var _rest_position: Vector2 = position
@@ -73,18 +82,22 @@ func _on_demon_state_changed(_previous: Demon.State, current: Demon.State) -> vo
 			z_index = _rest_z_index
 	if current == Demon.State.STUNNED:
 		color = stunned_color
+		modulate = stunned_tint
 		scale = stunned_scale
 	elif current != Demon.State.WARNING:
 		color = _rest_color
+		modulate = Color.WHITE
 		scale = Vector2.ONE
 
 
 func _on_demon_warning_started(attack: DemonAttack) -> void:
 	if attack.animation == &"bite":
 		color = bite_warning_color
+		modulate = bite_warning_tint
 		scale = bite_warning_scale
 	else:
 		color = warning_color
+		modulate = warning_tint
 		scale = Vector2(1.0, warning_squash)
 
 
