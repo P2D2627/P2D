@@ -556,9 +556,16 @@ depois do seu desbloqueador. O `test_lust_phase_2_route.gd` joga o nível do in�
 com a personagem real: 107 movimentos, os dois desbloqueadores e a saída.
 
 O nível 1 completo (`levels/lust/level1.tscn`, 371 × 379 tiles) junta numa só cena o tutorial, a nova fase 1 e a
-fase 2, sem carregamentos entre elas. É construído a partir do texto `levels/lust/level1.txt` por
-`levels/lust/build_level1.gd`, que acrescenta as 124 zonas de câmara e copia os avisos, a Velvet e o demónio do
-corredor da cena onde o tutorial foi feito, que fica como estava. O tutorial liga à fase 1 por um corredor de 12
+fase 2, sem carregamentos entre elas. A primeira versão foi construída a partir do texto `levels/lust/level1.txt`
+por `levels/lust/build_level1.gd`, que acrescenta as 124 zonas de câmara e copia os avisos, a Velvet e o demónio do
+corredor da cena onde o tutorial foi feito, que fica como estava. Desde então, a cena é o nível: os tiles, os cães,
+os espigões, as plataformas e as zonas editam-se à mão no editor do Godot, tile a tile e peça a peça. O construtor
+recusa-se a escrever por cima de uma cena que já existe; só o faz com a opção `-- --force`, que descarta as
+edições feitas à mão (a arte e o fundo são preservados mesmo nesse caso). O contorno de pedras segue o mesmo
+princípio: `levels/lust/build_stone_rim.gd` gera-o uma vez a partir dos tiles (uma faixa por cada troço reto de
+chão, teto ou parede e uma peça por cada canto, 2628 peças) e grava as peças na cena, onde passam a editar-se pedra
+a pedra. O script também se recusa a escrever por cima das peças já gravadas, salvo com `-- --force`. Depois de uma
+mudança grande nos tiles, volta a gerar-se o contorno com essa opção, o que descarta os retoques feitos às pedras. O tutorial liga à fase 1 por um corredor de 12
 tiles, e a fase 1 liga à fase 2 por uma chaminé de 8 tiles de altura e 3 de largura. Dois pontos de gravação
 definem onde a morte recomeça: depois do tutorial, no início da fase 1; dentro da fase 2, no início da fase 2. A
 cópia da fase 2 tem três plataformas deslocadas um tile, porque deixavam exatamente a altura da personagem por
@@ -2252,6 +2259,10 @@ iniciado por nada no jogo. A estação de cada uma acrescenta-se quando a mecân
 - `demon_alert.wav`, `demon_search.wav`, `demon_take_off.wav` e `demon_land.wav`, em
   `Projeto/assets/audio/`: bips provisórios gerados por síntese de ondas sinusoidais, sem
   material de terceiros. Saem quando chegarem os sons definitivos.
+- `level1_cave_map.png` e `level1_cave_shade.png`, em `Projeto/assets/sprites/backgrounds/`:
+  imagens provisórias geradas com IA (Claude) a partir do mapa do nível 1, sem material de
+  terceiros. A primeira dá a cor de cada área do fundo e a segunda escurece o fundo junto à rocha.
+  Saem ou refazem-se quando o mapa ou as áreas mudarem.
 
 ## Licença
 

@@ -1,4 +1,5 @@
-# Checks level 1 as one scene, built from its text map: what the map says is in it; the tutorial with its prompts,
+# Checks level 1 as one scene. Its text map, level1.txt, made the first version; since then the scene is edited by
+# hand and is the level, so these checks look at the scene alone: every kind of piece is in it; the tutorial with its prompts,
 # Velvet and the corridor's demon; the camera zones, by the checks every level shares; the three parts joined only
 # by their passages, with one way out, at the end; and the save points, which hold where a death starts over.
 # Run from the repository root; the exit code is 0 on pass and 1 on fail:
@@ -6,7 +7,6 @@
 extends "res://tests/test_lust_phase_2.gd"
 
 const LEVEL_PATH: String = "res://levels/lust/level1.tscn"
-const LEVEL_MAP_PATH: String = "res://levels/lust/level1.txt"
 ## A tile of air in phase 1's start room, in F's room and in phase 2's start room.
 const S_ROOM_CELL: Vector2i = Vector2i(112, 365)
 const F_ROOM_CELL: Vector2i = Vector2i(349, 260)
@@ -39,8 +39,7 @@ func _initialize() -> void:
 	root.add_child(level)
 	await process_frame
 	var results: Array[bool] = []
-	var map: String = FileAccess.get_file_as_string(LEVEL_MAP_PATH).split("---", true, 1)[1]
-	results.append(_the_scene_holds_what_the_map_says(level, map))
+	results.append(_the_scene_holds_every_kind_of_piece(level))
 	results.append(_big_dogs_are_black_and_dogs_are_not(level))
 	results.append(_each_gate_has_its_own_unlocker(level))
 	results.append(_the_gates_cannot_be_skipped(level))
@@ -68,6 +67,26 @@ func _initialize() -> void:
 
 func _progress() -> GameProgress:
 	return root.get_node(^"GameState") as GameProgress
+
+
+## Dogs, big dogs, spikes and collapsing platforms are each in the scene at least once. The scene is edited by
+## hand, so how many of each is the scene's to say, not the text map's.
+func _the_scene_holds_every_kind_of_piece(level: Node) -> bool:
+	var dogs: int = 0
+	var big_dogs: int = 0
+	for node: Node in level.get_node("Dogs").get_children():
+		if String(node.name).begins_with("BigDog"):
+			big_dogs += 1
+		else:
+			dogs += 1
+	var spike_tiles: int = 0
+	for node: Node in level.get_node("Spikes").get_children():
+		spike_tiles += (node as LethalSpikes).width_tiles
+	var collapsing_tiles: int = 0
+	for node: Node in level.get_node("CollapsingPlatforms").get_children():
+		collapsing_tiles += (node as CollapsingPlatform).width_tiles
+	var found: Array[int] = [dogs, big_dogs, spike_tiles, collapsing_tiles]
+	return report(not found.has(0), "Contents: dogs, big dogs, spike tiles, collapsing tiles %s" % [found])
 
 
 func _the_tutorial_is_all_there(level: Node) -> bool:

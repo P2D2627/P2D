@@ -1,5 +1,5 @@
-# Checks level 1's painted pieces: they sit in level 1 itself, under a plain node Art right over the rock tiles,
-# so they are placed by hand with the tiles in view; they are only drawings, with nothing that collides, so the
+# Checks level 1's painted pieces: they sit in level 1 itself, under a plain node Art over the rock tiles and over
+# the man and the dogs, so they walk behind the stones and the pieces are placed by hand with the tiles in view; they are only drawings, with nothing that collides, so the
 # tiles stay the only rock the man stands on; and building the map again carries them over.
 # Run from the repository root; the exit code is 0 on pass and 1 on fail:
 # godot --headless --fixed-fps 60 --path Projeto --script res://tests/test_level1_art.gd
@@ -12,21 +12,25 @@ const BUILDER_PATH: String = "res://levels/lust/build_level1.gd"
 func _initialize() -> void:
 	var level: Node = (load(LEVEL_PATH) as PackedScene).instantiate()
 	var results: Array[bool] = []
-	results.append(_the_art_is_in_level1_right_over_the_tiles(level))
+	results.append(_the_art_is_in_level1_over_the_tiles_the_man_and_the_dogs(level))
 	results.append(_the_art_is_drawings_only(level))
 	results.append(_building_again_carries_the_art_over(level))
 	level.free()
 	quit(0 if not results.has(false) else 1)
 
 
-func _the_art_is_in_level1_right_over_the_tiles(level: Node) -> bool:
+func _the_art_is_in_level1_over_the_tiles_the_man_and_the_dogs(level: Node) -> bool:
 	var art: Node = level.get_node_or_null(^"Art")
 	var tiles: Node = level.get_node_or_null(^"Tiles")
-	var ok: bool = art is Node2D and tiles != null and art.scene_file_path.is_empty() \
-			and art.get_index() == tiles.get_index() + 1
-	var detail: String = "no Art node" if art == null else "Art from '%s' at %d, Tiles at %d" % [
-			art.scene_file_path, art.get_index(), tiles.get_index() if tiles != null else -1]
-	return _report(ok, "the art is a plain node of level 1, right over the tiles (%s)" % detail)
+	var player: Node = level.get_node_or_null(^"Player")
+	var dogs: Node = level.get_node_or_null(^"Dogs")
+	if art == null or tiles == null or player == null or dogs == null:
+		return _report(false, "the art is over the tiles, the man and the dogs (a node is missing)")
+	var ok: bool = art is Node2D and art.scene_file_path.is_empty() \
+			and tiles.get_index() < player.get_index() and tiles.get_index() < dogs.get_index() \
+			and art.get_index() == maxi(player.get_index(), dogs.get_index()) + 1
+	return _report(ok, "the art is a plain node of level 1, over the tiles, the man and the dogs (Art '%s' at %d; Tiles %d, Player %d, Dogs %d)" % [
+			art.scene_file_path, art.get_index(), tiles.get_index(), player.get_index(), dogs.get_index()])
 
 
 func _the_art_is_drawings_only(level: Node) -> bool:

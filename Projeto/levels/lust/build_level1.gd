@@ -3,11 +3,19 @@
 # tutorial's prompts, Velvet and the corridor's demon come from the scene they were made in, which stays as it
 # is. Two save points hold where a death starts over: past the tutorial, at phase 1's start; inside phase 2,
 # at phase 2's start. The camera's zones and lookouts come from their own file, level1_camera.txt, so a map made
-# again elsewhere keeps them. It overwrites the scene, so the text stays the map's only source. From the repository
-# root, with the editor closed:
+# again elsewhere keeps them.
+#
+# The text makes the level's first version; from then on the scene is the level: tiles, dogs, spikes, platforms and
+# zones are edited by hand in the editor, tile by tile and piece by piece. So it never overwrites a scene that is
+# already there, unless asked with --force, which throws the hand edits to the scene away (the Art and the Backdrop
+# are carried over even then). From the repository root, with the editor closed:
 # godot --headless --path Projeto --script res://levels/lust/build_level1.gd
-# The exit code is 0 when the scene was saved.
+# godot --headless --path Projeto --script res://levels/lust/build_level1.gd -- --force
+# The exit code is 0 when the scene was saved, and 1 when it was not, a scene already there included.
 extends "res://levels/lust/build_lust_phase_2.gd"
+
+## Passed after -- to build over a scene that is already there.
+const FORCE_ARGUMENT: String = "--force"
 
 const TUTORIAL_SCENE: PackedScene = preload("res://scenes/levels/Lust/LustLevel_Phase1_Cave.tscn")
 const SAVE_POINT_SCRIPT: Script = preload("res://levels/save_point.gd")
@@ -29,6 +37,9 @@ const PHASE_2_REACHED_EVENT: StringName = &"lust_phase_2_reached"
 ## The node with the level's painted pieces, placed by hand in the editor right over the rock tiles. The map
 ## does not know them, so building again carries this node over from the scene it overwrites.
 const ART_NODE: NodePath = ^"Art"
+## The node with the rocks in the distance, also placed by hand and carried over the same way. It goes right over
+## the background and under the rock tiles, so the rock hides them.
+const BACKDROP_NODE: NodePath = ^"Backdrop"
 
 
 func _init() -> void:
@@ -38,11 +49,27 @@ func _init() -> void:
 	_root_name = "Level1"
 
 
+func _initialize() -> void:
+	if ResourceLoader.exists(_scene_path) and not OS.get_cmdline_user_args().has(FORCE_ARGUMENT):
+		printerr("build_level1.gd: %s is already there and is edited by hand, so it was not built. Build over it, "
+				% _scene_path + "throwing the hand edits away, with -- %s." % FORCE_ARGUMENT)
+		quit(1)
+		return
+	super._initialize()
+
+
 func _add_level_parts(root: Node2D, player: Player) -> void:
+	var backdrop: Node2D = node_from_old_scene(BACKDROP_NODE)
+	root.add_child(backdrop)
+	root.move_child(backdrop, root.get_node(^"Background").get_index() + 1)
 	var art: Node2D = art_from_old_scene()
 	root.add_child(art)
-	# Right over the rock and behind everything else, so the man, the dogs and the traps stay in front.
-	root.move_child(art, root.get_node(^"Tiles").get_index() + 1)
+	# Right over the rock, then the man and the dogs, then the art: they walk behind the stones of the rim, and the
+	# traps and the rest stay in front.
+	var over_tiles: int = root.get_node(^"Tiles").get_index() + 1
+	root.move_child(player, over_tiles)
+	root.move_child(root.get_node(^"Dogs"), over_tiles + 1)
+	root.move_child(art, over_tiles + 2)
 	var tutorial: Node2D = _tutorial(player)
 	root.add_child(tutorial)
 	# Behind the man, as in its old scene, so he walks in front of the prompts.
@@ -51,24 +78,32 @@ func _add_level_parts(root: Node2D, player: Player) -> void:
 			PHASE_1_START_CELL, player))
 	root.add_child(_save_point("Phase2Save", PHASE_2_REACHED_EVENT, PHASE_2_SAVE_CELL, PHASE_2_SAVE_TILES,
 			PHASE_2_START_CELL, player))
+	# The debug text starts hidden in level 1; F3 (Toggle Debug Overlay) still shows it.
+	(root.get_node(^"DebugOverlay") as DebugOverlay).start_visible = false
 
 
 ## The Art node of the scene about to be overwritten, with its pieces as they were placed, or an empty one when
 ## there is no scene yet or it has no Art. Public so that a test can check it without building.
 func art_from_old_scene() -> Node2D:
+	return node_from_old_scene(ART_NODE)
+
+
+## The node at path in the scene about to be overwritten, with its children as they were placed, or an empty one
+## with that name when there is no scene yet or it has no such node.
+func node_from_old_scene(path: NodePath) -> Node2D:
 	if ResourceLoader.exists(_scene_path):
 		# Uncached, so the scene saved over it afterwards is not the one held in memory.
 		var old_scene: PackedScene = ResourceLoader.load(_scene_path, "",
 				ResourceLoader.CACHE_MODE_IGNORE) as PackedScene
 		var old: Node = old_scene.instantiate(EDIT_STATE)
-		var art: Node2D = old.get_node_or_null(ART_NODE) as Node2D
-		if art != null:
-			old.remove_child(art)
+		var kept: Node2D = old.get_node_or_null(path) as Node2D
+		if kept != null:
+			old.remove_child(kept)
 		old.free()
-		if art != null:
-			return art
+		if kept != null:
+			return kept
 	var empty: Node2D = Node2D.new()
-	empty.name = String(ART_NODE)
+	empty.name = String(path)
 	return empty
 
 
