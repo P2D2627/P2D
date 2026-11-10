@@ -290,12 +290,10 @@ Em grupo, cada demónio decide sozinho, mas o conjunto lê-se como uma matilha:
   outro demónio encostado a ela, para que a vez passe a quem a pode usar. Assim, há no máximo dois
   avisos de mordida ao mesmo tempo, um de cada lado, e cada um dá tempo para fugir. A exceção é a
   personagem saltar por cima de um demónio com a vez: até à mordida seguinte de cada um, podem
-  atacar dois do mesmo lado, mas o piscar depois da primeira tira o dano à segunda. Em 60 s,
-  contra a personagem parada, cinco demónios, três de um lado e dois do outro, morderam todos. Em
-  oito sementes, cada um mordeu de 2 a 18 vezes, 10 em média: a vez vai para o primeiro que acaba
-  a espera sorteada, pelo que uns mordem mais do que outros. Com todos do mesmo lado, o normal
-  depois de uma perseguição, há cerca de 16 mordidas em 20 s para repartir, e um demónio pode
-  passar esse tempo sem morder (com cinco, em 2 de 10 sementes). O que avisa ou salta é desenhado
+  atacar dois do mesmo lado. Em 60 s, contra a personagem parada, que nesta medida não leva dano,
+  cinco demónios, três de um lado e dois do outro, avisaram cada um de 56 a 65 ataques, e o maior
+  intervalo sem atacar ficou entre 1,6 e 2,9 s em nove sorteios diferentes, contra até 12,7 s
+  antes, porque continuam a atacar enquanto ela pisca (ADR 0055). O que avisa ou salta é desenhado
   à frente dos outros, para que nenhum o tape (ADR 0053);
 - cada um persegue e recua ao seu ritmo, até 10 % acima ou abaixo dos valores, para que nunca se
   movam em uníssono. Dois a correr para o mesmo lado com os corpos sobrepostos separam-se: o que vai
@@ -314,9 +312,14 @@ Em grupo, cada demónio decide sozinho, mas o conjunto lê-se como uma matilha:
   primeiro ataque depois de a ver não espera: o "!" e o bip do alerta já o anunciam e, com a
   personagem ao alcance, o aviso da mordida começa um passo de física (1/60 s) depois do alerta,
   sem sortear a espera (ADR 0051);
-- enquanto a personagem pisca, depois de uma pancada, nenhum ataca, e cada um espera no seu
-  vaivém, entre cerca de 130 e 190 px dela. Esse segundo é a janela para fugir ou erguer o
-  crucifixo.
+- enquanto a personagem pisca, depois de uma pancada, continuam a atacar à vez, e os ataques,
+  mordidas e saltos, acertam e tiram SP. Com muitos demónios, ela perde o SP depressa e acaba
+  agarrada: com cinco, três de um lado e dois do outro, fica com o SP baixo ao fim de 1,7 a 2,1 s,
+  contra 5,4 a 5,9 s com um só, em nove sorteios diferentes. O piscar já não a protege deles, e
+  para escapar tem de fugir ou erguer o crucifixo. No segundo depois de ela se soltar de um
+  agarrão, e com ela agarrada por todos os que a podem agarrar, nenhum ataca, e cada um espera no
+  seu vaivém (Attacks Invulnerable Man, ADR 0055). Sem esse valor, como nos outros demónios,
+  nenhum ataca enquanto ela pisca.
 
 Todos os saltos de um demónio caem com a mesma gravidade e com o mesmo ângulo, como um salto dado
 com menos força: um salto mais curto é mais baixo e mais rápido. O de 420 px sobe 32 px e dura
@@ -376,7 +379,8 @@ e de um som próprios. O demónio do tutorial, que fala e não persegue, terá u
 Um demónio nunca mata com uma pancada: a morte vem sempre de um agarrão, a que o jogador pode
 resistir. Com o SP acima do baixo, a mordida tira 10 SP e o salto 20, e a pancada atira a
 personagem para trás e para cima (150 px e 40 px de altura na mordida, 250 px e 70 px no salto), sem
-controlo até aterrar. A seguir, a personagem fica 1 s invulnerável, a piscar.
+controlo até aterrar. A seguir, a personagem fica 1 s invulnerável, a piscar, mas os ataques dos
+demónios do nível 1 acertam na mesma (ADR 0055).
 
 Com o SP baixo (25 SP ou menos), ou quando a pancada a deixaria a 0, o demónio agarra-a em vez de
 lhe tirar SP. Agarrada, a personagem para logo, não corre nem salta, e o crucifixo baixa; se for
@@ -394,7 +398,8 @@ plataforma fina. Por agora não tem som.
 
 Ao soltar-se, a personagem atira os demónios que a agarravam para longe (200 px, com 40 px de
 altura), e cada um fica 1,2 s atordoado no chão. É a janela para fugir, e vê-se no ecrã. A
-personagem fica ainda 1 s invulnerável, para não ser agarrada de novo logo a seguir.
+personagem fica ainda 1 s invulnerável a todas as pancadas, também às dos demónios do nível 1,
+para não ser agarrada de novo logo a seguir.
 
 A personagem e os demónios não se atravessam: param encostados, também a meio de um salto. A
 personagem nunca fica de pé em cima de um demónio: é empurrada para o lado a 600 px/s, sem correr
@@ -1399,7 +1404,9 @@ não é esta cena com a perseguição desligada.
   voo de uma pancada, a tira de uma parede e impede que, de pé em cima de um demónio, seja empurrada
   para o lado. O modificador sozinho não chegava: a travagem da corrida é proporcional à velocidade
   máxima, e com a velocidade máxima a 0 a personagem agarrada continuava a 720 px/s (medido no
-  `test_grab_escape.gd`, antes da correção).
+  `test_grab_escape.gd`, antes da correção). A invulnerabilidade da `Hurtbox` pode deixar entrar
+  uma `Hitbox` que a penetre: o piscar depois de uma pancada deixa entrar os ataques dos demónios
+  do nível 1, e o segundo depois de um agarrão não deixa entrar nenhum (ADR 0055).
 - **Matilha sem coordenador.** Cada demónio decide sozinho, com uma área que encontra os outros
   demónios à sua frente, um sorteio próprio da espera antes de atacar e velocidades próprias. A vez
   de atacar (ADR 0053) também dispensa um nó coordenador no nível: os demónios partilham um registo,
@@ -1410,7 +1417,7 @@ não é esta cena com a perseguição desligada.
   que já não ataca. O número de demónios por lado está no `.tres` (Attackers Per Side, 1 no nível
   1); com 0, atacam todos ao mesmo tempo. Quando o agarrão está cheio, a `Hurtbox` fecha-se, um estado separado da invulnerabilidade, para que
   nenhuma pancada entre sem que a personagem pisque. O demónio guarda a `Hurtbox` da personagem ao
-  começar a persegui-la e não ataca enquanto ela não aceita pancadas.
+  começar a persegui-la e não ataca enquanto nenhuma pancada sua pode entrar.
 - **A personagem antes dos demónios.** No Godot, cada corpo vê os outros onde eles estavam no
   início do passo. Com a personagem e o demónio a colidir, isso deixava o demónio entrar no espaço
   que a personagem acabara de ocupar, e os dois tremiam 2 px a empurrar-se. A personagem tem por
@@ -1587,7 +1594,8 @@ demónios a perseguir ao mesmo tempo, muitos mais do que um ecrã terá: um limi
 passo de física, um pouco acima do medido, para que um aumento de custo se note cedo, e 2 ms no pior
 passo, a parte de um passo de 16,6 ms que um sistema pode ocupar. Mede-se com o `measure_demon.gd`,
 com todos os demónios a ver a personagem parada e a persegui-la: um de cada vez ataca, e os outros
-esperam enquanto ela pisca, o caso mais exigente que o jogo permite. Cada parte da medida começa com
+esperam enquanto ela pisca, o caso mais exigente que o jogo permitia. Com o ADR 0055, a personagem
+é agarrada a meio de cada parte da medida, que ainda não foi repetida. Cada parte da medida começa com
 uma personagem nova, com o SP cheio, para que nenhum agarrão a deixe presa a meio. O custo é o que
 os demónios acrescentam ao passo inteiro, incluindo o motor de física, numa sala sem eles. Com os
 valores atuais do nível 1, depois da pancada e do agarrão (2026-10-20 e 2026-10-21):
@@ -1793,7 +1801,7 @@ troço, mais depressa do que a ronda, e que os passos dela dentro do troço não
 demónios no mesmo sítio, na ponta de um chão, no troço, em ronda e a agarrar do mesmo lado se
 separam. Os casos alterados por estas decisões (seis) foram-no com autorização e estão
 registados nos ADRs. Com os ADRs 0051 a 0053, sem alterar nenhum caso antigo, verifica que o
-primeiro ataque vem logo a seguir ao alerta, e que o fim do piscar e o regresso depois de atirado
+primeiro ataque vem logo a seguir ao alerta, e que o fim do piscar depois de um agarrão e o regresso depois de atirado
 pelo crucifixo voltam a sortear a espera. Verifica também que, enquanto espera, o demónio fica
 entre 130 e 190 px da personagem, sem parar e à velocidade do vaivém, e vira numa borda e numa
 parede; que a mordida que acaba a espera acerta numa personagem parada e nunca é um salto; que três
@@ -1803,9 +1811,16 @@ um de cada lado, e mordem todos; que dois em lados opostos atacam ao mesmo tempo
 vez passa pelo outro para morder; que a vez passa a outro quando quem a tem é atirado, sai da cena
 ou fica preso do outro lado de um buraco; que dois encurralados entre uma borda e a personagem
 nunca ficam um em cima do outro e continuam a morder; e que o demónio que ataca é desenhado à
-frente dos outros. São 166 casos. Os 19 dos ADRs 0051 a 0053 que usam os demónios do nível e os
+frente dos outros. Com o ADR 0055, verifica que cinco demónios do nível nunca passam mais de 4 s
+sem atacar e continuam a atacar à vez; que deixam a personagem com o SP baixo em menos de 4 s, em
+metade do tempo de um só ou menos; que a mordida e o salto de um demónio do nível acertam enquanto
+ela pisca e lhe tiram o SP do dano; que nenhum ataca a personagem agarrada nem no segundo depois
+de ela se soltar; e que um demónio sem esse valor espera pelo fim do piscar e que dois a morder
+juntos lhe tiram SP uma só vez. O caso da mordida depois da espera passou a contar também as do
+piscar, numa janela de 4 s em vez de 5. São 174 casos. Os 24 dos ADRs 0051 a 0053 e 0055 que usam
+os demónios do nível e os
 oito últimos leem o `.tres` do nível 1; os outros usam valores próprios, pelo que afinar o
-`.tres` não os altera. Os 19 confirmam as regras novas com os valores do nível, e os oito últimos
+`.tres` não os altera. Os 24 confirmam as regras novas com os valores do nível, e os oito últimos
 confirmam o
 que o desenho dos níveis assume: cada ataque com uma das animações da arte, os saltos e a diferença
 de altura para atacar abaixo de um tile (48 px), o Lose Distance acima do Sight Distance e a

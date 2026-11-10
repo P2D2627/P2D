@@ -9,7 +9,7 @@ extends DemonState
 ## of the attack (WARNING); a lunge's warning stops it, a bite's goes on with the chase. Once a bite
 ## on the run is over, it backs off with Retreat Distance in Stats (RETREAT); with Waits At Retreat
 ## Distance, it keeps that far from him until it can attack again, and then runs at him (ADR 0051).
-## With Retreat Pace Width, it paces there, as it does while he takes no hits (ADR 0052).
+## With Retreat Pace Width, it paces there, as when it waits for him to take hits (ADR 0052).
 
 
 ## Leaving the chase ends a bite under way, and the backing off after it.

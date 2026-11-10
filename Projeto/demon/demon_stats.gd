@@ -93,6 +93,12 @@ extends Resource
 ## The demon's attacks, in order: of those it can start at the man, it starts the first in the
 ## list. With none, it only chases.
 @export var attacks: Array[DemonAttack] = []
+## Whether the demon goes on attacking the man while he blinks after a hit, invulnerable (ADR 0025):
+## its attacks pierce the blink and land, each taking his SP, so a pack attacking him in turns
+## brings him down fast (ADR 0055). Off, it starts no attack while he blinks and keeps its Retreat
+## Distance from him. Either way, it starts none at a man held by as many demons as can, or just
+## after he breaks free of a hold.
+@export var attacks_invulnerable_man: bool = false
 
 @export_group("Retreat")
 ## How far from the man, in px, the demon backs off after each attack, landed or not, before it

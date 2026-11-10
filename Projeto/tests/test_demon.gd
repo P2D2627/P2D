@@ -429,6 +429,17 @@ const ATTACKING_STATES: Array[Demon.State] = [Demon.State.WARNING, Demon.State.L
 ## to cross each other and the some 16 one behind another at half its pace takes to fall back from
 ## it (ADR 0053).
 const MOST_FRAMES_AS_ONE: int = 30
+## The most physics frames one of the level's demons in a pack may go without warning of an attack
+## while it hunts a man standing still: four seconds, past the some three the longest took in nine
+## draws, and far short of the twelve and more they go when his blink holds them back (ADR 0055).
+const MOST_FRAMES_WITHOUT_ATTACK: int = 240
+## The case of a pack of the level's demons bringing the man down (ADR 0055): the most physics
+## frames five of them may take to bring his SP low, four seconds, where they take about two, and
+## over seven with their bites kept off by his blink after a hit; how many times at least as fast
+## as one of them alone; and the most a case waits for it.
+const MOST_FRAMES_TO_LOW_SP: int = 240
+const LEAST_PACK_SPEEDUP: int = 2
+const LONGEST_FRAMES_TO_LOW_SP: int = 1800
 ## The case of a hole on one side of the man (ADR 0053): where the floor beyond it ends, and where
 ## his begins, 120 px on, which the level's demon cannot cross; and where two of its demons are put,
 ## in px from him, the first across the hole and the other between the hole and him.
@@ -437,8 +448,8 @@ const HOLE_RIGHT: float = 320.0
 const ACROSS_THE_HOLE_PACK: Array[float] = [-500.0, -180.0]
 ## The cases of two of the level's demons cornered by the man (ADR 0053): how far behind him his
 ## floor ends, inside their Retreat Distance, with room for the two side by side; where they are
-## put, in px from him, almost on one spot; how long they are watched through his blink, inside
-## LONG_INVULNERABLE_TIME; and how long with him taking hits, some four bites.
+## put, in px from him, almost on one spot; how long they are watched through a blink their bites
+## cannot pierce, inside LONG_INVULNERABLE_TIME; and how long with him taking hits, some four bites.
 const CORNER_EDGE: float = 130.0
 const CORNERED_PACK: Array[float] = [-100.0, -90.0]
 const CORNERED_FRAMES: int = 90
@@ -448,9 +459,10 @@ const CORNERED_BITE_FRAMES: int = 420
 ## has to bite him in, a second, about twice what its alert, its run and its bite's warning take.
 const THROUGH_PACK: Array[float] = [-160.0, -110.0]
 const THROUGH_FRAMES: int = 60
-## The case of the bites after the wait landing (ADR 0053): five seconds, some four bites, before
-## the man's SP are low enough for a bite to grab him.
-const LANDED_FRAMES: int = 300
+## The case of the bites after the wait landing (ADR 0053): four seconds, some five bites, before
+## the man's SP are low enough for a bite to grab him, now that they land through his blink too
+## (ADR 0055).
+const LANDED_FRAMES: int = 240
 ## The case of two of the level's demons running after the man (ADR 0053): where they are put, in
 ## px from him, the first further off; how fast he runs off, faster than their fastest chase; how
 ## far his floor goes, past where he gets to; and how long he runs, four seconds.
@@ -556,9 +568,11 @@ func _initialize() -> void:
 	results.append(await _the_pack_area_follows_pack_spacing_at_once())
 	results.append(await _with_pack_variation_each_demon_has_its_own_speeds_and_retreat_distance())
 	results.append(await _warns_of_no_attack_while_the_man_is_invulnerable())
+	results.append(await _without_attacks_invulnerable_man_it_waits_out_the_man_s_blink_after_a_hit())
 	results.append(await _a_warning_under_way_ends_when_the_man_turns_invulnerable())
 	results.append(await _while_the_man_is_invulnerable_it_keeps_retreat_distance_from_him())
 	results.append(await _two_demons_set_free_together_warn_apart_with_max_hesitation())
+	results.append(await _two_demons_that_cannot_pierce_biting_together_take_sp_once())
 	results.append(await _the_level_s_demons_set_free_by_the_man_s_blink_still_warn_apart())
 	results.append(await _its_bite_that_grabs_holds_on_with_no_attack_until_the_man_breaks_free())
 	results.append(await _a_second_demon_s_bite_joins_the_grab_and_both_are_thrown_off_once_he_is_free())
@@ -619,6 +633,8 @@ func _initialize() -> void:
 	results.append(await _the_level_s_demon_paces_through_the_man_s_blink())
 	results.append(await _the_level_s_demons_on_one_side_never_stand_waiting_in_a_row())
 	results.append(await _a_pack_of_the_level_s_demons_takes_turns_and_every_one_bites())
+	results.append(await _a_pack_of_the_level_s_demons_never_waits_long_to_attack())
+	results.append(await _a_pack_of_the_level_s_demons_brings_the_man_down_fast())
 	results.append(await _the_level_s_demons_on_either_side_of_the_man_attack_at_once())
 	results.append(await _the_level_s_demon_thrown_off_on_its_turn_hands_it_to_the_other())
 	results.append(await _the_level_s_demon_freed_on_its_turn_hands_it_to_the_other())
@@ -629,6 +645,10 @@ func _initialize() -> void:
 	results.append(await _the_level_s_demons_cornered_by_an_edge_keep_biting())
 	results.append(await _the_level_s_demon_on_its_turn_runs_through_another_to_bite())
 	results.append(await _the_level_s_demon_s_bites_after_its_wait_land_on_a_man_standing_still())
+	results.append(await _the_level_s_demon_s_bites_land_through_the_man_s_blink())
+	results.append(await _with_attacks_invulnerable_man_its_lunge_lands_through_the_man_s_blink())
+	results.append(await _the_level_s_demon_starts_no_attack_at_a_man_held_by_others())
+	results.append(await _the_level_s_demon_waits_out_the_man_s_time_after_breaking_free())
 	results.append(await _the_level_s_demons_running_after_the_man_never_run_as_one())
 	results.append(await _alerted_it_lets_go_of_a_man_who_is_freed())
 	results.append(await _with_search_time_it_sniffs_where_it_last_saw_the_man_then_walks_back())
@@ -2087,6 +2107,37 @@ func _warns_of_no_attack_while_the_man_is_invulnerable() -> bool:
 			% [INVULNERABLE_TIME, in_range, warned_while_invulnerable, SETTLE_FRAMES, warned_after])
 
 
+## A demon without Attacks Invulnerable Man, as in _warns_of_no_attack_while_the_man_is_invulnerable,
+## at a man who blinks after a hit, a blink a level-1 dog's bites pierce but its own cannot: it
+## chases him into Bite Range, but never warns while he blinks, and warns once he does not (ADR
+## 0025, ADR 0055).
+func _without_attacks_invulnerable_man_it_waits_out_the_man_s_blink_after_a_hit() -> bool:
+	var ground: StaticBody2D = make_platform(FLOOR_LEFT, FLOOR_RIGHT)
+	var man: Player = await spawn_on_floor(Vector2(BITE_X, SPAWN_Y))
+	var hurtbox: Hurtbox = _hurtbox_of(man)
+	hurtbox.start_invulnerability(INVULNERABLE_TIME, true)
+	var demon: Demon = await _spawn_demon(0.0, LUNGE_RANGE, [], true)
+	_lunge_of(demon).chance_per_second = NO_CHANCE
+	var in_range: bool = false
+	var warned_while_blinking: bool = false
+	for _frame: int in MAX_FRAMES:
+		await physics_frame
+		if not hurtbox.is_invulnerable():
+			break
+		var state: Demon.State = demon.get_state()
+		in_range = in_range or (state == Demon.State.CHASE
+				and absf(man.position.x - demon.position.x) < BITE_RANGE)
+		warned_while_blinking = warned_while_blinking or state == Demon.State.WARNING
+	var warned_after: bool = (demon.get_state() == Demon.State.WARNING
+			or await _is_in_state_within(demon, Demon.State.WARNING, SETTLE_FRAMES))
+	await _clear([ground, man, demon])
+	return report(in_range and not warned_while_blinking and warned_after,
+			("Bite of a demon without Attacks Invulnerable Man at a man blinking after a hit for "
+			+ "%.1f s: chased him into Bite Range %s, warned while he blinked %s, warned within %d "
+			+ "frames after %s") % [INVULNERABLE_TIME, in_range, warned_while_blinking,
+					SETTLE_FRAMES, warned_after])
+
+
 ## Two demons that bite, one on each side of a man invulnerable for INVULNERABLE_TIME, both with him
 ## in Bite Range when it ends. With no Max Hesitation they warn on the same frame, the pack in step
 ## of ADR 0027; with MAX_HESITATION each waits its own draw, so they warn on different frames, both
@@ -2101,6 +2152,43 @@ func _two_demons_set_free_together_warn_apart_with_max_hesitation() -> bool:
 			("Two demons set free together, frames to warn after the man's blink: with no Max "
 			+ "Hesitation %s, with %.2f s %s (at most %d)") % [together, MAX_HESITATION, apart,
 			most])
+
+
+## Two demons without Attacks Invulnerable Man that bite, one on each side of a man invulnerable for
+## INVULNERABLE_TIME when they notice him, his Hurtbox on, both with him in Bite Range when it ends
+## and no Max Hesitation, so they bite together: the first bite to land sets him blinking, which the
+## other's cannot pierce, so of the two only one lands and he loses SP once (ADR 0025, ADR 0055).
+func _two_demons_that_cannot_pierce_biting_together_take_sp_once() -> bool:
+	var ground: StaticBody2D = make_platform(FLOOR_LEFT, FLOOR_RIGHT)
+	var man: Player = await spawn_on_floor(Vector2(BITE_X, SPAWN_Y))
+	var hurtbox: Hurtbox = _hurtbox_of(man)
+	hurtbox.monitoring = true
+	hurtbox.start_invulnerability(INVULNERABLE_TIME)
+	var demons: Array[Demon] = [await _spawn_demon(0.0, LUNGE_RANGE, [], true),
+			await _spawn_demon(2.0 * BITE_X, LUNGE_RANGE, [], true)]
+	var started_on: Array[int] = []
+	var landed: Array[int] = [0]
+	for demon: Demon in demons:
+		_lunge_of(demon).chance_per_second = NO_CHANCE
+		demon.stats.max_hesitation = 0.0
+		demon.state_changed.connect(func(previous: Demon.State, current: Demon.State) -> void:
+			if previous == Demon.State.WARNING and current == Demon.State.CHASE:
+				started_on.append(Engine.get_physics_frames()))
+		demon.attack_landed.connect(func(_attack: DemonAttack) -> void: landed[0] += 1)
+	var taken: Array[float] = [0.0]
+	man.soul_points.damaged.connect(func(amount: float) -> void: taken[0] += amount)
+	var both_bit: bool = await wait_until(func() -> bool: return started_on.size() >= 2, MAX_FRAMES)
+	await _wait_physics_frames(roundi(INVULNERABLE_TIME * Engine.physics_ticks_per_second)
+			- SETTLE_FRAMES)
+	var together: bool = both_bit and started_on[1] - started_on[0] <= SETTLE_FRAMES
+	var count: int = landed[0]
+	var lost: float = taken[0]
+	var bite_damage: float = _bite_of(demons[0]).damage
+	await _clear([ground, man, demons[0], demons[1]])
+	return report(together and count == 1 and is_equal_approx(lost, bite_damage),
+			("Two demons without Attacks Invulnerable Man biting a man together, his Hurtbox on: "
+			+ "bites started on frames %s, landed %d (just 1), SP lost %.0f (one bite's %.0f)")
+			% [started_on, count, lost, bite_damage])
 
 
 ## Frames from the end of the man's invulnerability until each of two demons that bite, one on each
@@ -2133,10 +2221,11 @@ func _first_warnings_after_invulnerability(max_hesitation: float) -> Array[int]:
 
 
 ## Two of the level's demons, which wait no draw before their first attack, one on each side of a
-## man who is invulnerable for INVULNERABLE_TIME when they notice him: the end of his blink sets
-## them free together, so each still waits its own draw of Max Hesitation and they warn on
-## different frames, both within it of the end (ADR 0027, ADR 0051). HESITATION_SEED goes in
-## before the demons, which seed their own draws from it.
+## man who is invulnerable for INVULNERABLE_TIME when they notice him, as after he breaks free of a
+## hold, a blink their bites cannot pierce (ADR 0055): the end of his blink sets them free together,
+## so each still waits its own draw of Max Hesitation and they warn on different frames, both within
+## it of the end (ADR 0027, ADR 0051). HESITATION_SEED goes in before the demons, which seed their
+## own draws from it.
 func _the_level_s_demons_set_free_by_the_man_s_blink_still_warn_apart() -> bool:
 	var ground: StaticBody2D = make_platform(FLOOR_LEFT, FLOOR_RIGHT)
 	var man: Player = await spawn_on_floor(Vector2(BITE_X, SPAWN_Y))
@@ -4307,9 +4396,10 @@ func _the_level_s_demon_paces_between_its_bites() -> bool:
 
 
 ## The level's demon, of lust_demon_stats.tres, at a man standing still who is invulnerable for
-## INVULNERABLE_TIME when it notices him, the bodies solid: it paces through his blink, and through
-## the wait it draws as the blink ends, and never stands still (ADR 0052). HESITATION_SEED goes in
-## before the demon, which seeds its own draws from it.
+## INVULNERABLE_TIME when it notices him, as after he breaks free of a hold, a blink its bites
+## cannot pierce (ADR 0055), the bodies solid: it paces through his blink, and through the wait it
+## draws as the blink ends, and never stands still (ADR 0052). HESITATION_SEED goes in before the
+## demon, which seeds its own draws from it.
 func _the_level_s_demon_paces_through_the_man_s_blink() -> bool:
 	var ground: StaticBody2D = make_platform(FLOOR_LEFT, FLOOR_RIGHT)
 	var man: Player = await spawn_on_floor(Vector2(BITE_X, SPAWN_Y))
@@ -4367,6 +4457,43 @@ func _a_pack_of_the_level_s_demons_takes_turns_and_every_one_bites() -> bool:
 			("Five of the level's demons, three on one side of the man and two on the other, for %d "
 			+ "frames: bites %s (each at least 1); at most %d on one side attacking at once (at "
 			+ "most 1)") % [BOTH_SIDES_FRAMES, watch.bites, watch.most_attacking_on_one_side])
+
+
+## Five of the level's demons, three on one side of a man standing still and two on the other, as a
+## level's pack meets him (_watch_a_level_pack_hunt): with Attacks Invulnerable Man, they go on
+## attacking him while he blinks after a bite, and their bites land through the blink, so none of
+## them goes more than MOST_FRAMES_WITHOUT_ATTACK without warning of an attack, and they still take
+## turns, so never do two on one side attack at once (ADR 0055). How many of their bites land, and
+## the most warnings on one side within a second, go in the report.
+func _a_pack_of_the_level_s_demons_never_waits_long_to_attack() -> bool:
+	var watch: PackWatch = await _watch_a_level_pack_hunt(BOTH_SIDES_PACK, BOTH_SIDES_FRAMES)
+	var landed: int = 0
+	for bites: int in watch.bites:
+		landed += bites
+	return report(watch.longest_without_warning.max() <= MOST_FRAMES_WITHOUT_ATTACK
+			and watch.most_attacking_on_one_side <= 1,
+			("Five of the level's demons, three on one side of the man and two on the other, for %d "
+			+ "frames: warnings %s, at most %s frames without one (at most %d); at most %d on one "
+			+ "side attacking at once (at most 1); bites landed %s, %d in all; at most %d warnings "
+			+ "on one side within a second") % [BOTH_SIDES_FRAMES, watch.warnings,
+					watch.longest_without_warning, MOST_FRAMES_WITHOUT_ATTACK,
+					watch.most_attacking_on_one_side, watch.bites, landed,
+					watch.most_warnings_in_a_second])
+
+
+## Five of the level's demons, three on one side of a man standing still and two on the other, his
+## Hurtbox on and the bodies solid (_frames_to_bring_the_man_low): their bites land through his
+## blink after a hit, so they bring his SP low within MOST_FRAMES_TO_LOW_SP, in at most half the
+## time one of them alone takes (ADR 0055).
+func _a_pack_of_the_level_s_demons_brings_the_man_down_fast() -> bool:
+	var pack: int = await _frames_to_bring_the_man_low(BOTH_SIDES_PACK)
+	var one: Array[float] = [ONE_SIDE_PACK[0]]
+	var alone: int = await _frames_to_bring_the_man_low(one)
+	return report(pack <= MOST_FRAMES_TO_LOW_SP and LEAST_PACK_SPEEDUP * pack <= alone,
+			("Five of the level's demons at a man standing still, his Hurtbox on: his SP low after "
+			+ "%d frames (at most %d); one of them alone, after %d (at least %d times as many; %d "
+			+ "if never)") % [pack, MOST_FRAMES_TO_LOW_SP, alone, LEAST_PACK_SPEEDUP,
+					LONGEST_FRAMES_TO_LOW_SP])
 
 
 ## One of the level's demons on each side of a man standing still: Attackers Per Side counts the
@@ -4461,10 +4588,10 @@ func _the_level_s_demon_stuck_across_a_hole_leaves_its_turn_to_another() -> bool
 
 
 ## Two of the level's demons cornered on one side of a man standing still, his floor ending
-## CORNER_EDGE behind him, inside their Retreat Distance, all through his blink
-## (_watch_a_level_pack_hunt): the one the end of the floor stops stands there, and the other stops
-## by it as at a wall instead of backing off onto it, so their bodies never stay over each other
-## (ADR 0053).
+## CORNER_EDGE behind him, inside their Retreat Distance, all through a blink their bites cannot
+## pierce, as after he breaks free of a hold (_watch_a_level_pack_hunt): the one the end of the
+## floor stops stands there, and the other stops by it as at a wall instead of backing off onto it,
+## so their bodies never stay over each other (ADR 0053).
 func _the_level_s_demons_cornered_by_an_edge_never_stand_on_top_of_each_other() -> bool:
 	var watch: PackWatch = await _watch_a_level_pack_hunt(CORNERED_PACK, CORNERED_FRAMES,
 			[Vector2(PACK_MAN_X - CORNER_EDGE, FLOOR_RIGHT)], LONG_INVULNERABLE_TIME)
@@ -4486,15 +4613,16 @@ func _the_level_s_demons_cornered_by_an_edge_keep_biting() -> bool:
 	var bites: int = watch.bites[0] + watch.bites[1]
 	return report(bites >= LEAST_TURNS,
 			("Two of the level's demons put %s px from the man, his floor ending %d px behind him, "
-			+ "for %d frames: bites %s (at least %d in all)") % [CORNERED_PACK, CORNER_EDGE,
-					CORNERED_BITE_FRAMES, watch.bites, LEAST_TURNS])
+			+ "for %d frames: bites %s (at least %d in all); bodies overlapped at most %d frames in a "
+			+ "row") % [CORNERED_PACK, CORNER_EDGE, CORNERED_BITE_FRAMES, watch.bites, LEAST_TURNS,
+					watch.longest_overlap])
 
 
 ## The level's demon, of lust_demon_stats.tres, at a man standing still, his Hurtbox on and the
-## bodies solid: every bite it starts within LANDED_FRAMES lands on him, those after its wait too,
-## and LEAST_TURNS or more do; none of what lands is a lunge (ADR 0053). The count ends while he
-## blinks after a hit, when no bite is under way and the last one has landed. HESITATION_SEED goes
-## in before the demon, which seeds its own draws from it.
+## bodies solid: every bite it starts within LANDED_FRAMES lands on him within its Bite Time, those
+## after its wait too, and those through his blink after a hit, which its bites pierce (ADR 0055);
+## LEAST_TURNS or more start, one or more of them while he blinks, and none of what lands is a lunge
+## (ADR 0053). HESITATION_SEED goes in before the demon, which seeds its own draws from it.
 func _the_level_s_demon_s_bites_after_its_wait_land_on_a_man_standing_still() -> bool:
 	var ground: StaticBody2D = make_platform(FLOOR_LEFT, FLOOR_RIGHT)
 	var man: Player = await spawn_on_floor(Vector2(PACK_MAN_X, SPAWN_Y))
@@ -4504,22 +4632,157 @@ func _the_level_s_demon_s_bites_after_its_wait_land_on_a_man_standing_still() ->
 	var demon: Demon = await _spawn_level_demon(PACK_MAN_X + ONE_SIDE_PACK[0], [])
 	_make_the_bodies_solid(man, demon)
 	var bite: DemonAttack = _bite_of(demon)
+	var bite_frames: int = bite.get_bite_frames()
 	var landed: Array[DemonAttack] = []
-	demon.attack_landed.connect(func(attack: DemonAttack) -> void: landed.append(attack))
-	var bites: Array[int] = [0]
+	var landed_on: Array[int] = []
+	demon.attack_landed.connect(func(attack: DemonAttack) -> void:
+		landed.append(attack)
+		landed_on.append(Engine.get_physics_frames()))
+	# The frame each bite starts on, and whether he blinks then.
+	var started_on: Array[int] = []
+	var while_blinking: Array[bool] = []
 	demon.state_changed.connect(func(previous: Demon.State, current: Demon.State) -> void:
 		if previous == Demon.State.WARNING and current == Demon.State.CHASE:
-			bites[0] += 1)
-	await _wait_physics_frames(LANDED_FRAMES)
-	var blinking: bool = await wait_until(
-			func() -> bool: return not hurtbox.takes_hits(), MAX_FRAMES)
+			started_on.append(Engine.get_physics_frames())
+			while_blinking.append(hurtbox.is_invulnerable()))
+	var last_start: int = Engine.get_physics_frames() + LANDED_FRAMES
+	await _wait_physics_frames(LANDED_FRAMES + bite_frames + SETTLE_FRAMES)
+	var counted: int = started_on.filter(func(frame: int) -> bool: return frame < last_start).size()
+	var missed: int = 0
+	for index: int in counted:
+		var start: int = started_on[index]
+		missed += int(not landed_on.any(func(frame: int) -> bool:
+				return frame >= start and frame <= start + bite_frames + SETTLE_FRAMES))
+	var blinking: int = while_blinking.slice(0, counted).count(true)
 	var only_bites: bool = landed.all(func(attack: DemonAttack) -> bool: return attack == bite)
+	var sp: float = man.soul_points.get_sp()
 	await _clear([ground, man, demon])
-	return report(blinking and landed.size() == bites[0] and bites[0] >= LEAST_TURNS
-			and only_bites,
-			("Level's demon at a man standing still, his Hurtbox on, for %d frames and until he "
-			+ "blinks (%s): bites %d (at least %d), landed %s (every bite, no lunge)")
-			% [LANDED_FRAMES, blinking, bites[0], LEAST_TURNS, _animations_of(landed)])
+	return report(missed == 0 and counted >= LEAST_TURNS and blinking >= 1 and only_bites,
+			("Level's demon at a man standing still, his Hurtbox on, for %d frames: bites %d (at "
+			+ "least %d), %d of them while he blinked (at least 1), missed %d (none); landed %s (no "
+			+ "lunge); his SP %.0f at the end") % [LANDED_FRAMES, counted, LEAST_TURNS, blinking,
+					missed, _animations_of(landed), sp])
+
+
+## The level's demon, with Attacks Invulnerable Man, at a man standing still who blinks for
+## LONG_INVULNERABLE_TIME from before it notices him, as after a hit, his Hurtbox on and the bodies
+## solid: it goes on attacking him through his blink, and its bites land then, each taking its
+## damage from his SP (ADR 0055). HESITATION_SEED goes in before the demon, which seeds its own
+## draws from it.
+func _the_level_s_demon_s_bites_land_through_the_man_s_blink() -> bool:
+	var ground: StaticBody2D = make_platform(FLOOR_LEFT, FLOOR_RIGHT)
+	var man: Player = await spawn_on_floor(Vector2(PACK_MAN_X, SPAWN_Y))
+	var hurtbox: Hurtbox = _hurtbox_of(man)
+	hurtbox.monitoring = true
+	var blink_end: int = Engine.get_physics_frames() \
+			+ roundi(LONG_INVULNERABLE_TIME * Engine.physics_ticks_per_second)
+	hurtbox.start_invulnerability(LONG_INVULNERABLE_TIME, true)
+	seed(HESITATION_SEED)
+	var demon: Demon = await _spawn_level_demon(PACK_MAN_X + ONE_SIDE_PACK[0], [])
+	_make_the_bodies_solid(man, demon)
+	# The damage of each attack that lands while he blinks, and the SP he loses.
+	var landed: Array[float] = []
+	var taken: Array[float] = [0.0]
+	demon.attack_landed.connect(func(attack: DemonAttack) -> void:
+		if hurtbox.is_invulnerable():
+			landed.append(attack.damage))
+	man.soul_points.damaged.connect(func(amount: float) -> void: taken[0] += amount)
+	await wait_until(func() -> bool: return Engine.get_physics_frames() >= blink_end, MAX_FRAMES)
+	var due: float = 0.0
+	for damage: float in landed:
+		due += damage
+	var count: int = landed.size()
+	var lost: float = taken[0]
+	await _clear([ground, man, demon])
+	return report(count >= 1 and is_equal_approx(lost, due),
+			("Level's demon at a man who blinks for %.1f s, his Hurtbox on: attacks landed while he "
+			+ "blinked %d (at least 1), SP taken %.0f (their damage, %.0f)")
+			% [LONG_INVULNERABLE_TIME, count, lost, due])
+
+
+## A demon that only lunges, with Attacks Invulnerable Man, at a man who blinks after a hit for
+## LONG_INVULNERABLE_TIME when it notices him, his Hurtbox on: a lunge pierces the blink as a bite
+## does, landing on him and taking its damage from his SP (ADR 0055).
+func _with_attacks_invulnerable_man_its_lunge_lands_through_the_man_s_blink() -> bool:
+	var ground: StaticBody2D = make_platform(FLOOR_LEFT, FLOOR_RIGHT)
+	var man: Player = await spawn_on_floor(Vector2(SEEN_X, SPAWN_Y))
+	var hurtbox: Hurtbox = _hurtbox_of(man)
+	hurtbox.monitoring = true
+	var blink_end: int = Engine.get_physics_frames() \
+			+ roundi(LONG_INVULNERABLE_TIME * Engine.physics_ticks_per_second)
+	hurtbox.start_invulnerability(LONG_INVULNERABLE_TIME, true)
+	var demon: Demon = await _spawn_demon(0.0)
+	demon.stats.attacks_invulnerable_man = true
+	var lunge: DemonAttack = _lunge_of(demon)
+	var landed: Array[DemonAttack] = []
+	demon.attack_landed.connect(func(attack: DemonAttack) -> void:
+		if hurtbox.is_invulnerable():
+			landed.append(attack))
+	var taken: Array[float] = [0.0]
+	man.soul_points.damaged.connect(func(amount: float) -> void: taken[0] += amount)
+	await wait_until(func() -> bool:
+			return not landed.is_empty() or Engine.get_physics_frames() >= blink_end, MAX_FRAMES)
+	var count: int = landed.size()
+	var was_the_lunge: bool = count == 1 and landed[0] == lunge
+	var lost: float = taken[0]
+	await _clear([ground, man, demon])
+	return report(was_the_lunge and is_equal_approx(lost, lunge.damage),
+			("Lunge of a demon with Attacks Invulnerable Man at a man who blinks for %.1f s, his "
+			+ "Hurtbox on: landed while he blinked %d (just the lunge: %s), SP taken %.0f (its "
+			+ "%.0f)") % [LONG_INVULNERABLE_TIME, count, was_the_lunge, lost, lunge.damage])
+
+
+## The level's demon, with Attacks Invulnerable Man, at a man standing still who is invulnerable for
+## LONG_INVULNERABLE_TIME from before it notices him, as after he breaks free of a hold, a blink its
+## bites cannot pierce, the bodies solid: it warns of no attack all through, and warns of one within
+## FRAMES_TO_WATCH once the blink ends (ADR 0055). HESITATION_SEED goes in before the demon, which
+## seeds its own draws from it.
+func _the_level_s_demon_waits_out_the_man_s_time_after_breaking_free() -> bool:
+	var ground: StaticBody2D = make_platform(FLOOR_LEFT, FLOOR_RIGHT)
+	var man: Player = await spawn_on_floor(Vector2(PACK_MAN_X, SPAWN_Y))
+	var hurtbox: Hurtbox = _hurtbox_of(man)
+	hurtbox.monitoring = false
+	hurtbox.start_invulnerability(LONG_INVULNERABLE_TIME)
+	seed(HESITATION_SEED)
+	var demon: Demon = await _spawn_level_demon(PACK_MAN_X + ONE_SIDE_PACK[0], [])
+	_make_the_bodies_solid(man, demon)
+	var warned_while_blinking: bool = false
+	for _frame: int in MAX_FRAMES:
+		if not hurtbox.is_invulnerable():
+			break
+		warned_while_blinking = warned_while_blinking or demon.get_state() == Demon.State.WARNING
+		await physics_frame
+	var warned_after: bool = (demon.get_state() == Demon.State.WARNING
+			or await _is_in_state_within(demon, Demon.State.WARNING, FRAMES_TO_WATCH))
+	await _clear([ground, man, demon])
+	return report(not warned_while_blinking and warned_after,
+			("Level's demon at a man who blinks for %.1f s after breaking free: warned while he "
+			+ "blinked %s (never), warned within %d frames once it ended %s")
+			% [LONG_INVULNERABLE_TIME, warned_while_blinking, FRAMES_TO_WATCH, warned_after])
+
+
+## The level's demon, with Attacks Invulnerable Man, at a man standing still held by as many demons
+## as can, his Hurtbox closed, for FRAMES_TO_WATCH after it is put: it starts no attack at him, and
+## warns of one within FRAMES_TO_WATCH once he breaks free (ADR 0029, ADR 0055). HESITATION_SEED
+## goes in before the demon, which seeds its own draws from it.
+func _the_level_s_demon_starts_no_attack_at_a_man_held_by_others() -> bool:
+	var ground: StaticBody2D = make_platform(FLOOR_LEFT, FLOOR_RIGHT)
+	var man: Player = await spawn_on_floor(Vector2(PACK_MAN_X, SPAWN_Y))
+	var hurtbox: Hurtbox = _hurtbox_of(man)
+	hurtbox.monitoring = false
+	hurtbox.set_closed(true)
+	seed(HESITATION_SEED)
+	var demon: Demon = await _spawn_level_demon(PACK_MAN_X + ONE_SIDE_PACK[0], [])
+	_make_the_bodies_solid(man, demon)
+	var warned_while_held: bool = await _is_in_state_within(demon, Demon.State.WARNING,
+			FRAMES_TO_WATCH)
+	hurtbox.set_closed(false)
+	var warned_after: bool = await _is_in_state_within(demon, Demon.State.WARNING, FRAMES_TO_WATCH)
+	await _clear([ground, man, demon])
+	return report(not warned_while_held and warned_after,
+			("Level's demon at a man held for %d frames: warned while he was held %s (never), "
+			+ "warned within %d frames once he broke free %s") % [FRAMES_TO_WATCH,
+					warned_while_held, FRAMES_TO_WATCH, warned_after])
 
 
 ## Two of the level's demons after a man who runs off faster than they chase (ADR 0053): they run
@@ -4679,7 +4942,7 @@ func _watch_it_keep_back(man: Player, demon: Demon) -> PaceWatch:
 
 
 ## Takes the physics frame just over into watch, if on it the demon chased the man and kept back
-## from him: as it waits to attack, or while he takes no hits. A frame that began with it keeping
+## from him: as it waits to attack, or for him to take hits. A frame that began with it keeping
 ## back within its pacing, between its Retreat Distance from him and Retreat Pace Width past it,
 ## counts towards its fastest pace, with him standing still.
 func _see_it_keep_back(watch: PaceWatch, man: Player, demon: Demon) -> void:
@@ -4688,7 +4951,7 @@ func _see_it_keep_back(watch: PaceWatch, man: Player, demon: Demon) -> void:
 	var began_keeping_back: bool = watch.kept_back
 	watch.last_x = demon.position.x
 	watch.kept_back = demon.get_state() == Demon.State.CHASE \
-			and (demon.waits_to_attack() or demon.target_takes_no_hits())
+			and (demon.waits_to_attack() or demon.waits_for_the_man_to_take_hits())
 	if not watch.kept_back:
 		watch.still = 0
 		return
@@ -4710,12 +4973,36 @@ func _see_it_keep_back(watch: PaceWatch, man: Player, demon: Demon) -> void:
 	watch.last_way = signf(step)
 
 
+## Physics frames until the SP of a man standing still at PACK_MAN_X are low, with the level's
+## demons put at offsets from him, in px along the floor, + to his right, his Hurtbox on and the
+## bodies solid; LONGEST_FRAMES_TO_LOW_SP if they never get there. HESITATION_SEED goes in before
+## the demons, which seed their own draws from it.
+func _frames_to_bring_the_man_low(offsets: Array[float]) -> int:
+	var ground: StaticBody2D = make_platform(FLOOR_LEFT, FLOOR_RIGHT)
+	var man: Player = await spawn_on_floor(Vector2(PACK_MAN_X, SPAWN_Y))
+	_hurtbox_of(man).monitoring = true
+	seed(HESITATION_SEED)
+	var nodes: Array[Node] = [ground, man]
+	for offset: float in offsets:
+		var demon: Demon = await _spawn_level_demon(PACK_MAN_X + offset, [])
+		_make_the_bodies_solid(man, demon)
+		nodes.append(demon)
+	var frames: int = 0
+	while not man.soul_points.is_low() and frames < LONGEST_FRAMES_TO_LOW_SP:
+		await physics_frame
+		frames += 1
+	await _clear(nodes)
+	return frames
+
+
 ## Puts the level's demons, of lust_demon_stats.tres, at offsets from a man standing still at
 ## PACK_MAN_X, in px along the floor, + to his right, the bodies solid, and watches them hunt him
 ## for frames physics frames, on floors, each from its x to its y. His Hurtbox is off, so no bite
-## moves him, but each bite sets him blinking for INVULNERABLE_TIME, as one that lands does; with
-## blink, he blinks that long from the start. HESITATION_SEED goes in before the demons, which seed
-## their own draws from it.
+## moves him, but a bite that would land counts as landed as it starts and sets him blinking for
+## INVULNERABLE_TIME, as a hit does: one while he takes hits, and one through his blink after a hit,
+## which their bites pierce (ADR 0055). With blink, he is invulnerable that long from the start, as
+## after he breaks free of a hold, which no bite pierces. HESITATION_SEED goes in before the demons,
+## which seed their own draws from it.
 func _watch_a_level_pack_hunt(offsets: Array[float], frames: int,
 		floors: Array[Vector2] = [Vector2(FLOOR_LEFT, FLOOR_RIGHT)],
 		blink: float = 0.0) -> PackWatch:
@@ -4730,24 +5017,28 @@ func _watch_a_level_pack_hunt(offsets: Array[float], frames: int,
 		hurtbox.start_invulnerability(blink)
 	seed(HESITATION_SEED)
 	var watch: PackWatch = PackWatch.new()
+	var start: int = Engine.get_physics_frames()
 	var demons: Array[Demon] = []
 	var warned_within_its_wait: Array[bool] = []
 	for offset: float in offsets:
 		var demon: Demon = await _spawn_level_demon(PACK_MAN_X + offset, [])
 		_make_the_bodies_solid(man, demon)
 		var index: int = demons.size()
-		watch.bites.append(0)
+		watch.add_demon()
 		warned_within_its_wait.append(false)
 		demon.state_changed.connect(func(previous: Demon.State, current: Demon.State) -> void:
 			if current == Demon.State.WARNING:
 				warned_within_its_wait[index] = absf(man.position.x - demon.position.x) \
 						<= demon.retreat_distance() + demon.stats.retreat_pace_width
+				watch.see_a_warning(index, Engine.get_physics_frames() - start,
+						demon.position.x > man.position.x)
 			elif current == Demon.State.LUNGE and warned_within_its_wait[index]:
 				watch.lunges_from_the_wait += 1
 			if previous == Demon.State.WARNING and current == Demon.State.CHASE \
-					and hurtbox.takes_hits():
+					and (hurtbox.takes_hits() or (demon.stats.attacks_invulnerable_man
+							and hurtbox.can_be_pierced())):
 				watch.bites[index] += 1
-				hurtbox.start_invulnerability(INVULNERABLE_TIME))
+				hurtbox.start_invulnerability(INVULNERABLE_TIME, true))
 		demons.append(demon)
 	var count: int = demons.size()
 	for demon: Demon in demons:
@@ -4777,6 +5068,7 @@ func _watch_a_level_pack_hunt(offsets: Array[float], frames: int,
 		watch.most_attacking_on_one_side = maxi(watch.most_attacking_on_one_side,
 				maxi(attacking[0], attacking[1]))
 		watch.overlap_frames += int(any_overlap)
+	watch.end(Engine.get_physics_frames() - start)
 	nodes.append_array(demons)
 	await _clear(nodes)
 	return watch
@@ -5411,3 +5703,39 @@ class PackWatch:
 	## How many lunges they warned of from within their wait: no further from him than their Retreat
 	## Distance and Retreat Pace Width past it.
 	var lunges_from_the_wait: int = 0
+	## How many attacks each demon warned of, and the most physics frames each went without warning
+	## of one, from the start of the watch to its end.
+	var warnings: Array[int] = []
+	var longest_without_warning: Array[int] = []
+	## The most attacks the demons on one side of him warned of within a second.
+	var most_warnings_in_a_second: int = 0
+	var _last_warned: Array[int] = []
+	var _recent_warnings: Array[Array] = [[], []]
+
+	## Adds a demon to the watch, the next in the order they were put.
+	func add_demon() -> void:
+		bites.append(0)
+		warnings.append(0)
+		longest_without_warning.append(0)
+		_last_warned.append(0)
+
+	## Takes in the demon at index warning of an attack on physics frame frame of the watch, from his
+	## right or not.
+	func see_a_warning(index: int, frame: int, from_his_right: bool) -> void:
+		warnings[index] += 1
+		_see_time_without_warning(index, frame)
+		var recent: Array = _recent_warnings[int(from_his_right)]
+		recent.append(frame)
+		while recent[0] <= frame - Engine.physics_ticks_per_second:
+			recent.pop_front()
+		most_warnings_in_a_second = maxi(most_warnings_in_a_second, recent.size())
+
+	## Ends the watch on physics frame frame, counting the time since each demon last warned.
+	func end(frame: int) -> void:
+		for index: int in _last_warned.size():
+			_see_time_without_warning(index, frame)
+
+	func _see_time_without_warning(index: int, frame: int) -> void:
+		longest_without_warning[index] = maxi(longest_without_warning[index],
+				frame - _last_warned[index])
+		_last_warned[index] = frame

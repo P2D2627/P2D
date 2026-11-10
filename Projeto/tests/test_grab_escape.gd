@@ -7,9 +7,10 @@
 # joins and asks for more presses, and a third's joins nothing: with the most holding him, his
 # Hurtbox takes no hits, with no blink, until he is free (ADR 0029). Presses of Jump free him on
 # Presses To Escape, with no jump on that frame or after; free, he runs again, the crucifix can go
-# up and he is invulnerable for a moment, after which a bite grabs him again and asks for every
-# press again. With no presses he dies on Time To Die and stays held, and takes no more hits, since
-# the room starts over. With Hold To Escape on, Jump held from before the grab gives nothing, and
+# up and he is invulnerable for a moment, also to a bite that pierces his blink after a hit (ADR
+# 0055), after which a bite grabs him again and asks for every press again. With no presses he dies
+# on Time To Die and stays held, and takes no more hits, since the room starts over. With Hold To
+# Escape on, Jump held from before the grab gives nothing, and
 # from a press on, holding frees him on Hold Time To Escape. The pause stops the grab's clock. The
 # stand-in prompt shows while he is held, with the grab's progress in its bar, and says he died when
 # the time runs out, so a man who can't move never looks free. Held, his drawing sinks at the pace
@@ -80,6 +81,7 @@ func _initialize() -> void:
 	results.append(await _held_by_the_most_demons_he_takes_no_hits_until_he_is_free())
 	results.append(await _presses_free_him_with_no_jump_and_he_moves_again())
 	results.append(await _free_he_is_grabbed_again_only_after_the_invulnerability())
+	results.append(await _free_a_bite_that_pierces_grabs_him_only_after_the_invulnerability())
 	results.append(await _with_no_presses_he_dies_and_stays_held())
 	results.append(await _dead_he_takes_no_more_hits())
 	results.append(await _holding_frees_him_only_from_a_press_in_the_grab())
@@ -486,6 +488,32 @@ func _free_he_is_grabbed_again_only_after_the_invulnerability() -> bool:
 			("Bitten again as he broke free: held before Invulnerable Time %s, after it %s; one "
 			+ "press short of the new grab, held %s; signals %s") % [held_too_soon, held_again,
 			held_one_short, heard])
+	bite.queue_free()
+	await remove_player(man)
+	return verdict
+
+
+## As in _free_he_is_grabbed_again_only_after_the_invulnerability, with a bite that pierces a blink
+## after a hit, as a level-1 dog's does (ADR 0055): his time after breaking free is not pierceable,
+## so the bite still lands only when Invulnerable Time ends.
+func _free_a_bite_that_pierces_grabs_him_only_after_the_invulnerability() -> bool:
+	var man: Player = await _low_sp_man()
+	if man == null:
+		return report(false, "Grabbed again by a bite that pierces: the man never landed")
+	var escape: GrabEscape = _escape_of(man)
+	var bite: Hitbox = await _bite_and_wait_for_the_grab(man)
+	await _press_until_free(escape, man.input as StandInInput)
+	var pierceable: bool = _hurtbox_of(man).can_be_pierced()
+	var landings: Array[int] = _landings_of(bite)
+	bite.pierces_invulnerability = true
+	_bite_again(bite)
+	var invulnerable_frames: int = roundi(escape.invulnerable_time * Engine.physics_ticks_per_second)
+	await wait_frames(invulnerable_frames - SETTLE_FRAMES)
+	var held_too_soon: bool = escape.is_held() or not landings.is_empty()
+	var held_again: bool = await wait_until(escape.is_held, SETTLE_FRAMES + HIT_FRAMES)
+	var verdict: bool = report(not pierceable and not held_too_soon and held_again,
+			("A bite that pierces, on again as he broke free: his Hurtbox could be pierced %s; held "
+			+ "before Invulnerable Time %s, after it %s") % [pierceable, held_too_soon, held_again])
 	bite.queue_free()
 	await remove_player(man)
 	return verdict

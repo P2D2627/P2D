@@ -35,6 +35,7 @@ patrol_width = 480.0
 jump_height = 96.0
 max_drop = 240.0
 attacks = Array[ExtResource("2_attack")]([SubResource("Resource_bite"), SubResource("Resource_lunge")])
+attacks_invulnerable_man = true
 retreat_distance = 130.0
 waits_at_retreat_distance = true
 retreat_pace_width = 60.0

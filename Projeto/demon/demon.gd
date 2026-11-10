@@ -20,7 +20,9 @@ extends CharacterBody2D
 ## attack's chance coming up, it warns of the attack; a lunge needs him ahead of it and floor all the
 ## way to where it lands. While the man's Hurtbox takes no hits, invulnerable (ADR 0025) or closed
 ## with as many demons holding him as can (ADR 0029), no attack could land, so it starts none, and
-## with Retreat Distance it keeps that far from him until he can be hurt again. With Pack Spacing,
+## with Retreat Distance it keeps that far from him until he can be hurt again; with Attacks
+## Invulnerable Man, it goes on attacking him while he blinks after a hit, its attacks landing
+## through the blink, but waits out his time after he breaks free (ADR 0055). With Pack Spacing,
 ## it keeps that far behind another demon between it and the man, or steps back to it, so two never
 ## look like one, and attacks from there, with a lunge over the other; one backing off does not
 ## count, so they cross then (ADR 0024); with Pack Variation, its speeds and Retreat Distance are its
@@ -797,10 +799,10 @@ func turn_to(gap: float) -> void:
 
 ## For CHASE: goes after the man, gap px away along the floor, + to the right, as go_after does,
 ## keeping its Retreat Distance from him while it waits to attack, with Waits At Retreat Distance,
-## or while he takes no hits. With Retreat Pace Width in Stats, it paces there instead of standing
-## (ADR 0052).
+## or for him to take hits (waits_for_the_man_to_take_hits). With Retreat Pace Width in Stats, it
+## paces there instead of standing (ADR 0052).
 func go_after_or_pace(gap: float, delta: float) -> void:
-	var keeps_back: bool = waits_to_attack() or target_takes_no_hits()
+	var keeps_back: bool = waits_to_attack() or waits_for_the_man_to_take_hits()
 	if keeps_back and stats.retreat_pace_width > 0.0 and stats.retreat_distance > 0.0:
 		_pace_back(gap, delta)
 	else:
@@ -812,13 +814,13 @@ func go_after_or_pace(gap: float, delta: float) -> void:
 ## further than the gap, so a demon right below the man stands still instead of shaking, and a bite
 ## on the run never takes it past him; nor nearer than Pack Spacing to the body of a demon ahead of
 ## it that holds it back (_packmate_ahead). Nearer, as after it crossed that one on its way back, it
-## steps back at its Retreat Speed, still facing the man, until it is that far. While the man takes
-## no hits, and with keeps_back, it comes no nearer to him than Retreat Distance, and steps back to
-## it the same way.
+## steps back at its Retreat Speed, still facing the man, until it is that far. While it waits for
+## the man to take hits (waits_for_the_man_to_take_hits), and with keeps_back, it comes no nearer to
+## him than Retreat Distance, and steps back to it the same way.
 func go_after(gap: float, delta: float, keeps_back: bool = false) -> void:
 	var direction: float = signf(gap)
 	var room: float = absf(gap)
-	if keeps_back or target_takes_no_hits():
+	if keeps_back or waits_for_the_man_to_take_hits():
 		room -= retreat_distance()
 	var ahead: Demon = _packmate_ahead(gap)
 	if ahead != null:
@@ -1080,17 +1082,17 @@ func _passes_through_the_man() -> bool:
 
 ## For its states, on each physics frame of delta seconds of the chase: the first of the demon's
 ## attacks it starts at the man, or null. It only attacks from its floor, at a man it sees this
-## frame and who takes hits, once a bite on the run's Recover Time is over, which this counts down,
-## and when the attack's chance comes up (_starts), never while its body and his pass through each
-## other (ADR 0047). Each time it becomes able to, it first waits a new draw of up to Max Hesitation
-## (ADR 0027), and then, with Attackers Per Side, takes a turn to attack, or waits a new draw while
-## those on its side of him are taken. It gives its turn up when it can no longer attack, and when
-## it has no attack to start and can get no nearer to him (_can_get_nearer), so the turn goes to
-## one that can use it (ADR 0053).
+## frame, unless it waits for him to take hits (waits_for_the_man_to_take_hits), once a bite on
+## the run's Recover Time is over, which this counts down, and when the attack's chance comes up
+## (_starts), never while its body and his pass through each other (ADR 0047). Each time it becomes
+## able to, it first waits a new draw of up to Max Hesitation (ADR 0027), and then, with Attackers
+## Per Side, takes a turn to attack, or waits a new draw while those on its side of him are taken.
+## It gives its turn up when it can no longer attack, and when it has no attack to start and can
+## get no nearer to him (_can_get_nearer), so the turn goes to one that can use it (ADR 0053).
 func attack_to_start(gap: float, delta: float) -> DemonAttack:
 	_recover_frames_left = maxi(_recover_frames_left - 1, 0)
 	if not is_on_floor() or _target.get_unseen_frames() != 0 or _recover_frames_left > 0 \
-			or target_takes_no_hits() or _passes_through_the_man():
+			or waits_for_the_man_to_take_hits() or _passes_through_the_man():
 		_hesitation_frames_left = -1
 		_give_up_turn()
 		return null
@@ -1221,10 +1223,15 @@ func _has_floor_along_lunge(attack: DemonAttack, distance: float) -> bool:
 	return _has_floor_at(reach * _facing)
 
 
-## For its states: true while the man's Hurtbox lets no hit land, so an attack now could do nothing
-## to him.
-func target_takes_no_hits() -> bool:
-	return _target.takes_no_hits()
+## For its states: true while the demon waits for the man to take hits, so it starts no attack, ends
+## a warning under way and keeps its Retreat Distance from him: while his Hurtbox lets no hit land,
+## unless the demon has Attacks Invulnerable Man and he only blinks after a hit, so its attacks
+## pierce the blink and land (ADR 0055); it still waits while he is held by as many demons as can,
+## or just after he breaks free of a hold.
+func waits_for_the_man_to_take_hits() -> bool:
+	if not _target.takes_no_hits():
+		return false
+	return not stats.attacks_invulnerable_man or not _target.can_be_pierced()
 
 
 ## For its states: true when the floor ends just ahead of the demon's front, going in direction.
@@ -1270,7 +1277,8 @@ func change_state(new_state: State) -> void:
 
 ## Keeps the Hitbox on only while the attack under way can land: a bite on the run for its Bite
 ## Time after its warning, a lunge from take-off until it lands, and neither while its body and the
-## man's pass through each other (ADR 0047). Turned on, it takes the attack's damage and knockback.
+## man's pass through each other (ADR 0047). Turned on, it takes the attack's damage and knockback,
+## and pierces the man's blink after a hit if the demon has Attacks Invulnerable Man (ADR 0055).
 func _update_hitbox() -> void:
 	var can_land: bool = (_bite_frames_left > 0 or _current.can_land_hit()) \
 			and not _passes_through_the_man()
@@ -1280,6 +1288,7 @@ func _update_hitbox() -> void:
 		_hitbox.damage = _attack.damage
 		_hitbox.knockback_distance = _attack.knockback_distance
 		_hitbox.knockback_height = _attack.knockback_height
+		_hitbox.pierces_invulnerability = stats.attacks_invulnerable_man
 		_hitbox.activate()
 
 

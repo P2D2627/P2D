@@ -21,10 +21,12 @@ signal hold_ended(hurtbox: Hurtbox)
 
 ## What the hit does, which the owner sets from its attack before activate(), so they are not in
 ## the Inspector: SP it takes, and how far, in px along the floor away from the hitbox, and how high
-## it throws what it lands on.
+## it throws what it lands on; and whether it pierces a Hurtbox's invulnerability, landing through
+## one started as pierceable, as the man's after a hit (ADR 0055).
 var damage: float = 0.0
 var knockback_distance: float = 0.0
 var knockback_height: float = 0.0
+var pierces_invulnerability: bool = false
 
 var _active: bool = false
 ## The Hurtboxes this activation has landed on, so it lands once on each.
