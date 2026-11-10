@@ -238,9 +238,9 @@ estados:
 | Ronda | Vai e vem a passo, a 150 px/s, num troço de 480 px do seu chão, centrado no posto. Vira-se nas pontas, à beira de um desnível e contra uma parede. Fora do ecrã, fica parado. |
 | Alerta | Ao reparar na personagem, vira-se para ela e fica 0,3 s parado onde está, o tempo de ladrar, antes de a perseguir. Por cima da cabeça surge um "!", com um bip agudo; o "!" fica mais 0,5 s já na perseguição, para se conseguir ler. |
 | Perseguir | Segue-a a cerca de 560 px/s, no chão onde está. A personagem corre a 720 px/s, pelo que fugir resulta, mas com pouca margem. |
-| Aviso | Antes de cada ataque, mostra qual vem, para que o jogador tenha tempo de reagir: antes da mordida, alarga-se e baixa durante 0,2 s, sem parar de correr; antes do salto, para e encolhe durante 0,35 s. |
+| Aviso | Antes de cada ataque, mostra qual vem, para que o jogador tenha tempo de reagir: antes da mordida, alarga-se e baixa durante 0,1 s, sem parar de correr; antes do salto, para e encolhe durante 0,35 s. |
 | Atirar-se | Salta para onde a personagem vai estar, entre 200 e 420 px, e fica 0,35 s parado onde aterra. |
-| Recuar | Depois de cada ataque, afasta-se de frente para a personagem, a cerca de 400 px/s, até ficar a cerca de 130 px dela, e volta a atacar. |
+| Recuar | Depois de cada ataque, afasta-se de frente para a personagem, a cerca de 400 px/s, até ficar a cerca de 130 px dela. Enquanto não pode voltar a atacar, vai e vem entre cerca de 130 e 190 px dela, a cerca de 180 px/s e sempre virado para ela, e depois corre para ela e ataca à chegada. |
 | Agarrar | Segura a personagem até ela se soltar ou morrer (ver "Pancada e agarrão"). |
 | Atirado | Atirado pelo crucifixo, ou pela personagem quando esta se solta, voa até aterrar. |
 | Repelido | Depois de atirado pelo crucifixo, fica 0,3 s parado onde aterrou e volta a perseguir. |
@@ -261,32 +261,62 @@ de diferença):
 
 - **Mordida.** A menos de 100 px, morde a correr: continua a persegui-la durante o aviso e morde
   onde está.
-- **Salto.** A menos de 360 px, salta às vezes: a probabilidade é de 90 % por cada segundo em que a
-  personagem está ao alcance, o que torna o salto legível, pelo aviso, mas não previsível. No início
-  do aviso, aponta para onde ela vai estar quando ele aterrar, se mantiver a velocidade, e não muda
-  de pontaria: mudar de ritmo ou de direção durante o aviso faz o salto falhar. Nunca salta para um
-  buraco, nem para uma personagem que, quando ele aterrar, já lhe terá passado.
+- **Salto.** A menos de 360 px, salta às vezes, mas nunca a menos de cerca de 190 px, onde espera
+  para atacar (ver abaixo): a probabilidade é de 90 % por cada segundo em que a personagem está ao
+  alcance, o que torna o salto legível, pelo aviso, mas não previsível. No início do aviso, aponta
+  para onde ela vai estar quando ele aterrar, se mantiver a velocidade, e não muda de pontaria:
+  mudar de ritmo ou de direção durante o aviso faz o salto falhar. Nunca salta para um buraco, nem
+  para uma personagem que, quando ele aterrar, já lhe terá passado.
 
 Em grupo, cada demónio decide sozinho, mas o conjunto lê-se como uma matilha:
 
-- um demónio atrás de outro fica a 24 px dele e ataca dali, saltando-lhe por cima. Só conta um
-  demónio que também persegue a personagem, incluindo um em alerta ou à espera fora do alcance: um
-  parado, em ronda, a voltar ou a procurar não trava os outros. Dois que a procurem no mesmo sítio farejam à mesma distância um do outro. Os corpos dos
-  demónios não colidem entre si, para que não tremam nem se bloqueiem. Em vez disso, um demónio a
-  menos de 24 px de outro, no mesmo chão, afasta-se dele a 150 px/s, seja qual for o seu estado,
-  exceto a meio de uma investida, de um salto, de uma descida ou de um arremesso, e nunca para fora
-  de uma borda; em ronda, a voltar
-  ou fora de alcance, para a essa distância de outro, como numa parede. É a regra de separação dos
-  bandos de Reynolds (1987). Assim, dois demónios nunca ficam um em cima do outro, e cada um
-  lê-se como um animal à parte;
+- os corpos dos demónios não colidem entre si, para que não tremam nem se bloqueiem. Em vez disso,
+  um demónio a menos de 24 px de outro, no mesmo chão, afasta-se dele a 150 px/s, seja qual for o
+  seu estado, exceto a meio de uma investida, de um salto, de uma descida ou de um arremesso, ou a
+  correr na caça (ponto seguinte), e nunca para fora de uma borda; em ronda, a voltar ou fora de
+  alcance, para a essa distância de outro, como numa parede. É a regra de separação dos bandos de
+  Reynolds (1987). Assim, dois demónios nunca param um em cima do outro, e cada um lê-se como um
+  animal à parte;
+- na caça, enquanto persegue a personagem à vista dela ou avisa de um ataque, cada demónio passa
+  pelos outros, e só um encostado a ela o faz parar, a 24 px dele (ADR 0053). Com ela fora de
+  vista, um demónio atrás de outro fica a 24 px dele, e chegam um atrás do outro ao sítio onde a
+  procuram. Só conta um demónio que também a persegue, incluindo um em alerta ou à espera fora do
+  alcance: um parado, em ronda, a voltar ou a procurar não trava os outros. Dois que a procurem no
+  mesmo sítio farejam à mesma distância um do outro;
+- atacam à vez: de cada lado da personagem, só um demónio de cada vez avisa de um ataque ou o faz.
+  Fica com a vez o primeiro que acabar a sua espera, que é sorteada, e larga-a quando morde, quando
+  acaba o salto ou quando deixa de poder atacar, por exemplo se for atirado pelo crucifixo. Larga-a
+  também quando não consegue chegar mais perto dela, por causa de uma borda, de uma parede ou de
+  outro demónio encostado a ela, para que a vez passe a quem a pode usar. Assim, há no máximo dois
+  avisos de mordida ao mesmo tempo, um de cada lado, e cada um dá tempo para fugir. A exceção é a
+  personagem saltar por cima de um demónio com a vez: até à mordida seguinte de cada um, podem
+  atacar dois do mesmo lado, mas o piscar depois da primeira tira o dano à segunda. Em 60 s,
+  contra a personagem parada, cinco demónios, três de um lado e dois do outro, morderam todos. Em
+  oito sementes, cada um mordeu de 2 a 18 vezes, 10 em média: a vez vai para o primeiro que acaba
+  a espera sorteada, pelo que uns mordem mais do que outros. Com todos do mesmo lado, o normal
+  depois de uma perseguição, há cerca de 16 mordidas em 20 s para repartir, e um demónio pode
+  passar esse tempo sem morder (com cinco, em 2 de 10 sementes). O que avisa ou salta é desenhado
+  à frente dos outros, para que nenhum o tape (ADR 0053);
 - cada um persegue e recua ao seu ritmo, até 10 % acima ou abaixo dos valores, para que nunca se
-  movam em uníssono;
-- sempre que fica em condições de atacar, cada um espera um tempo sorteado entre 0 e 0,5 s, para
-  que não ataquem todos no mesmo instante;
-- enquanto a personagem pisca, depois de uma pancada, nenhum ataca, e todos esperam a cerca de
-  130 px. Esse segundo é a janela para fugir ou erguer o crucifixo. Em cinco execuções do
-  `measure_demon.gd`, com 40 demónios a aproximar-se da personagem parada, só 2 ou 3 atacaram nos
-  primeiros 2 s.
+  movam em uníssono. Dois a correr para o mesmo lado com os corpos sobrepostos separam-se: o que vai
+  mais devagar abranda para metade até o outro passar (Pace Spread, ADR 0053);
+- sempre que fica em condições de atacar, cada um espera um tempo sorteado entre 0 e 0,3 s, para
+  que não ataquem todos no mesmo instante. Espera a cerca de 130 px da personagem e, depois de uma
+  mordida, fica aí também o resto dos 0,3 s de recuperação; sem a vez, fica aí até ela se libertar.
+  Enquanto espera, vai e vem entre cerca de 130 e 190 px dela, a cerca de 180 px/s, um terço da
+  velocidade da perseguição, para que a corrida até ela se leia como o início do ataque. Troca de
+  sentido numa borda, contra uma parede ou junto de outro demónio parado, e passa pelos que andam,
+  para que dois encurralados nunca fiquem um em cima do outro. Entre os que se cruzam a andar para
+  o mesmo lado, o da frente vai até 50 % mais depressa e o de trás até 50 % mais devagar, para que
+  se separem em vez de andarem como um só. Só fica parado se estiver encurralado a menos de 130 px
+  (ADR 0052). Acabada a espera, corre para ela e morde à chegada, com o aviso de
+  0,1 s já em corrida, para que a pausa se sinta depois de cada ataque e nunca antes dele. O
+  primeiro ataque depois de a ver não espera: o "!" e o bip do alerta já o anunciam e, com a
+  personagem ao alcance, o aviso da mordida começa um passo de física (1/60 s) depois do alerta,
+  sem sortear a espera (ADR 0051);
+- enquanto a personagem pisca, depois de uma pancada, nenhum ataca, e cada um espera no seu
+  vaivém, entre cerca de 130 e 190 px dela. Esse segundo é a janela para fugir ou erguer o
+  crucifixo.
 
 Todos os saltos de um demónio caem com a mesma gravidade e com o mesmo ângulo, como um salto dado
 com menos força: um salto mais curto é mais baixo e mais rápido. O de 420 px sobe 32 px e dura
@@ -1082,8 +1112,9 @@ crucifixo afasta. A camada está definida na cena, no Inspector, e não no códi
 apenas nessa camada, pelo que um demónio ou uma alma só é afastado se tiver o componente.
 
 A camada `enemy` é a do corpo dos demónios, que colide com `world`, `one_way_platform` e `player`.
-Os corpos dos demónios atravessam-se uns aos outros, para que não tremam nem se bloqueiem; é a
-separação da matilha que os mantém afastados (ver "Demónios"). A personagem e os demónios não se
+Os corpos dos demónios atravessam-se uns aos outros, para que não tremam nem se bloqueiem; parados
+ou fora da caça, é a separação da matilha que os mantém afastados, e na caça passam uns pelos
+outros (ver "Demónios"). A personagem e os demónios não se
 atravessam: param encostados, e nenhum dos dois fica de pé em cima do outro (ver "Pancada e
 agarrão"); só presos dos dois lados se atravessam, durante uma fração de segundo. Um demónio que caia de uma borda em cima da personagem, ou dois
 demónios dos dois lados, podem encurralá-la; é intencional, porque encostar a um demónio é ficar ao
@@ -1370,10 +1401,14 @@ não é esta cena com a perseguição desligada.
   máxima, e com a velocidade máxima a 0 a personagem agarrada continuava a 720 px/s (medido no
   `test_grab_escape.gd`, antes da correção).
 - **Matilha sem coordenador.** Cada demónio decide sozinho, com uma área que encontra os outros
-  demónios à sua frente, um sorteio próprio da espera antes de atacar e velocidades próprias. Um nó
-  que distribuísse a vez de atacar garantia que nunca atacam dois ao mesmo tempo, mas tirava pressão
-  e mudava a dificuldade; fica para o caso de os playtests mostrarem que o sorteio não chega. Quando
-  o agarrão está cheio, a `Hurtbox` fecha-se, um estado separado da invulnerabilidade, para que
+  demónios à sua frente, um sorteio próprio da espera antes de atacar e velocidades próprias. A vez
+  de atacar (ADR 0053) também dispensa um nó coordenador no nível: os demónios partilham um registo,
+  uma variável estática da classe `Demon`, com a lista dos que têm a vez de atacar cada personagem.
+  Cada um sai da lista quando morde, quando deixa de poder atacar ou de chegar mais perto dela e
+  quando sai da cena, e a lista
+  de uma personagem apaga-se quando fica vazia, para que nenhum lado fique bloqueado por um demónio
+  que já não ataca. O número de demónios por lado está no `.tres` (Attackers Per Side, 1 no nível
+  1); com 0, atacam todos ao mesmo tempo. Quando o agarrão está cheio, a `Hurtbox` fecha-se, um estado separado da invulnerabilidade, para que
   nenhuma pancada entre sem que a personagem pisque. O demónio guarda a `Hurtbox` da personagem ao
   começar a persegui-la e não ataca enquanto ela não aceita pancadas.
 - **A personagem antes dos demónios.** No Godot, cada corpo vê os outros onde eles estavam no
@@ -1530,7 +1565,9 @@ não é esta cena com a perseguição desligada.
   identificador. A ronda, o regresso e o troço fora de alcance param ou viram a essa distância. As
   exceções da matilha (ADR 0024) mantêm-se: quem recua e quem ele atravessa não se empurram, nem
   dois com o corpo da personagem entre eles. É a separação de Reynolds (1987), só no eixo x. Ficam
-  sobreposições de passagem (cruzamentos ao recuar) ou sem espaço, como num buraco de um corpo.
+  sobreposições de passagem (cruzamentos ao recuar) ou sem espaço, como num buraco de um corpo. Na
+  caça, com a personagem à vista, um demónio em movimento passa pelos outros, e só um encostado a
+  ela o trava (ADR 0053); parado, afasta-se como os outros, e no vaivém vira junto de um parado.
 - **Ninguém fica em cima de ninguém (ADR 0047).** O componente `KnockOff`
   (`components/knock_off.gd`) diz para que lado empurrar quem está de pé em cima da personagem ou
   de um demónio; quem o usa põe a velocidade (600 px/s nos dois). Antes, o demónio não tinha
@@ -1755,10 +1792,22 @@ interrompe e o repõe logo. Com os ADRs 0044 a 0046, verifica que segue por baix
 troço, mais depressa do que a ronda, e que os passos dela dentro do troço não o mexem, e que dois
 demónios no mesmo sítio, na ponta de um chão, no troço, em ronda e a agarrar do mesmo lado se
 separam. Os casos alterados por estas decisões (seis) foram-no com autorização e estão
-registados nos ADRs. São 137 casos. Todos menos os oito
-últimos usam valores próprios, pelo que afinar o `.tres` não os altera. Os oito últimos leem o
-`.tres` do nível 1 e
-confirmam o que o desenho dos níveis assume: cada ataque com uma das animações da arte, os saltos e a diferença
+registados nos ADRs. Com os ADRs 0051 a 0053, sem alterar nenhum caso antigo, verifica que o
+primeiro ataque vem logo a seguir ao alerta, e que o fim do piscar e o regresso depois de atirado
+pelo crucifixo voltam a sortear a espera. Verifica também que, enquanto espera, o demónio fica
+entre 130 e 190 px da personagem, sem parar e à velocidade do vaivém, e vira numa borda e numa
+parede; que a mordida que acaba a espera acerta numa personagem parada e nunca é um salto; que três
+demónios do mesmo lado nunca ficam parados nem andam como um só, e dois a correr atrás dela também
+não; que cinco atacam à vez, no máximo
+um de cada lado, e mordem todos; que dois em lados opostos atacam ao mesmo tempo; que o que tem a
+vez passa pelo outro para morder; que a vez passa a outro quando quem a tem é atirado, sai da cena
+ou fica preso do outro lado de um buraco; que dois encurralados entre uma borda e a personagem
+nunca ficam um em cima do outro e continuam a morder; e que o demónio que ataca é desenhado à
+frente dos outros. São 166 casos. Os 19 dos ADRs 0051 a 0053 que usam os demónios do nível e os
+oito últimos leem o `.tres` do nível 1; os outros usam valores próprios, pelo que afinar o
+`.tres` não os altera. Os 19 confirmam as regras novas com os valores do nível, e os oito últimos
+confirmam o
+que o desenho dos níveis assume: cada ataque com uma das animações da arte, os saltos e a diferença
 de altura para atacar abaixo de um tile (48 px), o Lose Distance acima do Sight Distance e a
 perseguição mais lenta do que a corrida da personagem, e a regra do ecrã ligada, com margem, a visão de pelo
 menos meio ecrã, menos alcance para trás do que para a frente e o regresso mais lento do que a
