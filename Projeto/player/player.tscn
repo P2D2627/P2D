@@ -330,3 +330,4 @@ grab_escape = NodePath("../GrabEscape")
 [connection signal="died" from="." to="Hurtbox" method="set_closed" binds= [true]]
 [connection signal="grabbed" from="GrabEscape" to="Crucifix" method="block" binds= [&"grab"]]
 [connection signal="sink_changed" from="GrabEscape" to="SinkingDrawing" method="set_sink"]
+[connection signal="struggled" from="GrabEscape" to="PlayerAnimation" method="struggle"]

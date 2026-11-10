@@ -17,8 +17,10 @@
 # frame he breaks free (ADR 0026); the demons holding him hear how far he sank, one that joins from
 # where he is, and 0 before they let go. The grab is the man's own state, GRABBED, from the frame
 # after the bite until the frame after he breaks free, in the air and on landing too, which he still
-# hears as landed; grabbed in the air, he falls no faster than Grabbed Fall Speed, so the escape
-# shows on the way down; his drawing shows escape, at Escape FPS and looping, while he is in it. Held still
+# hears as landed; grabbed in the air, he falls no faster than Grabbed Fall Speed; only pulled, his
+# drawing stands idle, and each press of Jump that counts shows escape for Struggle Time, one frame
+# on from the last press's, held still, so every press shows; with Hold To Escape, holding plays
+# escape; escape is drawn at Escape FPS and looping, while he is in it. Held still
 # by something else, as while Velvet talks, he is not GRABBED. The timing cases give the grab its own copy of Grab Stats
 # with a short Time To Die, so they do not wait 3 s each.
 # Run from the repository root; the exit code is 0 on pass and 1 on fail:
@@ -61,6 +63,11 @@ const WALL_HEIGHT: float = 600.0
 ## Time To Die in the timing cases, and the physics frames the pause case stays paused: longer.
 const SHORT_TIME_TO_DIE: float = 0.5
 const PAUSE_FRAMES: int = 60
+## Presses of Jump in the case of the struggle, short of Presses To Escape, and frames between them.
+const STRUGGLE_PRESSES: int = 5
+const PRESS_GAP_FRAMES: int = 4
+## The frames escape is drawn in, one press each.
+const ESCAPE_FRAMES: int = 4
 ## How high a grabbed man is lifted to fall from, in px.
 const LIFT: float = 300.0
 ## The man's animation while he is held, and how fast it plays.
@@ -102,6 +109,7 @@ func _initialize() -> void:
 	results.append(await _grabbed_in_the_air_he_stays_grabbed_and_lands())
 	results.append(await _held_still_by_something_else_he_is_not_grabbed())
 	results.append(await _grabbed_high_up_he_falls_slowly())
+	results.append(await _holding_to_escape_plays_escape())
 	finish(results)
 
 
@@ -769,8 +777,9 @@ func _the_demons_holding_him_sink_with_him_and_come_back_up() -> bool:
 
 
 ## A man on the floor, with a stand-in input and SP below Low Threshold; null if he never lands.
-## On the floor before the bite; GRABBED, with escape playing at ESCAPE_FPS in a loop, from the
-## frame after it; free, on the floor again, standing idle.
+## On the floor before the bite; GRABBED from the frame after it, standing idle while only pulled;
+## each press of Jump, short of breaking free, shows escape one frame on, held still between presses;
+## past Struggle Time with no press, idle again; free, on the floor again, standing idle.
 func _held_he_is_grabbed_and_shows_escape_until_he_breaks_free() -> bool:
 	var man: Player = await _low_sp_man()
 	if man == null:
@@ -784,8 +793,29 @@ func _held_he_is_grabbed_and_shows_escape_until_he_breaks_free() -> bool:
 	await physics_frame
 	await process_frame
 	var held_state: Player.State = man.get_state()
-	var shown: StringName = sprite.animation
-	var playing: bool = sprite.is_playing()
+	var pulled: StringName = sprite.animation
+	var shown_frames: Array[int] = []
+	var shown: StringName = &""
+	var playing: bool = false
+	for _press: int in STRUGGLE_PRESSES:
+		# A stand-in's press counts on the physics frame it is made on.
+		await physics_frame
+		stand_in.press_jump()
+		await wait_frames(PRESS_GAP_FRAMES)
+		await process_frame
+		await process_frame
+		shown = sprite.animation
+		playing = playing or sprite.is_playing()
+		shown_frames.append(sprite.frame)
+	var one_on: bool = true
+	for index: int in range(1, shown_frames.size()):
+		one_on = one_on and shown_frames[index] == posmod(shown_frames[index - 1] + 1, ESCAPE_FRAMES)
+	var animation: PlayerAnimation = man.get_node(^"PlayerAnimation") as PlayerAnimation
+	await wait_frames(ceili(animation.struggle_time * Engine.physics_ticks_per_second)
+			+ SETTLE_FRAMES)
+	await process_frame
+	var after_struggle: StringName = sprite.animation
+	var still_held: bool = escape.is_held()
 	var fps: float = sprite.sprite_frames.get_animation_speed(ESCAPE) if (
 			sprite.sprite_frames.has_animation(ESCAPE)) else 0.0
 	var loops: bool = sprite.sprite_frames.has_animation(ESCAPE) and (
@@ -796,12 +826,16 @@ func _held_he_is_grabbed_and_shows_escape_until_he_breaks_free() -> bool:
 	var free_state: Player.State = man.get_state()
 	var free_shown: StringName = sprite.animation
 	var passed: bool = (before == Player.State.ON_FLOOR and held_state == Player.State.GRABBED
-			and shown == ESCAPE and playing and is_equal_approx(fps, ESCAPE_FPS) and loops
-			and free_state == Player.State.ON_FLOOR and free_shown == &"idle")
+			and pulled == &"idle" and shown == ESCAPE and not playing and one_on
+			and is_equal_approx(fps, ESCAPE_FPS) and loops and still_held
+			and after_struggle == &"idle" and free_state == Player.State.ON_FLOOR
+			and free_shown == &"idle")
 	var verdict: bool = report(passed,
-			("Grabbed state: %s before, %s held showing %s (playing %s, %.0f fps, loop %s), %s "
-			+ "free showing %s") % [_state_name(before), _state_name(held_state), shown, playing,
-			fps, loops, _state_name(free_state), free_shown])
+			("Grabbed state: %s before, %s held; pulled showing %s, struggling %s with frames %s "
+			+ "a press apart, one on each %s, played on its own %s (%.0f fps, loop %s), stopped %s "
+			+ "(held %s); %s free showing %s") % [_state_name(before), _state_name(held_state),
+			pulled, shown, shown_frames, one_on, playing, fps, loops, after_struggle, still_held,
+			_state_name(free_state), free_shown])
 	bite.queue_free()
 	await remove_player(man)
 	return verdict
@@ -884,6 +918,33 @@ func _grabbed_high_up_he_falls_slowly() -> bool:
 	var verdict: bool = report(passed,
 			("Grabbed %.0f px up: fell at up to %.0f px/s (Grabbed Fall Speed %.0f), landed %s after "
 			+ "%d frames (at least %d)") % [LIFT, fastest, top_speed, landed, frames, least_frames])
+	bite.queue_free()
+	await remove_player(man)
+	return verdict
+
+
+## With Hold To Escape on, Jump pressed in the grab and held: escape plays on its own, at its FPS,
+## since holding gives no presses to step it.
+func _holding_to_escape_plays_escape() -> bool:
+	var man: Player = await _low_sp_man()
+	if man == null:
+		return report(false, "Holding to escape: the man never landed")
+	var stand_in: StandInInput = man.input as StandInInput
+	var escape: GrabEscape = _escape_of(man)
+	escape.hold_to_escape = true
+	var sprite: AnimatedSprite2D = man.get_node(^"Sprite") as AnimatedSprite2D
+	var bite: Hitbox = await _bite_and_wait_for_the_grab(man)
+	stand_in.hold_jump = true
+	stand_in.press_jump()
+	await wait_frames(PRESS_GAP_FRAMES)
+	await process_frame
+	await process_frame
+	var shown: StringName = sprite.animation
+	var playing: bool = sprite.is_playing()
+	stand_in.hold_jump = false
+	var passed: bool = escape.is_held() and shown == ESCAPE and playing
+	var verdict: bool = report(passed, "Holding to escape: held %s, showing %s, playing %s"
+			% [escape.is_held(), shown, playing])
 	bite.queue_free()
 	await remove_player(man)
 	return verdict

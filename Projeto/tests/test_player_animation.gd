@@ -1,5 +1,6 @@
 # Checks PlayerAnimation. The choice alone: each state and velocity gives its animation, a
-# knockback gives hurt over any of them, and held by a demon he shows escape over everything. Missing
+# knockback gives hurt over any of them, and held by a demon he shows escape over everything while he
+# struggles, pressing Jump, and stands idle while he is only pulled. Missing
 # art falls back: the wall slide to the fall, the fall to the jump, the rest to idle. The jump's frame comes from the speed up or down: crouched on
 # the take-off, then up, top, down and braced, with the top only after going up. In player.tscn:
 # standing he is idle, running he walks, in the air he jumps, and a jump from standing shows its
@@ -64,9 +65,16 @@ func _each_state_and_velocity_gives_its_animation() -> bool:
 		[wall, Vector2(0.0, -FAST), false, PlayerAnimation.JUMP],
 		[floor_state, Vector2(FAST, 0.0), true, PlayerAnimation.HURT],
 		[air, Vector2(0.0, -FAST), true, PlayerAnimation.HURT],
-		[grabbed, Vector2.ZERO, false, PlayerAnimation.ESCAPE],
-		[grabbed, Vector2(0.0, FAST), false, PlayerAnimation.ESCAPE],
-		[grabbed, Vector2(FAST, 0.0), true, PlayerAnimation.ESCAPE],
+	]
+	# [state, velocity, knocked back, struggling, animation]
+	var grabbed_cases: Array[Array] = [
+		[grabbed, Vector2.ZERO, false, true, PlayerAnimation.ESCAPE],
+		[grabbed, Vector2(0.0, FAST), false, true, PlayerAnimation.ESCAPE],
+		[grabbed, Vector2(FAST, 0.0), true, true, PlayerAnimation.ESCAPE],
+		[grabbed, Vector2.ZERO, false, false, PlayerAnimation.IDLE],
+		[grabbed, Vector2(0.0, FAST), false, false, PlayerAnimation.IDLE],
+		[grabbed, Vector2(FAST, 0.0), true, false, PlayerAnimation.IDLE],
+		[floor_state, Vector2.ZERO, false, true, PlayerAnimation.IDLE],
 	]
 	var wrong: Array[String] = []
 	for case: Array in cases:
@@ -75,12 +83,17 @@ func _each_state_and_velocity_gives_its_animation() -> bool:
 		if got != case[3]:
 			wrong.append("%s %s knocked %s: %s, not %s" % [Player.State.find_key(case[0]), case[1],
 					case[2], got, case[3]])
-	return report(wrong.is_empty(), "The choice alone, %d cases%s" % [cases.size(),
+	for case: Array in grabbed_cases:
+		var got_grabbed: StringName = PlayerAnimation.animation_for(case[0], case[1], case[2],
+				WALK_MIN_SPEED, case[3])
+		if got_grabbed != case[4]:
+			wrong.append("%s %s knocked %s struggling %s: %s, not %s" % [
+					Player.State.find_key(case[0]), case[1], case[2], case[3], got_grabbed,
+					case[4]])
+	return report(wrong.is_empty(), "The choice alone, %d cases%s" % [
+			cases.size() + grabbed_cases.size(),
 			"" if wrong.is_empty() else ": " + "; ".join(wrong)])
 
-
-## With idle and jump only, as player.tscn has them: the wall slide and the fall show the jump, hurt
-## stands. With idle alone, everything stands.
 func _missing_art_falls_back_to_the_nearest_animation() -> bool:
 	var with_jump: SpriteFrames = SpriteFrames.new()
 	with_jump.rename_animation(&"default", PlayerAnimation.IDLE)

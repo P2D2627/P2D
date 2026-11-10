@@ -26,6 +26,9 @@ signal grabbed
 signal sink_changed(sink: float)
 ## The man broke free and moves again.
 signal broke_free
+## A press of Jump counted towards breaking free (pressed true), or, with Hold To Escape, Jump held
+## on a physics frame that counts (pressed false): he struggles, and his drawing shows it.
+signal struggled(pressed: bool)
 ## The time ran out before the man broke free. He stays held: what comes next, such as the room
 ## starting over, listens to this.
 signal died
@@ -71,6 +74,8 @@ func _physics_process(delta: float) -> void:
 	_pressed_in_grab = _pressed_in_grab or pressed
 	var holding: bool = hold_to_escape and _pressed_in_grab and player.input.is_jump_held()
 	_rules.advance(delta, pressed and not hold_to_escape, holding)
+	if (pressed and not hold_to_escape) or holding:
+		struggled.emit(not hold_to_escape)
 	match _rules.get_state():
 		GrabRules.State.HELD:
 			_sink(_rules.get_sink())
