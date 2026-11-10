@@ -114,13 +114,14 @@ knock_off_layers = 2
 position = Vector2(0, -28)
 shape = SubResource("RectangleShape2D_body")
 
-[node name="Placeholder" type="Polygon2D" parent="."]
+[node name="Placeholder" type="Polygon2D" parent="." node_paths=PackedStringArray("art")]
 self_modulate = Color(1, 1, 1, 0)
 color = Color(0.55, 0.12, 0.18, 1)
 polygon = PackedVector2Array(-56, -56, 56, -56, 56, 0, -56, 0)
 script = ExtResource("3_placeholder")
+art = NodePath("../Sprite")
 
-[node name="Sprite" type="AnimatedSprite2D" parent="Placeholder"]
+[node name="Sprite" type="AnimatedSprite2D" parent="."]
 editor_description = "dog_run.png and dog_idle_cell.png: 432 x 202 cells, the body's middle on the cell's middle and the feet on y = 194. Offset puts the feet on the demon's y = 0; Scale 0.5 halves the art, drawn at twice the size for the zoom."
 scale = Vector2(0.5, 0.5)
 sprite_frames = SubResource("SpriteFrames_dog")
@@ -130,7 +131,7 @@ offset = Vector2(0, -93)
 [node name="DemonAnimation" type="Node" parent="." node_paths=PackedStringArray("demon", "sprite")]
 script = ExtResource("15_animation")
 demon = NodePath("..")
-sprite = NodePath("../Placeholder/Sprite")
+sprite = NodePath("../Sprite")
 
 [node name="Mark" type="Node2D" parent="." node_paths=PackedStringArray("label")]
 z_index = 2
@@ -165,7 +166,7 @@ bus = &"SFX"
 
 [node name="SinkingDrawing" type="Node" parent="." node_paths=PackedStringArray("drawing")]
 script = ExtResource("6_sinking_drawing")
-drawing = NodePath("../Placeholder/Sprite")
+drawing = NodePath("../Sprite")
 
 [node name="SightArea" type="Area2D" parent="."]
 unique_name_in_owner = true

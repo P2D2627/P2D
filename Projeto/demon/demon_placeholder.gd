@@ -1,3 +1,4 @@
+class_name DemonPlaceholder
 extends Polygon2D
 
 ## The demon's stand-in until its art arrives: a rectangle that changes shape and lights up while
@@ -6,9 +7,13 @@ extends Polygon2D
 ## as it barks at a man out of its reach (ADR 0039), and stretches as it takes off up a step or down
 ## off the end of its floor and squashes as it lands (ADR 0042), so the leap shows with no sound. It
 ## only listens to the demon's state_changed, warning_started, barked, took_off and landed, wired in
-## demon.tscn. With the art in, the rectangle no longer shows (its Self Modulate is clear) and the
-## art is its child: the shapes, hops and Z Index move the art with it, and each colour also tints
-## everything under it through Modulate, by its own Tint below.
+## demon.tscn. With the art in, the rectangle no longer shows (its Self Modulate is clear) and Art
+## follows it on every frame drawn: its tint (Modulate, by each colour's Tint below), its hops and its
+## Z Index, but never its shapes, so the art keeps its size and only its own animations change it.
+
+## The demon's art, beside the rectangle, never under it: it takes the rectangle's tint, hop and Z
+## Index, not its scale. Empty, the rectangle is the drawing, as before the art.
+@export var art: Node2D
 
 ## The colour while the demon warns of a lunge: much lighter than the rectangle's own, so the
 ## warning shows also to whom does not tell red from orange; the crouch shows it too.
@@ -61,9 +66,19 @@ extends Polygon2D
 @onready var _rest_color: Color = color
 @onready var _rest_z_index: int = z_index
 @onready var _rest_position: Vector2 = position
+@onready var _art_rest_y: float = art.position.y if art != null else 0.0
 
 var _hop: Tween
 var _leap: Tween
+
+
+## Art takes the rectangle's tint, hop and Z Index, on every frame drawn.
+func _process(_delta: float) -> void:
+	if art == null:
+		return
+	art.modulate = modulate
+	art.z_index = z_index
+	art.position.y = _art_rest_y + position.y - _rest_position.y
 
 
 ## Flat and dark while stunned, back in its own shape and colour once the warning or the stun is

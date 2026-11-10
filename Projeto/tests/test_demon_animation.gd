@@ -6,7 +6,8 @@
 # every Stride Length it runs, at any speed. In the scene: the body lies down, wider than high, as the
 # dog is drawn; the drawing has the run, looping, with its frames, and idle; the stand-in rectangle
 # no longer shows; the dog faces the way the demon faces; standing it shows idle, and chasing the
-# man it runs.
+# man it runs. The stand-in's shapes never reach the dog: squashed for a warning or flat while
+# stunned, the dog keeps its size, while it takes the stand-in's tint and Z Index.
 # Run from the repository root; the exit code is 0 on pass and 1 on fail:
 # godot --headless --fixed-fps 60 --path Projeto --script res://tests/test_demon_animation.gd
 extends "res://tests/support/player_test.gd"
@@ -43,6 +44,7 @@ func _initialize() -> void:
 	results.append(_each_state_floor_and_speed_gives_its_pose())
 	results.append(_the_run_plays_one_loop_per_stride())
 	results.append(await _in_the_scene_the_dog_lies_down_stands_and_runs())
+	results.append(await _the_dog_keeps_its_size_and_takes_the_stand_in_s_tint())
 	finish(results)
 
 
@@ -106,10 +108,10 @@ func _in_the_scene_the_dog_lies_down_stands_and_runs() -> bool:
 	var body: Vector2 = ((demon.get_node(^"CollisionShape2D") as CollisionShape2D).shape
 			as RectangleShape2D).size
 	var placeholder: Polygon2D = demon.get_node(^"Placeholder") as Polygon2D
-	var sprite: AnimatedSprite2D = demon.get_node_or_null(^"Placeholder/Sprite") as AnimatedSprite2D
+	var sprite: AnimatedSprite2D = demon.get_node_or_null(^"Sprite") as AnimatedSprite2D
 	if sprite == null:
 		demon.queue_free()
-		return report(false, "In the scene: no Placeholder/Sprite; body %s" % body)
+		return report(false, "In the scene: no Sprite; body %s" % body)
 	var frames: SpriteFrames = sprite.sprite_frames
 	var has_run: bool = frames.has_animation(DemonAnimation.RUN)
 	var run_ok: bool = (has_run and frames.get_frame_count(DemonAnimation.RUN) == RUN_FRAMES
@@ -137,3 +139,35 @@ func _in_the_scene_the_dog_lies_down_stands_and_runs() -> bool:
 			+ "runs %s") % [body, body.x > body.y,
 			frames.get_frame_count(DemonAnimation.RUN) if has_run else 0, run_ok, has_idle,
 			hidden_rectangle, standing_state, stands_idle, faces_as_the_demon, ran])
+
+
+## The stand-in lying flat while stunned and drawn over the man while it grabs: the dog keeps its
+## own scale, and takes the stand-in's tint and Z Index on the next frame drawn.
+func _the_dog_keeps_its_size_and_takes_the_stand_in_s_tint() -> bool:
+	var demon: Demon = DEMON_SCENE.instantiate() as Demon
+	demon.position = START
+	root.add_child(demon)
+	await wait_frames(SETTLE_FRAMES)
+	var placeholder: DemonPlaceholder = demon.get_node(^"Placeholder") as DemonPlaceholder
+	var sprite: Node2D = demon.get_node_or_null(^"Sprite") as Node2D
+	if sprite == null:
+		demon.queue_free()
+		return report(false, "Size and tint: no Sprite")
+	var own_scale: Vector2 = sprite.global_transform.get_scale()
+	placeholder._on_demon_state_changed(Demon.State.IDLE, Demon.State.STUNNED)
+	# process_frame comes before the nodes' _process on its frame: one more for the stand-in's.
+	await process_frame
+	await process_frame
+	var stunned_scale: Vector2 = sprite.global_transform.get_scale()
+	var squashed: bool = placeholder.scale != Vector2.ONE
+	var tinted: bool = sprite.modulate == placeholder.modulate and sprite.modulate != Color.WHITE
+	placeholder._on_demon_state_changed(Demon.State.STUNNED, Demon.State.GRAB)
+	await process_frame
+	await process_frame
+	var over_him: bool = sprite.z_index == placeholder.z_index and sprite.z_index != 0
+	demon.queue_free()
+	var passed: bool = squashed and own_scale.is_equal_approx(stunned_scale) and tinted and over_him
+	return report(passed,
+			("Size and tint: stand-in squashed %s, dog at %s before and %s stunned; tinted as the "
+			+ "stand-in %s; Z Index as the stand-in while it grabs %s") % [squashed, own_scale,
+			stunned_scale, tinted, over_him])
