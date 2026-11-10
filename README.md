@@ -1594,9 +1594,9 @@ demónios a perseguir ao mesmo tempo, muitos mais do que um ecrã terá: um limi
 passo de física, um pouco acima do medido, para que um aumento de custo se note cedo, e 2 ms no pior
 passo, a parte de um passo de 16,6 ms que um sistema pode ocupar. Mede-se com o `measure_demon.gd`,
 com todos os demónios a ver a personagem parada e a persegui-la: um de cada vez ataca, e os outros
-esperam enquanto ela pisca, o caso mais exigente que o jogo permitia. Com o ADR 0055, a personagem
-é agarrada a meio de cada parte da medida, que ainda não foi repetida. Cada parte da medida começa com
-uma personagem nova, com o SP cheio, para que nenhum agarrão a deixe presa a meio. O custo é o que
+esperam enquanto ela pisca, o caso mais exigente que o jogo permitia (desde o ADR 0055, a medida é
+outra, descrita no fim desta secção). Cada parte da medida começava com uma personagem nova, com o
+SP cheio, para que nenhum agarrão a deixasse presa a meio. O custo é o que
 os demónios acrescentam ao passo inteiro, incluindo o motor de física, numa sala sem eles. Com os
 valores atuais do nível 1, depois da pancada e do agarrão (2026-10-20 e 2026-10-21):
 
@@ -1749,6 +1749,44 @@ demónios juntos à volta da personagem, ou sem chão, não são um caso que um 
 demónios ativos no ecrã e chão para cada um onde se juntam (itens 26 e 36 da lista do
 `docs/nivel1_desenho.md`). Com 50 demónios do mesmo lado de um degrau, a fila estende-se por
 mais de 1200 px, e os últimos ficam a mais de Lose Distance da personagem e voltam ao posto.
+
+Com o vaivém, a vez e os ataques durante o piscar (ADR 0052, 0053 e 0055; 2026-11-10), cada
+demónio que espera anda em vaivém perto da personagem, ataca no máximo um de cada lado, e os
+ataques acertam também enquanto ela pisca. Uma matilha deixava-a com SP baixos em cerca de 2 s e
+agarrava-a, e o resto de cada parte da medida passava a medir demónios a agarrá-la ou à espera, e
+não a persegui-la. Por isso, a medida
+dá agora a cada personagem nova um máximo de SP muito alto, só em memória, e acaba com código 1
+se, mesmo assim, ela ficar com SP baixos. O `dev` e este trabalho correram alternados com a mesma
+medida, três execuções de cada, antes e depois de otimizar; a diferença é a mediana das três
+comparações:
+
+| Demónios a perseguir, passo inteiro em média | Antes: `dev` | Antes: este trabalho | Depois: `dev` | Depois: este trabalho | Diferença depois |
+|---|---|---|---|---|---|
+| 10 | 0,29 a 0,30 ms | 0,41 a 0,43 ms | 0,27 a 0,30 ms | 0,40 a 0,41 ms | +47 % |
+| 50 | 1,54 a 1,70 ms | 3,09 a 3,27 ms | 1,58 a 1,60 ms | 2,39 a 2,41 ms | +50 % |
+| 200 | 14,7 a 19,6 ms | 42,3 a 47,4 ms | 14,6 a 14,9 ms | 24,0 a 24,6 ms | +65 % |
+
+Antes de otimizar, a diferença era de +40 % com 10, +93 % com 50 e +153 % com 200. Medido por fase
+numa cópia instrumentada, com 50 demónios, o vaivém era metade do tempo dos scripts: cada demónio em
+vaivém percorria a matilha inteira três vezes por passo, para saber se um demónio parado o travava
+e quantos andavam sobrepostos a ele. A otimização junta as três perguntas numa só passagem e lê a
+posição e a velocidade de cada demónio uma vez, pelos métodos, que no GDScript custam menos do que
+as propriedades (medido: 50 contra 76 ns por leitura da posição e 18 contra 37 da velocidade). As
+respostas são as mesmas: numa cópia, a versão antiga e a nova correram lado a lado, sem nenhuma
+diferença em 61 989 comparações nos testes e 265 780 na medida, e o mesmo arranjo apanhou duas
+alterações feitas de propósito (6 996 e 152 diferenças). Com 50 demónios, cerca de 0,3 ms da
+diferença que fica é do motor de física (0,58 a 0,61 ms fora dos scripts, contra 0,28 no `dev`),
+provavelmente porque os demónios que esperam andam, em vez de estarem parados. O resto, cerca de
+0,5 ms, é dos scripts. Numa cópia instrumentada, o vaivém continua a ser a parte mais cara, com
+0,53 a 0,54 ms por passo, dos quais 0,32 a 0,33 ms na passagem pela matilha, que cresce com o
+quadrado do número de demónios (6,2 a 8,2 ms com 200). Com 10 demónios, a passagem leva cerca de
+15 µs por passo e o vaivém 39 a 47 µs, e a origem da diferença de 0,1 ms ficou por medir. Nas
+outras partes da medida, a diferença ficou entre -1 % e +15 %, menos ao pé do bloco de 144 px, mais
+alto do que o salto: 1,76 a 1,81 ms no `dev` e 2,70 a 2,85 ms neste trabalho (+54 %), já antes de
+otimizar, com a causa por medir. A perseguição continua acima da margem de um quarto com 10, 50 e
+200 demónios, e aceitou-se (2026-11-10): com 10, a diferença é de cerca de 0,1 ms, menos de 1 % de
+um passo de 16,6 ms, e 50 ou 200 demónios juntos à volta da personagem não são um caso que um nível
+tenha.
 
 O `test_demon.gd` verifica, com a personagem e o crucifixo verdadeiros, a visão (a distância e as
 paredes), a perseguição e a desistência, a paragem nas bordas e nos degraus, o aviso e o seu tempo,

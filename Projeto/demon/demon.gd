@@ -141,6 +141,12 @@ var _retreat_after_bite: bool = false
 ## While the demon paces as it keeps back from the man: true as it heads for the far end, Retreat
 ## Pace Width past Retreat Distance, and false as it heads back to Retreat Distance (ADR 0052).
 var _paces_out: bool = true
+## What the pacing demon found of the other demons on its floor near it on its last pass over them
+## (_scan_packmates_near), by side, 0 for left and 1 for right: whether one that stands holds it
+## back that way, and how many going that way overlap its body ahead of it and behind it.
+var _held_back_by_packmate: Array[bool] = [false, false]
+var _overlapping_ahead: PackedInt32Array = [0, 0]
+var _overlapping_behind: PackedInt32Array = [0, 0]
 ## Rolls the attacks' chances. Each demon has its own, seeded from the global generator, which moves
 ## on with each seed it gives, so demons put in on the same frame do not lunge together.
 var _rng: RandomNumberGenerator = RandomNumberGenerator.new()
@@ -839,7 +845,8 @@ func go_after(gap: float, delta: float, keeps_back: bool = false) -> void:
 ## end, and sooner at an edge, a wall or a demon that stands (_is_pace_held_back); other demons it
 ## passes through, faster or slower among some going its way (_pace_share, ADR 0053). Further off,
 ## it runs back at its Chase Speed (_chase_share); nearer, it backs off at its Retreat Speed, and
-## with no room to, it stands (ADR 0052).
+## with no room to, it stands (ADR 0052). It goes over the demons near it once
+## (_scan_packmates_near), and looks for an edge or a wall once when it goes the way it was pacing.
 func _pace_back(gap: float, delta: float) -> void:
 	var toward: float = signf(gap)
 	var apart: float = absf(gap)
@@ -849,14 +856,19 @@ func _pace_back(gap: float, delta: float) -> void:
 		_paces_out = true
 	elif apart >= far - PACE_END_REACH:
 		_paces_out = false
-	if _is_pace_held_back(-toward if _paces_out else toward):
+	_scan_packmates_near()
+	var paces: float = -toward if _paces_out else toward
+	var held_back: bool = _is_pace_held_back(paces)
+	if held_back:
 		_paces_out = not _paces_out
 	var room: float = apart - (far if _paces_out else near)
 	var pace_speed: float = _retreat_pace_speed() * _pace_share(toward * signf(room))
 	var out_speed: float = retreat_speed() if apart < near else pace_speed
 	var in_speed: float = _chase_speed() * _chase_share(toward) if apart > far else pace_speed
 	var speed: float = clampf(room / delta, -out_speed, in_speed)
-	if _is_pace_held_back(toward * signf(speed)):
+	var goes: float = toward * signf(speed)
+	var stops: bool = held_back if goes == paces else _is_pace_held_back(goes)
+	if stops:
 		velocity.x = 0.0
 		return
 	velocity.x = toward * speed
@@ -872,30 +884,65 @@ func _is_held_back(direction: float) -> bool:
 ## edge or a wall (_is_held_back), or at another demon on its floor that stands still no further
 ## than Pack Spacing from its body, as one cornered does. Those on the move it passes through, but
 ## it never paces onto one that stands, so two cornered never stand on top of each other
-## (ADR 0053).
+## (ADR 0053). The demons are those of its last _scan_packmates_near.
 func _is_pace_held_back(direction: float) -> bool:
-	return _is_held_back(direction) or is_packmate_in_the_way(direction, true)
+	return _is_held_back(direction) \
+			or (direction != 0.0 and _held_back_by_packmate[_side_of(direction)])
 
 
 ## The share of its Retreat Pace Speed at which the demon paces in direction, 1 for right and -1 for
 ## left, among the other demons on its floor going its way whose bodies overlap its own: Pace Spread
-## more in front of them all, as much less behind them all, and evenly in between (ADR 0053). Of two
-## on one spot, the one put in the scene first is ahead.
+## more in front of them all, as much less behind them all, and evenly in between (ADR 0053). The
+## demons are those of its last _scan_packmates_near.
 func _pace_share(direction: float) -> float:
-	var ahead_of_it: int = 0
-	var behind_it: int = 0
-	for mate: Demon in _packmates:
-		var ahead: float = (mate.global_position.x - global_position.x) * direction
-		if direction == 0.0 or absf(ahead) >= 2.0 * _half_size.x \
-				or signf(mate.velocity.x) != direction or not _shares_floor_with(mate):
-			continue
-		if ahead > 0.0 or (ahead == 0.0 and mate.get_instance_id() < get_instance_id()):
-			ahead_of_it += 1
-		else:
-			behind_it += 1
+	if direction == 0.0:
+		return 1.0
+	var ahead_of_it: int = _overlapping_ahead[_side_of(direction)]
+	var behind_it: int = _overlapping_behind[_side_of(direction)]
 	if ahead_of_it + behind_it == 0:
 		return 1.0
 	return 1.0 + stats.pace_spread * (behind_it - ahead_of_it) / float(ahead_of_it + behind_it)
+
+
+## One pass over the other demons on its floor near it, for _pace_back: on each side, whether one
+## that stands still no further than Pack Spacing from its body holds it back (_is_pace_held_back),
+## and how many going that way overlap its body, ahead of it and behind it (_pace_share). Of two on
+## one spot, the one put in the scene first is ahead. In a pack, each pacing demon runs it on every
+## physics frame over all the others, so it reads each one's position and velocity once, by their
+## getters, which in GDScript cost less than the properties, and tells whether it is on its floor
+## as _shares_floor_with does, with the positions already read.
+func _scan_packmates_near() -> void:
+	_held_back_by_packmate.fill(false)
+	_overlapping_ahead.fill(0)
+	_overlapping_behind.fill(0)
+	var own: Vector2 = get_global_position()
+	var reach: float = _apart_from_packmates() + PACK_TOLERANCE if stats.pack_spacing > 0.0 else 0.0
+	var overlap: float = 2.0 * _half_size.x
+	var farthest: float = maxf(reach, overlap)
+	for mate: Demon in _packmates:
+		var at: Vector2 = mate.get_global_position()
+		var apart: float = at.x - own.x
+		var distance: float = absf(apart)
+		if distance > farthest:
+			continue
+		var speed: float = mate.get_velocity().x
+		var going: float = signf(speed)
+		var stands_in_reach: bool = speed == 0.0 and apart != 0.0 and distance <= reach
+		var overlaps_going: bool = going != 0.0 and distance < overlap
+		if not (stands_in_reach or overlaps_going) or not mate.is_on_floor() \
+				or absf(at.y - own.y) >= _half_size.y:
+			continue
+		if stands_in_reach:
+			_held_back_by_packmate[_side_of(apart)] = true
+		elif apart * going > 0.0 or (apart == 0.0 and mate.get_instance_id() < get_instance_id()):
+			_overlapping_ahead[_side_of(going)] += 1
+		else:
+			_overlapping_behind[_side_of(going)] += 1
+
+
+## 0 for a direction to the left, under 0, and 1 for one to the right; 0 also for no direction.
+static func _side_of(direction: float) -> int:
+	return 1 if direction > 0.0 else 0
 
 
 ## The share of its Chase Speed at which the demon runs in direction, 1 for right and -1 for left:
@@ -996,14 +1043,14 @@ func _is_at_the_man_s_side(mate: Demon) -> bool:
 
 ## For its states: true when, with Pack Spacing, another demon on its floor stands that way, 1 for
 ## right and -1 for left, no further than Pack Spacing from its body, so it stops or turns there as
-## at a wall (ADR 0046). With standing_only, only one that stands still counts (ADR 0053).
-func is_packmate_in_the_way(direction: float, standing_only: bool = false) -> bool:
+## at a wall (ADR 0046).
+func is_packmate_in_the_way(direction: float) -> bool:
 	if stats.pack_spacing <= 0.0:
 		return false
 	for mate: Demon in _packmates:
 		var ahead: float = (mate.global_position.x - global_position.x) * direction
 		if ahead > 0.0 and ahead <= _apart_from_packmates() + PACK_TOLERANCE \
-				and (not standing_only or mate.velocity.x == 0.0) and _shares_floor_with(mate):
+				and _shares_floor_with(mate):
 			return true
 	return false
 
@@ -1343,7 +1390,8 @@ func _apart_from_packmates() -> float:
 
 
 ## True when the other demon stands on about this one's floor: on a floor, less than half a body
-## higher or lower.
+## higher or lower. _scan_packmates_near asks the same with the positions it has already read, so
+## a change here goes there too.
 func _shares_floor_with(mate: Demon) -> bool:
 	return is_instance_valid(mate) and mate.is_on_floor() \
 			and absf(mate.global_position.y - global_position.y) < _half_size.y
