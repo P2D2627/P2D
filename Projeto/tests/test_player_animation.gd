@@ -1,6 +1,6 @@
-# Checks PlayerAnimation. The choice alone: each state and velocity gives its animation, and a
-# knockback gives hurt over any of them. Missing art falls back: the wall slide to the fall, the
-# fall to the jump, the rest to idle. The jump's frame comes from the speed up or down: crouched on
+# Checks PlayerAnimation. The choice alone: each state and velocity gives its animation, a
+# knockback gives hurt over any of them, and held by a demon he shows escape over everything. Missing
+# art falls back: the wall slide to the fall, the fall to the jump, the rest to idle. The jump's frame comes from the speed up or down: crouched on
 # the take-off, then up, top, down and braced, with the top only after going up. In player.tscn:
 # standing he is idle, running he walks, in the air he jumps, and a jump from standing shows its
 # frames in order, from the crouch to the braced landing. Running, every step comes on a planted
@@ -51,6 +51,7 @@ func _each_state_and_velocity_gives_its_animation() -> bool:
 	var floor_state: Player.State = Player.State.ON_FLOOR
 	var air: Player.State = Player.State.IN_AIR
 	var wall: Player.State = Player.State.ON_WALL
+	var grabbed: Player.State = Player.State.GRABBED
 	var cases: Array[Array] = [
 		[floor_state, Vector2.ZERO, false, PlayerAnimation.IDLE],
 		[floor_state, Vector2(SLOW, 0.0), false, PlayerAnimation.IDLE],
@@ -63,6 +64,9 @@ func _each_state_and_velocity_gives_its_animation() -> bool:
 		[wall, Vector2(0.0, -FAST), false, PlayerAnimation.JUMP],
 		[floor_state, Vector2(FAST, 0.0), true, PlayerAnimation.HURT],
 		[air, Vector2(0.0, -FAST), true, PlayerAnimation.HURT],
+		[grabbed, Vector2.ZERO, false, PlayerAnimation.ESCAPE],
+		[grabbed, Vector2(0.0, FAST), false, PlayerAnimation.ESCAPE],
+		[grabbed, Vector2(FAST, 0.0), true, PlayerAnimation.ESCAPE],
 	]
 	var wrong: Array[String] = []
 	for case: Array in cases:
@@ -91,6 +95,7 @@ func _missing_art_falls_back_to_the_nearest_animation() -> bool:
 		[PlayerAnimation.WALK, with_jump, PlayerAnimation.IDLE],
 		[PlayerAnimation.WALL_SLIDE, idle_only, PlayerAnimation.IDLE],
 		[PlayerAnimation.FALL, idle_only, PlayerAnimation.IDLE],
+		[PlayerAnimation.ESCAPE, with_jump, PlayerAnimation.IDLE],
 	]
 	var wrong: Array[String] = []
 	for case: Array in cases:

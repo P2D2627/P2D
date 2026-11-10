@@ -86,10 +86,14 @@ func _physics_process(_delta: float) -> void:
 
 
 ## On the floor or on a wall the fall starts again from where the player is, so sliding down a wall
-## and landing is a short fall; in the air it keeps the highest point.
+## and landing is a short fall; in the air it keeps the highest point. Grabbed, he is on the floor
+## or in the air by where his feet are.
 func _update_fall_top() -> void:
 	var y: float = player.global_position.y
-	match player.get_state():
+	var state: Player.State = player.get_state()
+	if state == Player.State.GRABBED:
+		state = Player.State.ON_FLOOR if player.is_standing() else Player.State.IN_AIR
+	match state:
 		Player.State.IN_AIR:
 			_fall_top_y = minf(_fall_top_y, y)
 		Player.State.ON_WALL:

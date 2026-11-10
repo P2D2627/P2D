@@ -10,9 +10,10 @@ signal jumped(late_frames: int, buffered_frames: int)
 ## connected to either signal takes both values, or is connected with unbind(2); one that takes
 ## neither is not called, and the engine logs an error.
 signal wall_jumped(late_frames: int, buffered_frames: int)
-## Back on the floor after the air or a wall. Emitted when the state turns to ON_FLOOR, so the state
-## is already ON_FLOOR for whoever hears it; that is on the physics frame after the one that touched
-## the floor. The camera uses it to reframe on the new floor.
+## Back on the floor after the air or a wall. Emitted when the state turns to ON_FLOOR, or to
+## GRABBED with his feet on the floor, so the state is already one of those for whoever hears it;
+## that is on the physics frame after the one that touched the floor. The camera uses it to reframe
+## on the new floor.
 signal landed
 ## The man died: when a grab runs out of time, which the scene passes on from his GrabEscape to
 ## _on_grab_escape_died(), or when something calls die(), such as spikes. The level listens and starts
@@ -20,7 +21,9 @@ signal landed
 signal died
 
 ## Where the player is. Each state runs its own physics, and only _update_state() changes it.
-enum State { ON_FLOOR, IN_AIR, ON_WALL }
+## GRABBED is a demon's grab, from grab() to release(): it comes before the other three, on the floor
+## or off it.
+enum State { ON_FLOOR, IN_AIR, ON_WALL, GRABBED }
 
 ## Name of death's modifier on the player.
 const DEATH_SOURCE: StringName = &"death"
@@ -65,6 +68,11 @@ var _knock_off: KnockOff = KnockOff.new(self)
 ## True from hold_still() to let_go(): nothing shoves the player off what he stands on, and off the
 ## floor he is in the air, never on a wall.
 var _held_still: bool = false
+## True from grab() to release(): the next _update_state() puts him in GRABBED.
+var _grabbed: bool = false
+## True when the last _update_state() found him on the floor, so landing is heard once, grabbed or
+## not.
+var _was_on_floor: bool = false
 ## True once he has died, so he dies once.
 var _is_dead: bool = false
 
@@ -98,14 +106,22 @@ func _physics_process(delta: float) -> void:
 				_physics_in_air(delta)
 			State.ON_WALL:
 				_physics_on_wall(delta)
+			State.GRABBED:
+				_physics_grabbed(delta)
 	move_and_slide()
 	_update_facing()
 
 
-## Where the player is, for what shows or follows it, such as the debug overlay and, later, the
+## Where the player is, for what shows or follows it, such as the debug overlay and the
 ## animations. It only reads: _update_state() is still the one place that changes the state.
 func get_state() -> State:
 	return _state
+
+
+## True standing on a floor: ON_FLOOR, or GRABBED with his feet on it. For what only asks whether
+## he stands, such as the camera, which treats a man held on the floor as one standing there.
+func is_standing() -> bool:
+	return _state == State.ON_FLOOR or (_state == State.GRABBED and _was_on_floor)
 
 
 ## Puts a change to the movement on the player under source, replacing the one source had. The
@@ -162,10 +178,31 @@ func is_knocked_back() -> bool:
 	return _knockback_frames_left > 0
 
 
-## Holds the player where he is, as a demon's grab does (ADR 0021): he stops at once, a knockback
-## under way ends, and in the air he rises no more and falls straight down, since gravity still
-## pulls; against a wall too, as in the air. Until let_go(), nothing shoves him off what he stands
-## on. Keeping him from running and jumping is the holder's, with a MovementModifier.
+## A demon's grab (ADR 0021): from the next physics frame he is GRABBED until release(). He stops
+## at once and a knockback under way ends; in that state he can't run or jump, in the air he rises
+## no more and comes down straight, no faster than Grabbed Fall Speed, against a wall too, and nothing shoves
+## him off what he stands on. The animations show him trying to escape.
+func grab() -> void:
+	_grabbed = true
+	velocity = Vector2(0.0, clampf(velocity.y, 0.0, stats.grabbed_fall_speed))
+	_knockback_frames_left = 0
+
+
+## Ends grab(): on the next physics frame he is on the floor, in the air or on a wall again.
+func release() -> void:
+	_grabbed = false
+
+
+## True from grab() to release(), before the state turns to GRABBED on the next physics frame too.
+func is_grabbed() -> bool:
+	return _grabbed
+
+
+## Holds the player where he is for something that is not a grab, such as Velvet's talk or his
+## death: he stops at once, a knockback under way ends, and in the air he rises no more and falls
+## straight down at the full fall speed, since gravity still pulls; against a wall too, as in the air. Until let_go(),
+## nothing shoves him off what he stands on. Keeping him from running and jumping is the holder's,
+## with a MovementModifier. His state stays on the floor or in the air, so he does not look grabbed.
 func hold_still() -> void:
 	_held_still = true
 	velocity = Vector2(0.0, maxf(velocity.y, 0.0))
@@ -197,26 +234,29 @@ func _on_grab_escape_died() -> void:
 
 
 ## Changes the state from what the last move_and_slide() found, so the take-off frame still runs
-## as on the floor and the landing frame as in the air. The floor comes first. Getting on a wall
-## takes a push into it, from the air or from the floor; staying on it does not, so the player
-## leaves it when it no longer touches it, or lands. Held still, he is off it, so he falls as in
-## the air.
+## as on the floor and the landing frame as in the air. A grab comes first, then the floor. Getting
+## on a wall takes a push into it, from the air or from the floor; staying on it does not, so the
+## player leaves it when it no longer touches it, or lands. Held still, he is off it, so he falls as
+## in the air. Touching the floor is heard as landed once, grabbed or not.
 func _update_state() -> void:
-	if is_on_floor():
-		var was_off_the_floor: bool = _state != State.ON_FLOOR
+	var on_floor: bool = is_on_floor()
+	var touched_down: bool = on_floor and not _was_on_floor
+	_was_on_floor = on_floor
+	if _grabbed:
+		_state = State.GRABBED
+	elif on_floor:
 		_state = State.ON_FLOOR
-		if was_off_the_floor:
-			landed.emit()
-		return
-	if _held_still:
+	elif _held_still:
 		_state = State.IN_AIR
-		return
-	match _state:
-		State.ON_FLOOR, State.IN_AIR:
-			_state = State.ON_WALL if _is_pushing_into_a_wall() else State.IN_AIR
-		State.ON_WALL:
-			if not is_on_wall():
-				_state = State.IN_AIR
+	else:
+		match _state:
+			State.ON_FLOOR, State.IN_AIR, State.GRABBED:
+				_state = State.ON_WALL if _is_pushing_into_a_wall() else State.IN_AIR
+			State.ON_WALL:
+				if not is_on_wall():
+					_state = State.IN_AIR
+	if touched_down:
+		landed.emit()
 
 
 ## Turns the drawing to the last run direction; standing still keeps the last one.
@@ -229,7 +269,7 @@ func _update_facing() -> void:
 ## else. Landing is not the only way onto one: a shove that is stopped, or a demon that gets under
 ## him, leaves him there too (ADR 0022). Held still, he is not shoved.
 func _shove_off_what_cannot_be_stood_on() -> void:
-	var direction: float = _knock_off.update(knock_off_layers, _held_still)
+	var direction: float = _knock_off.update(knock_off_layers, _held_still or _grabbed)
 	if direction == 0.0:
 		return
 	velocity = Vector2(direction * stats.knock_off_speed, 0.0)
@@ -286,6 +326,20 @@ func _physics_on_wall(delta: float) -> void:
 	else:
 		_run_down_counters()
 	_apply_run(delta, _air_control())
+
+
+## Held by a demon: gravity pulls off the floor, up to Grabbed Fall Speed, and nothing else moves
+## him, so he comes down slowly and straight. No press of Jump is kept and every counter empties, so breaking free never jumps by
+## itself, nor off a wall touched before the grab.
+func _physics_grabbed(delta: float) -> void:
+	if not is_on_floor():
+		_apply_gravity(delta)
+		velocity.y = minf(velocity.y, stats.grabbed_fall_speed)
+	velocity.x = 0.0
+	_jump_buffer_frames_left = 0
+	_coyote_frames_left = 0
+	_wall_coyote_frames_left = 0
+	_wall_jump_lock_frames_left = 0
 
 
 ## A knockback carries the player at the speed across it threw him at: gravity pulls off the floor,

@@ -1,5 +1,6 @@
 # Checks SinkingDrawing on its own and in the demon's scene (ADR 0026). The drawing goes down by a
-# share of Depth, never above its feet nor past Depth, while its node stays where it is. In
+# share of Depth, never above its feet nor past Depth, while its node stays where it is. Depth is in
+# the world's px: a drawing scaled down, as the art is, goes down the same px on screen. In
 # demon.tscn, how far the man sank comes through the demon's Hitbox and sinks its drawing, and 0
 # brings it back; each demon has its own material, so one sinking leaves the others up.
 # Run from the repository root; the exit code is 0 on pass and 1 on fail:
@@ -19,6 +20,9 @@ const SETTLE_FRAMES: int = 10
 const HALF: float = 0.5
 const PAST_FULL: float = 2.0
 const ABOVE_THE_FEET: float = -1.0
+## A drawing's own scale and its parent's, as the art inside a stand-in.
+const SCALE: float = 0.25
+const PARENT_SCALE: float = 0.8
 
 
 func _initialize() -> void:
@@ -28,6 +32,8 @@ func _initialize() -> void:
 	make_platform(FLOOR_LEFT, FLOOR_RIGHT)
 	var results: Array[bool] = []
 	results.append(_it_sinks_by_a_share_of_depth_and_no_further())
+	results.append(_a_scaled_drawing_sinks_depth_in_the_world_s_px())
+	results.append(await _the_man_s_drawing_sinks_all_the_way_at_his_death())
 	results.append(await _a_demon_s_drawing_sinks_with_its_hold_alone())
 	finish(results)
 
@@ -58,6 +64,47 @@ func _it_sinks_by_a_share_of_depth_and_no_further() -> bool:
 	return verdict
 
 
+## A drawing at SCALE, inside a node at PARENT_SCALE, as the art inside the demon's stand-in: fully
+## sunk, it is Depth down in the world's px, which in its own px is Depth over both scales.
+func _a_scaled_drawing_sinks_depth_in_the_world_s_px() -> bool:
+	var parent: Node2D = Node2D.new()
+	parent.scale = Vector2.ONE * PARENT_SCALE
+	var drawing: Polygon2D = Polygon2D.new()
+	drawing.scale = Vector2.ONE * SCALE
+	parent.add_child(drawing)
+	var sinking: SinkingDrawing = SinkingDrawing.new()
+	sinking.drawing = drawing
+	root.add_child(parent)
+	root.add_child(sinking)
+	sinking.set_sink(1.0)
+	var world_down: float = _world_depth_of(drawing)
+	var passed: bool = is_equal_approx(world_down, sinking.depth)
+	var verdict: bool = report(passed,
+			"Scaled %.2f in %.2f, Depth %.1f: fully sunk %.1f world px down (%.1f of its own px)"
+			% [SCALE, PARENT_SCALE, sinking.depth, world_down, _depth_of(drawing)])
+	sinking.queue_free()
+	parent.queue_free()
+	return verdict
+
+
+## The man in his scene, fully sunk, as at his death: his drawing is Depth down in the world's px,
+## which is at least his body's height, so none of it shows above the floor.
+func _the_man_s_drawing_sinks_all_the_way_at_his_death() -> bool:
+	var man: Player = await spawn_on_floor(Vector2(0.0, -2.0))
+	if man == null:
+		return report(false, "The man's drawing: he never landed")
+	var sinking: SinkingDrawing = man.get_node(^"SinkingDrawing") as SinkingDrawing
+	sinking.set_sink(1.0)
+	var world_down: float = _world_depth_of(sinking.drawing)
+	var height: float = body_size(man).y
+	var passed: bool = world_down >= height - 0.5
+	var verdict: bool = report(passed,
+			"The man fully sunk: drawing %.1f world px down, his body %.1f px high"
+			% [world_down, height])
+	await remove_player(man)
+	return verdict
+
+
 ## Two demons on the floor. HALF, through the first one's Hitbox, sinks its drawing HALF of its
 ## Depth, and 0 brings it back; the second one's drawing stays up all along.
 func _a_demon_s_drawing_sinks_with_its_hold_alone() -> bool:
@@ -65,12 +112,14 @@ func _a_demon_s_drawing_sinks_with_its_hold_alone() -> bool:
 	var second: Demon = _spawn_demon(SECOND_DEMON_START)
 	await wait_frames(SETTLE_FRAMES)
 	var hitbox: Hitbox = first.get_node(^"Hitbox") as Hitbox
-	var depth: float = (first.get_node(^"SinkingDrawing") as SinkingDrawing).depth
+	var first_sinking: SinkingDrawing = first.get_node(^"SinkingDrawing") as SinkingDrawing
+	var second_sinking: SinkingDrawing = second.get_node(^"SinkingDrawing") as SinkingDrawing
+	var depth: float = first_sinking.depth
 	hitbox.sink_hold(HALF)
-	var first_down: float = _depth_of(first.get_node(^"Placeholder") as CanvasItem)
-	var second_down: float = _depth_of(second.get_node(^"Placeholder") as CanvasItem)
+	var first_down: float = _world_depth_of(first_sinking.drawing)
+	var second_down: float = _world_depth_of(second_sinking.drawing)
 	hitbox.sink_hold(0.0)
-	var first_back: float = _depth_of(first.get_node(^"Placeholder") as CanvasItem)
+	var first_back: float = _world_depth_of(first_sinking.drawing)
 	var passed: bool = (is_equal_approx(first_down, HALF * depth) and second_down == 0.0
 			and first_back == 0.0)
 	var verdict: bool = report(passed,
@@ -88,7 +137,12 @@ func _spawn_demon(start: Vector2) -> Demon:
 	return demon
 
 
-## Px the drawing is down now, as its shader has it.
+## World px the drawing is down now: its shader's px times the drawing's scale on screen.
+func _world_depth_of(drawing: CanvasItem) -> float:
+	return _depth_of(drawing) * absf(drawing.get_global_transform().get_scale().y)
+
+
+## Px the drawing is down now, in its own px, as its shader has it.
 func _depth_of(drawing: CanvasItem) -> float:
 	return float((drawing.material as ShaderMaterial).get_shader_parameter(
 			SinkingDrawing.DEPTH_PARAMETER))

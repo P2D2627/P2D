@@ -15,7 +15,11 @@
 # the time runs out, so a man who can't move never looks free. Held, his drawing sinks at the pace
 # of Time To Die while he stays where he is, is all the way down when he dies, and is back up on the
 # frame he breaks free (ADR 0026); the demons holding him hear how far he sank, one that joins from
-# where he is, and 0 before they let go. The timing cases give the grab its own copy of Grab Stats
+# where he is, and 0 before they let go. The grab is the man's own state, GRABBED, from the frame
+# after the bite until the frame after he breaks free, in the air and on landing too, which he still
+# hears as landed; grabbed in the air, he falls no faster than Grabbed Fall Speed, so the escape
+# shows on the way down; his drawing shows escape, at Escape FPS and looping, while he is in it. Held still
+# by something else, as while Velvet talks, he is not GRABBED. The timing cases give the grab its own copy of Grab Stats
 # with a short Time To Die, so they do not wait 3 s each.
 # Run from the repository root; the exit code is 0 on pass and 1 on fail:
 # godot --headless --fixed-fps 60 --path Projeto --script res://tests/test_grab_escape.gd
@@ -57,6 +61,11 @@ const WALL_HEIGHT: float = 600.0
 ## Time To Die in the timing cases, and the physics frames the pause case stays paused: longer.
 const SHORT_TIME_TO_DIE: float = 0.5
 const PAUSE_FRAMES: int = 60
+## How high a grabbed man is lifted to fall from, in px.
+const LIFT: float = 300.0
+## The man's animation while he is held, and how fast it plays.
+const ESCAPE: StringName = &"escape"
+const ESCAPE_FPS: float = 4.0
 ## Presses before the prompt's bar is read.
 const PROMPT_PRESSES: int = 3
 ## Presses, or frames, to give up after.
@@ -89,6 +98,10 @@ func _initialize() -> void:
 	results.append(await _his_drawing_sinks_with_the_time_and_is_back_as_he_breaks_free())
 	results.append(await _dead_his_drawing_is_all_the_way_down())
 	results.append(await _the_demons_holding_him_sink_with_him_and_come_back_up())
+	results.append(await _held_he_is_grabbed_and_shows_escape_until_he_breaks_free())
+	results.append(await _grabbed_in_the_air_he_stays_grabbed_and_lands())
+	results.append(await _held_still_by_something_else_he_is_not_grabbed())
+	results.append(await _grabbed_high_up_he_falls_slowly())
 	finish(results)
 
 
@@ -756,6 +769,130 @@ func _the_demons_holding_him_sink_with_him_and_come_back_up() -> bool:
 
 
 ## A man on the floor, with a stand-in input and SP below Low Threshold; null if he never lands.
+## On the floor before the bite; GRABBED, with escape playing at ESCAPE_FPS in a loop, from the
+## frame after it; free, on the floor again, standing idle.
+func _held_he_is_grabbed_and_shows_escape_until_he_breaks_free() -> bool:
+	var man: Player = await _low_sp_man()
+	if man == null:
+		return report(false, "Grabbed state: the man never landed")
+	var stand_in: StandInInput = man.input as StandInInput
+	var escape: GrabEscape = _escape_of(man)
+	var sprite: AnimatedSprite2D = man.get_node(^"Sprite") as AnimatedSprite2D
+	await wait_frames(SETTLE_FRAMES)
+	var before: Player.State = man.get_state()
+	var bite: Hitbox = await _bite_and_wait_for_the_grab(man)
+	await physics_frame
+	await process_frame
+	var held_state: Player.State = man.get_state()
+	var shown: StringName = sprite.animation
+	var playing: bool = sprite.is_playing()
+	var fps: float = sprite.sprite_frames.get_animation_speed(ESCAPE) if (
+			sprite.sprite_frames.has_animation(ESCAPE)) else 0.0
+	var loops: bool = sprite.sprite_frames.has_animation(ESCAPE) and (
+			sprite.sprite_frames.get_animation_loop(ESCAPE))
+	await _press_until_free(escape, stand_in)
+	await physics_frame
+	await process_frame
+	var free_state: Player.State = man.get_state()
+	var free_shown: StringName = sprite.animation
+	var passed: bool = (before == Player.State.ON_FLOOR and held_state == Player.State.GRABBED
+			and shown == ESCAPE and playing and is_equal_approx(fps, ESCAPE_FPS) and loops
+			and free_state == Player.State.ON_FLOOR and free_shown == &"idle")
+	var verdict: bool = report(passed,
+			("Grabbed state: %s before, %s held showing %s (playing %s, %.0f fps, loop %s), %s "
+			+ "free showing %s") % [_state_name(before), _state_name(held_state), shown, playing,
+			fps, loops, _state_name(free_state), free_shown])
+	bite.queue_free()
+	await remove_player(man)
+	return verdict
+
+
+## Grabbed going up in a jump, the man is GRABBED on every frame until he lands and after it, and
+## the landing is heard once, as the camera needs.
+func _grabbed_in_the_air_he_stays_grabbed_and_lands() -> bool:
+	var man: Player = await _low_sp_man()
+	if man == null:
+		return report(false, "Grabbed in the air: the man never landed")
+	var stand_in: StandInInput = man.input as StandInInput
+	stand_in.hold_jump = true
+	stand_in.press_jump()
+	await wait_frames(RISE_FRAMES)
+	var bite: Hitbox = await _bite_and_wait_for_the_grab(man)
+	await physics_frame
+	var landings: Array[int] = [0]
+	man.landed.connect(func() -> void: landings[0] += 1)
+	var other_states: Array[String] = []
+	var landed: bool = false
+	for _frame: int in MOST_FRAMES:
+		if man.get_state() != Player.State.GRABBED:
+			other_states.append(_state_name(man.get_state()))
+		if landed:
+			break
+		landed = man.is_on_floor()
+		await physics_frame
+	await wait_frames(SETTLE_FRAMES)
+	var still_grabbed: bool = man.get_state() == Player.State.GRABBED
+	var passed: bool = landed and other_states.is_empty() and still_grabbed and landings[0] == 1
+	var verdict: bool = report(passed,
+			("Grabbed in the air: landed %s, other states %s, grabbed after landing %s, landings "
+			+ "heard %d") % [landed, other_states, still_grabbed, landings[0]])
+	bite.queue_free()
+	await remove_player(man)
+	return verdict
+
+
+## Held still as Velvet holds him while she talks, the man stays on the floor, standing idle.
+func _held_still_by_something_else_he_is_not_grabbed() -> bool:
+	var man: Player = await _low_sp_man()
+	if man == null:
+		return report(false, "Held still: the man never landed")
+	var sprite: AnimatedSprite2D = man.get_node(^"Sprite") as AnimatedSprite2D
+	man.hold_still()
+	await wait_frames(SETTLE_FRAMES)
+	await process_frame
+	var state: Player.State = man.get_state()
+	var shown: StringName = sprite.animation
+	man.let_go()
+	var passed: bool = state == Player.State.ON_FLOOR and shown == &"idle"
+	var verdict: bool = report(passed, "Held still: %s, showing %s" % [_state_name(state), shown])
+	await remove_player(man)
+	return verdict
+
+
+## Grabbed on the floor and lifted LIFT px, as when a lunge grabs him at the top of a jump: he
+## never falls faster than Grabbed Fall Speed, so the fall takes at least LIFT over that speed.
+func _grabbed_high_up_he_falls_slowly() -> bool:
+	var man: Player = await _low_sp_man()
+	if man == null:
+		return report(false, "Grabbed high up: the man never landed")
+	var bite: Hitbox = await _bite_and_wait_for_the_grab(man)
+	await physics_frame
+	man.position.y -= LIFT
+	var fastest: float = 0.0
+	var frames: int = 0
+	var landed: bool = false
+	for _frame: int in MOST_FRAMES:
+		await physics_frame
+		frames += 1
+		fastest = maxf(fastest, man.velocity.y)
+		if man.is_on_floor():
+			landed = true
+			break
+	var top_speed: float = man.stats.grabbed_fall_speed
+	var least_frames: int = floori(LIFT / top_speed * Engine.physics_ticks_per_second)
+	var passed: bool = landed and fastest <= top_speed + 0.01 and frames >= least_frames
+	var verdict: bool = report(passed,
+			("Grabbed %.0f px up: fell at up to %.0f px/s (Grabbed Fall Speed %.0f), landed %s after "
+			+ "%d frames (at least %d)") % [LIFT, fastest, top_speed, landed, frames, least_frames])
+	bite.queue_free()
+	await remove_player(man)
+	return verdict
+
+
+func _state_name(state: Player.State) -> String:
+	return str(Player.State.find_key(state))
+
+
 func _low_sp_man() -> Player:
 	var man: Player = await spawn_on_floor(START)
 	if man == null:
@@ -840,11 +977,13 @@ func _signals_of(escape: GrabEscape) -> Array[StringName]:
 	return heard
 
 
-## Px the man's drawing is down now, as its shader has it.
+## World px the man's drawing is down now: its shader's px, in the drawing's own px, times the
+## drawing's scale on screen, as SinkingDrawing's Depth is.
 func _sink_depth_of(man: Player) -> float:
 	var drawing: CanvasItem = man.get_node(^"Sprite") as CanvasItem
-	return float((drawing.material as ShaderMaterial).get_shader_parameter(
+	var own_px: float = float((drawing.material as ShaderMaterial).get_shader_parameter(
 			SinkingDrawing.DEPTH_PARAMETER))
+	return own_px * absf(drawing.get_global_transform().get_scale().y)
 
 
 func _escape_of(man: Player) -> GrabEscape:

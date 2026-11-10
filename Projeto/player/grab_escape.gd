@@ -1,8 +1,9 @@
 class_name GrabEscape
 extends Node
 
-## The grab on the man (ADR 0021). A hit that grabs, heard from his HitReaction, holds him where he
-## is, with no run and no jump: he stops at once, and in the air he falls straight down. Jump fills
+## The grab on the man (ADR 0021). A hit that grabs, heard from his HitReaction, puts him in his
+## GRABBED state with Player.grab(), which holds him where he is, with no run and no jump: he stops
+## at once, and in the air he falls straight down. Player.release() ends it as he breaks free. Jump fills
 ## GrabRules until he breaks free or dies. Each press counts; with Hold To Escape on, holding counts
 ## instead, from a press made in the grab on, so a jump held from before gives nothing. Free, he
 ## stays invulnerable for a moment, so the demon does not grab him again at once. It tells the
@@ -29,7 +30,7 @@ signal broke_free
 ## starting over, listens to this.
 signal died
 
-## Name of the grab's modifier on the player, and of the grab when it keeps the crucifix down.
+## Name of the grab when it keeps the crucifix down.
 const SOURCE: StringName = &"grab"
 
 @export var player: Player
@@ -51,8 +52,6 @@ var _rules: GrabRules = null
 var _pressed_in_grab: bool = false
 ## The Hitboxes holding the man in this grab, GrabRules.MAX_DEMONS at most.
 var _holders: Array[Hitbox] = []
-## No run and no jump while the man is held. The same one for every grab.
-var _modifier: MovementModifier = MovementModifier.new(0.0, 1.0, true)
 
 
 func _ready() -> void:
@@ -104,8 +103,7 @@ func _start_grab(hitbox: Hitbox) -> void:
 	_rules = GrabRules.new(stats)
 	_pressed_in_grab = false
 	hit_reaction.hold()
-	player.add_movement_modifier(SOURCE, _modifier)
-	player.hold_still()
+	player.grab()
 	_holders.clear()
 	_holders.append(hitbox)
 	hitbox.start_hold(hurtbox)
@@ -131,8 +129,7 @@ func _close_when_full() -> void:
 ## and open to hits again once that is over.
 func _break_free() -> void:
 	hit_reaction.release()
-	player.remove_movement_modifier(SOURCE)
-	player.let_go()
+	player.release()
 	hurtbox.start_invulnerability(invulnerable_time)
 	hurtbox.set_closed(false)
 	_sink(0.0)

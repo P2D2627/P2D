@@ -3,7 +3,8 @@ extends Node
 
 ## Plays the man's animation for where he is and how he moves: on the floor idle or walk, in the air
 ## jump going up and fall coming down, on a wall wall_slide, or jump while still going up it, and
-## hurt while a knockback carries him. It only shows; the player keeps the state. An animation the
+## hurt while a knockback carries him, and escape while a demon holds him (GRABBED), over all the
+## rest. It only shows; the player keeps the state. An animation the
 ## Sprite has no frames for yet falls back to the nearest one it has (see fallback_for), so new art
 ## only has to go into the SpriteFrames under its name.
 ##
@@ -23,6 +24,7 @@ const JUMP: StringName = &"jump"
 const FALL: StringName = &"fall"
 const WALL_SLIDE: StringName = &"wall_slide"
 const HURT: StringName = &"hurt"
+const ESCAPE: StringName = &"escape"
 ## What _last_walk_frame holds while he is not walking.
 const NOT_WALKING: int = -1
 ## The jump's frames, as main_character_jump draws them: crouched to push off, stretching on the
@@ -82,7 +84,8 @@ func _process(delta: float) -> void:
 		_rose = true
 	# The jump's own frame on the floor still shows the take-off: the state turns IN_AIR a frame
 	# later.
-	var taking_off: bool = _take_off_left > 0.0 and not player.is_knocked_back()
+	var taking_off: bool = (_take_off_left > 0.0 and not player.is_knocked_back()
+			and player.get_state() != Player.State.GRABBED)
 	var choice: StringName = JUMP if taking_off else animation_for(player.get_state(),
 			player.velocity, player.is_knocked_back(), walk_min_speed)
 	var animation: StringName = shown_animation(choice, sprite.sprite_frames)
@@ -106,9 +109,11 @@ func _process(delta: float) -> void:
 
 
 ## The animation for a state, a velocity and a knockback, whether the SpriteFrames has it or not. Up
-## is a negative velocity.y, so the top of a jump, at 0, already falls.
+## is a negative velocity.y, so the top of a jump, at 0, already falls. Grabbed comes first.
 static func animation_for(state: Player.State, velocity: Vector2, knocked_back: bool,
 		walk_min_speed: float) -> StringName:
+	if state == Player.State.GRABBED:
+		return ESCAPE
 	if knocked_back:
 		return HURT
 	match state:

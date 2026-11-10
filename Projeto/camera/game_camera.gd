@@ -80,7 +80,7 @@ func _ready() -> void:
 	_focus = player.global_position
 	_last_player_x = _focus.x
 	_turn_reference_x = _focus.x
-	if player.get_state() == Player.State.ON_FLOOR:
+	if player.is_standing():
 		_ground_y = _focus.y
 	player.landed.connect(_on_player_landed)
 	_body = _find_body()
@@ -270,9 +270,9 @@ func _is_idle() -> bool:
 	return _idle_time >= stats.idle_delay
 
 
-## Still means on a floor, not asking to run and not moving.
+## Still means on a floor, held there by a demon too, not asking to run and not moving.
 func _update_idle(delta: float) -> void:
-	var still: bool = (player.get_state() == Player.State.ON_FLOOR
+	var still: bool = (player.is_standing()
 			and player.velocity.length() < IDLE_SPEED
 			and (not is_instance_valid(player.input) or player.input.get_run_direction() == 0.0))
 	_idle_time = _idle_time + delta if still else 0.0
@@ -506,7 +506,7 @@ func _next_lookout(point: Vector2) -> CameraLookout:
 	if not _is_live(_lookout) or not _lookout.get_view().has_point(point):
 		return null
 	var body: Rect2 = Rect2(point + _body.position, _body.size).grow(LOOKOUT_LET_GO)
-	if (player.get_state() != Player.State.ON_FLOOR or not player.get_platform_velocity().is_zero_approx()
+	if (not player.is_standing() or not player.get_platform_velocity().is_zero_approx()
 			or _lookout.touches(body)):
 		return _lookout
 	return null

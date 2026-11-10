@@ -17,6 +17,9 @@ extends Resource
 @export_range(0.0, 20000.0, 10.0, "suffix:px/s²") var fall_gravity: float = 7850.0
 ## Top falling speed, in px/s.
 @export_range(0.0, 5000.0, 10.0, "suffix:px/s") var max_fall_speed: float = 1400.0
+## Top falling speed while a demon holds him in the air (GRABBED), in px/s: slow, so his escape shows
+## on the way down and the demon holding him comes down with him.
+@export_range(10.0, 2000.0, 10.0, "suffix:px/s") var grabbed_fall_speed: float = 250.0
 
 @export_group("Jump")
 ## Height of a full jump, from the floor to the top, in px.
@@ -50,9 +53,10 @@ extends Resource
 @export_range(0.0, 1.0, 0.01, "suffix:s") var knockback_max_time: float = 0.4
 ## Speed across, in px/s, at which landing on a body the player can't stand on, such as a demon,
 ## shoves him off it sideways, never up. He keeps it, with no run nor jump, until he lands on
-## something else, or for Knockback Max Time at most. Near top run speed, so it reads as a shove: from
-## right over a demon's middle he is off it in about 5 physics frames.
-@export_range(1.0, 2000.0, 10.0, "suffix:px/s") var knock_off_speed: float = 600.0
+## something else, or for Knockback Max Time at most. Top run speed, so it reads as a shove: from
+## right over the middle of a dog, 112 px long, he is off it in about 7 physics frames, and off the
+## middle of a pack of three, close together, within a third of a second (ADR 0047).
+@export_range(1.0, 2000.0, 10.0, "suffix:px/s") var knock_off_speed: float = 720.0
 
 
 ## Upward speed when leaving the floor, in px/s. Comes from jump_height and time_to_peak.

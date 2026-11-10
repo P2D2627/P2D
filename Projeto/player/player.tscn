@@ -26,6 +26,7 @@
 [ext_resource type="Script" uid="uid://cluvnfuwg430j" path="res://components/sinking_drawing.gd" id="13_sinking_drawing"]
 [ext_resource type="Script" uid="uid://cnf6ppd87trgl" path="res://player/player_animation.gd" id="14_animation"]
 [ext_resource type="Texture2D" path="res://assets/sprites/player/main_character_jump_384.png" id="15_jump"]
+[ext_resource type="Texture2D" path="res://assets/sprites/player/main_character_escape_384.png" id="16_escape"]
 
 [sub_resource type="RectangleShape2D" id="RectangleShape2D_player"]
 size = Vector2(48, 96)
@@ -114,6 +115,22 @@ region = Rect2(1152, 0, 384, 384)
 atlas = ExtResource("15_jump")
 region = Rect2(1536, 0, 384, 384)
 
+[sub_resource type="AtlasTexture" id="AtlasTexture_escape0"]
+atlas = ExtResource("16_escape")
+region = Rect2(0, 0, 384, 384)
+
+[sub_resource type="AtlasTexture" id="AtlasTexture_escape1"]
+atlas = ExtResource("16_escape")
+region = Rect2(384, 0, 384, 384)
+
+[sub_resource type="AtlasTexture" id="AtlasTexture_escape2"]
+atlas = ExtResource("16_escape")
+region = Rect2(768, 0, 384, 384)
+
+[sub_resource type="AtlasTexture" id="AtlasTexture_escape3"]
+atlas = ExtResource("16_escape")
+region = Rect2(1152, 0, 384, 384)
+
 [sub_resource type="SpriteFrames" id="SpriteFrames_g4v7s"]
 animations = [{
 "frames": [{
@@ -131,6 +148,23 @@ animations = [{
 }],
 "loop": 1,
 "name": &"idle",
+"speed": 4.0
+}, {
+"frames": [{
+"duration": 1.0,
+"texture": SubResource("AtlasTexture_escape0")
+}, {
+"duration": 1.0,
+"texture": SubResource("AtlasTexture_escape1")
+}, {
+"duration": 1.0,
+"texture": SubResource("AtlasTexture_escape2")
+}, {
+"duration": 1.0,
+"texture": SubResource("AtlasTexture_escape3")
+}],
+"loop": true,
+"name": &"escape",
 "speed": 4.0
 }, {
 "frames": [{
@@ -279,7 +313,6 @@ drawing = NodePath("../Sprite")
 [node name="SinkingDrawing" type="Node" parent="." unique_id=1525169649 node_paths=PackedStringArray("drawing")]
 script = ExtResource("13_sinking_drawing")
 drawing = NodePath("../Sprite")
-depth = 1939.0
 
 [node name="GrabEscape" type="Node" parent="." unique_id=2118157939 node_paths=PackedStringArray("player", "hit_reaction", "hurtbox")]
 script = ExtResource("10_grab_escape")
