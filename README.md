@@ -405,8 +405,17 @@ ajusta no Inspector. Por agora são formas provisórias, até chegar a arte.
 
 A largura e a altura destes elementos definem-se em tiles, no Inspector. A morte imediata é o método
 `die()` da personagem, que a imobiliza e fecha a sua caixa de dano, enquanto o nível recomeça. O cão
-grande (`demon/big_demon.tscn`) é, por agora, um demónio normal pintado de preto, para se distinguir
-no mapa. O maior cão (`demon/biggest_demon.tscn`), no fim da fase 3 do nível 1, é o demónio normal oito
+grande (`demon/big_demon.tscn`), na fase 2 do nível 1, é o demónio normal 1,25 vezes maior: o corpo
+(140 × 70 px), a caixa de ataque, a arte e as verificações aos pés. No ecrã, distingue-se do cão
+normal pelo tamanho e pela arte, escurecida a 60 % do brilho, para que a diferença se leia de
+relance e não dependa só do tamanho; os avisos de ataque clareiam-na na mesma proporção que no cão
+normal. Tem valores próprios (`demon/big_demon_stats.tres`), iguais aos do cão normal
+exceto no dano: 25 SP no salto e 12,5 SP na mordida, contra 20 e 10. A fase 2 fica assim mais
+exigente: com 100 SP e sem tempo para regenerar, o quarto salto do cão grande já agarra a personagem,
+em vez do quinto. O `test_big_dog.gd` falha se os valores dos dois cães diferirem em algo além do
+dano, para que nenhuma afinação do cão normal fique por passar para o grande. Falha também se a arte
+do cão grande deixar de ser mais escura, parado, a avisar ou atordoado. O maior cão
+(`demon/biggest_demon.tscn`), no fim da fase 3 do nível 1, é o demónio normal oito
 vezes maior (corpo de 896 × 448 px, caixa de ataque, arte e verificações aos pés) com um anel de
 proximidade de 736 px de alcance à volta do meio do corpo: chegar perto dele abre os portões da sua
 lista Opens. Por agora não faz mais nada de diferente de um cão normal.
@@ -919,6 +928,7 @@ godot --headless --fixed-fps 60 --path Projeto --script res://tests/test_lust_ph
 godot --headless --fixed-fps 60 --path Projeto --script res://tests/test_lust_phase_2_route.gd
 godot --headless --fixed-fps 60 --path Projeto --script res://tests/test_level1.gd
 godot --headless --fixed-fps 60 --path Projeto --script res://tests/test_level1_route.gd
+godot --headless --fixed-fps 60 --path Projeto --script res://tests/test_big_dog.gd
 godot --headless --fixed-fps 60 --path Projeto --script res://tests/test_biggest_dog.gd
 godot --headless --fixed-fps 60 --path Projeto --script res://tests/test_level1_phase3.gd
 godot --headless --fixed-fps 60 --path Projeto --script res://tests/test_level1_phase3_route.gd
@@ -1385,7 +1395,8 @@ ligação da cena.
 Todos os demónios que perseguem a personagem, em todos os níveis, usam uma só cena,
 `demon/demon.tscn`, com os valores num `Resource`, `DemonStats`, como o movimento, o crucifixo e os
 SP. Cada ataque é outro `Resource`, `DemonAttack`, e o `DemonStats` tem a lista dos ataques do
-demónio. Os do nível 1 estão em `demon/lust_demon_stats.tres`; os demónios de um nível novo são
+demónio. Os do nível 1 estão em `demon/lust_demon_stats.tres`, e os do cão grande, iguais exceto no
+dano, em `demon/big_demon_stats.tres`; os demónios de um nível novo são
 outro ficheiro com os mesmos campos, outros ataques e outra arte, sem código novo.
 
 As personagens dividem-se pelo que fazem, e não pela história: as que perseguem usam esta cena, e as
