@@ -1,8 +1,9 @@
 # Shared by the route tests: plays a level from start to finish with the real man in the real scene, without the
 # dogs. A stand-in input repeats, move by move, the way a paper check found (a .json made by the tools outside the
 # repository, which only know the movement's numbers). Before each jump he is put on that floor or wall, so a hop
-# that fails is reported on its own and the rest still run. At an unlocker it raises the crucifix, sees the gate
-# open and goes through, and it ends walking into the way out. It says how many moves worked as the check said,
+# that fails is reported on its own and the rest still run. At an unlocker it waits for the crucifix to cool down
+# from the last one, raises it, sees the gate open and goes through, and it ends walking into the way out. A "walkback" move goes off an edge, falls straight
+# and, from a given frame, pushes back the other way. It says how many moves worked as the check said,
 # and fails if the man dies, an unlocker or gate does not work, or a move does not get where it should. A test
 # extends this file, with
 # extends "res://tests/support/route_test.gd"
@@ -17,6 +18,8 @@ const SETTLE_FRAMES: int = 3
 const WAIT_FRAMES: int = 240
 ## How far above a floor the feet may be and still stand on it, in px.
 const ON_TOP: float = 2.0
+## How far from the height the check had him on a wall he may touch it and still be there, in px: half a tile.
+const ON_THE_WALL: float = 24.0
 
 var _level: Node
 var _player: Player
@@ -117,6 +120,12 @@ func _play(step: Dictionary) -> void:
 			# after the jump.
 			var side: float = float(move["side"])
 			_player.global_position = Vector2(float(move["x"]), float(move["y"]))
+			# Put there from a floor, Godot would still count him on it: with Floor Block On Wall, a body that was on
+			# the floor and meets a wall stays on the floor, so the push would end on a floor and the jump would be
+			# one from the floor. A player comes to a wall through the air: one still move there first, with
+			# nothing under him, takes the floor away.
+			_player.velocity = Vector2.ZERO
+			_player.move_and_slide()
 			_player.velocity = Vector2(side * _player.stats.max_run_speed, 0.0)
 			_stand_in.run_direction = side
 			await physics_frame
@@ -124,9 +133,19 @@ func _play(step: Dictionary) -> void:
 			_stand_in.press_jump()
 		"letgo":
 			_stand_in.run_direction = 0.0
+		"walkback":
+			# Off the edge with the run, then let go and fall straight, as down a shaft with spikes on its walls;
+			# at the switch's frame, push the other way, out from under the shaft.
+			_stand_in.run_direction = 0.0
+			_player.global_position = Vector2(float(move["x"]), float(move["y"]))
+			_player.velocity = Vector2(float(move["vx"]), 0.0)
 	var stop: Variant = move.get("stop")
+	var switch: Array = move.get("switch", [])
 	var moved: bool = false
-	for _frame: int in MOVE_FRAMES:
+	for frame: int in MOVE_FRAMES:
+		if not switch.is_empty() and frame == int(switch[0]):
+			_stand_in.run_direction = float(switch[1])
+			stop = float(switch[2])
 		await physics_frame
 		if _player.is_dead():
 			break
@@ -156,7 +175,9 @@ func _got_there(target: Dictionary) -> bool:
 		return _player.global_position.x >= first and _player.global_position.x <= last
 	if not _player.is_on_wall():
 		return false
-	return signf(_player.get_wall_normal().x) == -float(target["side"])
+	# On that wall, and near the height the check had him there: not further down it, on the floor at its foot.
+	return (signf(_player.get_wall_normal().x) == -float(target["side"])
+			and absf(_player.global_position.y - float(target["y"])) <= ON_THE_WALL)
 
 
 ## After a move that failed, puts him where it should have got to, so the rest can still be played.
@@ -173,10 +194,14 @@ func _put_at_target(target: Dictionary) -> void:
 func _use_unlocker(leg: Dictionary) -> bool:
 	var unlocker: GateUnlocker = _level.get_node("GateUnlockers/%s" % leg["unlocker"]) as GateUnlocker
 	_stand_in.run_direction = 0.0
-	# Walks to the spot of the floor within the crucifix's reach, and raises it there.
+	# Walks to the spot of the floor within the crucifix's reach, waits, as a player does, for the crucifix to
+	# cool down from the last unlocker, and raises it there.
 	_player.global_position = Vector2(float(leg["stand_x"]), float(leg["stand_row"]) * TILE - 0.1)
 	_player.velocity = Vector2.ZERO
 	await wait_frames(SETTLE_FRAMES)
+	var crucifix: Crucifix = _player.get_node("Crucifix") as Crucifix
+	await wait_until(func() -> bool: return crucifix.get_phase() == Crucifix.Phase.READY,
+			crucifix.stats.get_cooldown_frames() + SETTLE_FRAMES)
 	_stand_in.crucifix_held = true
 	var used: bool = await wait_until(unlocker.is_activated, WAIT_FRAMES)
 	_stand_in.crucifix_held = false

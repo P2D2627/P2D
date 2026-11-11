@@ -2,7 +2,8 @@
 # opens nothing; raised next to it, it opens every gate on its list, once, and leaves the unlocker where
 # it was and darker. The gate slides up by its own height in Slide Time, says so at the start and at the
 # end, and the man then walks through. The size sets each instance alone, and the gate is on the world's
-# layer, so demons stop at it and do not see through it.
+# layer, so demons stop at it and do not see through it. A trapdoor (Slide Way left or right) slides sideways
+# by its width instead, and keeps its height.
 # Run from the repository root; the exit code is 0 on pass and 1 on fail:
 # godot --headless --fixed-fps 60 --path Projeto --script res://tests/test_gate.gd
 extends "res://tests/support/player_test.gd"
@@ -28,6 +29,9 @@ const RAISED_FRAMES: int = 30
 const FACE_TOLERANCE: float = 2.0
 ## How long the slide may differ from Slide Time, in frames.
 const SLIDE_TOLERANCE_FRAMES: int = 2
+## A trapdoor across a drop, away from the floor the man runs on.
+const TRAPDOOR_WIDTH: int = 5
+const TRAPDOOR_AT: Vector2 = Vector2(0.0, -2000.0)
 
 
 func _initialize() -> void:
@@ -45,6 +49,8 @@ func _initialize() -> void:
 	results.append(await _next_to_it_it_opens_every_gate_and_the_man_walks_through(gate, other_gate, unlocker))
 	results.append(_the_size_sets_each_gate_alone(gate))
 	results.append(report(gate.collision_layer == WORLD_LAYER, "Layer: %d" % gate.collision_layer))
+	results.append(await _a_trapdoor_slides_sideways_by_its_width(Gate.SlideWay.LEFT))
+	results.append(await _a_trapdoor_slides_sideways_by_its_width(Gate.SlideWay.RIGHT))
 	finish(results)
 
 
@@ -115,6 +121,26 @@ func _next_to_it_it_opens_every_gate_and_the_man_walks_through(gate: Gate, other
 			and is_equal_approx(risen, gate.height_tiles * TILE) and ok_slide and through and unlocker.position == at,
 			"Near: used %s, darker %s, %d activation(s), %d unlock(s), other gate %s, rose %.1f px, slid in %d frames (%d expected), walked through %s"
 			% [used, darker, activations[0], unlocks[0], other_gate.is_unlocked(), risen, slide_frames, expected_frames, through])
+
+
+## A gate lying across a drop, five tiles wide and one high, slides sideways by its width and stays at its height.
+func _a_trapdoor_slides_sideways_by_its_width(way: Gate.SlideWay) -> bool:
+	var trapdoor: Gate = GATE_SCENE.instantiate() as Gate
+	trapdoor.width_tiles = TRAPDOOR_WIDTH
+	trapdoor.height_tiles = 1
+	trapdoor.slide_way = way
+	trapdoor.position = TRAPDOOR_AT
+	root.add_child(trapdoor)
+	var opened: Array[bool] = [false]
+	trapdoor.opened.connect(func() -> void: opened[0] = true)
+	trapdoor.unlock()
+	await wait_until(func() -> bool: return opened[0], RUN_FRAMES)
+	var moved: Vector2 = trapdoor.position - TRAPDOOR_AT
+	trapdoor.queue_free()
+	var side: float = -1.0 if way == Gate.SlideWay.LEFT else 1.0
+	var expected: Vector2 = Vector2(side * TRAPDOOR_WIDTH * TILE, 0.0)
+	return report(opened[0] and moved.is_equal_approx(expected), "Trapdoor %s: opened %s, moved %s, %s expected"
+			% [Gate.SlideWay.keys()[way], opened[0], moved, expected])
 
 
 func _the_size_sets_each_gate_alone(gate: Gate) -> bool:

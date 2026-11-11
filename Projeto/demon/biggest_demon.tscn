@@ -1,0 +1,59 @@
+[gd_scene format=3]
+
+[ext_resource type="PackedScene" path="res://demon/demon.tscn" id="1_demon"]
+[ext_resource type="Script" path="res://demon/biggest_demon.gd" id="2_script"]
+[ext_resource type="PackedScene" path="res://gates/proximity_unlocker.tscn" id="3_ring"]
+
+[sub_resource type="RectangleShape2D" id="RectangleShape2D_body"]
+size = Vector2(896, 448)
+
+[sub_resource type="RectangleShape2D" id="RectangleShape2D_hit"]
+size = Vector2(1280, 448)
+
+[node name="BiggestDemon" instance=ExtResource("1_demon")]
+editor_description = "The regular dog eight times over: body, hit box, art and the checks at his feet. GateRing opens the gates set on Opens the first time the man comes inside it."
+script = ExtResource("2_script")
+
+[node name="CollisionShape2D" parent="." index="0"]
+position = Vector2(0, -224)
+shape = SubResource("RectangleShape2D_body")
+
+[node name="Placeholder" parent="." index="1"]
+polygon = PackedVector2Array(-448, -448, 448, -448, 448, 0, -448, 0)
+
+[node name="Sprite" parent="." index="2"]
+scale = Vector2(4, 4)
+
+[node name="Mark" parent="." index="4"]
+position = Vector2(0, -896)
+
+[node name="DemonSounds" parent="." index="5"]
+position = Vector2(0, -224)
+
+[node name="SightArea" parent="." index="7"]
+position = Vector2(0, -384)
+
+[node name="PackArea" parent="." index="8"]
+position = Vector2(0, -224)
+
+[node name="LineOfSight" parent="." index="9"]
+position = Vector2(0, -384)
+
+[node name="LedgeCheck" parent="." index="11"]
+position = Vector2(454, -1)
+
+[node name="StepCheck" parent="." index="12"]
+position = Vector2(456, -1)
+
+[node name="RepellableShape" parent="Repellable"]
+position = Vector2(0, -224)
+shape = SubResource("RectangleShape2D_body")
+
+[node name="HitboxShape" parent="Hitbox"]
+position = Vector2(0, -224)
+shape = SubResource("RectangleShape2D_hit")
+
+[node name="GateRing" parent="." instance=ExtResource("3_ring")]
+unique_name_in_owner = true
+position = Vector2(0, -224)
+reach = 736.0

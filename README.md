@@ -381,20 +381,24 @@ numa tarefa seguinte, para quem não consegue premir depressa.
 
 ### Portões, picos letais e plataformas que desabam
 
-Quatro elementos para qualquer nível, cada um numa cena própria, que se coloca na cena do nível e se
+Cinco elementos para qualquer nível, cada um numa cena própria, que se coloca na cena do nível e se
 ajusta no Inspector. Por agora são formas provisórias, até chegar a arte.
 
 | Elemento | Cena | Comportamento | Medida |
 |---|---|---|---|
-| Portão | `gates/gate.tscn` | barra uma passagem à personagem, aos demónios e à visão destes; desbloqueado, sobe a sua própria altura, por trás da rocha | sobe em 0,8 s (48 passos de física) |
+| Portão | `gates/gate.tscn` | barra uma passagem à personagem, aos demónios e à visão destes; desbloqueado, sobe a sua própria altura, por trás da rocha; com Slide Way em Left ou Right, é um alçapão e desliza para esse lado a sua própria largura | desliza em 0,8 s (48 passos de física) |
 | Desbloqueador | `gates/gate_unlocker.tscn` | ativa-se uma vez, com o crucifixo erguido ao pé dele, e abre os portões da lista Gates; o crucifixo não sabe que ele existe, porque o reconhece como mais um elemento repelível (`components/crucifix_sensor.gd`), que não se move | alcance de 200 px, o raio do crucifixo |
+| Anel de proximidade | `gates/proximity_unlocker.tscn` | ativa-se uma vez, na primeira vez que a personagem entra no círculo, sem crucifixo, e abre os portões da lista Gates | alcance (Reach) de 288 px por omissão |
 | Picos letais | `traps/lethal_spikes.tscn` | um toque mata a personagem de imediato, com qualquer valor de SP; os demónios passam por cima sem efeito | parte que mata com 24 px de altura e 4 px de folga em cada ponta, para um salto que passe à vista passar mesmo |
 | Plataforma que desaba | `platforms/collapsing_platform.tscn` | usa o mesmo tile das plataformas de sentido único; pousar nela faz com que pisque e desapareça; saltar através dela, de baixo, não a ativa; volta ao fim de Come Back Time, com 0 fica desaparecida até o nível recomeçar | desaparece em 0,6 s (36 passos) e volta ao fim de 3 s |
 
 A largura e a altura destes elementos definem-se em tiles, no Inspector. A morte imediata é o método
 `die()` da personagem, que a imobiliza e fecha a sua caixa de dano, enquanto o nível recomeça. O cão
 grande (`demon/big_demon.tscn`) é, por agora, um demónio normal pintado de preto, para se distinguir
-no mapa.
+no mapa. O maior cão (`demon/biggest_demon.tscn`), no fim da fase 3 do nível 1, é o demónio normal oito
+vezes maior (corpo de 896 × 448 px, caixa de ataque, arte e verificações aos pés) com um anel de
+proximidade de 736 px de alcance à volta do meio do corpo: chegar perto dele abre os portões da sua
+lista Opens. Por agora não faz mais nada de diferente de um cão normal.
 
 ## Medidas para o desenho de níveis
 
@@ -569,12 +573,71 @@ mudança grande nos tiles, volta a gerar-se o contorno com essa opção, o que d
 tiles, e a fase 1 liga à fase 2 por uma chaminé de 8 tiles de altura e 3 de largura. Dois pontos de gravação
 definem onde a morte recomeça: depois do tutorial, no início da fase 1; dentro da fase 2, no início da fase 2. A
 cópia da fase 2 tem três plataformas deslocadas um tile, porque deixavam exatamente a altura da personagem por
-baixo da rocha e a podiam prender. O `test_level1.gd` aplica as verificações de câmara às 124 zonas, confirma as
-ligações e os pontos de gravação e deixa os 88 cães a patrulhar durante 5 s, sem que nenhum caia do seu chão. O
+baixo da rocha e a podiam prender. O `test_level1.gd` aplica as verificações de câmara às 151 zonas (38 da fase 3), confirma as
+ligações e os pontos de gravação e deixa os 99 cães (13 da fase 3) a patrulhar durante 5 s, sem que nenhum caia do seu chão. O
 `test_level1_route.gd` joga, sem os cães, o caminho curto do início ao fim e depois o caminho longo da fase 1: 184
 movimentos com a personagem real.
 
-| Medida em headless, sem o custo de desenhar | Fase 2 sozinha (33 cães) | Nível 1 completo (88 cães) |
+A fase 3 do nível 1 foi acrescentada à mesma cena, a partir do desenho do grupo no Miro, por
+`levels/lust/add_level1_phase3.gd`, que lê o texto `levels/lust/level1_phase3.txt` (154 × 158 tiles) e o junta ao
+nível tal como está, sem o reconstruir, para não perder as edições feitas à mão. Escava o ar e coloca 12 cães, o maior
+cão, 181 tiles de picos (25 faixas nas paredes, rodadas 90°), 52 tiles de plataformas que desabam, três portões, dois
+desbloqueadores, 38 zonas de câmara e um ponto de gravação no início da fase. Recusa-se a correr duas vezes e a
+escavar um tile que não seja rocha. No fim da fase 2, uma porta leva a uma sala pequena e a um corredor até ao início
+da fase 3; a saída do nível passou para o F da fase 3, com espaço de rocha guardado para a sala do chefe. Os portões 1
+e 2 são alçapões, que deslizam para o lado; o desbloqueador 1 abre o portão 2, o desbloqueador 2 abre o portão 1, e o
+maior cão abre o portão 3 quando a personagem se aproxima. O `test_level1_phase3.gd` confirma o conteúdo, quem abre
+cada portão, que nenhum portão se salta, que cada alçapão desliza para dentro da rocha e que a saída está no F. O
+`test_level1_phase3_route.gd` joga a fase sem os cães, com a personagem real: 84 movimentos, os dois desbloqueadores,
+os dois alçapões e a saída.
+
+Numa revisão contra o desenho, a sala do bloco suspenso, por cima da subida ao lado da sala verde, estava diferente.
+O traçado do desenho tinha ligado o bloco ao degrau da esquerda, o que fechava a passagem desenhada por baixo do canto
+do bloco, e tinha perdido a parede fina que desce do bloco até ao chão dos cães: o traçado só regista retângulos de
+ar, e uma parede desenhada com um só traço não deixa nenhum. A subida dava assim diretamente para os cães, e o poço com
+picos à esquerda do bloco não levava a lado nenhum. A correção muda 20 tiles: 12 de rocha passam a ar, abrindo a
+passagem, e 8 de ar passam a rocha, formando a parede. O caminho passa a ser o desenhado: sobe-se, passa-se por baixo
+do bloco para a esquerda, sobe-se o poço, com 3 tiles de largura, e desce-se do outro lado do bloco. Os picos no fundo
+do poço ficaram com 1 tile em vez dos 2 desenhados: com 2, sobravam menos de 3 px entre os picos e a esquina do bloco
+para saltar, e a verificação em papel não encontrava caminho. A zona de câmara da subida foi também corrigida: por um
+erro de coordenadas, estendia-se 50 tiles para a esquerda, por cima da coluna da esquerda. A cena foi alterada com a
+opção `-- --reshape`, que compara o texto da fase 3 de antes e de depois e só muda o que difere entre os dois (tiles,
+picos de chão e zonas de câmara), e só onde a cena ainda está como o texto antigo a deixou, para não desfazer edições
+feitas à mão. O contorno de pedras (10 pedras trocadas por 14), as rochas soltas (5 trocadas por 7) e as imagens do
+fundo (12 123 píxeis) foram refeitos só em volta dos tiles alterados.
+
+A fase 3 foi depois afinada à mão, no editor: 10 plataformas novas (38 tiles), uma das quais substitui uma que já
+existia, 16 faixas de picos deslocadas, cinco delas encurtadas, uma faixa retirada e uma plataforma que desaba descida
+um tile. A fase tem agora 165 tiles de picos, 24 faixas nas paredes. O texto da fase 3 passou a acompanhar a cena,
+com estas alterações incluídas, para que o `test_level1_phase3.gd` compare a cena com ele; 13 faixas de picos ficaram
+deslocadas por parte de um tile, e o texto põe-nas nos tiles mais próximos. O caminho do teste foi encontrado de novo
+pela verificação em papel, que, para essas faixas, conta como pico cada tile em que tocam, e a personagem real
+percorre-o. Duas zonas de câmara passaram a mostrar menos por baixo, para não deixarem ver o nível de baixo entre as
+plataformas novas: a do salão desce 48 px em vez de 96, e a de cima do T não desce.
+
+O caminho que este teste repete foi encontrado por uma verificação em papel, fora do repositório, que simula o
+movimento da personagem fotograma a fotograma. A primeira versão divergia do jogo: aplicava a gravidade no fotograma
+do salto, pelo que a personagem subia 218 px no papel e 240 px no jogo, e aceitava movimentos decididos por menos de
+um pixel. A versão corrigida reproduz o jogo fotograma a fotograma e recusa uma aterragem com menos de 4 px do corpo
+sobre o chão, a passagem a menos de 3 px de um pico, de 1 px de um teto ou de 0,1 px da esquina de uma rocha, e
+admite que a personagem escorregue até 144 px por uma parede antes de saltar dela, como um jogador faz para acertar o
+ritmo.
+
+A arte da fase 3 segue a das fases 1 e 2 e entra só onde a fase 3 abriu a rocha, para não tocar nos retoques feitos à
+mão no resto do nível. O mesmo script gera o contorno de pedras a partir dos tiles de antes e de depois da fase 3 e
+acrescenta só as peças que diferem: 311 pedras novas; das antigas sai apenas uma faixa de chão, que agora continua
+pela porta. Coloca também 334 rochas soltas nas três camadas do fundo, nos chãos e tetos que a fase 3 abriu, com as
+regras medidas nas 850 rochas das fases 1 e 2: o tamanho das rochas de cada camada, uma rocha por cada 7 a 18 tiles
+de chão ou de teto, consoante a camada, o quanto cada rocha se enterra no chão ou no teto e, para as mais distantes,
+uma sala com pelo menos 7 tiles de altura. Uma semente fixa dá sempre as mesmas rochas. Numa cena que já tem a fase
+3, como a atual, só a arte se acrescenta, com a opção `-- --art`; as duas formas dão as mesmas 645 peças. As duas
+imagens do fundo foram repintadas na zona da fase 3 e mantêm todos os outros píxeis (ver Créditos). A luz de cada
+ponto segue a quantidade de ar à sua volta, por uma curva ajustada à imagem da fase 2, que essa curva reproduz com um
+erro médio de 7 em 255 níveis de cinzento. Nas fases 1 e 2, 99 das 113 zonas de câmara têm uma só das três cores do
+fundo; na fase 3, as zonas foram agrupadas em blocos do tamanho das áreas de cor da fase 2, e cada bloco recebeu uma
+dessas cores, diferente da dos blocos vizinhos.
+
+| Medida em headless, sem o custo de desenhar | Fase 2 sozinha (33 cães) | Nível 1 antes da fase 3 (88 cães) |
 |---|---|---|
 | Recomeçar depois de uma morte (instanciar e entrar na árvore) | cerca de 25 ms | cerca de 90 ms |
 | Física por fotograma, de 16,7 ms disponíveis | 2,6 ms | 4,8 ms |
@@ -840,6 +903,9 @@ godot --headless --fixed-fps 60 --path Projeto --script res://tests/test_lust_ph
 godot --headless --fixed-fps 60 --path Projeto --script res://tests/test_lust_phase_2_route.gd
 godot --headless --fixed-fps 60 --path Projeto --script res://tests/test_level1.gd
 godot --headless --fixed-fps 60 --path Projeto --script res://tests/test_level1_route.gd
+godot --headless --fixed-fps 60 --path Projeto --script res://tests/test_biggest_dog.gd
+godot --headless --fixed-fps 60 --path Projeto --script res://tests/test_level1_phase3.gd
+godot --headless --fixed-fps 60 --path Projeto --script res://tests/test_level1_phase3_route.gd
 godot --headless --fixed-fps 60 --path Projeto --script res://tests/test_settings.gd
 godot --headless --fixed-fps 60 --path Projeto --script res://tests/test_options.gd
 godot --headless --fixed-fps 60 --path Projeto --script res://tests/test_crucifix.gd
@@ -2262,6 +2328,8 @@ iniciado por nada no jogo. A estação de cada uma acrescenta-se quando a mecân
 - `level1_cave_map.png` e `level1_cave_shade.png`, em `Projeto/assets/sprites/backgrounds/`:
   imagens provisórias geradas com IA (Claude) a partir do mapa do nível 1, sem material de
   terceiros. A primeira dá a cor de cada área do fundo e a segunda escurece o fundo junto à rocha.
+  Na zona da fase 3, foram repintadas com IA (Claude), por um script fora do repositório que
+  ajusta um modelo às imagens das fases 1 e 2 e só altera os píxeis por onde a fase 3 passa.
   Saem ou refazem-se quando o mapa ou as áreas mudarem.
 
 ## Licença

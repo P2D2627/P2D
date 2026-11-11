@@ -1,7 +1,8 @@
-# Checks level 1 as one scene. Its text map, level1.txt, made the first version; since then the scene is edited by
-# hand and is the level, so these checks look at the scene alone: every kind of piece is in it; the tutorial with its prompts,
-# Velvet and the corridor's demon; the camera zones, by the checks every level shares; the three parts joined only
-# by their passages, with one way out, at the end; and the save points, which hold where a death starts over.
+# Checks level 1 as one scene. Its text map, level1.txt, made the first version, and level1_phase3.txt added phase 3;
+# since then the scene is edited by hand and is the level, so these checks look at the scene alone: every kind of piece
+# is in it; the tutorial with its prompts, Velvet and the corridor's demon; the camera zones, by the checks every level
+# shares; the parts joined only by their passages, with one way out, at the end; and the save points, which hold
+# where a death starts over. Phase 3's own pieces and gates are checked by test_level1_phase3.gd.
 # Run from the repository root; the exit code is 0 on pass and 1 on fail:
 # godot --headless --fixed-fps 60 --path Projeto --script res://tests/test_level1.gd
 extends "res://tests/test_lust_phase_2.gd"
@@ -15,12 +16,15 @@ const PHASE_2_ROOM_CELL: Vector2i = Vector2i(351, 246)
 const WAKE_FEET: Vector2 = Vector2(216.0, 17568.0)
 const S_FEET: Vector2 = Vector2(5400.0, 17568.0)
 const PHASE_2_FEET: Vector2 = Vector2(16872.0, 11856.0)
+const PHASE_3_FEET: Vector2 = Vector2(9096.0, 864.0)
 ## The prompts of the tutorial: move left, move right, jump, wall jump, crucifix, and Velvet's talk key.
 const TUTORIAL_PROMPTS: int = 6
 const TUTORIAL_SAVE: String = "TutorialSave"
 const PHASE_2_SAVE: String = "Phase2Save"
+const PHASE_3_SAVE: String = "Phase3Save"
 const TUTORIAL_DONE_EVENT: StringName = &"tutorial_done"
 const PHASE_2_REACHED_EVENT: StringName = &"lust_phase_2_reached"
+const PHASE_3_REACHED_EVENT: StringName = &"lust_phase_3_reached"
 ## Physics frames for an area to see the man put inside it.
 const AREA_FRAMES: int = 3
 ## Physics frames the dogs patrol for, and how far they may end from their floor's height, in px.
@@ -154,10 +158,11 @@ func _each_start_is_where_the_saves_say() -> bool:
 	var fresh: Array[Vector2] = await _start_with([])
 	var past_tutorial: Array[Vector2] = await _start_with([TUTORIAL_DONE_EVENT])
 	var in_phase_2: Array[Vector2] = await _start_with([TUTORIAL_DONE_EVENT, PHASE_2_REACHED_EVENT])
+	var in_phase_3: Array[Vector2] = await _start_with([TUTORIAL_DONE_EVENT, PHASE_2_REACHED_EVENT, PHASE_3_REACHED_EVENT])
 	var ok: bool = (fresh[0].is_equal_approx(WAKE_FEET) and past_tutorial[0].is_equal_approx(S_FEET)
-			and in_phase_2[0].is_equal_approx(PHASE_2_FEET))
-	return report(ok, "Starts: new game %s, past the tutorial %s, inside phase 2 %s" % [fresh[0], past_tutorial[0],
-			in_phase_2[0]])
+			and in_phase_2[0].is_equal_approx(PHASE_2_FEET) and in_phase_3[0].is_equal_approx(PHASE_3_FEET))
+	return report(ok, "Starts: new game %s, past the tutorial %s, inside phase 2 %s, inside phase 3 %s" % [fresh[0],
+			past_tutorial[0], in_phase_2[0], in_phase_3[0]])
 
 
 ## The man put inside each save point, in the game's order, marks its event and says so.
@@ -168,7 +173,7 @@ func _walking_into_a_save_point_marks_it() -> bool:
 	await process_frame
 	var player: Player = level.get_node("Player") as Player
 	var marked: Array[bool] = []
-	for point_name: String in [TUTORIAL_SAVE, PHASE_2_SAVE]:
+	for point_name: String in [TUTORIAL_SAVE, PHASE_2_SAVE, PHASE_3_SAVE]:
 		var point: SavePoint = level.get_node(point_name) as SavePoint
 		var said: Array[bool] = [false]
 		point.reached.connect(func() -> void: said[0] = true)
@@ -178,4 +183,4 @@ func _walking_into_a_save_point_marks_it() -> bool:
 		marked.append(said[0] and _progress().has_event(point.event))
 	level.queue_free()
 	await process_frame
-	return report(marked == [true, true], "Save points: marked %s" % [marked])
+	return report(marked == [true, true, true], "Save points: marked %s" % [marked])
