@@ -1,10 +1,11 @@
-# Checks the wall slide (ADR 0010). Against a wall it pushed into, the player falls no faster than
-# Wall Slide Speed from the frame after it reaches the wall, and keeps sliding after letting go of
-# the direction. A jump along the wall peaks at Jump Height and slides after the peak, even after
-# letting go of the direction in the air, and the fall after that peak speeds up as without a wall
-# until it reaches Wall Slide Speed. Touching a wall without ever pushing into it, pushing away from
-# it, from the slide or while only touching it, and running away from it on the floor all work as
-# without a wall.
+# Checks the wall slide (ADR 0010, with the way onto the wall of ADR 0058). Against a wall it touches
+# in the air, pushing into it or not, the player falls no faster than Wall Slide Speed from the frame
+# after it reaches the wall, and keeps sliding after letting go of the direction. A jump along the
+# wall peaks at Jump Height and slides after the peak, even after letting go of the direction in the
+# air, and the fall after that peak speeds up as without a wall until it reaches Wall Slide Speed.
+# Pushing away from the wall, from the slide or while carried into it, and running away from it on
+# the floor all work as without a wall. A demon's side, a body on Knock Off Layers, still takes a
+# push: touching one without pushing into it falls as without a wall, and pushing into it slides.
 # Run from the repository root; the exit code is 0 on pass and 1 on fail:
 # godot --headless --fixed-fps 60 --path Projeto --script res://tests/test_wall_slide.gd
 extends "res://tests/support/player_test.gd"
@@ -20,6 +21,9 @@ const START_HEIGHT: float = -1500.0
 const FLOOR_SPAWN_HEIGHT: float = -2.0
 ## How far from the wall the player starts, in px.
 const GAP: float = 40.0
+## The face of a tall body on the demons' layer, on the player's right when it starts by it: far
+## enough from the wall that no case near the wall reaches it.
+const DEMON_FACE: float = 1200.0
 ## Frames to keep pushing after the first contact, so the player is surely on the wall.
 const SETTLE_FRAMES: int = 3
 ## How far a peak may be from Jump Height, in px, as in test_jump_height.gd.
@@ -36,17 +40,22 @@ func _initialize() -> void:
 	make_platform(WALL_FACE - WALL_THICKNESS, FLOOR_RIGHT)
 	var probe: Player = PLAYER_SCENE.instantiate() as Player
 	_half_width = body_size(probe).x / 2.0
+	var demon_layers: int = probe.knock_off_layers
 	probe.queue_free()
+	var demon_side: StaticBody2D = make_wall(DEMON_FACE, DEMON_FACE + WALL_THICKNESS, WALL_TOP)
+	demon_side.collision_layer = demon_layers
 	var results: Array[bool] = []
 	results.append(await _pushing_into_the_wall_slides_at_wall_slide_speed())
 	results.append(await _letting_go_on_the_wall_keeps_sliding())
 	results.append(await _letting_go_in_a_jump_along_the_wall_slides_after_the_peak())
 	results.append(await _below_wall_slide_speed_the_fall_speeds_up_as_without_a_wall())
 	results.append(await _pushing_away_from_the_wall_falls_as_without_it())
-	results.append(await _touching_the_wall_without_pushing_falls_as_without_it())
+	results.append(await _touching_the_wall_without_pushing_slides())
 	results.append(await _pushing_away_while_touching_the_wall_never_brakes())
 	results.append(await _jumping_along_the_wall_peaks_at_jump_height())
 	results.append(await _running_away_from_the_wall_on_the_floor_steps_as_on_the_floor())
+	results.append(await _touching_a_demon_without_pushing_falls_as_without_it())
+	results.append(await _pushing_into_a_demon_slides())
 	finish(results)
 
 
@@ -135,25 +144,24 @@ func _pushing_away_from_the_wall_falls_as_without_it() -> bool:
 	return await _report_fall_as_without_a_wall(player, touched, fall, "Pushing away from the wall")
 
 
-## Getting on the wall needs a push into it: touching a wall without ever pushing into it falls as
-## without a wall, up to the top falling speed.
-func _touching_the_wall_without_pushing_falls_as_without_it() -> bool:
+## Getting on the wall needs no push into it (ADR 0058): touching a wall without ever pushing into it
+## slides, as pushing into it does.
+func _touching_the_wall_without_pushing_slides() -> bool:
 	var player: Player = _spawn_near_the_wall(0.0, START_HEIGHT)
 	var touching: bool = await _wait_until_on_wall(player)
 	var fall: FallResult = await _fall_until_the_floor(player)
-	return await _report_fall_as_without_a_wall(player, touching, fall,
-			"Touching the wall without pushing into it")
+	return await _report_slide(player, touching, fall, "Touching the wall without pushing into it")
 
 
-## Pushing away is no push into the wall, even while touching it: falling at the top falling speed
-## against a wall it never pushed into, a push away from it keeps that speed, with no brake on any
-## frame.
+## Pushing away keeps the player off the wall even while it touches it: carried into the wall by its
+## run while pushing away from it, at the top falling speed, it keeps that speed, with no brake on
+## any frame.
 func _pushing_away_while_touching_the_wall_never_brakes() -> bool:
-	var what: String = "Pushing away while touching the wall"
-	var player: Player = _spawn_near_the_wall(0.0, START_HEIGHT)
-	var at_top_speed: bool = await _wait_until_at_top_falling_speed(player)
-	var touching: bool = at_top_speed and player.is_on_wall()
+	var what: String = "Pushing away while carried into the wall"
+	var player: Player = _spawn_near_the_wall(GAP, START_HEIGHT)
 	Input.action_press(&"move_right")
+	player.velocity = Vector2(-player.stats.max_run_speed, player.stats.max_fall_speed)
+	var touching: bool = await _wait_until_on_wall(player)
 	var slowest: float = await _slowest_fall_until_the_floor(player)
 	Input.action_release(&"move_right")
 	var top_speed: float = player.stats.max_fall_speed
@@ -206,6 +214,26 @@ func _running_away_from_the_wall_on_the_floor_steps_as_on_the_floor() -> bool:
 			% [first_step, floor_step])
 
 
+## A demon's side still takes a push into it (ADR 0058): touching a body on Knock Off Layers without
+## pushing into it falls as without a wall, up to the top falling speed.
+func _touching_a_demon_without_pushing_falls_as_without_it() -> bool:
+	var player: Player = _spawn_near_the_demon(0.0, START_HEIGHT)
+	var touching: bool = await _wait_until_on_wall(player)
+	var fall: FallResult = await _fall_until_the_floor(player)
+	return await _report_fall_as_without_a_wall(player, touching, fall,
+			"Touching a demon's side without pushing into it")
+
+
+## Pushing into a demon's side still slides, as into any wall.
+func _pushing_into_a_demon_slides() -> bool:
+	var player: Player = _spawn_near_the_demon(GAP, START_HEIGHT)
+	Input.action_press(&"move_right")
+	var touched: bool = await _wait_until_on_wall(player)
+	var fall: FallResult = await _fall_until_the_floor(player)
+	Input.action_release(&"move_right")
+	return await _report_slide(player, touched, fall, "Falling while pushing into a demon's side")
+
+
 ## The x at which the side of the player's body is gap px from the wall.
 func _x_near_the_wall(gap: float) -> float:
 	return WALL_FACE + _half_width + gap
@@ -213,6 +241,11 @@ func _x_near_the_wall(gap: float) -> float:
 
 func _spawn_near_the_wall(gap: float, height: float) -> Player:
 	return spawn_player(Vector2(_x_near_the_wall(gap), height))
+
+
+## A player gap px to the left of the demon's side, at the given height.
+func _spawn_near_the_demon(gap: float, height: float) -> Player:
+	return spawn_player(Vector2(DEMON_FACE - _half_width - gap, height))
 
 
 ## A player on the floor that walked from GAP px away into the wall and is still pushing into it,
@@ -270,15 +303,6 @@ func _fall_until_the_floor(player: Player) -> FallResult:
 		fall.fastest = maxf(fall.fastest, player.velocity.y)
 		fall.last = player.velocity.y
 	return fall
-
-
-## Waits until the player falls at the top falling speed. False if it never does.
-func _wait_until_at_top_falling_speed(player: Player) -> bool:
-	for _frame: int in MAX_FRAMES:
-		await physics_frame
-		if absf(player.velocity.y - player.stats.max_fall_speed) <= SPEED_TOLERANCE:
-			return true
-	return false
 
 
 ## Follows the player down until it lands, for the slowest falling speed on the way; INF if it lands

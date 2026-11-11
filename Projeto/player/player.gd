@@ -27,6 +27,9 @@ enum State { ON_FLOOR, IN_AIR, ON_WALL, GRABBED }
 
 ## Name of death's modifier on the player.
 const DEATH_SOURCE: StringName = &"death"
+## Radians a surface may lean past Floor Max Angle and still count as a floor or a ceiling, as in
+## CharacterBody2D, so a wall to _touches_a_wall_off_knock_off_layers() is a wall to is_on_wall().
+const FLOOR_ANGLE_THRESHOLD: float = 0.01
 ## Share of a run step under which the speed counts as on its target. velocity keeps 32-bit floats,
 ## so a ramp that should end on its last frame can stop a few ten-thousandths of a px/s short, as
 ## from 600 px/s in 0.15 s, and would take one frame more.
@@ -238,10 +241,11 @@ func _on_grab_escape_died() -> void:
 
 
 ## Changes the state from what the last move_and_slide() found, so the take-off frame still runs
-## as on the floor and the landing frame as in the air. A grab comes first, then the floor. Getting
-## on a wall takes a push into it, from the air or from the floor; staying on it does not, so the
-## player leaves it when it no longer touches it, or lands. Held still, he is off it, so he falls as
-## in the air. Touching the floor is heard as landed once, grabbed or not.
+## as on the floor and the landing frame as in the air. A grab comes first, then the floor. Off the
+## floor, touching a wall puts the player on it unless he pushes away from it; a demon's side takes
+## a push into it (ADR 0058). Staying on it takes neither, so he leaves it when it no longer touches
+## it, or lands. Held still, he is off it, so he falls as in the air. Touching the floor is heard as
+## landed once, grabbed or not.
 func _update_state() -> void:
 	var on_floor: bool = is_on_floor()
 	var touched_down: bool = on_floor and not _was_on_floor
@@ -255,7 +259,7 @@ func _update_state() -> void:
 	else:
 		match _state:
 			State.ON_FLOOR, State.IN_AIR, State.GRABBED:
-				_state = State.ON_WALL if _is_pushing_into_a_wall() else State.IN_AIR
+				_state = State.ON_WALL if _is_holding_a_wall() else State.IN_AIR
 			State.ON_WALL:
 				if not is_on_wall():
 					_state = State.IN_AIR
@@ -280,12 +284,29 @@ func _shove_off_what_cannot_be_stood_on() -> void:
 	_knockback_frames_left = stats.get_knockback_max_frames()
 
 
-## True when the last move_and_slide() touched a wall and the run input points into it.
-func _is_pushing_into_a_wall() -> bool:
+## True when the last move_and_slide() touched a wall the player can get on (ADR 0058): pushing into
+## it, or with no run input and a wall off Knock Off Layers among the ones touched, so a demon's side
+## still takes a push. Pushing away from it never gets him on.
+func _is_holding_a_wall() -> bool:
 	if not is_on_wall():
 		return false
 	var direction: float = input.get_run_direction()
-	return direction != 0.0 and direction == -signf(get_wall_normal().x)
+	if direction != 0.0:
+		return direction == -signf(get_wall_normal().x)
+	return _touches_a_wall_off_knock_off_layers()
+
+
+## True when one of the walls the last move_and_slide() touched is on none of Knock Off Layers.
+func _touches_a_wall_off_knock_off_layers() -> bool:
+	for index: int in get_slide_collision_count():
+		var collision: KinematicCollision2D = get_slide_collision(index)
+		var limit: float = floor_max_angle + FLOOR_ANGLE_THRESHOLD
+		if collision.get_angle(up_direction) <= limit or collision.get_angle(-up_direction) <= limit:
+			continue
+		var body: CollisionObject2D = collision.get_collider() as CollisionObject2D
+		if body != null and body.collision_layer & knock_off_layers == 0:
+			return true
+	return false
 
 
 ## Coyote frames fill up, the wall's coyote frames and a wall jump's lock end, a kept press of Jump
