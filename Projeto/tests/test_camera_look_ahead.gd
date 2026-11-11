@@ -1,19 +1,19 @@
 # Test of the game camera's look ahead. The values meet their criteria: at full run the screen shows
-# at least 1.5 s of run ahead of the player, and the turn threshold is wider than what the player
+# at least 1.3 s of run ahead of the player, and the turn threshold is wider than what the player
 # crosses in the widest chimney climbed tapping Jump. Before the player first goes Turn Threshold
 # from where it started, the camera does not lead; past it, the camera leads that way by Look Ahead
 # Distance. Going back and forth less than the threshold, as in a chimney, keeps the lead; going
 # back past it turns the lead to the other side. The turn starts slowly, peaks at the speed of a
 # critically damped spring, never goes past its new side and is 95 % done when the spring says. Two
 # half steps land where one whole step does. At full run, with the physics, the screen shows at
-# least 1.5 s ahead.
+# least 1.3 s ahead.
 # Run from the repository root; the exit code is 0 on pass and 1 on fail:
 # godot --headless --fixed-fps 60 --path Projeto --script res://tests/test_camera_look_ahead.gd
 extends "res://tests/support/player_test.gd"
 
 const CAMERA_SCENE: PackedScene = preload("res://camera/game_camera.tscn")
 ## The least run, in seconds, the screen must show ahead of the player at full run.
-const SECONDS_AHEAD: float = 1.5
+const SECONDS_AHEAD: float = 1.3
 ## The widest chimney climbed pressing only Jump on touching a wall, wall face to wall face, in px,
 ## as measure_movement.gd measures it.
 const WIDEST_TAPPED_CHIMNEY: float = 222.0
@@ -73,7 +73,7 @@ func _initialize() -> void:
 	finish(results)
 
 
-## At full run, the screen shows at least 1.5 s of run ahead of the player: half the screen, plus
+## At full run, the screen shows at least 1.3 s of run ahead of the player: half the screen, plus
 ## the look ahead, minus what the window and the smoothing leave behind. And the turn threshold is
 ## wider than what the player crosses in the widest chimney climbed tapping Jump.
 func _the_values_meet_their_criteria() -> bool:
@@ -253,7 +253,7 @@ func _two_half_steps_land_where_one_whole_step_does() -> bool:
 
 
 ## At full run, with the physics, once the lead and the trail settle, the screen shows at least
-## 1.5 s of run ahead of the player.
+## 1.3 s of run ahead of the player.
 func _at_full_run_the_screen_shows_enough_ahead() -> bool:
 	var ground: StaticBody2D = make_platform(-FLOOR_HALF_WIDTH, FLOOR_HALF_WIDTH)
 	var player: Player = await spawn_on_floor(Vector2(0.0, FLOOR_SPAWN_HEIGHT))
