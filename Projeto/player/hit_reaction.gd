@@ -2,17 +2,19 @@ class_name HitReaction
 extends Node
 
 ## What a demon's hit does to the man (ADR 0021), heard from his Hurtbox. With SP above Low
-## Threshold, the hit takes its damage, throws him back and leaves him invulnerable for a moment.
-## With SP low, or when the hit would take his SP to 0, it takes nothing and says so with grab_hit
-## instead: a demon never kills with a hit, it grabs. While the man is held, every hit grabs, whatever
-## his SP, so none takes SP or throws him then.
+## Threshold, the hit takes its damage, throws him back and leaves him invulnerable for a moment,
+## though not to the hits that pierce it, as a level-1 pack's (ADR 0055). With SP low, or when the
+## hit would take his SP to 0, it takes nothing and says so with grab_hit instead: a demon never
+## kills with a hit, it grabs. While the man is held, every hit grabs, whatever his SP, so none
+## takes SP or throws him then.
 
 ## A hit that grabs instead of hurting, from the Hitbox that landed it.
 signal grab_hit(hitbox: Hitbox)
 
 @export var player: Player
 @export var hurtbox: Hurtbox
-## Seconds after a hit in which no other hit lands, so two demons together take SP once.
+## Seconds after a hit in which no other hit lands, so two demons together take SP once, unless
+## their hits pierce it, as the attacks of a level-1 pack do (ADR 0055).
 @export_range(0.0, 3.0, 0.05, "suffix:s") var invulnerable_time: float = 1.0
 
 ## True from hold() until release().
@@ -31,8 +33,8 @@ func _on_hurtbox_hit_received(hitbox: Hitbox) -> void:
 		grab_hit.emit(hitbox)
 		return
 	soul_points.take_damage(hitbox.damage)
-	player.knock_back(_away_from(hitbox), hitbox.knockback_distance, hitbox.knockback_height)
-	hurtbox.start_invulnerability(invulnerable_time)
+	player.knock_back(_throw_side(hitbox), hitbox.knockback_distance, hitbox.knockback_height)
+	hurtbox.start_invulnerability(invulnerable_time, true)
 
 
 ## A demon holds the man: until release(), every hit grabs, also once the regeneration takes his SP
@@ -46,7 +48,10 @@ func release() -> void:
 	_held = false
 
 
-## 1 when the Hitbox is on the man's left, or right on him, so the hit throws him right; -1 when it
-## is on his right.
-func _away_from(hitbox: Hitbox) -> float:
+## The way the hit throws the man: the Hitbox's Knockback Side when it sets one (ADR 0056);
+## otherwise away from it, 1 when it is on his left, or right on him, so the hit throws him right,
+## and -1 when it is on his right.
+func _throw_side(hitbox: Hitbox) -> float:
+	if hitbox.knockback_side != 0.0:
+		return signf(hitbox.knockback_side)
 	return 1.0 if player.global_position.x >= hitbox.global_position.x else -1.0

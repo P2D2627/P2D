@@ -119,6 +119,13 @@ func takes_no_hits() -> bool:
 	return is_instance_valid(_hurtbox) and not _hurtbox.takes_hits()
 
 
+## True while a hit that pierces invulnerability can land on the man: his Hurtbox is not closed, as
+## with as many demons holding him as can (ADR 0029), nor invulnerable past piercing, as just after
+## he breaks free of a hold (ADR 0055).
+func can_be_pierced() -> bool:
+	return is_instance_valid(_hurtbox) and _hurtbox.can_be_pierced()
+
+
 ## The first Hurtbox among the man's children, where its scene puts it, or null. Looked for once,
 ## as the demon takes him, by index, so no list is made.
 func _hurtbox_of(man: Node2D) -> Hurtbox:

@@ -48,25 +48,33 @@
 # and attacks again; it chases on at once after a lunge that leaves him that far, a man who follows
 # it keeps it backing off no longer than Retreat Distance takes, an edge behind it stops it, and
 # against a man standing still it is never on him longer than the bite. With Pack Spacing (ADR
-# 0024), a demon behind another waits that far behind its body and lunges over it from there, one
-# put nearer steps back to that, facing the man, and stops at an edge behind it, two that bite both
-# keep biting and cross only while one backs off, one past the man never keeps another from biting
-# him, and the area in which it finds the others follows Pack Spacing at once; with Pack Variation,
-# each demon chases and backs off at its own pace, within it. While the man is invulnerable it
-# starts no attack, a warning under way goes back to the chase, and with Retreat Distance it keeps
-# that far from him (ADR 0025); two that his invulnerability's end sets free warn together, and with
-# Max Hesitation apart (ADR 0027). A bite that grabs the man at low SP keeps the demon holding on,
-# still, with no attack, until he breaks free, and then it is thrown off, Throw Height up and Throw
-# Distance away from him, and lies stunned, still and flat, for Stunned Time once it lands (ADR
-# 0028); another demon's bite on the held man joins, and both are thrown off, each to its own side
-# (ADR 0021); a third, past the most that can hold him, never attacks him while he is held and keeps
-# Retreat Distance from him (ADR 0029). The man is the real player, standing still or moved at a
-# steady speed, with his Hurtbox off and with his body and the demon's not colliding, so the cases
-# see only how the demon chases and aims; the cases where a bite lands and those of his body turn
-# them on. Each demon gets its own DemonStats with the values below and its attacks, the lunge, or a
-# bite and then the lunge, backs off only in the cases of the retreat, and keeps apart or varies
-# only in those of the pack, so the .tres can be tuned without breaking the test; only the last seven
-# cases read the .tres, to check that its values keep what the levels count on.
+# 0024), a demon behind another at the man's side waits that far behind its body and lunges over it
+# from there, one put nearer steps back to that, facing the man, and stops at an edge behind it, two
+# that bite both keep biting and cross only while one backs off, one past the man never keeps
+# another from biting him, and the area in which it finds the others follows Pack Spacing at once;
+# with Pack Variation, each demon chases and backs off at its own pace, within it. While the man is
+# invulnerable it starts no attack, a warning under way goes back to the chase, and with Retreat
+# Distance it keeps that far from him (ADR 0025); two that his invulnerability's end sets free warn
+# together, and with Max Hesitation apart (ADR 0027). A bite that grabs the man at low SP keeps the
+# demon holding on, still, with no attack, until he breaks free, and then it is thrown off, Throw
+# Height up and Throw Distance away from him, and lies stunned, still and flat, for Stunned Time
+# once it lands (ADR 0028); another demon's bite on the held man joins, and both are thrown off,
+# each to its own side (ADR 0021); a third, past the most that can hold him, never attacks him while
+# he is held and keeps Retreat Distance from him (ADR 0029). Without Hesitates Before First Attack,
+# a demon warns right after its alert and a man it notices ends its Recover Time; with it, that time
+# stays. Off the floor, even thrown off, it draws its wait anew. With Waits At Retreat Distance, it
+# waits that far from the man, pacing Retreat Pace Width to and fro, until it may attack, and then
+# runs at him and bites, never lunging from there (ADR 0051, ADR 0052). The level's demons hunt as a
+# pack (ADR 0053): they pass through each other instead of waiting in a row, part when they pace the
+# same way, the one attacking is drawn over the others, and with Attackers Per Side only one on each
+# side of the man attacks at a time, every one of them in turn, and one thrown off or freed hands
+# its turn on. The man is the real player, standing still or moved at a steady speed, with his
+# Hurtbox off and with his body and the demon's not colliding, so the cases see only how the demon
+# chases and aims; the cases where a bite lands and those of his body turn them on. Each demon gets
+# its own DemonStats with the values below and its attacks, the lunge, or a bite and then the lunge,
+# backs off only in the cases of the retreat, and keeps apart or varies only in those of the pack,
+# so the .tres can be tuned without breaking the test; only the cases of the level's demons read the
+# .tres, to check that its values keep what the levels count on.
 # Run from the repository root; the exit code is 0 on pass and 1 on fail:
 # godot --headless --fixed-fps 60 --path Projeto --script res://tests/test_demon.gd
 extends "res://tests/support/player_test.gd"
@@ -382,6 +390,86 @@ const PATROL_SEED: int = 33
 const ALERT_TIME: float = 0.3
 const SEARCH_TIME: float = 1.0
 const SEARCH_SPEED: float = 200.0
+## The cases of a demon's first attack once it notices the man (ADR 0051): the seed that makes the
+## demon's draws the same on every run.
+const FIRST_ATTACK_SEED: int = 51
+## The cases of a demon that waits at Retreat Distance (ADR 0051): a Max Hesitation long enough that
+## its draw shows whether it waits away from the man or by him.
+const LONG_HESITATION: float = 2.0
+## The cases of a demon that paces while it keeps back from the man (ADR 0052): how far past Retreat
+## Distance it paces, and how fast, below the cases' Retreat Speed and Chase Speed; a bite's Recover
+## Time and a blink long enough to watch it turn; how many times at least it turns back: at both
+## ends between its bites, and once through the blink; how little, in px, it moves in a physics
+## frame to count as standing still; and where an edge or a wall behind it stops it, some 190 px
+## from the man, past Retreat Distance and short of RETREAT_PACE_WIDTH past it: its LedgeCheck
+## reaches 30 px past its middle, and its body 24 px.
+const RETREAT_PACE_WIDTH: float = 60.0
+const RETREAT_PACE_SPEED: float = 120.0
+const LONG_RECOVER_TIME: float = 2.0
+const LONG_INVULNERABLE_TIME: float = 2.0
+const LEAST_PACE_TURNS: int = 2
+const LEAST_BLINK_PACE_TURNS: int = 1
+const STILL_STEP: float = 0.5
+const RETREAT_PACE_EDGE_X: float = -160.0
+const RETREAT_PACE_WALL_X: float = -154.0
+## The cases of a pack of the level's demons hunting a man (ADR 0053): where he stands, with room on
+## the screen on both sides; where they are put, in px from him, + to his right, 80 px apart, so
+## each finds the next in its pack area, and those on his right within the 220 px the level's
+## demons see behind them; how long three on one side are watched, some seven bites with his blink
+## after each, and five on both sides, some forty bites, so every demon gets its turn whatever the
+## draws; and the states in which a demon warns of or makes an attack.
+const PACK_MAN_X: float = 600.0
+const ONE_SIDE_PACK: Array[float] = [-140.0, -220.0, -300.0]
+const BOTH_SIDES_PACK: Array[float] = [-140.0, -220.0, -300.0, 140.0, 200.0]
+const ONE_SIDE_FRAMES: int = 600
+const BOTH_SIDES_FRAMES: int = 3600
+const ATTACKING_STATES: Array[Demon.State] = [Demon.State.WARNING, Demon.State.LUNGE]
+## The most physics frames in a row two of the level's demons may spend more than half on top of
+## each other, their middles nearer than half a body: half a second, past the some 8 frames two take
+## to cross each other and the some 16 one behind another at half its pace takes to fall back from
+## it (ADR 0053).
+const MOST_FRAMES_AS_ONE: int = 30
+## The most physics frames one of the level's demons in a pack may go without warning of an attack
+## while it hunts a man standing still: four seconds, past the some three the longest took in nine
+## draws, and far short of the twelve and more they go when his blink holds them back (ADR 0055).
+const MOST_FRAMES_WITHOUT_ATTACK: int = 240
+## The case of a pack of the level's demons bringing the man down (ADR 0055): the most physics
+## frames five of them may take to bring his SP low, four seconds, where they take about two, and
+## over seven with their bites kept off by his blink after a hit; how many times at least as fast
+## as one of them alone; and the most a case waits for it.
+const MOST_FRAMES_TO_LOW_SP: int = 240
+const LEAST_PACK_SPEEDUP: int = 2
+const LONGEST_FRAMES_TO_LOW_SP: int = 1800
+## The case of a hole on one side of the man (ADR 0053): where the floor beyond it ends, and where
+## his begins, 120 px on, which the level's demon cannot cross; and where two of its demons are put,
+## in px from him, the first across the hole and the other between the hole and him.
+const HOLE_LEFT: float = 200.0
+const HOLE_RIGHT: float = 320.0
+const ACROSS_THE_HOLE_PACK: Array[float] = [-500.0, -180.0]
+## The cases of two of the level's demons cornered by the man (ADR 0053): how far behind him his
+## floor ends, inside their Retreat Distance, with room for the two side by side; where they are
+## put, in px from him, almost on one spot; how long they are watched through a blink their bites
+## cannot pierce, inside LONG_INVULNERABLE_TIME; and how long with him taking hits, some four bites.
+const CORNER_EDGE: float = 130.0
+const CORNERED_PACK: Array[float] = [-100.0, -90.0]
+const CORNERED_FRAMES: int = 90
+const CORNERED_BITE_FRAMES: int = 420
+## The case of a demon that runs at the man through another (ADR 0053): where the two are put, in px
+## from him, the first, which takes the turn, within its wait and behind the other; and how long it
+## has to bite him in, a second, about twice what its alert, its run and its bite's warning take.
+const THROUGH_PACK: Array[float] = [-160.0, -110.0]
+const THROUGH_FRAMES: int = 60
+## The case of the bites after the wait landing (ADR 0053): four seconds, some five bites, before
+## the man's SP are low enough for a bite to grab him, now that they land through his blink too
+## (ADR 0055).
+const LANDED_FRAMES: int = 240
+## The case of two of the level's demons running after the man (ADR 0053): where they are put, in
+## px from him, the first further off; how fast he runs off, faster than their fastest chase; how
+## far his floor goes, past where he gets to; and how long he runs, four seconds.
+const FLEE_PACK: Array[float] = [-220.0, -140.0]
+const FLEE_SPEED: float = 650.0
+const FLEE_FLOOR_RIGHT: float = 4000.0
+const FLEE_FRAMES: int = 240
 ## The cases of the demon pacing out of reach (ADR 0039): the stretch it paces around where it
 ## stopped, at Patrol Speed, some 64 frames from end to end; the shortest and longest pause at each
 ## end, where it barks, 12 to 18 frames; and an Out Of Reach Wait long enough to watch it pace across
@@ -480,9 +568,12 @@ func _initialize() -> void:
 	results.append(await _the_pack_area_follows_pack_spacing_at_once())
 	results.append(await _with_pack_variation_each_demon_has_its_own_speeds_and_retreat_distance())
 	results.append(await _warns_of_no_attack_while_the_man_is_invulnerable())
+	results.append(await _without_attacks_invulnerable_man_it_waits_out_the_man_s_blink_after_a_hit())
 	results.append(await _a_warning_under_way_ends_when_the_man_turns_invulnerable())
 	results.append(await _while_the_man_is_invulnerable_it_keeps_retreat_distance_from_him())
 	results.append(await _two_demons_set_free_together_warn_apart_with_max_hesitation())
+	results.append(await _two_demons_that_cannot_pierce_biting_together_take_sp_once())
+	results.append(await _the_level_s_demons_set_free_by_the_man_s_blink_still_warn_apart())
 	results.append(await _its_bite_that_grabs_holds_on_with_no_attack_until_the_man_breaks_free())
 	results.append(await _a_second_demon_s_bite_joins_the_grab_and_both_are_thrown_off_once_he_is_free())
 	results.append(await _a_third_demon_keeps_retreat_distance_from_a_man_held_by_the_most())
@@ -525,6 +616,40 @@ func _initialize() -> void:
 	results.append(await _patrolling_it_chases_a_man_it_sees_ahead())
 	results.append(await _back_at_its_post_it_patrols_again())
 	results.append(await _with_alert_time_it_stands_turned_to_the_man_then_chases())
+	results.append(await _the_level_s_demon_warns_right_after_its_alert_of_a_man_in_bite_range())
+	results.append(await _waiting_before_its_first_attack_holds_a_demon_back_only_near_the_man())
+	results.append(await _a_demon_thrown_off_before_its_first_attack_waits_a_draw_once_back())
+	results.append(await _a_demon_that_hesitates_waits_out_its_recover_time_at_the_next_man())
+	results.append(await _the_level_s_demon_waits_away_from_the_man_between_its_bites())
+	results.append(await _the_level_s_demon_freed_while_it_waits_warns_right_after_its_next_alert())
+	results.append(await _the_level_s_demon_s_bite_lands_on_a_man_standing_still())
+	results.append(await _waiting_at_retreat_distance_keeps_a_demon_away_until_it_can_bite_again())
+	results.append(await _waiting_at_retreat_distance_keeps_a_demon_away_after_the_man_s_blink())
+	results.append(await _pacing_keeps_a_demon_moving_while_it_waits_between_its_bites())
+	results.append(await _pacing_keeps_a_demon_moving_through_the_man_s_blink())
+	results.append(await _pacing_turns_a_demon_back_at_an_edge_behind_it())
+	results.append(await _pacing_turns_a_demon_back_at_a_wall_behind_it())
+	results.append(await _the_level_s_demon_paces_between_its_bites())
+	results.append(await _the_level_s_demon_paces_through_the_man_s_blink())
+	results.append(await _the_level_s_demons_on_one_side_never_stand_waiting_in_a_row())
+	results.append(await _a_pack_of_the_level_s_demons_takes_turns_and_every_one_bites())
+	results.append(await _a_pack_of_the_level_s_demons_never_waits_long_to_attack())
+	results.append(await _a_pack_of_the_level_s_demons_brings_the_man_down_fast())
+	results.append(await _the_level_s_demons_on_either_side_of_the_man_attack_at_once())
+	results.append(await _the_level_s_demon_thrown_off_on_its_turn_hands_it_to_the_other())
+	results.append(await _the_level_s_demon_freed_on_its_turn_hands_it_to_the_other())
+	results.append(await _the_level_s_demon_never_lunges_from_within_its_wait())
+	results.append(await _a_demon_is_drawn_over_the_others_while_it_attacks())
+	results.append(await _the_level_s_demon_stuck_across_a_hole_leaves_its_turn_to_another())
+	results.append(await _the_level_s_demons_cornered_by_an_edge_never_stand_on_top_of_each_other())
+	results.append(await _the_level_s_demons_cornered_by_an_edge_keep_biting())
+	results.append(await _the_level_s_demon_on_its_turn_runs_through_another_to_bite())
+	results.append(await _the_level_s_demon_s_bites_after_its_wait_land_on_a_man_standing_still())
+	results.append(await _the_level_s_demon_s_bites_land_through_the_man_s_blink())
+	results.append(await _with_attacks_invulnerable_man_its_lunge_lands_through_the_man_s_blink())
+	results.append(await _the_level_s_demon_starts_no_attack_at_a_man_held_by_others())
+	results.append(await _the_level_s_demon_waits_out_the_man_s_time_after_breaking_free())
+	results.append(await _the_level_s_demons_running_after_the_man_never_run_as_one())
 	results.append(await _alerted_it_lets_go_of_a_man_who_is_freed())
 	results.append(await _with_search_time_it_sniffs_where_it_last_saw_the_man_then_walks_back())
 	results.append(await _with_search_time_only_a_wall_makes_it_search())
@@ -1673,8 +1798,9 @@ func _against_a_man_standing_still_it_is_never_on_him_longer_than_the_bite() -> 
 
 
 ## Two demons, one behind the other, come at a man standing still with no chance to attack, the
-## bodies solid: the first stops at his side, the second Pack Spacing behind the first's body, and
-## their bodies never overlap on the way (ADR 0024).
+## bodies solid: the first stops at his side, and holds the second back Pack Spacing behind its
+## body, as only a demon at his side does in the hunt (ADR 0024, ADR 0053); their bodies never
+## overlap on the way.
 func _a_demon_behind_another_waits_pack_spacing_behind_it() -> bool:
 	var ground: StaticBody2D = make_platform(FLOOR_LEFT, FLOOR_RIGHT)
 	var man: Player = await spawn_on_floor(Vector2(SEEN_X, SPAWN_Y))
@@ -1981,6 +2107,37 @@ func _warns_of_no_attack_while_the_man_is_invulnerable() -> bool:
 			% [INVULNERABLE_TIME, in_range, warned_while_invulnerable, SETTLE_FRAMES, warned_after])
 
 
+## A demon without Attacks Invulnerable Man, as in _warns_of_no_attack_while_the_man_is_invulnerable,
+## at a man who blinks after a hit, a blink a level-1 dog's bites pierce but its own cannot: it
+## chases him into Bite Range, but never warns while he blinks, and warns once he does not (ADR
+## 0025, ADR 0055).
+func _without_attacks_invulnerable_man_it_waits_out_the_man_s_blink_after_a_hit() -> bool:
+	var ground: StaticBody2D = make_platform(FLOOR_LEFT, FLOOR_RIGHT)
+	var man: Player = await spawn_on_floor(Vector2(BITE_X, SPAWN_Y))
+	var hurtbox: Hurtbox = _hurtbox_of(man)
+	hurtbox.start_invulnerability(INVULNERABLE_TIME, true)
+	var demon: Demon = await _spawn_demon(0.0, LUNGE_RANGE, [], true)
+	_lunge_of(demon).chance_per_second = NO_CHANCE
+	var in_range: bool = false
+	var warned_while_blinking: bool = false
+	for _frame: int in MAX_FRAMES:
+		await physics_frame
+		if not hurtbox.is_invulnerable():
+			break
+		var state: Demon.State = demon.get_state()
+		in_range = in_range or (state == Demon.State.CHASE
+				and absf(man.position.x - demon.position.x) < BITE_RANGE)
+		warned_while_blinking = warned_while_blinking or state == Demon.State.WARNING
+	var warned_after: bool = (demon.get_state() == Demon.State.WARNING
+			or await _is_in_state_within(demon, Demon.State.WARNING, SETTLE_FRAMES))
+	await _clear([ground, man, demon])
+	return report(in_range and not warned_while_blinking and warned_after,
+			("Bite of a demon without Attacks Invulnerable Man at a man blinking after a hit for "
+			+ "%.1f s: chased him into Bite Range %s, warned while he blinked %s, warned within %d "
+			+ "frames after %s") % [INVULNERABLE_TIME, in_range, warned_while_blinking,
+					SETTLE_FRAMES, warned_after])
+
+
 ## Two demons that bite, one on each side of a man invulnerable for INVULNERABLE_TIME, both with him
 ## in Bite Range when it ends. With no Max Hesitation they warn on the same frame, the pack in step
 ## of ADR 0027; with MAX_HESITATION each waits its own draw, so they warn on different frames, both
@@ -1995,6 +2152,43 @@ func _two_demons_set_free_together_warn_apart_with_max_hesitation() -> bool:
 			("Two demons set free together, frames to warn after the man's blink: with no Max "
 			+ "Hesitation %s, with %.2f s %s (at most %d)") % [together, MAX_HESITATION, apart,
 			most])
+
+
+## Two demons without Attacks Invulnerable Man that bite, one on each side of a man invulnerable for
+## INVULNERABLE_TIME when they notice him, his Hurtbox on, both with him in Bite Range when it ends
+## and no Max Hesitation, so they bite together: the first bite to land sets him blinking, which the
+## other's cannot pierce, so of the two only one lands and he loses SP once (ADR 0025, ADR 0055).
+func _two_demons_that_cannot_pierce_biting_together_take_sp_once() -> bool:
+	var ground: StaticBody2D = make_platform(FLOOR_LEFT, FLOOR_RIGHT)
+	var man: Player = await spawn_on_floor(Vector2(BITE_X, SPAWN_Y))
+	var hurtbox: Hurtbox = _hurtbox_of(man)
+	hurtbox.monitoring = true
+	hurtbox.start_invulnerability(INVULNERABLE_TIME)
+	var demons: Array[Demon] = [await _spawn_demon(0.0, LUNGE_RANGE, [], true),
+			await _spawn_demon(2.0 * BITE_X, LUNGE_RANGE, [], true)]
+	var started_on: Array[int] = []
+	var landed: Array[int] = [0]
+	for demon: Demon in demons:
+		_lunge_of(demon).chance_per_second = NO_CHANCE
+		demon.stats.max_hesitation = 0.0
+		demon.state_changed.connect(func(previous: Demon.State, current: Demon.State) -> void:
+			if previous == Demon.State.WARNING and current == Demon.State.CHASE:
+				started_on.append(Engine.get_physics_frames()))
+		demon.attack_landed.connect(func(_attack: DemonAttack) -> void: landed[0] += 1)
+	var taken: Array[float] = [0.0]
+	man.soul_points.damaged.connect(func(amount: float) -> void: taken[0] += amount)
+	var both_bit: bool = await wait_until(func() -> bool: return started_on.size() >= 2, MAX_FRAMES)
+	await _wait_physics_frames(roundi(INVULNERABLE_TIME * Engine.physics_ticks_per_second)
+			- SETTLE_FRAMES)
+	var together: bool = both_bit and started_on[1] - started_on[0] <= SETTLE_FRAMES
+	var count: int = landed[0]
+	var lost: float = taken[0]
+	var bite_damage: float = _bite_of(demons[0]).damage
+	await _clear([ground, man, demons[0], demons[1]])
+	return report(together and count == 1 and is_equal_approx(lost, bite_damage),
+			("Two demons without Attacks Invulnerable Man biting a man together, his Hurtbox on: "
+			+ "bites started on frames %s, landed %d (just 1), SP lost %.0f (one bite's %.0f)")
+			% [started_on, count, lost, bite_damage])
 
 
 ## Frames from the end of the man's invulnerability until each of two demons that bite, one on each
@@ -2024,6 +2218,38 @@ func _first_warnings_after_invulnerability(max_hesitation: float) -> Array[int]:
 		await physics_frame
 	await _clear([ground, man, demons[0], demons[1]])
 	return warned_at
+
+
+## Two of the level's demons, which wait no draw before their first attack, one on each side of a
+## man who is invulnerable for INVULNERABLE_TIME when they notice him, as after he breaks free of a
+## hold, a blink their bites cannot pierce (ADR 0055): the end of his blink sets them free together,
+## so each still waits its own draw of Max Hesitation and they warn on different frames, both within
+## it of the end (ADR 0027, ADR 0051). HESITATION_SEED goes in before the demons, which seed their
+## own draws from it.
+func _the_level_s_demons_set_free_by_the_man_s_blink_still_warn_apart() -> bool:
+	var ground: StaticBody2D = make_platform(FLOOR_LEFT, FLOOR_RIGHT)
+	var man: Player = await spawn_on_floor(Vector2(BITE_X, SPAWN_Y))
+	var hurtbox: Hurtbox = _hurtbox_of(man)
+	hurtbox.monitoring = false
+	hurtbox.start_invulnerability(INVULNERABLE_TIME)
+	seed(HESITATION_SEED)
+	var demons: Array[Demon] = [await _spawn_level_demon(0.0, []),
+			await _spawn_level_demon(2.0 * BITE_X, [])]
+	var most: int = demons[0].stats.get_hesitation_frames(1.0) + SETTLE_FRAMES
+	await wait_until(func() -> bool: return not hurtbox.is_invulnerable(), FRAMES_TO_WATCH)
+	var warned_at: Array[int] = [NEVER_REACHED, NEVER_REACHED]
+	for frame: int in FRAMES_TO_WATCH:
+		for index: int in demons.size():
+			if warned_at[index] == NEVER_REACHED \
+					and demons[index].get_state() == Demon.State.WARNING:
+				warned_at[index] = frame
+		await physics_frame
+	await _clear([ground, man, demons[0], demons[1]])
+	var within: bool = warned_at.all(
+			func(frames: int) -> bool: return frames >= 0 and frames <= most)
+	return report(warned_at[0] != warned_at[1] and within,
+			("Two of the level's demons set free together by the man's blink, frames to warn "
+			+ "after it: %s (at most %d)") % [warned_at, most])
 
 
 ## A demon warning of a lunge, still, or of a bite, on the run, when the man turns invulnerable, as
@@ -3770,6 +3996,1084 @@ func _with_alert_time_it_stands_turned_to_the_man_then_chases() -> bool:
 			% [_name_of(first), facing, stood, alert_frames, moved, chased])
 
 
+## The level's demon, of lust_demon_stats.tres, that notices the man standing in Bite Range ahead of
+## it warns of its bite as soon as its alert ends, with no draw of Max Hesitation in between: the
+## alert's mark and sound already tell of the attack (ADR 0051). Its Max Hesitation goes up to
+## LONG_HESITATION, so a draw would show. FIRST_ATTACK_SEED goes in before the demon, which seeds
+## its own draws from it.
+func _the_level_s_demon_warns_right_after_its_alert_of_a_man_in_bite_range() -> bool:
+	var ground: StaticBody2D = make_platform(FLOOR_LEFT, FLOOR_RIGHT)
+	var changes: Array[Vector2i] = []
+	seed(FIRST_ATTACK_SEED)
+	var demon: Demon = await _spawn_level_demon(0.0, changes)
+	demon.stats.max_hesitation = LONG_HESITATION
+	var man: Player = await spawn_on_floor(Vector2(BITE_X, SPAWN_Y))
+	var warned: bool = await _is_in_state_within(demon, Demon.State.WARNING, FRAMES_TO_WATCH)
+	var alert_frames: int = demon.stats.get_alert_frames()
+	var alerted: int = _frames_in(changes, Demon.State.ALERT)
+	var chased: int = _frames_in(changes, Demon.State.CHASE)
+	await _clear([ground, man, demon])
+	return report(warned and alerted == alert_frames and chased >= 0 and chased <= SETTLE_FRAMES,
+			"Level's demon, the man %d px ahead: alerted %d frames (asked %d), then chased %d frames before it warned (at most %d), warned %s"
+			% [BITE_X, alerted, alert_frames, chased, SETTLE_FRAMES, warned])
+
+
+## A demon that bites, never lunges and has MAX_HESITATION. With Hesitates Before First Attack,
+## once it notices the man standing in Bite Range ahead of it, it waits its draw before it warns,
+## as every demon did before ADR 0051; without, it warns at once. With the man SEEN_X ahead, out
+## of Bite Range, it warns on the same frame with and without: the draw runs out on its way.
+func _waiting_before_its_first_attack_holds_a_demon_back_only_near_the_man() -> bool:
+	var near_with: int = await _chase_frames_to_first_warning(BITE_X, true)
+	var near_without: int = await _chase_frames_to_first_warning(BITE_X, false)
+	var far_with: int = await _chase_frames_to_first_warning(SEEN_X, true)
+	var far_without: int = await _chase_frames_to_first_warning(SEEN_X, false)
+	var most: int = roundi(MAX_HESITATION * Engine.physics_ticks_per_second) + SETTLE_FRAMES
+	return report(near_with > SETTLE_FRAMES and near_with <= most and near_without >= 0
+			and near_without <= SETTLE_FRAMES and far_with != NEVER_REACHED
+			and far_with == far_without,
+			("Frames chased before the first warning with and without Hesitates Before First "
+			+ "Attack: the man %d px ahead, %d (more than %d, at most %d) and %d (at most %d); "
+			+ "%d px ahead, %d and %d (the same)") % [BITE_X, near_with, SETTLE_FRAMES, most,
+			near_without, SETTLE_FRAMES, SEEN_X, far_with, far_without])
+
+
+## Physics frames a demon that bites, never lunges, has MAX_HESITATION and has Hesitates Before
+## First Attack as hesitates, chases the man standing man_x ahead of it before it first warns;
+## NEVER_REACHED if it does not warn within FRAMES_TO_WATCH. The man comes once it has its values.
+## FIRST_ATTACK_SEED goes in before the demon, which seeds its own draws from it.
+func _chase_frames_to_first_warning(man_x: float, hesitates: bool) -> int:
+	var ground: StaticBody2D = make_platform(FLOOR_LEFT, FLOOR_RIGHT)
+	var changes: Array[Vector2i] = []
+	seed(FIRST_ATTACK_SEED)
+	var demon: Demon = await _spawn_demon(0.0, NO_LUNGE, changes, true)
+	demon.stats.max_hesitation = MAX_HESITATION
+	demon.stats.hesitates_before_first_attack = hesitates
+	var man: Player = await spawn_on_floor(Vector2(man_x, SPAWN_Y))
+	var warned: bool = await _is_in_state_within(demon, Demon.State.WARNING, FRAMES_TO_WATCH)
+	var chased: int = _frames_in(changes, Demon.State.CHASE) if warned else NEVER_REACHED
+	await _clear([ground, man, demon])
+	return chased
+
+
+## A demon that bites, never lunges, has LONG_HESITATION and no Hesitates Before First Attack,
+## thrown straight up by the crucifix as soon as it starts to chase the man standing in Bite Range
+## ahead of it: back in the chase by him, it waits a new draw of Max Hesitation before it warns, as
+## after leaving the floor in any other way, and not the none it had before the throw (ADR 0051).
+## The man comes once it has its values. FIRST_ATTACK_SEED goes in before the demon, which seeds its
+## own draws from it.
+func _a_demon_thrown_off_before_its_first_attack_waits_a_draw_once_back() -> bool:
+	var ground: StaticBody2D = make_platform(FLOOR_LEFT, FLOOR_RIGHT)
+	var changes: Array[Vector2i] = []
+	seed(FIRST_ATTACK_SEED)
+	var demon: Demon = await _spawn_demon(0.0, NO_LUNGE, changes, true)
+	demon.stats.max_hesitation = LONG_HESITATION
+	demon.stats.hesitates_before_first_attack = false
+	demon.stats.throw_distance = 0.0
+	var man: Player = await spawn_on_floor(Vector2(BITE_X, SPAWN_Y))
+	var chased: bool = await _is_in_state_within(demon, Demon.State.CHASE, FRAMES_TO_WATCH)
+	(demon.get_node(^"Repellable") as Repellable).repelled.emit(man.global_position)
+	var warned: bool = await _is_in_state_within(demon, Demon.State.WARNING, MAX_FRAMES)
+	var back: int = _index_after(changes, Demon.State.REPELLED)
+	var waited: int = changes[back + 1].y - changes[back].y \
+			if warned and back != NEVER_REACHED and back + 1 < changes.size() else NEVER_REACHED
+	await _clear([ground, man, demon])
+	return report(chased and waited > SETTLE_FRAMES,
+			"Thrown off as its chase starts, the man %d px ahead: %s; back in the chase %d frames before it warned (more than %d)"
+			% [BITE_X, _names_of(changes), waited, SETTLE_FRAMES])
+
+
+## A demon that bites, never lunges, has no Max Hesitation and has Hesitates Before First Attack, as
+## every demon had before ADR 0051, with LONG_RECOVER_TIME: freed of its man as its bite ends, it
+## still waits out what is left of the bite's Recover Time at the next man it notices, standing as
+## near, before it warns again; only without Hesitates Before First Attack does noticing a man end
+## the Recover Time (ADR 0051).
+func _a_demon_that_hesitates_waits_out_its_recover_time_at_the_next_man() -> bool:
+	var ground: StaticBody2D = make_platform(FLOOR_LEFT, FLOOR_RIGHT)
+	var changes: Array[Vector2i] = []
+	var demon: Demon = await _spawn_demon(0.0, NO_LUNGE, changes, true)
+	demon.stats.max_hesitation = 0.0
+	_bite_of(demon).recover_time = LONG_RECOVER_TIME
+	var man: Player = await spawn_on_floor(Vector2(BITE_X, SPAWN_Y))
+	_hurtbox_of(man).monitoring = false
+	var bit: bool = await wait_until(
+			func() -> bool: return _index_after(changes, Demon.State.WARNING) != NEVER_REACHED,
+			FRAMES_TO_WATCH)
+	await remove_player(man)
+	var next_man: Player = await spawn_on_floor(Vector2(BITE_X, SPAWN_Y))
+	_hurtbox_of(next_man).monitoring = false
+	var warned_again: bool = await wait_until(func() -> bool:
+			return changes.filter(func(change: Vector2i) -> bool:
+					return change.x == Demon.State.WARNING).size() >= 2,
+			MAX_FRAMES)
+	var warned_on: Array[int] = []
+	for change: Vector2i in changes:
+		if change.x == Demon.State.WARNING:
+			warned_on.append(change.y)
+	var bit_on: int = changes[_index_after(changes, Demon.State.WARNING)].y if bit else 0
+	var waited: int = warned_on[1] - bit_on if warned_again else NEVER_REACHED
+	var recover: int = _bite_of(demon).get_recover_frames()
+	await _clear([ground, next_man, demon])
+	return report(bit and waited >= recover,
+			"Freed of its man as its bite ends, at the next: %s; warned again %d frames after the bite (at least its Recover Time, %d)"
+			% [_names_of(changes), waited, recover])
+
+
+## The level's demon, of lust_demon_stats.tres, whose bite on the run misses a man standing still,
+## the bodies solid: once it has backed off, it waits its Retreat Distance away from him, at least
+## for what is left of the bite's Recover Time, and then runs at him and warns on the way, with no
+## wait by him (ADR 0051). HESITATION_SEED goes in before the demon, which seeds its own draws from
+## it.
+func _the_level_s_demon_waits_away_from_the_man_between_its_bites() -> bool:
+	var ground: StaticBody2D = make_platform(FLOOR_LEFT, FLOOR_RIGHT)
+	var man: Player = await spawn_on_floor(Vector2(BITE_X, SPAWN_Y))
+	_hurtbox_of(man).monitoring = false
+	var changes: Array[Vector2i] = []
+	seed(HESITATION_SEED)
+	var demon: Demon = await _spawn_level_demon(0.0, changes)
+	_make_the_bodies_solid(man, demon)
+	await wait_until(
+			func() -> bool: return _index_after(changes, Demon.State.RETREAT) != NEVER_REACHED)
+	var frames: Vector2i = await _frames_away_and_near_until_it_warns(man, demon)
+	var bite: DemonAttack = _bite_of(demon)
+	var least_away: int = bite.get_recover_frames() - bite.get_bite_frames() - SETTLE_FRAMES
+	var keeps: float = demon.retreat_distance()
+	var slowest: float = demon.stats.chase_speed * (1.0 - demon.stats.pack_variation)
+	var most_near: int = _frames_to_run_in(keeps, bite.attack_range, slowest) + SETTLE_FRAMES
+	await _clear([ground, man, demon])
+	return report(frames.x >= least_away and frames.y != NEVER_REACHED and frames.y <= most_near,
+			"Level's demon whose bite missed: %s; from the end of its backing off to its next warning, %d frames at least %.0f px from the man (its Retreat Distance, less %d; at least %d) and %d nearer (at most %d)"
+			% [_names_of(changes), frames.x, keeps, TOLERANCE, least_away, frames.y, most_near])
+
+
+## The level's demon, of lust_demon_stats.tres, whose man is freed, as on a respawn, as it ends its
+## backing off after a bite that missed him: once it notices a man again, standing in Bite Range
+## ahead of it, it warns of its bite as soon as its alert ends, with nothing left of the bite's
+## Recover Time to wait (ADR 0051). HESITATION_SEED goes in before the demon, which seeds its own
+## draws from it.
+func _the_level_s_demon_freed_while_it_waits_warns_right_after_its_next_alert() -> bool:
+	var ground: StaticBody2D = make_platform(FLOOR_LEFT, FLOOR_RIGHT)
+	var man: Player = await spawn_on_floor(Vector2(BITE_X, SPAWN_Y))
+	_hurtbox_of(man).monitoring = false
+	var changes: Array[Vector2i] = []
+	seed(HESITATION_SEED)
+	var demon: Demon = await _spawn_level_demon(0.0, changes)
+	_make_the_bodies_solid(man, demon)
+	await wait_until(
+			func() -> bool: return _index_after(changes, Demon.State.RETREAT) != NEVER_REACHED)
+	await remove_player(man)
+	var let_go: bool = await wait_until(
+			func() -> bool: return demon.get_state() != Demon.State.CHASE, SETTLE_FRAMES)
+	changes.clear()
+	var next_man: Player = await spawn_on_floor(
+			Vector2(demon.position.x + demon.get_facing() * BITE_X, SPAWN_Y))
+	var warned: bool = await _is_in_state_within(demon, Demon.State.WARNING, FRAMES_TO_WATCH)
+	var chased: int = _frames_in(changes, Demon.State.CHASE)
+	await _clear([ground, next_man, demon])
+	return report(let_go and warned and chased >= 0 and chased <= SETTLE_FRAMES,
+			"Level's demon freed of its man as it ends its backing off: let go %s; then, at a man %d px ahead, %s, chasing %d frames before it warned (at most %d), warned %s"
+			% [let_go, BITE_X, _names_of(changes), chased, SETTLE_FRAMES, warned])
+
+
+## The level's demon, of lust_demon_stats.tres, at a man standing still in Bite Range ahead of it,
+## the bodies solid: its bite on the run, with the bite's short Warning Time, still reaches him and
+## lands once.
+func _the_level_s_demon_s_bite_lands_on_a_man_standing_still() -> bool:
+	var ground: StaticBody2D = make_platform(FLOOR_LEFT, FLOOR_RIGHT)
+	var man: Player = await spawn_on_floor(Vector2(BITE_X, SPAWN_Y))
+	_hurtbox_of(man).monitoring = true
+	var demon: Demon = await _spawn_level_demon(0.0, [])
+	_make_the_bodies_solid(man, demon)
+	var landed: Array[DemonAttack] = []
+	demon.attack_landed.connect(func(attack: DemonAttack) -> void: landed.append(attack))
+	var bite: DemonAttack = _bite_of(demon)
+	var warned: bool = await _is_in_state_within(demon, Demon.State.WARNING, FRAMES_TO_WATCH)
+	await _wait_physics_frames(bite.get_warning_frames() + bite.get_bite_frames() + SETTLE_FRAMES)
+	await _clear([ground, man, demon])
+	return report(warned and landed.size() == 1 and landed[0] == bite,
+			"Level's demon at a man %d px ahead, its bite warned of for %.2f s: warned %s, landed %s"
+			% [BITE_X, bite.warning_time, warned, _animations_of(landed)])
+
+
+## A demon that bites, never lunges and backs off, whose bite misses a man standing still, the
+## bodies solid. With Waits At Retreat Distance, once it has backed off it waits that far from him
+## for what is left of the bite's Recover Time, and then runs at him; without, it comes straight
+## back (ADR 0051).
+func _waiting_at_retreat_distance_keeps_a_demon_away_until_it_can_bite_again() -> bool:
+	var waiting: Vector2i = await _frames_away_and_near_between_bites(true)
+	var not_waiting: Vector2i = await _frames_away_and_near_between_bites(false)
+	var least_away: int = roundi((BITE_RECOVER_TIME - BITE_TIME)
+			* Engine.physics_ticks_per_second) - SETTLE_FRAMES
+	var most_near: int = _frames_to_run_in(RETREAT_DISTANCE, BITE_RANGE, CHASE_SPEED) \
+			+ SETTLE_FRAMES
+	return report(waiting.x >= least_away and waiting.y != NEVER_REACHED
+			and waiting.y <= most_near and not_waiting.x != NEVER_REACHED
+			and not_waiting.x <= SETTLE_FRAMES,
+			("From the end of the backing off after a bite that missed to the next warning, frames "
+			+ "at least Retreat Distance from the man and nearer: with Waits At Retreat Distance, %d "
+			+ "(at least %d) and %d (at most %d); without, %d (at most %d) and %d")
+			% [waiting.x, least_away, waiting.y, most_near, not_waiting.x, SETTLE_FRAMES,
+			not_waiting.y])
+
+
+## Physics frames, from the end of its first backing off to its next warning, a demon that bites,
+## never lunges and backs off, with Waits At Retreat Distance as waits, keeps its Retreat Distance
+## from the man, less TOLERANCE (x), and comes nearer (y). He stands BITE_X ahead of it, the bodies
+## solid, and its bites miss him.
+func _frames_away_and_near_between_bites(waits: bool) -> Vector2i:
+	var ground: StaticBody2D = make_platform(FLOOR_LEFT, FLOOR_RIGHT)
+	var man: Player = await spawn_on_floor(Vector2(BITE_X, SPAWN_Y))
+	_hurtbox_of(man).monitoring = false
+	var changes: Array[Vector2i] = []
+	var demon: Demon = await _spawn_demon(0.0, NO_LUNGE, changes, true)
+	_make_it_back_off(demon)
+	_make_the_bodies_solid(man, demon)
+	demon.stats.waits_at_retreat_distance = waits
+	await wait_until(
+			func() -> bool: return _index_after(changes, Demon.State.RETREAT) != NEVER_REACHED)
+	var frames: Vector2i = await _frames_away_and_near_until_it_warns(man, demon)
+	await _clear([ground, man, demon])
+	return frames
+
+
+## A demon that bites, never lunges, backs off and has LONG_HESITATION, at a man standing still who
+## is invulnerable for INVULNERABLE_TIME when it notices him, the bodies solid: it keeps its Retreat
+## Distance from him through his blink. With Waits At Retreat Distance, it also waits there through
+## the draw of Max Hesitation it makes as the blink ends, and then runs at him; without, it waits by
+## him (ADR 0051).
+func _waiting_at_retreat_distance_keeps_a_demon_away_after_the_man_s_blink() -> bool:
+	var waiting: Vector2i = await _frames_away_and_near_after_the_blink(true)
+	var not_waiting: Vector2i = await _frames_away_and_near_after_the_blink(false)
+	var most_near: int = _frames_to_run_in(RETREAT_DISTANCE, BITE_RANGE, CHASE_SPEED) \
+			+ SETTLE_FRAMES
+	return report(waiting.y != NEVER_REACHED and waiting.y <= most_near
+			and not_waiting.y > most_near,
+			("From the end of the man's blink to the warning, frames at least Retreat Distance from "
+			+ "him and nearer: with Waits At Retreat Distance, %d and %d (at most %d); without, %d "
+			+ "and %d (more than %d)")
+			% [waiting.x, waiting.y, most_near, not_waiting.x, not_waiting.y, most_near])
+
+
+## Physics frames, from the end of the man's blink to its warning, a demon that bites, never lunges,
+## backs off and has LONG_HESITATION, with Waits At Retreat Distance as waits, keeps its Retreat
+## Distance from him, less TOLERANCE (x), and comes nearer (y). He stands BITE_X ahead of it, the
+## bodies solid, and is invulnerable for INVULNERABLE_TIME when it notices him. HESITATION_SEED goes
+## in before the demon, which seeds its own draws from it.
+func _frames_away_and_near_after_the_blink(waits: bool) -> Vector2i:
+	var ground: StaticBody2D = make_platform(FLOOR_LEFT, FLOOR_RIGHT)
+	var man: Player = await spawn_on_floor(Vector2(BITE_X, SPAWN_Y))
+	var hurtbox: Hurtbox = _hurtbox_of(man)
+	hurtbox.monitoring = false
+	hurtbox.start_invulnerability(INVULNERABLE_TIME)
+	seed(HESITATION_SEED)
+	var demon: Demon = await _spawn_demon(0.0, NO_LUNGE, [], true)
+	_make_it_back_off(demon)
+	_make_the_bodies_solid(man, demon)
+	demon.stats.max_hesitation = LONG_HESITATION
+	demon.stats.waits_at_retreat_distance = waits
+	await wait_until(func() -> bool: return not hurtbox.is_invulnerable(), FRAMES_TO_WATCH)
+	var frames: Vector2i = await _frames_away_and_near_until_it_warns(man, demon)
+	await _clear([ground, man, demon])
+	return frames
+
+
+## Physics frames, up to the demon's next warning, it keeps its Retreat Distance from the man, less
+## TOLERANCE (x), and comes nearer him (y); NEVER_REACHED for both if it does not warn within
+## MAX_FRAMES.
+func _frames_away_and_near_until_it_warns(man: Player, demon: Demon) -> Vector2i:
+	var away: int = 0
+	var near: int = 0
+	for _frame: int in MAX_FRAMES:
+		await physics_frame
+		if demon.get_state() == Demon.State.WARNING:
+			return Vector2i(away, near)
+		if absf(man.position.x - demon.position.x) >= demon.retreat_distance() - TOLERANCE:
+			away += 1
+		else:
+			near += 1
+	return Vector2i(NEVER_REACHED, NEVER_REACHED)
+
+
+## Physics frames a demon takes to run from distance px from the man, less TOLERANCE, into its
+## bite's attack_range, at speed px/s.
+func _frames_to_run_in(distance: float, attack_range: float, speed: float) -> int:
+	return ceili((distance - TOLERANCE - attack_range) / speed * Engine.physics_ticks_per_second)
+
+
+## A demon that bites, never lunges, backs off and waits at Retreat Distance, with
+## LONG_RECOVER_TIME, whose bite misses a man standing still, the bodies solid. With Retreat Pace
+## Width, from the end of its backing off to its next warning it paces between Retreat Distance and
+## RETREAT_PACE_WIDTH past it at RETREAT_PACE_SPEED, turning at both ends, and never stands still;
+## without, it stands at Retreat Distance (ADR 0052).
+func _pacing_keeps_a_demon_moving_while_it_waits_between_its_bites() -> bool:
+	var pacing: PaceWatch = await _watch_it_wait_between_bites(RETREAT_PACE_WIDTH,
+			[make_platform(FLOOR_LEFT, FLOOR_RIGHT)])
+	var standing: PaceWatch = await _watch_it_wait_between_bites(0.0,
+			[make_platform(FLOOR_LEFT, FLOOR_RIGHT)])
+	var far: float = RETREAT_DISTANCE + RETREAT_PACE_WIDTH
+	return report(pacing.warned and pacing.longest_still <= SETTLE_FRAMES
+			and pacing.turns >= LEAST_PACE_TURNS and pacing.nearest >= RETREAT_DISTANCE - TOLERANCE
+			and pacing.furthest >= far - TOLERANCE and pacing.furthest <= far + TOLERANCE
+			and absf(pacing.fastest_pace - RETREAT_PACE_SPEED) <= SPEED_TOLERANCE
+			and standing.warned and standing.longest_still > SETTLE_FRAMES,
+			("Waiting between its bites, with Retreat Pace Width %d px (at most %d frames still, %d "
+			+ "turns or more, %d to %d px from the man, pacing at %d px/s): %s; without (more than "
+			+ "%d frames still): %s")
+			% [RETREAT_PACE_WIDTH, SETTLE_FRAMES, LEAST_PACE_TURNS, RETREAT_DISTANCE, far,
+			RETREAT_PACE_SPEED, pacing.describe(), SETTLE_FRAMES, standing.describe()])
+
+
+## A demon that bites, never lunges and backs off, at a man standing still who is invulnerable for
+## LONG_INVULNERABLE_TIME when it notices him, the bodies solid. With Retreat Pace Width, and no
+## Waits At Retreat Distance, it paces through his blink and never stands still; without, it stands
+## at Retreat Distance (ADR 0052).
+func _pacing_keeps_a_demon_moving_through_the_man_s_blink() -> bool:
+	var pacing: PaceWatch = await _watch_it_through_the_blink(RETREAT_PACE_WIDTH)
+	var standing: PaceWatch = await _watch_it_through_the_blink(0.0)
+	return report(pacing.warned and pacing.longest_still <= SETTLE_FRAMES
+			and pacing.turns >= LEAST_BLINK_PACE_TURNS and standing.warned
+			and standing.longest_still > SETTLE_FRAMES,
+			("Through the man's blink, with Retreat Pace Width %d px (at most %d frames still, %d "
+			+ "turns or more): %s; without (more than %d frames still): %s")
+			% [RETREAT_PACE_WIDTH, SETTLE_FRAMES, LEAST_BLINK_PACE_TURNS, pacing.describe(),
+			SETTLE_FRAMES, standing.describe()])
+
+
+## As _pacing_keeps_a_demon_moving_while_it_waits_between_its_bites, but the demon's floor ends at
+## RETREAT_PACE_EDGE_X, behind it and short of RETREAT_PACE_WIDTH past Retreat Distance: it turns
+## back at the edge, never off its floor, and never stands still.
+func _pacing_turns_a_demon_back_at_an_edge_behind_it() -> bool:
+	var pacing: PaceWatch = await _watch_it_wait_between_bites(RETREAT_PACE_WIDTH,
+			[make_platform(RETREAT_PACE_EDGE_X, FLOOR_RIGHT)])
+	var far: float = RETREAT_DISTANCE + RETREAT_PACE_WIDTH
+	return report(pacing.warned and pacing.always_on_floor
+			and pacing.longest_still <= SETTLE_FRAMES and pacing.turns >= LEAST_PACE_TURNS
+			and pacing.furthest < far - TOLERANCE,
+			("Waiting between its bites, its floor ending at x = %d behind it (on its floor, at most "
+			+ "%d frames still, %d turns or more, under %d px from the man): on its floor %s, %s")
+			% [RETREAT_PACE_EDGE_X, SETTLE_FRAMES, LEAST_PACE_TURNS, far - TOLERANCE,
+			pacing.always_on_floor, pacing.describe()])
+
+
+## As _pacing_keeps_a_demon_moving_while_it_waits_between_its_bites, but a wall stands behind the
+## demon up to RETREAT_PACE_WALL_X, short of RETREAT_PACE_WIDTH past Retreat Distance: it turns back
+## at the wall and never stands still.
+func _pacing_turns_a_demon_back_at_a_wall_behind_it() -> bool:
+	var pacing: PaceWatch = await _watch_it_wait_between_bites(RETREAT_PACE_WIDTH,
+			[make_platform(FLOOR_LEFT, FLOOR_RIGHT),
+			make_wall(RETREAT_PACE_WALL_X - WALL_THICKNESS, RETREAT_PACE_WALL_X, WALL_TOP)])
+	var far: float = RETREAT_DISTANCE + RETREAT_PACE_WIDTH
+	return report(pacing.warned and pacing.longest_still <= SETTLE_FRAMES
+			and pacing.turns >= LEAST_PACE_TURNS and pacing.furthest < far - TOLERANCE,
+			("Waiting between its bites, a wall behind it at x = %d (at most %d frames still, %d "
+			+ "turns or more, under %d px from the man): %s")
+			% [RETREAT_PACE_WALL_X, SETTLE_FRAMES, LEAST_PACE_TURNS, far - TOLERANCE,
+			pacing.describe()])
+
+
+## The level's demon, of lust_demon_stats.tres, whose bite on the run misses a man standing still,
+## the bodies solid: from the end of its backing off to its next warning, it paces between its
+## Retreat Distance and Retreat Pace Width past it, and never stands still (ADR 0052).
+## HESITATION_SEED goes in before the demon, which seeds its own draws from it.
+func _the_level_s_demon_paces_between_its_bites() -> bool:
+	var ground: StaticBody2D = make_platform(FLOOR_LEFT, FLOOR_RIGHT)
+	var man: Player = await spawn_on_floor(Vector2(BITE_X, SPAWN_Y))
+	_hurtbox_of(man).monitoring = false
+	var changes: Array[Vector2i] = []
+	seed(HESITATION_SEED)
+	var demon: Demon = await _spawn_level_demon(0.0, changes)
+	_make_the_bodies_solid(man, demon)
+	await wait_until(
+			func() -> bool: return _index_after(changes, Demon.State.RETREAT) != NEVER_REACHED)
+	var watch: PaceWatch = await _watch_it_keep_back(man, demon)
+	var near: float = demon.retreat_distance()
+	var far: float = near + demon.stats.retreat_pace_width
+	await _clear([ground, man, demon])
+	return report(watch.warned and watch.longest_still <= SETTLE_FRAMES
+			and watch.nearest >= near - TOLERANCE and watch.furthest <= far + TOLERANCE,
+			("Level's demon whose bite missed, waiting for its next (at most %d frames still, %.0f "
+			+ "to %.0f px from the man): %s")
+			% [SETTLE_FRAMES, near, far, watch.describe()])
+
+
+## The level's demon, of lust_demon_stats.tres, at a man standing still who is invulnerable for
+## INVULNERABLE_TIME when it notices him, as after he breaks free of a hold, a blink its bites
+## cannot pierce (ADR 0055), the bodies solid: it paces through his blink, and through the wait it
+## draws as the blink ends, and never stands still (ADR 0052). HESITATION_SEED goes in before the
+## demon, which seeds its own draws from it.
+func _the_level_s_demon_paces_through_the_man_s_blink() -> bool:
+	var ground: StaticBody2D = make_platform(FLOOR_LEFT, FLOOR_RIGHT)
+	var man: Player = await spawn_on_floor(Vector2(BITE_X, SPAWN_Y))
+	var hurtbox: Hurtbox = _hurtbox_of(man)
+	hurtbox.monitoring = false
+	hurtbox.start_invulnerability(INVULNERABLE_TIME)
+	seed(HESITATION_SEED)
+	var demon: Demon = await _spawn_level_demon(0.0, [])
+	_make_the_bodies_solid(man, demon)
+	var watch: PaceWatch = await _watch_it_keep_back(man, demon)
+	await _clear([ground, man, demon])
+	return report(watch.warned and watch.longest_still <= SETTLE_FRAMES,
+			"Level's demon through the man's blink (at most %d frames still): %s"
+			% [SETTLE_FRAMES, watch.describe()])
+
+
+## Three of the level's demons on one side of a man standing still, as a level's pack meets him
+## (_watch_a_level_pack_hunt): none of them ever stands still while it keeps back from him, through
+## his blinks and while another has its turn, since one never holds back another, and no two of them
+## stay on top of each other for more than MOST_FRAMES_AS_ONE, so they cross but never pace as one
+## (ADR 0053). None paces faster than the most the level's Pack Variation and Pace Spread make of
+## its Retreat Pace Speed, which stays below its slowest chase, so a run at the man still reads as
+## an attack (ADR 0052). How long their bodies overlap at all goes in the report.
+func _the_level_s_demons_on_one_side_never_stand_waiting_in_a_row() -> bool:
+	var watch: PackWatch = await _watch_a_level_pack_hunt(ONE_SIDE_PACK, ONE_SIDE_FRAMES)
+	var level: DemonStats = load(LUST_DEMON_STATS) as DemonStats
+	var most_pace: float = level.retreat_pace_speed * (1.0 + level.pack_variation) \
+			* (1.0 + level.pace_spread)
+	var least_chase: float = level.chase_speed * (1.0 - level.pack_variation)
+	var stood: Array[int] = []
+	var fastest: float = 0.0
+	var all_kept_back: bool = true
+	for pace: PaceWatch in watch.paces:
+		stood.append(pace.longest_still)
+		fastest = maxf(fastest, pace.fastest_pace)
+		all_kept_back = all_kept_back and pace.nearest < INF
+	return report(all_kept_back and stood.max() <= SETTLE_FRAMES
+			and watch.longest_as_one <= MOST_FRAMES_AS_ONE
+			and fastest <= most_pace + SPEED_TOLERANCE and most_pace < least_chase,
+			("Three of the level's demons on one side of the man, for %d frames: each kept back "
+			+ "from him %s, at most %s frames still (at most %d); two on top of each other at most %d "
+			+ "frames in a row (at most %d); two bodies overlapped at most %d frames in a row, and on "
+			+ "%d frames in all; pacing at most %.0f px/s (at most %.0f, under the slowest chase, "
+			+ "%.0f)") % [ONE_SIDE_FRAMES, all_kept_back, stood, SETTLE_FRAMES,
+					watch.longest_as_one, MOST_FRAMES_AS_ONE, watch.longest_overlap,
+					watch.overlap_frames, fastest, most_pace, least_chase])
+
+
+## Five of the level's demons, three on one side of a man standing still and two on the other, as a
+## level's pack meets him (_watch_a_level_pack_hunt): they take turns, so never do two on one side
+## warn of or make an attack at once, and every one of them bites him (ADR 0053).
+func _a_pack_of_the_level_s_demons_takes_turns_and_every_one_bites() -> bool:
+	var watch: PackWatch = await _watch_a_level_pack_hunt(BOTH_SIDES_PACK, BOTH_SIDES_FRAMES)
+	return report(watch.bites.min() >= 1 and watch.most_attacking_on_one_side <= 1,
+			("Five of the level's demons, three on one side of the man and two on the other, for %d "
+			+ "frames: bites %s (each at least 1); at most %d on one side attacking at once (at "
+			+ "most 1)") % [BOTH_SIDES_FRAMES, watch.bites, watch.most_attacking_on_one_side])
+
+
+## Five of the level's demons, three on one side of a man standing still and two on the other, as a
+## level's pack meets him (_watch_a_level_pack_hunt): with Attacks Invulnerable Man, they go on
+## attacking him while he blinks after a bite, and their bites land through the blink, so none of
+## them goes more than MOST_FRAMES_WITHOUT_ATTACK without warning of an attack, and they still take
+## turns, so never do two on one side attack at once (ADR 0055). How many of their bites land, and
+## the most warnings on one side within a second, go in the report.
+func _a_pack_of_the_level_s_demons_never_waits_long_to_attack() -> bool:
+	var watch: PackWatch = await _watch_a_level_pack_hunt(BOTH_SIDES_PACK, BOTH_SIDES_FRAMES)
+	var landed: int = 0
+	for bites: int in watch.bites:
+		landed += bites
+	return report(watch.longest_without_warning.max() <= MOST_FRAMES_WITHOUT_ATTACK
+			and watch.most_attacking_on_one_side <= 1,
+			("Five of the level's demons, three on one side of the man and two on the other, for %d "
+			+ "frames: warnings %s, at most %s frames without one (at most %d); at most %d on one "
+			+ "side attacking at once (at most 1); bites landed %s, %d in all; at most %d warnings "
+			+ "on one side within a second") % [BOTH_SIDES_FRAMES, watch.warnings,
+					watch.longest_without_warning, MOST_FRAMES_WITHOUT_ATTACK,
+					watch.most_attacking_on_one_side, watch.bites, landed,
+					watch.most_warnings_in_a_second])
+
+
+## Five of the level's demons, three on one side of a man standing still and two on the other, his
+## Hurtbox on and the bodies solid (_frames_to_bring_the_man_low): their bites land through his
+## blink after a hit, so they bring his SP low within MOST_FRAMES_TO_LOW_SP, in at most half the
+## time one of them alone takes (ADR 0055).
+func _a_pack_of_the_level_s_demons_brings_the_man_down_fast() -> bool:
+	var pack: int = await _frames_to_bring_the_man_low(BOTH_SIDES_PACK)
+	var one: Array[float] = [ONE_SIDE_PACK[0]]
+	var alone: int = await _frames_to_bring_the_man_low(one)
+	return report(pack <= MOST_FRAMES_TO_LOW_SP and LEAST_PACK_SPEEDUP * pack <= alone,
+			("Five of the level's demons at a man standing still, his Hurtbox on: his SP low after "
+			+ "%d frames (at most %d); one of them alone, after %d (at least %d times as many; %d "
+			+ "if never)") % [pack, MOST_FRAMES_TO_LOW_SP, alone, LEAST_PACK_SPEEDUP,
+					LONGEST_FRAMES_TO_LOW_SP])
+
+
+## One of the level's demons on each side of a man standing still: Attackers Per Side counts the
+## demons on one side of him only, so the two attack him at once (ADR 0053).
+func _the_level_s_demons_on_either_side_of_the_man_attack_at_once() -> bool:
+	var ground: StaticBody2D = make_platform(FLOOR_LEFT, FLOOR_RIGHT)
+	var man: Player = await spawn_on_floor(Vector2(PACK_MAN_X, SPAWN_Y))
+	_hurtbox_of(man).monitoring = false
+	seed(HESITATION_SEED)
+	var left: Demon = await _spawn_level_demon(PACK_MAN_X + ONE_SIDE_PACK[0], [])
+	var right: Demon = await _spawn_level_demon(PACK_MAN_X - ONE_SIDE_PACK[0], [])
+	_make_the_bodies_solid(man, left)
+	_make_the_bodies_solid(man, right)
+	var at_once: bool = await wait_until(func() -> bool:
+			return left.get_state() in ATTACKING_STATES and right.get_state() in ATTACKING_STATES,
+			FRAMES_TO_WATCH)
+	await _clear([ground, man, left, right])
+	return report(at_once,
+			"One of the level's demons on each side of the man: both attacking at once %s"
+			% at_once)
+
+
+## Two of the level's demons on one side of a man standing still: the crucifix throws off the one
+## with the turn as it warns, with REPELLED_TIME, and the other takes the turn and warns before the
+## first is back in the chase, since a thrown demon gives up its turn (ADR 0053).
+func _the_level_s_demon_thrown_off_on_its_turn_hands_it_to_the_other() -> bool:
+	var ground: StaticBody2D = make_platform(FLOOR_LEFT, FLOOR_RIGHT)
+	var man: Player = await spawn_on_floor(Vector2(PACK_MAN_X, SPAWN_Y))
+	_hurtbox_of(man).monitoring = false
+	var pair: Array[Demon] = await _two_level_demons_one_warning(man)
+	var warned: bool = pair[0].get_state() == Demon.State.WARNING
+	pair[0].stats.repelled_time = REPELLED_TIME
+	(pair[0].get_node(^"Repellable") as Repellable).repelled.emit(man.global_position)
+	var other_warned: bool = await wait_until(
+			func() -> bool: return pair[1].get_state() == Demon.State.WARNING, FRAMES_TO_WATCH)
+	var thrown_then: Demon.State = pair[0].get_state()
+	await _clear([ground, man, pair[0], pair[1]])
+	return report(warned and other_warned
+			and thrown_then in [Demon.State.THROWN, Demon.State.REPELLED],
+			"Two of the level's demons on one side, the one warning thrown off: warned %s; the other warns %s, the first then %s"
+			% [warned, other_warned, Demon.State.keys()[thrown_then]])
+
+
+## Two of the level's demons on one side of a man standing still: the one with the turn is freed as
+## it warns, as when it leaves the level, and the other takes the turn and warns, since a demon
+## leaving the tree gives up its turn (ADR 0053).
+func _the_level_s_demon_freed_on_its_turn_hands_it_to_the_other() -> bool:
+	var ground: StaticBody2D = make_platform(FLOOR_LEFT, FLOOR_RIGHT)
+	var man: Player = await spawn_on_floor(Vector2(PACK_MAN_X, SPAWN_Y))
+	_hurtbox_of(man).monitoring = false
+	var pair: Array[Demon] = await _two_level_demons_one_warning(man)
+	var warned: bool = pair[0].get_state() == Demon.State.WARNING
+	pair[0].queue_free()
+	var other_warned: bool = await wait_until(
+			func() -> bool: return pair[1].get_state() == Demon.State.WARNING, FRAMES_TO_WATCH)
+	await _clear([ground, man, pair[1]])
+	return report(warned and other_warned,
+			"Two of the level's demons on one side, the one warning freed: warned %s; the other warns %s"
+			% [warned, other_warned])
+
+
+## The first two of ONE_SIDE_PACK's level's demons on one side of the man, at PACK_MAN_X, the bodies
+## solid, once one of them warns, within FRAMES_TO_WATCH: that one, which holds the turn, first.
+## HESITATION_SEED goes in before them, which seed their own draws from it.
+func _two_level_demons_one_warning(man: Player) -> Array[Demon]:
+	seed(HESITATION_SEED)
+	var pair: Array[Demon] = []
+	for index: int in 2:
+		var demon: Demon = await _spawn_level_demon(PACK_MAN_X + ONE_SIDE_PACK[index], [])
+		_make_the_bodies_solid(man, demon)
+		pair.append(demon)
+	await wait_until(func() -> bool:
+			return (pair[0].get_state() == Demon.State.WARNING
+					or pair[1].get_state() == Demon.State.WARNING),
+			FRAMES_TO_WATCH)
+	if pair[1].get_state() == Demon.State.WARNING:
+		pair.reverse()
+	return pair
+
+
+## Two of the level's demons on one side of a man standing still, the first put across a hole it
+## cannot cross and the other between the hole and him (_watch_a_level_pack_hunt): the first takes
+## the turn, but stuck at the end of its floor with no attack to start, it gives the turn up, so
+## the other takes it and bites him (ADR 0053).
+func _the_level_s_demon_stuck_across_a_hole_leaves_its_turn_to_another() -> bool:
+	var watch: PackWatch = await _watch_a_level_pack_hunt(ACROSS_THE_HOLE_PACK, ONE_SIDE_FRAMES,
+			[Vector2(FLOOR_LEFT, HOLE_LEFT), Vector2(HOLE_RIGHT, FLOOR_RIGHT)])
+	return report(watch.bites[0] == 0 and watch.bites[1] >= LEAST_TURNS,
+			("Two of the level's demons on one side of the man, the first across a hole from x = %d "
+			+ "to %d, for %d frames: bites %s (none across it, at least %d by him)")
+			% [HOLE_LEFT, HOLE_RIGHT, ONE_SIDE_FRAMES, watch.bites, LEAST_TURNS])
+
+
+## Two of the level's demons cornered on one side of a man standing still, his floor ending
+## CORNER_EDGE behind him, inside their Retreat Distance, all through a blink their bites cannot
+## pierce, as after he breaks free of a hold (_watch_a_level_pack_hunt): the one the end of the
+## floor stops stands there, and the other stops by it as at a wall instead of backing off onto it,
+## so their bodies never stay over each other (ADR 0053).
+func _the_level_s_demons_cornered_by_an_edge_never_stand_on_top_of_each_other() -> bool:
+	var watch: PackWatch = await _watch_a_level_pack_hunt(CORNERED_PACK, CORNERED_FRAMES,
+			[Vector2(PACK_MAN_X - CORNER_EDGE, FLOOR_RIGHT)], LONG_INVULNERABLE_TIME)
+	return report(watch.longest_overlap <= MOST_FRAMES_AS_ONE,
+			("Two of the level's demons put %s px from the man, his floor ending %d px behind him, "
+			+ "through his blink, for %d frames: bodies overlapped at most %d frames in a row (at "
+			+ "most %d), and on %d frames in all") % [CORNERED_PACK, CORNER_EDGE, CORNERED_FRAMES,
+					watch.longest_overlap, MOST_FRAMES_AS_ONE, watch.overlap_frames])
+
+
+## Two of the level's demons cornered on one side of a man standing still, as in
+## _the_level_s_demons_cornered_by_an_edge_never_stand_on_top_of_each_other, with him taking hits:
+## they keep biting him, LEAST_TURNS times or more in CORNERED_BITE_FRAMES, since the one the end of
+## the floor stops, with the other at his side, can get no nearer to him and gives its turn up for
+## the other to take (ADR 0053).
+func _the_level_s_demons_cornered_by_an_edge_keep_biting() -> bool:
+	var watch: PackWatch = await _watch_a_level_pack_hunt(CORNERED_PACK, CORNERED_BITE_FRAMES,
+			[Vector2(PACK_MAN_X - CORNER_EDGE, FLOOR_RIGHT)])
+	var bites: int = watch.bites[0] + watch.bites[1]
+	return report(bites >= LEAST_TURNS,
+			("Two of the level's demons put %s px from the man, his floor ending %d px behind him, "
+			+ "for %d frames: bites %s (at least %d in all); bodies overlapped at most %d frames in a "
+			+ "row") % [CORNERED_PACK, CORNER_EDGE, CORNERED_BITE_FRAMES, watch.bites, LEAST_TURNS,
+					watch.longest_overlap])
+
+
+## The level's demon, of lust_demon_stats.tres, at a man standing still, his Hurtbox on and the
+## bodies solid: every bite it starts within LANDED_FRAMES lands on him within its Bite Time, those
+## after its wait too, and those through his blink after a hit, which its bites pierce (ADR 0055);
+## LEAST_TURNS or more start, one or more of them while he blinks, and none of what lands is a lunge
+## (ADR 0053). HESITATION_SEED goes in before the demon, which seeds its own draws from it.
+func _the_level_s_demon_s_bites_after_its_wait_land_on_a_man_standing_still() -> bool:
+	var ground: StaticBody2D = make_platform(FLOOR_LEFT, FLOOR_RIGHT)
+	var man: Player = await spawn_on_floor(Vector2(PACK_MAN_X, SPAWN_Y))
+	var hurtbox: Hurtbox = _hurtbox_of(man)
+	hurtbox.monitoring = true
+	seed(HESITATION_SEED)
+	var demon: Demon = await _spawn_level_demon(PACK_MAN_X + ONE_SIDE_PACK[0], [])
+	_make_the_bodies_solid(man, demon)
+	var bite: DemonAttack = _bite_of(demon)
+	var bite_frames: int = bite.get_bite_frames()
+	var landed: Array[DemonAttack] = []
+	var landed_on: Array[int] = []
+	demon.attack_landed.connect(func(attack: DemonAttack) -> void:
+		landed.append(attack)
+		landed_on.append(Engine.get_physics_frames()))
+	# The frame each bite starts on, and whether he blinks then.
+	var started_on: Array[int] = []
+	var while_blinking: Array[bool] = []
+	demon.state_changed.connect(func(previous: Demon.State, current: Demon.State) -> void:
+		if previous == Demon.State.WARNING and current == Demon.State.CHASE:
+			started_on.append(Engine.get_physics_frames())
+			while_blinking.append(hurtbox.is_invulnerable()))
+	var last_start: int = Engine.get_physics_frames() + LANDED_FRAMES
+	await _wait_physics_frames(LANDED_FRAMES + bite_frames + SETTLE_FRAMES)
+	var counted: int = started_on.filter(func(frame: int) -> bool: return frame < last_start).size()
+	var missed: int = 0
+	for index: int in counted:
+		var start: int = started_on[index]
+		missed += int(not landed_on.any(func(frame: int) -> bool:
+				return frame >= start and frame <= start + bite_frames + SETTLE_FRAMES))
+	var blinking: int = while_blinking.slice(0, counted).count(true)
+	var only_bites: bool = landed.all(func(attack: DemonAttack) -> bool: return attack == bite)
+	var sp: float = man.soul_points.get_sp()
+	await _clear([ground, man, demon])
+	return report(missed == 0 and counted >= LEAST_TURNS and blinking >= 1 and only_bites,
+			("Level's demon at a man standing still, his Hurtbox on, for %d frames: bites %d (at "
+			+ "least %d), %d of them while he blinked (at least 1), missed %d (none); landed %s (no "
+			+ "lunge); his SP %.0f at the end") % [LANDED_FRAMES, counted, LEAST_TURNS, blinking,
+					missed, _animations_of(landed), sp])
+
+
+## The level's demon, with Attacks Invulnerable Man, at a man standing still who blinks for
+## LONG_INVULNERABLE_TIME from before it notices him, as after a hit, his Hurtbox on and the bodies
+## solid: it goes on attacking him through his blink, and its bites land then, each taking its
+## damage from his SP (ADR 0055). HESITATION_SEED goes in before the demon, which seeds its own
+## draws from it.
+func _the_level_s_demon_s_bites_land_through_the_man_s_blink() -> bool:
+	var ground: StaticBody2D = make_platform(FLOOR_LEFT, FLOOR_RIGHT)
+	var man: Player = await spawn_on_floor(Vector2(PACK_MAN_X, SPAWN_Y))
+	var hurtbox: Hurtbox = _hurtbox_of(man)
+	hurtbox.monitoring = true
+	var blink_end: int = Engine.get_physics_frames() \
+			+ roundi(LONG_INVULNERABLE_TIME * Engine.physics_ticks_per_second)
+	hurtbox.start_invulnerability(LONG_INVULNERABLE_TIME, true)
+	seed(HESITATION_SEED)
+	var demon: Demon = await _spawn_level_demon(PACK_MAN_X + ONE_SIDE_PACK[0], [])
+	_make_the_bodies_solid(man, demon)
+	# The damage of each attack that lands while he blinks, and the SP he loses.
+	var landed: Array[float] = []
+	var taken: Array[float] = [0.0]
+	demon.attack_landed.connect(func(attack: DemonAttack) -> void:
+		if hurtbox.is_invulnerable():
+			landed.append(attack.damage))
+	man.soul_points.damaged.connect(func(amount: float) -> void: taken[0] += amount)
+	await wait_until(func() -> bool: return Engine.get_physics_frames() >= blink_end, MAX_FRAMES)
+	var due: float = 0.0
+	for damage: float in landed:
+		due += damage
+	var count: int = landed.size()
+	var lost: float = taken[0]
+	await _clear([ground, man, demon])
+	return report(count >= 1 and is_equal_approx(lost, due),
+			("Level's demon at a man who blinks for %.1f s, his Hurtbox on: attacks landed while he "
+			+ "blinked %d (at least 1), SP taken %.0f (their damage, %.0f)")
+			% [LONG_INVULNERABLE_TIME, count, lost, due])
+
+
+## A demon that only lunges, with Attacks Invulnerable Man, at a man who blinks after a hit for
+## LONG_INVULNERABLE_TIME when it notices him, his Hurtbox on: a lunge pierces the blink as a bite
+## does, landing on him and taking its damage from his SP (ADR 0055).
+func _with_attacks_invulnerable_man_its_lunge_lands_through_the_man_s_blink() -> bool:
+	var ground: StaticBody2D = make_platform(FLOOR_LEFT, FLOOR_RIGHT)
+	var man: Player = await spawn_on_floor(Vector2(SEEN_X, SPAWN_Y))
+	var hurtbox: Hurtbox = _hurtbox_of(man)
+	hurtbox.monitoring = true
+	var blink_end: int = Engine.get_physics_frames() \
+			+ roundi(LONG_INVULNERABLE_TIME * Engine.physics_ticks_per_second)
+	hurtbox.start_invulnerability(LONG_INVULNERABLE_TIME, true)
+	var demon: Demon = await _spawn_demon(0.0)
+	demon.stats.attacks_invulnerable_man = true
+	var lunge: DemonAttack = _lunge_of(demon)
+	var landed: Array[DemonAttack] = []
+	demon.attack_landed.connect(func(attack: DemonAttack) -> void:
+		if hurtbox.is_invulnerable():
+			landed.append(attack))
+	var taken: Array[float] = [0.0]
+	man.soul_points.damaged.connect(func(amount: float) -> void: taken[0] += amount)
+	await wait_until(func() -> bool:
+			return not landed.is_empty() or Engine.get_physics_frames() >= blink_end, MAX_FRAMES)
+	var count: int = landed.size()
+	var was_the_lunge: bool = count == 1 and landed[0] == lunge
+	var lost: float = taken[0]
+	await _clear([ground, man, demon])
+	return report(was_the_lunge and is_equal_approx(lost, lunge.damage),
+			("Lunge of a demon with Attacks Invulnerable Man at a man who blinks for %.1f s, his "
+			+ "Hurtbox on: landed while he blinked %d (just the lunge: %s), SP taken %.0f (its "
+			+ "%.0f)") % [LONG_INVULNERABLE_TIME, count, was_the_lunge, lost, lunge.damage])
+
+
+## The level's demon, with Attacks Invulnerable Man, at a man standing still who is invulnerable for
+## LONG_INVULNERABLE_TIME from before it notices him, as after he breaks free of a hold, a blink its
+## bites cannot pierce, the bodies solid: it warns of no attack all through, and warns of one within
+## FRAMES_TO_WATCH once the blink ends (ADR 0055). HESITATION_SEED goes in before the demon, which
+## seeds its own draws from it.
+func _the_level_s_demon_waits_out_the_man_s_time_after_breaking_free() -> bool:
+	var ground: StaticBody2D = make_platform(FLOOR_LEFT, FLOOR_RIGHT)
+	var man: Player = await spawn_on_floor(Vector2(PACK_MAN_X, SPAWN_Y))
+	var hurtbox: Hurtbox = _hurtbox_of(man)
+	hurtbox.monitoring = false
+	hurtbox.start_invulnerability(LONG_INVULNERABLE_TIME)
+	seed(HESITATION_SEED)
+	var demon: Demon = await _spawn_level_demon(PACK_MAN_X + ONE_SIDE_PACK[0], [])
+	_make_the_bodies_solid(man, demon)
+	var warned_while_blinking: bool = false
+	for _frame: int in MAX_FRAMES:
+		if not hurtbox.is_invulnerable():
+			break
+		warned_while_blinking = warned_while_blinking or demon.get_state() == Demon.State.WARNING
+		await physics_frame
+	var warned_after: bool = (demon.get_state() == Demon.State.WARNING
+			or await _is_in_state_within(demon, Demon.State.WARNING, FRAMES_TO_WATCH))
+	await _clear([ground, man, demon])
+	return report(not warned_while_blinking and warned_after,
+			("Level's demon at a man who blinks for %.1f s after breaking free: warned while he "
+			+ "blinked %s (never), warned within %d frames once it ended %s")
+			% [LONG_INVULNERABLE_TIME, warned_while_blinking, FRAMES_TO_WATCH, warned_after])
+
+
+## The level's demon, with Attacks Invulnerable Man, at a man standing still held by as many demons
+## as can, his Hurtbox closed, for FRAMES_TO_WATCH after it is put: it starts no attack at him, and
+## warns of one within FRAMES_TO_WATCH once he breaks free (ADR 0029, ADR 0055). HESITATION_SEED
+## goes in before the demon, which seeds its own draws from it.
+func _the_level_s_demon_starts_no_attack_at_a_man_held_by_others() -> bool:
+	var ground: StaticBody2D = make_platform(FLOOR_LEFT, FLOOR_RIGHT)
+	var man: Player = await spawn_on_floor(Vector2(PACK_MAN_X, SPAWN_Y))
+	var hurtbox: Hurtbox = _hurtbox_of(man)
+	hurtbox.monitoring = false
+	hurtbox.set_closed(true)
+	seed(HESITATION_SEED)
+	var demon: Demon = await _spawn_level_demon(PACK_MAN_X + ONE_SIDE_PACK[0], [])
+	_make_the_bodies_solid(man, demon)
+	var warned_while_held: bool = await _is_in_state_within(demon, Demon.State.WARNING,
+			FRAMES_TO_WATCH)
+	hurtbox.set_closed(false)
+	var warned_after: bool = await _is_in_state_within(demon, Demon.State.WARNING, FRAMES_TO_WATCH)
+	await _clear([ground, man, demon])
+	return report(not warned_while_held and warned_after,
+			("Level's demon at a man held for %d frames: warned while he was held %s (never), "
+			+ "warned within %d frames once he broke free %s") % [FRAMES_TO_WATCH,
+					warned_while_held, FRAMES_TO_WATCH, warned_after])
+
+
+## Two of the level's demons after a man who runs off faster than they chase (ADR 0053): they run
+## his way at their own Chase Speeds, only a few px/s apart, but while their bodies overlap the
+## slower falls back from the faster, so the two never run as one, their middles nearer than half a
+## body, for more than MOST_FRAMES_AS_ONE while both chase. HESITATION_SEED goes in before the
+## demons, which seed their own draws from it.
+func _the_level_s_demons_running_after_the_man_never_run_as_one() -> bool:
+	var ground: StaticBody2D = make_platform(FLOOR_LEFT, FLEE_FLOOR_RIGHT)
+	var man: Player = await spawn_on_floor(Vector2(PACK_MAN_X, SPAWN_Y))
+	seed(HESITATION_SEED)
+	var pair: Array[Demon] = []
+	for offset: float in FLEE_PACK:
+		pair.append(await _spawn_level_demon(PACK_MAN_X + offset, []))
+	var both_chased: bool = await wait_until(func() -> bool:
+			return pair[0].get_state() == Demon.State.CHASE \
+					and pair[1].get_state() == Demon.State.CHASE, FRAMES_TO_WATCH)
+	var step: Callable = _walk(man, FLEE_SPEED)
+	var half_body: float = _body_width(pair[0]) / 2.0
+	var as_one: int = 0
+	var longest_as_one: int = 0
+	var frames_chased: int = 0
+	for _frame: int in FLEE_FRAMES:
+		await physics_frame
+		var both_chase: bool = pair[0].get_state() == Demon.State.CHASE \
+				and pair[1].get_state() == Demon.State.CHASE
+		frames_chased += int(both_chase)
+		var apart: float = absf(pair[0].position.x - pair[1].position.x)
+		as_one = as_one + 1 if both_chase and apart < half_body else 0
+		longest_as_one = maxi(longest_as_one, as_one)
+	physics_frame.disconnect(step)
+	await _clear([ground, man, pair[0], pair[1]])
+	return report(both_chased and longest_as_one <= MOST_FRAMES_AS_ONE,
+			("Two of the level's demons put %s px from a man running off at %d px/s, for %d frames, "
+			+ "%d of them both chasing: as one at most %d frames in a row (at most %d)")
+			% [FLEE_PACK, FLEE_SPEED, FLEE_FRAMES, frames_chased, longest_as_one,
+					MOST_FRAMES_AS_ONE])
+
+
+## Two of the level's demons on one side of a man standing still, the first, which takes the turn,
+## put within its wait behind the other (_watch_a_level_pack_hunt): it runs at him through the
+## other, which keeps back without the turn, and bites him within THROUGH_FRAMES, since in the hunt
+## a demon on the move passes through the others and only one at his side holds it back (ADR 0053).
+func _the_level_s_demon_on_its_turn_runs_through_another_to_bite() -> bool:
+	var watch: PackWatch = await _watch_a_level_pack_hunt(THROUGH_PACK, THROUGH_FRAMES)
+	return report(watch.bites[0] >= 1,
+			("Two of the level's demons on one side of the man, put %s px from him, for %d frames: "
+			+ "bites %s (the first at least 1)") % [THROUGH_PACK, THROUGH_FRAMES, watch.bites])
+
+
+## One of the level's demons at a man standing still, as a level's pack meets him
+## (_watch_a_level_pack_hunt): from within its wait it only bites, so each run it makes at him from
+## there ends in a bite, and it lunges only from further off (ADR 0053).
+func _the_level_s_demon_never_lunges_from_within_its_wait() -> bool:
+	var alone: Array[float] = [ONE_SIDE_PACK[0]]
+	var watch: PackWatch = await _watch_a_level_pack_hunt(alone, BOTH_SIDES_FRAMES)
+	return report(watch.lunges_from_the_wait == 0 and watch.bites[0] >= 1,
+			("One of the level's demons at the man, for %d frames: bites %d (at least 1), lunges "
+			+ "warned of from within its wait %d (none)") % [BOTH_SIDES_FRAMES, watch.bites[0],
+					watch.lunges_from_the_wait])
+
+
+## A demon with a bite before its lunge is drawn over the other demons while it warns of the bite,
+## with the man BITE_X ahead of it, and while it warns of and makes the lunge, with him SEEN_X
+## ahead, so one pacing by never hides its warning; in its other states it is drawn among them
+## (ADR 0053).
+func _a_demon_is_drawn_over_the_others_while_it_attacks() -> bool:
+	var for_bite: Array[Vector2i] = await _z_index_at_each_change(BITE_X)
+	var for_lunge: Array[Vector2i] = await _z_index_at_each_change(SEEN_X)
+	var drawn_right: bool = (for_bite + for_lunge).all(func(change: Vector2i) -> bool:
+		var state: Demon.State = change.x as Demon.State
+		return state == Demon.State.GRAB or (change.y > 0) == (state in ATTACKING_STATES))
+	var warned: bool = for_bite.any(
+			func(change: Vector2i) -> bool: return change.x == Demon.State.WARNING)
+	var lunged: bool = for_lunge.any(
+			func(change: Vector2i) -> bool: return change.x == Demon.State.LUNGE)
+	return report(warned and lunged and drawn_right,
+			"Z Index over its own at rest: man %d px ahead, %s at %s; %d px ahead, %s at %s"
+			% [BITE_X, _names_of(for_bite),
+					for_bite.map(func(change: Vector2i) -> int: return change.y),
+					SEEN_X, _names_of(for_lunge),
+					for_lunge.map(func(change: Vector2i) -> int: return change.y)])
+
+
+## The states the demon of _spawn_demon with a bite before its lunge goes into in FRAMES_TO_WATCH,
+## the man man_x px ahead of it, each with its rectangle's Z Index then over the one it had
+## at first.
+func _z_index_at_each_change(man_x: float) -> Array[Vector2i]:
+	var ground: StaticBody2D = make_platform(FLOOR_LEFT, FLOOR_RIGHT)
+	var man: Player = await spawn_on_floor(Vector2(man_x, SPAWN_Y))
+	var demon: Demon = await _spawn_demon(0.0, LUNGE_RANGE, [], true)
+	var placeholder: Polygon2D = demon.get_node(^"Placeholder") as Polygon2D
+	var rest: int = placeholder.z_index
+	var changes: Array[Vector2i] = []
+	demon.state_changed.connect(func(_previous: Demon.State, current: Demon.State) -> void:
+		changes.append(Vector2i(current, placeholder.z_index - rest)))
+	for _frame: int in FRAMES_TO_WATCH:
+		await physics_frame
+	await _clear([ground, man, demon])
+	return changes
+
+
+## What a demon that bites, never lunges, backs off and waits at Retreat Distance, with
+## LONG_RECOVER_TIME, Retreat Pace Width pace_width and RETREAT_PACE_SPEED, does from the end of its
+## first backing off to its next warning (_watch_it_keep_back). He stands BITE_X ahead of it, the
+## bodies solid, and its bites miss him. scenery is the floor and walls the case made, which this
+## clears.
+func _watch_it_wait_between_bites(pace_width: float, scenery: Array[Node]) -> PaceWatch:
+	var man: Player = await spawn_on_floor(Vector2(BITE_X, SPAWN_Y))
+	_hurtbox_of(man).monitoring = false
+	var changes: Array[Vector2i] = []
+	var demon: Demon = await _spawn_demon(0.0, NO_LUNGE, changes, true)
+	_make_it_back_off(demon)
+	_make_it_pace_while_it_keeps_back(demon, pace_width)
+	_make_the_bodies_solid(man, demon)
+	demon.stats.waits_at_retreat_distance = true
+	_bite_of(demon).recover_time = LONG_RECOVER_TIME
+	await wait_until(
+			func() -> bool: return _index_after(changes, Demon.State.RETREAT) != NEVER_REACHED)
+	var watch: PaceWatch = await _watch_it_keep_back(man, demon)
+	scenery.append(man)
+	scenery.append(demon)
+	await _clear(scenery)
+	return watch
+
+
+## What a demon that bites, never lunges and backs off, with Retreat Pace Width pace_width and
+## RETREAT_PACE_SPEED, does up to its first warning (_watch_it_keep_back), at a man standing still
+## BITE_X ahead of it, the bodies solid, who is invulnerable for LONG_INVULNERABLE_TIME when it
+## notices him.
+func _watch_it_through_the_blink(pace_width: float) -> PaceWatch:
+	var ground: StaticBody2D = make_platform(FLOOR_LEFT, FLOOR_RIGHT)
+	var man: Player = await spawn_on_floor(Vector2(BITE_X, SPAWN_Y))
+	var hurtbox: Hurtbox = _hurtbox_of(man)
+	hurtbox.monitoring = false
+	hurtbox.start_invulnerability(LONG_INVULNERABLE_TIME)
+	var demon: Demon = await _spawn_demon(0.0, NO_LUNGE, [], true)
+	_make_it_back_off(demon)
+	_make_it_pace_while_it_keeps_back(demon, pace_width)
+	_make_the_bodies_solid(man, demon)
+	var watch: PaceWatch = await _watch_it_keep_back(man, demon)
+	await _clear([ground, man, demon])
+	return watch
+
+
+## Watches the demon, up to its next warning and for at most MAX_FRAMES, on each physics frame of
+## its chase on which it keeps back from the man (_see_it_keep_back).
+func _watch_it_keep_back(man: Player, demon: Demon) -> PaceWatch:
+	var watch: PaceWatch = PaceWatch.new(demon.position.x)
+	for _frame: int in MAX_FRAMES:
+		await physics_frame
+		if demon.get_state() == Demon.State.WARNING:
+			watch.warned = true
+			return watch
+		_see_it_keep_back(watch, man, demon)
+	return watch
+
+
+## Takes the physics frame just over into watch, if on it the demon chased the man and kept back
+## from him: as it waits to attack, or for him to take hits. A frame that began with it keeping
+## back within its pacing, between its Retreat Distance from him and Retreat Pace Width past it,
+## counts towards its fastest pace, with him standing still.
+func _see_it_keep_back(watch: PaceWatch, man: Player, demon: Demon) -> void:
+	var step: float = demon.position.x - watch.last_x
+	var began_apart: float = absf(man.position.x - watch.last_x)
+	var began_keeping_back: bool = watch.kept_back
+	watch.last_x = demon.position.x
+	watch.kept_back = demon.get_state() == Demon.State.CHASE \
+			and (demon.waits_to_attack() or demon.waits_for_the_man_to_take_hits())
+	if not watch.kept_back:
+		watch.still = 0
+		return
+	var near: float = demon.retreat_distance()
+	if began_keeping_back and began_apart >= near \
+			and began_apart <= near + demon.stats.retreat_pace_width:
+		watch.fastest_pace = maxf(watch.fastest_pace, absf(step) * Engine.physics_ticks_per_second)
+	var apart: float = absf(man.position.x - demon.position.x)
+	watch.nearest = minf(watch.nearest, apart)
+	watch.furthest = maxf(watch.furthest, apart)
+	watch.always_on_floor = watch.always_on_floor and demon.is_on_floor()
+	if absf(step) < STILL_STEP:
+		watch.still += 1
+		watch.longest_still = maxi(watch.longest_still, watch.still)
+		return
+	watch.still = 0
+	if watch.last_way != 0.0 and signf(step) != watch.last_way:
+		watch.turns += 1
+	watch.last_way = signf(step)
+
+
+## Physics frames until the SP of a man standing still at PACK_MAN_X are low, with the level's
+## demons put at offsets from him, in px along the floor, + to his right, his Hurtbox on and the
+## bodies solid; LONGEST_FRAMES_TO_LOW_SP if they never get there. HESITATION_SEED goes in before
+## the demons, which seed their own draws from it.
+func _frames_to_bring_the_man_low(offsets: Array[float]) -> int:
+	var ground: StaticBody2D = make_platform(FLOOR_LEFT, FLOOR_RIGHT)
+	var man: Player = await spawn_on_floor(Vector2(PACK_MAN_X, SPAWN_Y))
+	_hurtbox_of(man).monitoring = true
+	seed(HESITATION_SEED)
+	var nodes: Array[Node] = [ground, man]
+	for offset: float in offsets:
+		var demon: Demon = await _spawn_level_demon(PACK_MAN_X + offset, [])
+		_make_the_bodies_solid(man, demon)
+		nodes.append(demon)
+	var frames: int = 0
+	while not man.soul_points.is_low() and frames < LONGEST_FRAMES_TO_LOW_SP:
+		await physics_frame
+		frames += 1
+	await _clear(nodes)
+	return frames
+
+
+## Puts the level's demons, of lust_demon_stats.tres, at offsets from a man standing still at
+## PACK_MAN_X, in px along the floor, + to his right, the bodies solid, and watches them hunt him
+## for frames physics frames, on floors, each from its x to its y. His Hurtbox is off, so no bite
+## moves him, but a bite that would land counts as landed as it starts and sets him blinking for
+## INVULNERABLE_TIME, as a hit does: one while he takes hits, and one through his blink after a hit,
+## which their bites pierce (ADR 0055). With blink, he is invulnerable that long from the start, as
+## after he breaks free of a hold, which no bite pierces. HESITATION_SEED goes in before the demons,
+## which seed their own draws from it.
+func _watch_a_level_pack_hunt(offsets: Array[float], frames: int,
+		floors: Array[Vector2] = [Vector2(FLOOR_LEFT, FLOOR_RIGHT)],
+		blink: float = 0.0) -> PackWatch:
+	var nodes: Array[Node] = []
+	for span: Vector2 in floors:
+		nodes.append(make_platform(span.x, span.y))
+	var man: Player = await spawn_on_floor(Vector2(PACK_MAN_X, SPAWN_Y))
+	nodes.append(man)
+	var hurtbox: Hurtbox = _hurtbox_of(man)
+	hurtbox.monitoring = false
+	if blink > 0.0:
+		hurtbox.start_invulnerability(blink)
+	seed(HESITATION_SEED)
+	var watch: PackWatch = PackWatch.new()
+	var start: int = Engine.get_physics_frames()
+	var demons: Array[Demon] = []
+	var warned_within_its_wait: Array[bool] = []
+	for offset: float in offsets:
+		var demon: Demon = await _spawn_level_demon(PACK_MAN_X + offset, [])
+		_make_the_bodies_solid(man, demon)
+		var index: int = demons.size()
+		watch.add_demon()
+		warned_within_its_wait.append(false)
+		demon.state_changed.connect(func(previous: Demon.State, current: Demon.State) -> void:
+			if current == Demon.State.WARNING:
+				warned_within_its_wait[index] = absf(man.position.x - demon.position.x) \
+						<= demon.retreat_distance() + demon.stats.retreat_pace_width
+				watch.see_a_warning(index, Engine.get_physics_frames() - start,
+						demon.position.x > man.position.x)
+			elif current == Demon.State.LUNGE and warned_within_its_wait[index]:
+				watch.lunges_from_the_wait += 1
+			if previous == Demon.State.WARNING and current == Demon.State.CHASE \
+					and (hurtbox.takes_hits() or (demon.stats.attacks_invulnerable_man
+							and hurtbox.can_be_pierced())):
+				watch.bites[index] += 1
+				hurtbox.start_invulnerability(INVULNERABLE_TIME, true))
+		demons.append(demon)
+	var count: int = demons.size()
+	for demon: Demon in demons:
+		watch.paces.append(PaceWatch.new(demon.position.x))
+	var width: float = _body_width(demons[0])
+	var overlapping: Array[int] = []
+	overlapping.resize(count * count)
+	overlapping.fill(0)
+	var as_one: Array[int] = overlapping.duplicate()
+	for _frame: int in frames:
+		await physics_frame
+		var attacking: Array[int] = [0, 0]
+		var any_overlap: bool = false
+		for first: int in count:
+			var demon: Demon = demons[first]
+			_see_it_keep_back(watch.paces[first], man, demon)
+			if demon.get_state() in ATTACKING_STATES:
+				attacking[int(demon.position.x > man.position.x)] += 1
+			for second: int in range(first + 1, count):
+				var pair: int = first * count + second
+				var apart: float = absf(demon.position.x - demons[second].position.x)
+				overlapping[pair] = overlapping[pair] + 1 if apart < width else 0
+				as_one[pair] = as_one[pair] + 1 if apart < width / 2.0 else 0
+				any_overlap = any_overlap or apart < width
+				watch.longest_overlap = maxi(watch.longest_overlap, overlapping[pair])
+				watch.longest_as_one = maxi(watch.longest_as_one, as_one[pair])
+		watch.most_attacking_on_one_side = maxi(watch.most_attacking_on_one_side,
+				maxi(attacking[0], attacking[1]))
+		watch.overlap_frames += int(any_overlap)
+	watch.end(Engine.get_physics_frames() - start)
+	nodes.append_array(demons)
+	await _clear(nodes)
+	return watch
+
+
 ## An alerted demon whose man is freed, as on a respawn, lets go of him and stands, with no chase.
 func _alerted_it_lets_go_of_a_man_who_is_freed() -> bool:
 	var ground: StaticBody2D = make_platform(FLOOR_LEFT, FLOOR_RIGHT)
@@ -4007,6 +5311,23 @@ func _spawn_demon(x: float, lunge_range: float = LUNGE_RANGE,
 				changes.append(Vector2i(current, Engine.get_physics_frames())))
 	demon.warning_started.connect(
 			func(attack: DemonAttack) -> void: warned_of.append(attack))
+	root.add_child(demon)
+	await wait_until(demon.is_on_floor)
+	return demon
+
+
+## A demon of DEMON_SCENE at x with the level's values: a shallow copy of lust_demon_stats.tres, so
+## a case may change its own values, though not its attacks, without changing them for the cases
+## after it. Like _spawn_demon's, it writes every state it changes to into changes, with the physics
+## frame it changed in, does not collide with the man's body, and comes back once it has landed.
+func _spawn_level_demon(x: float, changes: Array[Vector2i]) -> Demon:
+	var demon: Demon = DEMON_SCENE.instantiate() as Demon
+	demon.stats = demon.stats.duplicate() as DemonStats
+	demon.position = Vector2(x, SPAWN_Y)
+	demon.collision_mask &= ~_bit_of(PLAYER_LAYER_NAME)
+	demon.state_changed.connect(
+			func(_previous: Demon.State, current: Demon.State) -> void:
+				changes.append(Vector2i(current, Engine.get_physics_frames())))
 	root.add_child(demon)
 	await wait_until(demon.is_on_floor)
 	return demon
@@ -4285,6 +5606,12 @@ func _make_it_back_off(demon: Demon) -> void:
 	demon.stats.retreat_speed = RETREAT_SPEED
 
 
+## Makes the demon pace pace_width past its Retreat Distance, at the cases' RETREAT_PACE_SPEED.
+func _make_it_pace_while_it_keeps_back(demon: Demon, pace_width: float) -> void:
+	demon.stats.retreat_pace_width = pace_width
+	demon.stats.retreat_pace_speed = RETREAT_PACE_SPEED
+
+
 ## Makes the demon keep the cases' Pack Spacing from other demons.
 func _make_it_keep_apart(demon: Demon) -> void:
 	demon.stats.pack_spacing = PACK_SPACING
@@ -4323,3 +5650,92 @@ func _clear(nodes: Array[Node]) -> void:
 		if is_instance_valid(node):
 			node.queue_free()
 	await physics_frame
+
+
+## What a case saw of a demon on the frames of its chase on which it kept back from the man.
+class PaceWatch:
+	## Whether it warned of an attack within MAX_FRAMES.
+	var warned: bool = false
+	## The most physics frames in a row on which it moved less than STILL_STEP.
+	var longest_still: int = 0
+	## How many times it went one way after going the other.
+	var turns: int = 0
+	## The nearest and furthest it was from the man, in px.
+	var nearest: float = INF
+	var furthest: float = 0.0
+	## Whether it stood on its floor on every one of them.
+	var always_on_floor: bool = true
+	## The fastest it paced, in px/s (_see_it_keep_back).
+	var fastest_pace: float = 0.0
+	## Where it was on the frame before, the way it went last, -1 or 1, how many frames in a row it
+	## has moved less than STILL_STEP so far, and whether it kept back on the frame before.
+	var last_x: float = 0.0
+	var last_way: float = 0.0
+	var still: int = 0
+	var kept_back: bool = false
+
+	## Starts the watch with the demon at x.
+	func _init(x: float) -> void:
+		last_x = x
+
+	## What it saw, in a line for a case's report.
+	func describe() -> String:
+		return ("warned %s, %d frames still at most, %d turns, %.1f to %.1f px from the man, "
+				+ "pacing at most %.0f px/s") % [warned, longest_still, turns, nearest, furthest,
+						fastest_pace]
+
+
+## What a case saw of a pack of the level's demons hunting a man (_watch_a_level_pack_hunt).
+class PackWatch:
+	## How many times each demon bit him, in the order they were put.
+	var bites: Array[int] = []
+	## What each demon did on the frames of its chase on which it kept back from him.
+	var paces: Array[PaceWatch] = []
+	## The most demons on one side of him that warned of or made an attack on one physics frame.
+	var most_attacking_on_one_side: int = 0
+	## The most physics frames in a row on which the bodies of two of them overlapped, and on how
+	## many physics frames any two did.
+	var longest_overlap: int = 0
+	var overlap_frames: int = 0
+	## The most physics frames in a row on which two of them were more than half on top of each
+	## other, their middles nearer than half a body.
+	var longest_as_one: int = 0
+	## How many lunges they warned of from within their wait: no further from him than their Retreat
+	## Distance and Retreat Pace Width past it.
+	var lunges_from_the_wait: int = 0
+	## How many attacks each demon warned of, and the most physics frames each went without warning
+	## of one, from the start of the watch to its end.
+	var warnings: Array[int] = []
+	var longest_without_warning: Array[int] = []
+	## The most attacks the demons on one side of him warned of within a second.
+	var most_warnings_in_a_second: int = 0
+	var _last_warned: Array[int] = []
+	var _recent_warnings: Array[Array] = [[], []]
+
+	## Adds a demon to the watch, the next in the order they were put.
+	func add_demon() -> void:
+		bites.append(0)
+		warnings.append(0)
+		longest_without_warning.append(0)
+		_last_warned.append(0)
+
+	## Takes in the demon at index warning of an attack on physics frame frame of the watch, from his
+	## right or not.
+	func see_a_warning(index: int, frame: int, from_his_right: bool) -> void:
+		warnings[index] += 1
+		_see_time_without_warning(index, frame)
+		var recent: Array = _recent_warnings[int(from_his_right)]
+		recent.append(frame)
+		while recent[0] <= frame - Engine.physics_ticks_per_second:
+			recent.pop_front()
+		most_warnings_in_a_second = maxi(most_warnings_in_a_second, recent.size())
+
+	## Ends the watch on physics frame frame, counting the time since each demon last warned.
+	func end(frame: int) -> void:
+		for index: int in _last_warned.size():
+			_see_time_without_warning(index, frame)
+
+	func _see_time_without_warning(index: int, frame: int) -> void:
+		longest_without_warning[index] = maxi(longest_without_warning[index],
+				frame - _last_warned[index])
+		_last_warned[index] = frame

@@ -20,7 +20,9 @@ extends CharacterBody2D
 ## attack's chance coming up, it warns of the attack; a lunge needs him ahead of it and floor all the
 ## way to where it lands. While the man's Hurtbox takes no hits, invulnerable (ADR 0025) or closed
 ## with as many demons holding him as can (ADR 0029), no attack could land, so it starts none, and
-## with Retreat Distance it keeps that far from him until he can be hurt again. With Pack Spacing,
+## with Retreat Distance it keeps that far from him until he can be hurt again; with Attacks
+## Invulnerable Man, it goes on attacking him while he blinks after a hit, its attacks landing
+## through the blink, but waits out his time after he breaks free (ADR 0055). With Pack Spacing,
 ## it keeps that far behind another demon between it and the man, or steps back to it, so two never
 ## look like one, and attacks from there, with a lunge over the other; one backing off does not
 ## count, so they cross then (ADR 0024); with Pack Variation, its speeds and Retreat Distance are its
@@ -89,12 +91,25 @@ const PACK_TOLERANCE: float = 1.0
 ## The states in which the demon's own move carries it, a lunge, a throw or a leap, so it never steps
 ## aside from another demon in them (ADR 0046).
 const STATES_THAT_CARRY_IT: Array[State] = [State.LUNGE, State.THROWN, State.JUMP, State.DROP]
+## The states of the hunt, in which the demon goes after the man to attack him (_hunts).
+const HUNT_STATES: Array[State] = [State.CHASE, State.WARNING]
+## The states in which the demon may hold a turn to attack the man: the chase, in which it takes it,
+## the warning and the lunge (ADR 0053).
+const STATES_WITH_TURN: Array[State] = [State.CHASE, State.WARNING, State.LUNGE]
 ## How high over a step's top, in px, the demon's feet are as its front gets to the corner: half
 ## Jump Clearance, which takes up the frame's run by which it may take off nearer the step.
 const CORNER_CLEARANCE: float = JUMP_CLEARANCE / 2.0
 ## How far under its floor's top, in px, StepCheck looks back along it for where it ends: past the
 ## fraction of a px the demon's feet rest over it.
 const FLOOR_SIDE_DEPTH: float = 2.0
+## How near an end of its pacing, in px, a demon that keeps back from the man has to be to turn
+## there, so it never inches towards it (ADR 0052), and past the far end to count as within its wait
+## still (ADR 0053).
+const PACE_END_REACH: float = 1.0
+
+## The demons that hold a turn to attack a man, by his instance id, shared by all demons, so that
+## with Attackers Per Side only that many attack him at once from each side (ADR 0053).
+static var _turns: Dictionary[int, Array] = {}
 
 @export var stats: DemonStats
 ## Which way the demon faces at its post: where the level puts it looking, and where it looks again
@@ -123,6 +138,15 @@ var _recover_frames_left: int = 0
 var _bite_frames_left: int = 0
 ## True from the end of a bite's warning until its Bite Time is over, when the demon backs off.
 var _retreat_after_bite: bool = false
+## While the demon paces as it keeps back from the man: true as it heads for the far end, Retreat
+## Pace Width past Retreat Distance, and false as it heads back to Retreat Distance (ADR 0052).
+var _paces_out: bool = true
+## What the pacing demon found of the other demons on its floor near it on its last pass over them
+## (_scan_packmates_near), by side, 0 for left and 1 for right: whether one that stands holds it
+## back that way, and how many going that way overlap its body ahead of it and behind it.
+var _held_back_by_packmate: Array[bool] = [false, false]
+var _overlapping_ahead: PackedInt32Array = [0, 0]
+var _overlapping_behind: PackedInt32Array = [0, 0]
 ## Rolls the attacks' chances. Each demon has its own, seeded from the global generator, which moves
 ## on with each seed it gives, so demons put in on the same frame do not lunge together.
 var _rng: RandomNumberGenerator = RandomNumberGenerator.new()
@@ -133,8 +157,11 @@ var _chase_speed_draw: float = 0.0
 var _retreat_speed_draw: float = 0.0
 var _retreat_distance_draw: float = 0.0
 ## Physics frames the demon still waits, able to attack, before it may (Max Hesitation); -1 while it
-## can't attack, so it draws a new wait as soon as it can.
+## can't attack, so it draws a new wait as soon as it can. Without Hesitates Before First Attack,
+## noticing the man sets it to 0, so its first attack draws none (ADR 0051).
 var _hesitation_frames_left: int = -1
+## The instance id of the man the demon holds a turn to attack, or 0 while it holds none (ADR 0053).
+var _turn_man_id: int = 0
 ## The demon's post, its home, which never changes (ADR 0043): where the level put it, with the y of
 ## the floor it first stands on there, below where it was put; thrown before it lands, it takes that
 ## y once it first stands there.
@@ -174,6 +201,8 @@ var _was_shoving: bool = false
 @onready var _step_check: RayCast2D = %StepCheck
 @onready var _repellable: Repellable = %Repellable
 @onready var _hitbox: Hitbox = %Hitbox
+## Bites whoever lands on its back, with Bites Who Lands On It (ADR 0056).
+@onready var _back_bite: DemonBackBite = %BackBite
 @onready var _box: CollisionShape2D = $CollisionShape2D
 @onready var _half_size: Vector2 = _box.shape.get_rect().size / 2.0
 
@@ -201,13 +230,17 @@ func _ready() -> void:
 	_hitbox.hit_landed.connect(_on_hitbox_hit_landed)
 	_hitbox.hold_started.connect(_on_hitbox_hold_started)
 	_hitbox.hold_ended.connect(_on_hitbox_hold_ended)
+	_back_bite.stats = stats
+	_back_bite.hold_started.connect(_on_back_bite_hold_started)
+	_back_bite.hold_ended.connect(_on_hitbox_hold_ended)
 	stats.changed.connect(_apply_stats)
 	_apply_stats()
 
 
 ## Its state moves it, then it keeps apart from the pack and from the man's side; standing on a body
-## on Knock Off Layers, the shove off it takes over the move. The man's head is never a floor on its
-## way back nor where its post's floor is found.
+## on Knock Off Layers, the shove off it takes over the move, and in GRAB it falls through the body
+## instead (ADR 0056). The man's head is never a floor on its way back nor where its post's floor
+## is found.
 func _physics_process(delta: float) -> void:
 	_bite_frames_left = maxi(_bite_frames_left - 1, 0)
 	_target.track(delta)
@@ -236,6 +269,12 @@ func _physics_process(delta: float) -> void:
 		_post_on_floor = true
 		_post.y = global_position.y
 	_update_hitbox()
+
+
+## Leaving the tree, as when freed, the demon gives up its turn to attack, so it never keeps one
+## from the others (ADR 0053).
+func _exit_tree() -> void:
+	_give_up_turn()
 
 
 func get_state() -> State:
@@ -317,13 +356,18 @@ func random_share() -> float:
 ## For its states: starts the chase when the man is inside the sight area and the demon notices
 ## him: sees him, and he is not further behind it than Sight Behind Share of Sight Distance. With
 ## Chases Only On Screen, only while it is on the screen. With Alert Time, the chase starts with the
-## alert (ADR 0035). True when it started.
+## alert (ADR 0035). Without Hesitates Before First Attack, its first attack waits neither what is
+## left of an earlier bite's Recover Time nor a draw of Max Hesitation (ADR 0051). True when it
+## started.
 func chase_if_it_notices_the_man() -> bool:
 	var man: Node2D = _senses.get_man_in_sight_area()
 	if man == null or not may_chase_from_here() or not _senses.can_notice(
 			man, _facing, stats.sight_distance * stats.sight_behind_share):
 		return false
 	_target.take(man)
+	if not stats.hesitates_before_first_attack:
+		_recover_frames_left = 0
+		_hesitation_frames_left = 0
 	change_state(State.ALERT if stats.alert_time > 0.0 else State.CHASE)
 	return true
 
@@ -331,7 +375,8 @@ func chase_if_it_notices_the_man() -> bool:
 ## For its states: true when the last move left the demon against a wall of the world, a static
 ## body or tiles, going in direction. A body that moves, such as the man's, does not count: it would
 ## make a post of a spot that is free a moment later. Only read while it walks back, patrols,
-## searches or paces out of reach, on the frames it touches a wall.
+## searches, paces out of reach or paces as it keeps back from the man, on the frames it touches a
+## wall.
 func is_against_a_wall(direction: float) -> bool:
 	if not is_on_wall():
 		return false
@@ -386,11 +431,13 @@ func get_attack() -> DemonAttack:
 
 ## For its states: bites where the demon is, at the end of a bite on the run's warning, for the
 ## bite's Bite Time, and goes back to the chase, where it cannot attack for the bite's Recover Time.
-## With Retreat Distance, it backs off once Bite Time is over.
+## The attack made, it gives up its turn (ADR 0053). With Retreat Distance, it backs off once Bite
+## Time is over.
 func bite() -> void:
 	_recover_frames_left = _attack.get_recover_frames()
 	_bite_frames_left = _attack.get_bite_frames()
 	_retreat_after_bite = stats.retreat_distance > 0.0
+	_give_up_turn()
 	change_state(State.CHASE)
 
 
@@ -404,6 +451,15 @@ func should_back_off_after_bite() -> bool:
 func end_bite() -> void:
 	_bite_frames_left = 0
 	_retreat_after_bite = false
+
+
+## For its states: true while the demon, with Waits At Retreat Distance in Stats, cannot attack yet
+## and has no bite under way: through what is left of a bite's Recover Time, through its draw of Max
+## Hesitation (ADR 0051) and, with Attackers Per Side, while it holds no turn to attack (ADR 0053).
+func waits_to_attack() -> bool:
+	return stats.waits_at_retreat_distance and _bite_frames_left == 0 \
+			and (_recover_frames_left > 0 or _hesitation_frames_left > 0
+					or (stats.attackers_per_side > 0 and _turn_man_id == 0))
 
 
 ## For its states: changes to new_state, and lets it act on this same physics frame of delta
@@ -670,14 +726,16 @@ func _jump_up(direction: float, height: float, for_state: State, delta: float) -
 ## For its states, after an attack: backs off from the man with Retreat Distance in Stats, and
 ## starts on this same physics frame of delta seconds; with none, or with him already that far,
 ## chases him again. Each time, it draws its Retreat Distance and Retreat Speed anew, so two demons
-## that attacked together back off apart.
+## that attacked together back off apart. Backing off ends a bite's Recover Time, unless the demon
+## Waits At Retreat Distance, and so waits out the rest of it there (ADR 0051).
 func back_off_or_chase(delta: float) -> void:
 	_retreat_after_bite = false
 	_retreat_distance_draw = _rng.randf_range(-1.0, 1.0)
 	_retreat_speed_draw = _rng.randf_range(-1.0, 1.0)
 	if stats.retreat_distance > 0.0 and _target.has_man() \
 			and absf(get_gap_to_target()) < retreat_distance():
-		_recover_frames_left = 0
+		if not stats.waits_at_retreat_distance:
+			_recover_frames_left = 0
 		change_state_and_act(State.RETREAT, delta)
 	elif _state != State.CHASE:
 		change_state(State.CHASE)
@@ -751,31 +809,180 @@ func turn_to(gap: float) -> void:
 		_facing = signf(gap)
 
 
-## For its states: goes the man's way at Chase Speed, and stops at the end of the floor. Never
+## For CHASE: goes after the man, gap px away along the floor, + to the right, as go_after does,
+## keeping its Retreat Distance from him while it waits to attack, with Waits At Retreat Distance,
+## or for him to take hits (waits_for_the_man_to_take_hits). With Retreat Pace Width in Stats, it
+## paces there instead of standing (ADR 0052).
+func go_after_or_pace(gap: float, delta: float) -> void:
+	var keeps_back: bool = waits_to_attack() or waits_for_the_man_to_take_hits()
+	if keeps_back and stats.retreat_pace_width > 0.0 and stats.retreat_distance > 0.0:
+		_pace_back(gap, delta)
+	else:
+		go_after(gap, delta, keeps_back)
+
+
+## For its states: goes the man's way at Chase Speed, less while it overlaps a demon going its way
+## faster (_chase_share), and stops at the end of the floor. Never
 ## further than the gap, so a demon right below the man stands still instead of shaking, and a bite
 ## on the run never takes it past him; nor nearer than Pack Spacing to the body of a demon ahead of
-## it. Nearer, as after it crossed that one on its way back, it steps back at its Retreat Speed,
-## still facing the man, until it is that far. While the man takes no hits, it comes no nearer to
+## it that holds it back (_packmate_ahead). Nearer, as after it crossed that one on its way back, it
+## steps back at its Retreat Speed, still facing the man, until it is that far. While it waits for
+## the man to take hits (waits_for_the_man_to_take_hits), and with keeps_back, it comes no nearer to
 ## him than Retreat Distance, and steps back to it the same way.
-func go_after(gap: float, delta: float) -> void:
+func go_after(gap: float, delta: float, keeps_back: bool = false) -> void:
 	var direction: float = signf(gap)
 	var room: float = absf(gap)
-	if target_takes_no_hits():
+	if keeps_back or waits_for_the_man_to_take_hits():
 		room -= retreat_distance()
 	var ahead: Demon = _packmate_ahead(gap)
 	if ahead != null:
 		var apart: float = absf(ahead.global_position.x - global_position.x)
 		room = minf(room, apart - 2.0 * _half_size.x - stats.pack_spacing)
-	var speed: float = clampf(room / delta, -retreat_speed(), _chase_speed())
+	var top_speed: float = _chase_speed() * _chase_share(direction)
+	var speed: float = clampf(room / delta, -retreat_speed(), top_speed)
 	if is_on_floor() and is_edge_ahead(direction * signf(speed)):
 		velocity.x = 0.0
 		return
 	velocity.x = direction * speed
 
 
+## Paces, facing the man, gap px away along the floor, + to the right, between its Retreat Distance
+## from him and Retreat Pace Width past it, at its own Retreat Pace Speed. It turns back at either
+## end, and sooner at an edge, a wall or a demon that stands (_is_pace_held_back); other demons it
+## passes through, faster or slower among some going its way (_pace_share, ADR 0053). Further off,
+## it runs back at its Chase Speed (_chase_share); nearer, it backs off at its Retreat Speed, and
+## with no room to, it stands (ADR 0052). It goes over the demons near it once
+## (_scan_packmates_near), and looks for an edge or a wall once when it goes the way it was pacing.
+func _pace_back(gap: float, delta: float) -> void:
+	var toward: float = signf(gap)
+	var apart: float = absf(gap)
+	var near: float = retreat_distance()
+	var far: float = near + stats.retreat_pace_width
+	if apart <= near + PACE_END_REACH:
+		_paces_out = true
+	elif apart >= far - PACE_END_REACH:
+		_paces_out = false
+	_scan_packmates_near()
+	var paces: float = -toward if _paces_out else toward
+	var held_back: bool = _is_pace_held_back(paces)
+	if held_back:
+		_paces_out = not _paces_out
+	var room: float = apart - (far if _paces_out else near)
+	var pace_speed: float = _retreat_pace_speed() * _pace_share(toward * signf(room))
+	var out_speed: float = retreat_speed() if apart < near else pace_speed
+	var in_speed: float = _chase_speed() * _chase_share(toward) if apart > far else pace_speed
+	var speed: float = clampf(room / delta, -out_speed, in_speed)
+	var goes: float = toward * signf(speed)
+	var stops: bool = held_back if goes == paces else _is_pace_held_back(goes)
+	if stops:
+		velocity.x = 0.0
+		return
+	velocity.x = toward * speed
+
+
+## True when an edge of its floor or a wall keeps the demon from going in direction, 1 for right
+## and -1 for left.
+func _is_held_back(direction: float) -> bool:
+	return (is_on_floor() and is_edge_ahead(direction)) or is_against_a_wall(direction)
+
+
+## True when the pacing demon has to stop going in direction, 1 for right and -1 for left: at an
+## edge or a wall (_is_held_back), or at another demon on its floor that stands still no further
+## than Pack Spacing from its body, as one cornered does. Those on the move it passes through, but
+## it never paces onto one that stands, so two cornered never stand on top of each other
+## (ADR 0053). The demons are those of its last _scan_packmates_near.
+func _is_pace_held_back(direction: float) -> bool:
+	return _is_held_back(direction) \
+			or (direction != 0.0 and _held_back_by_packmate[_side_of(direction)])
+
+
+## The share of its Retreat Pace Speed at which the demon paces in direction, 1 for right and -1 for
+## left, among the other demons on its floor going its way whose bodies overlap its own: Pace Spread
+## more in front of them all, as much less behind them all, and evenly in between (ADR 0053). The
+## demons are those of its last _scan_packmates_near.
+func _pace_share(direction: float) -> float:
+	if direction == 0.0:
+		return 1.0
+	var ahead_of_it: int = _overlapping_ahead[_side_of(direction)]
+	var behind_it: int = _overlapping_behind[_side_of(direction)]
+	if ahead_of_it + behind_it == 0:
+		return 1.0
+	return 1.0 + stats.pace_spread * (behind_it - ahead_of_it) / float(ahead_of_it + behind_it)
+
+
+## One pass over the other demons on its floor near it, for _pace_back: on each side, whether one
+## that stands still no further than Pack Spacing from its body holds it back (_is_pace_held_back),
+## and how many going that way overlap its body, ahead of it and behind it (_pace_share). Of two on
+## one spot, the one put in the scene first is ahead. In a pack, each pacing demon runs it on every
+## physics frame over all the others, so it reads each one's position and velocity once, by their
+## getters, which in GDScript cost less than the properties, and tells whether it is on its floor
+## as _shares_floor_with does, with the positions already read.
+func _scan_packmates_near() -> void:
+	_held_back_by_packmate.fill(false)
+	_overlapping_ahead.fill(0)
+	_overlapping_behind.fill(0)
+	var own: Vector2 = get_global_position()
+	var reach: float = _apart_from_packmates() + PACK_TOLERANCE if stats.pack_spacing > 0.0 else 0.0
+	var overlap: float = 2.0 * _half_size.x
+	var farthest: float = maxf(reach, overlap)
+	for mate: Demon in _packmates:
+		var at: Vector2 = mate.get_global_position()
+		var apart: float = at.x - own.x
+		var distance: float = absf(apart)
+		if distance > farthest:
+			continue
+		var speed: float = mate.get_velocity().x
+		var going: float = signf(speed)
+		var stands_in_reach: bool = speed == 0.0 and apart != 0.0 and distance <= reach
+		var overlaps_going: bool = going != 0.0 and distance < overlap
+		if not (stands_in_reach or overlaps_going) or not mate.is_on_floor() \
+				or absf(at.y - own.y) >= _half_size.y:
+			continue
+		if stands_in_reach:
+			_held_back_by_packmate[_side_of(apart)] = true
+		elif apart * going > 0.0 or (apart == 0.0 and mate.get_instance_id() < get_instance_id()):
+			_overlapping_ahead[_side_of(going)] += 1
+		else:
+			_overlapping_behind[_side_of(going)] += 1
+
+
+## 0 for a direction to the left, under 0, and 1 for one to the right; 0 also for no direction.
+static func _side_of(direction: float) -> int:
+	return 1 if direction > 0.0 else 0
+
+
+## The share of its Chase Speed at which the demon runs in direction, 1 for right and -1 for left:
+## Pace Spread less while its body overlaps that of a demon on its floor that runs its way faster
+## now, so the faster gets past and the two never run as one (ADR 0053). Faster now, and not by its
+## draw, so a demon running at the man never slows for one that paces.
+func _chase_share(direction: float) -> float:
+	if stats.pace_spread <= 0.0 or direction == 0.0:
+		return 1.0
+	for mate: Demon in _packmates:
+		if absf(mate.global_position.x - global_position.x) < 2.0 * _half_size.x \
+				and signf(mate.velocity.x) == direction and _moves_faster(mate) \
+				and _shares_floor_with(mate):
+			return 1.0 - stats.pace_spread
+	return 1.0
+
+
+## True when the other demon moves faster than this one now, or as fast and was put in the scene
+## first.
+func _moves_faster(mate: Demon) -> bool:
+	var own: float = absf(velocity.x)
+	var other: float = absf(mate.velocity.x)
+	return other > own or (other == own and mate.get_instance_id() < get_instance_id())
+
+
 ## This demon's own Chase Speed, by its draw of Pack Variation.
 func _chase_speed() -> float:
 	return stats.chase_speed * _varied(_chase_speed_draw)
+
+
+## This demon's own Retreat Pace Speed, by its draw of Pack Variation of Chase Speed, so the faster
+## of two demons also paces faster.
+func _retreat_pace_speed() -> float:
+	return stats.retreat_pace_speed * _varied(_chase_speed_draw)
 
 
 ## For its states: this demon's own Retreat Speed, by its draw of Pack Variation.
@@ -800,20 +1007,30 @@ func _varied(draw: float) -> float:
 	return 1.0 + draw * stats.pack_variation
 
 
+## True while the demon hunts the man: it chases him or warns of an attack, and it saw him on this
+## physics frame or the one before. On the move it then passes through the other demons: only one
+## at his side holds it back (ADR 0053). With him out of sight, it keeps Pack Spacing from them as
+## it goes after him, so they come to where it looks for him one behind the other (ADR 0024).
+func _hunts() -> bool:
+	return _state in HUNT_STATES and sees_target()
+
+
 ## With Pack Spacing, the nearest other demon between this one and the man, gap px away along the
-## floor, that is after him and not backing off from him; otherwise null. One that stands, patrols,
-## walks back or searches is not after him, so it never holds back a chase. A demon past the man is
-## on his other side, not between, so two demons can come at him from both sides. Every demon is
-## this scene, so their bodies are the same size. Of two on one spot, the one put in the scene first
-## is ahead.
+## floor, that is after him and not backing off from him; otherwise null. In the hunt (_hunts), only
+## one at his side counts, since it has that spot: the others it passes through. One that stands,
+## patrols, walks back or searches is not after him, so it never holds back a chase. A demon past
+## the man is on his other side, not between, so two demons can come at him from both sides. Every
+## demon is this scene, so their bodies are the same size. Of two on one spot, the one put in the
+## scene first is ahead.
 func _packmate_ahead(gap: float) -> Demon:
 	if stats.pack_spacing <= 0.0:
 		return null
+	var hunts: bool = _hunts()
 	var nearest: Demon = null
 	var nearest_apart: float = INF
 	for mate: Demon in _packmates:
 		if not is_instance_valid(mate) or not mate.has_target() \
-				or mate.get_state() == State.RETREAT:
+				or mate.get_state() == State.RETREAT or (hunts and not _is_at_the_man_s_side(mate)):
 			continue
 		var apart: float = mate.global_position.x - global_position.x
 		var is_ahead: bool = absf(apart) < absf(gap) and (signf(apart) == signf(gap)
@@ -822,6 +1039,12 @@ func _packmate_ahead(gap: float) -> Demon:
 			nearest = mate
 			nearest_apart = absf(apart)
 	return nearest
+
+
+## True when the other demon's body touches or overlaps the body of the man this demon is after.
+func _is_at_the_man_s_side(mate: Demon) -> bool:
+	return absf(_target.get_man().global_position.x - mate.global_position.x) \
+			<= _target.get_half_size().x + _half_size.x + PACK_TOLERANCE
 
 
 ## For its states: true when, with Pack Spacing, another demon on its floor stands that way, 1 for
@@ -912,16 +1135,19 @@ func _passes_through_the_man() -> bool:
 
 ## For its states, on each physics frame of delta seconds of the chase: the first of the demon's
 ## attacks it starts at the man, or null. It only attacks from its floor, at a man it sees this
-## frame and who takes hits, once a bite on the run's Recover Time is over, which this counts down,
-## and when the attack's chance comes up, never while its body and his pass through each other (ADR
-## 0047). Each time it becomes able to, it first waits a new draw of up to Max Hesitation (ADR
-## 0027). The chance is rolled before the lunge is aimed and the floor is looked for, which takes
-## many rays: the odds are the same either way.
+## frame, unless it waits for him to take hits (waits_for_the_man_to_take_hits), once a bite on
+## the run's Recover Time is over, which this counts down, and when the attack's chance comes up
+## (_starts), never while its body and his pass through each other (ADR 0047). Each time it becomes
+## able to, it first waits a new draw of up to Max Hesitation (ADR 0027), and then, with Attackers
+## Per Side, takes a turn to attack, or waits a new draw while those on its side of him are taken.
+## It gives its turn up when it can no longer attack, and when it has no attack to start and can
+## get no nearer to him (_can_get_nearer), so the turn goes to one that can use it (ADR 0053).
 func attack_to_start(gap: float, delta: float) -> DemonAttack:
 	_recover_frames_left = maxi(_recover_frames_left - 1, 0)
 	if not is_on_floor() or _target.get_unseen_frames() != 0 or _recover_frames_left > 0 \
-			or target_takes_no_hits() or _passes_through_the_man():
+			or waits_for_the_man_to_take_hits() or _passes_through_the_man():
 		_hesitation_frames_left = -1
+		_give_up_turn()
 		return null
 	if _hesitation_frames_left < 0:
 		_hesitation_frames_left = stats.get_hesitation_frames(_rng.randf()) \
@@ -929,12 +1155,43 @@ func attack_to_start(gap: float, delta: float) -> DemonAttack:
 	if _hesitation_frames_left > 0:
 		_hesitation_frames_left -= 1
 		return null
+	if not _takes_turn():
+		_hesitation_frames_left = -1
+		return null
 	for attack: DemonAttack in stats.attacks:
-		if _has_man_in_range(attack, gap) and _rolls(attack, delta) \
-				and (attack.keeps_chasing or _can_lunge(attack, gap)):
+		if _starts(attack, gap, delta):
 			_hesitation_frames_left = -1
 			return attack
+	if _turn_man_id != 0 and not _can_get_nearer(gap):
+		_hesitation_frames_left = -1
+		_give_up_turn()
 	return null
+
+
+## True when the demon can get nearer to the man, gap px away along the floor: no edge of its floor
+## or wall is in its way, and no other demon at his side holds it back (_packmate_ahead) Pack
+## Spacing behind its body.
+func _can_get_nearer(gap: float) -> bool:
+	if _is_held_back(signf(gap)):
+		return false
+	var ahead: Demon = _packmate_ahead(gap)
+	if ahead == null:
+		return true
+	var apart: float = absf(ahead.global_position.x - global_position.x)
+	return apart > _apart_from_packmates() + PACK_TOLERANCE
+
+
+## True when the demon, the man gap px away along the floor, starts the attack on this physics frame
+## of delta seconds: he is in the attack's range and its chance comes up, and for a lunge, the demon
+## is not within its wait (ADR 0053) and the lunge has somewhere to land. The chance is rolled
+## before the lunge is aimed and the floor is looked for, which takes many rays: the odds are the
+## same either way.
+func _starts(attack: DemonAttack, gap: float, delta: float) -> bool:
+	if not _has_man_in_range(attack, gap):
+		return false
+	if attack.keeps_chasing:
+		return _rolls(attack, delta)
+	return not _is_within_its_wait(gap) and _rolls(attack, delta) and _can_lunge(attack, gap)
 
 
 ## True when the attack's lunge, aimed now, has the man ahead to land on and floor all the way to
@@ -957,11 +1214,54 @@ func _has_man_in_range(attack: DemonAttack, gap: float) -> bool:
 					<= attack.max_height_difference
 
 
+## True when the demon, the man gap px away along the floor, is within its wait: with Waits At
+## Retreat Distance, no further from him than its Retreat Distance and Retreat Pace Width past it.
+## From there it never lunges, so its run at him once it may attack ends in a bite (ADR 0053).
+func _is_within_its_wait(gap: float) -> bool:
+	return stats.waits_at_retreat_distance \
+			and absf(gap) <= retreat_distance() + stats.retreat_pace_width + PACE_END_REACH
+
+
 ## True when the attack's chance comes up on this physics frame of delta seconds. A chance of 1
 ## always does, with no roll.
 func _rolls(attack: DemonAttack, delta: float) -> bool:
 	var chance: float = attack.get_chance_in(delta)
 	return chance >= 1.0 or _rng.randf() < chance
+
+
+## True when the demon holds a turn to attack the man it is after, or takes one now: with Attackers
+## Per Side, only while fewer demons than that hold one on its side of him, the side each is on now
+## (ADR 0053). 0 gives every demon a turn.
+func _takes_turn() -> bool:
+	if stats.attackers_per_side <= 0:
+		return true
+	var man: Node2D = _target.get_man()
+	var man_id: int = man.get_instance_id()
+	if _turn_man_id == man_id:
+		return true
+	_give_up_turn()
+	var holders: Array = _turns.get_or_add(man_id, [])
+	var on_its_right: bool = global_position.x >= man.global_position.x
+	var on_its_side: int = 0
+	for holder: Demon in holders:
+		if (holder.global_position.x >= man.global_position.x) == on_its_right:
+			on_its_side += 1
+	if on_its_side >= stats.attackers_per_side:
+		return false
+	holders.append(self)
+	_turn_man_id = man_id
+	return true
+
+
+## Gives up the demon's turn to attack, if it holds one, so another may take it (ADR 0053).
+func _give_up_turn() -> void:
+	if _turn_man_id == 0:
+		return
+	var holders: Array = _turns.get(_turn_man_id, [])
+	holders.erase(self)
+	if holders.is_empty():
+		_turns.erase(_turn_man_id)
+	_turn_man_id = 0
 
 
 ## Looks for floor up to where the attack's lunge of distance px can land at the farthest, so a
@@ -976,10 +1276,15 @@ func _has_floor_along_lunge(attack: DemonAttack, distance: float) -> bool:
 	return _has_floor_at(reach * _facing)
 
 
-## For its states: true while the man's Hurtbox lets no hit land, so an attack now could do nothing
-## to him.
-func target_takes_no_hits() -> bool:
-	return _target.takes_no_hits()
+## For its states: true while the demon waits for the man to take hits, so it starts no attack, ends
+## a warning under way and keeps its Retreat Distance from him: while his Hurtbox lets no hit land,
+## unless the demon has Attacks Invulnerable Man and he only blinks after a hit, so its attacks
+## pierce the blink and land (ADR 0055); it still waits while he is held by as many demons as can,
+## or just after he breaks free of a hold.
+func waits_for_the_man_to_take_hits() -> bool:
+	if not _target.takes_no_hits():
+		return false
+	return not stats.attacks_invulnerable_man or not _target.can_be_pierced()
 
 
 ## For its states: true when the floor ends just ahead of the demon's front, going in direction.
@@ -995,18 +1300,27 @@ func _has_floor_at(offset_x: float) -> bool:
 
 
 ## The pack area reaches a body width and Pack Spacing past this demon's body, so it finds a demon
-## as soon as its body is that near.
+## as soon as its body is that near. The bite on its back is on with Bites Who Lands On It (ADR
+## 0056).
 func _apply_stats() -> void:
 	_senses.set_sight_distance(stats.sight_distance)
 	(_pack_shape.shape as RectangleShape2D).size = Vector2(
 			2.0 * (3.0 * _half_size.x + stats.pack_spacing), 2.0 * _half_size.y)
+	_back_bite.set_on(stats.bites_who_lands_on_it)
 
 
 ## For its states, and the only way the demon changes state: the state it leaves tidies up, the new
 ## one sets up, and the Hitbox follows the new state at once, so a push from the crucifix stops the
-## attack in the same frame. Changing to the state it is in starts that state again.
+## attack in the same frame. Changing to the state it is in starts that state again. Leaving the
+## states with a turn, or a lunge, gives up the demon's turn to attack (ADR 0053). A state that
+## carries it off the floor ends its wait of Max Hesitation, so it draws a new one once it can
+## attack again, as when it leaves the floor in the chase (ADR 0051).
 func change_state(new_state: State) -> void:
 	var previous: State = _state
+	if new_state not in STATES_WITH_TURN or previous == State.LUNGE:
+		_give_up_turn()
+	if new_state in STATES_THAT_CARRY_IT:
+		_hesitation_frames_left = -1
 	_off_its_floor = false
 	_current.exit()
 	_state = new_state
@@ -1018,7 +1332,8 @@ func change_state(new_state: State) -> void:
 
 ## Keeps the Hitbox on only while the attack under way can land: a bite on the run for its Bite
 ## Time after its warning, a lunge from take-off until it lands, and neither while its body and the
-## man's pass through each other (ADR 0047). Turned on, it takes the attack's damage and knockback.
+## man's pass through each other (ADR 0047). Turned on, it takes the attack's damage and knockback,
+## and pierces the man's blink after a hit if the demon has Attacks Invulnerable Man (ADR 0055).
 func _update_hitbox() -> void:
 	var can_land: bool = (_bite_frames_left > 0 or _current.can_land_hit()) \
 			and not _passes_through_the_man()
@@ -1028,15 +1343,18 @@ func _update_hitbox() -> void:
 		_hitbox.damage = _attack.damage
 		_hitbox.knockback_distance = _attack.knockback_distance
 		_hitbox.knockback_height = _attack.knockback_height
+		_hitbox.pierces_invulnerability = stats.attacks_invulnerable_man
 		_hitbox.activate()
 
 
 ## With Pack Spacing, on its floor, steps away at Pack Push Speed from the nearest other demon on it
 ## that its body is nearer to than Pack Spacing and that it yields to, whatever its state asked of
 ## it, unless its own move carries it or its floor ends that way; of two on one spot, the one put in
-## the scene first steps left. Where neither can step away, they stay as they are (ADR 0046).
+## the scene first steps left. Where neither can step away, they stay as they are (ADR 0046). In the
+## hunt (_hunts), only while its state stands it still: on the move it passes through the others.
 func _keep_apart_from_packmates() -> void:
-	if stats.pack_spacing <= 0.0 or not is_on_floor() or _state in STATES_THAT_CARRY_IT:
+	if stats.pack_spacing <= 0.0 or not is_on_floor() or _state in STATES_THAT_CARRY_IT \
+			or (velocity.x != 0.0 and _hunts()):
 		return
 	var nearest: Demon = null
 	var nearest_apart: float = _apart_from_packmates() - PACK_TOLERANCE
@@ -1080,7 +1398,8 @@ func _apart_from_packmates() -> float:
 
 
 ## True when the other demon stands on about this one's floor: on a floor, less than half a body
-## higher or lower.
+## higher or lower. _scan_packmates_near asks the same with the positions it has already read, so
+## a change here goes there too.
 func _shares_floor_with(mate: Demon) -> bool:
 	return is_instance_valid(mate) and mate.is_on_floor() \
 			and absf(mate.global_position.y - global_position.y) < _half_size.y
@@ -1106,6 +1425,17 @@ func _on_hitbox_hold_started(_hurtbox: Hurtbox) -> void:
 	velocity.x = 0.0
 	velocity.y = maxf(velocity.y, 0.0)
 	change_state(State.GRAB)
+
+
+## The bite on its back holds the man, as its Hitbox's hit does, and he falls through the demon to
+## the floor (KnockOff). A demon that was not after him, as one he lands on before it sees him,
+## first takes the man on its back as the one it holds: with no one to hold, GRAB would let go at
+## once.
+func _on_back_bite_hold_started(hurtbox: Hurtbox) -> void:
+	var rider: Node2D = _back_bite.get_rider()
+	if not has_target() and rider != null:
+		_target.take(rider)
+	_on_hitbox_hold_started(hurtbox)
 
 
 ## The man broke free and throws it off, away from him, facing him all the way.

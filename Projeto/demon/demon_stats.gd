@@ -4,9 +4,10 @@ extends Resource
 ## What a kind of demon is: how far it sees, how fast it chases, and its attacks. All the demons of
 ## one level share one file, such as lust_demon_stats.tres, with its attacks inside it, and a new
 ## level's demons are another file with the same fields. Where a demon is placed and the art it
-## shows are not here. Sight Distance and Pack Spacing say when they change, so the demon resizes
-## what it sees and the room it keeps at once, also while the game runs and they are changed in the
-## Remote tab; the others are read each time they are used.
+## shows are not here. Sight Distance, Pack Spacing and Bites Who Lands On It say when they change,
+## so the demon resizes what it sees and the room it keeps, and turns the bite on its back on or
+## off, at once, also while the game runs and they are changed in the Remote tab; the others are
+## read each time they are used.
 
 @export_group("Senses")
 ## How near, in px, the man has to come for the demon to see him, with no wall in between.
@@ -93,6 +94,28 @@ extends Resource
 ## The demon's attacks, in order: of those it can start at the man, it starts the first in the
 ## list. With none, it only chases.
 @export var attacks: Array[DemonAttack] = []
+## Whether the demon goes on attacking the man while he blinks after a hit, invulnerable (ADR 0025):
+## its attacks pierce the blink and land, each taking his SP, so a pack attacking him in turns
+## brings him down fast (ADR 0055). Off, it starts no attack while he blinks and keeps its Retreat
+## Distance from him. Either way, it starts none at a man held by as many demons as can, or just
+## after he breaks free of a hold.
+@export var attacks_invulnerable_man: bool = false
+
+@export_group("Back Bite")
+## Whether the demon bites whoever lands on it, as in an attack, so the man can't ride a pack
+## (ADR 0056): once on each landing, also on two demons at once, and never from the side nor from
+## inside it. The bite takes the SP of its first bite in Attacks and throws him further than a bite
+## does, through any blink of his, whatever Attacks Invulnerable Man says; with his SP low, it
+## grabs him, as any hit, and he falls through the demon to sink on the floor below it. Off, he is
+## only shoved off its top (ADR 0022).
+@export var bites_who_lands_on_it: bool = false:
+	set(value):
+		bites_who_lands_on_it = value
+		emit_changed()
+## How far, in px along the floor away from the demon, and how high the bite on its back throws the
+## man: more than a bite's, so he comes off the demon and, mostly, off its pack.
+@export_range(0.0, 1000.0, 10.0, "suffix:px") var back_bite_knockback_distance: float = 300.0
+@export_range(1.0, 400.0, 1.0, "suffix:px") var back_bite_knockback_height: float = 100.0
 
 @export_group("Retreat")
 ## How far from the man, in px, the demon backs off after each attack, landed or not, before it
@@ -104,13 +127,32 @@ extends Resource
 ## most the time Retreat Distance takes at this speed, so a man who follows it, or an edge or a wall
 ## behind it, never keeps it from coming back.
 @export_range(10.0, 2000.0, 10.0, "suffix:px/s") var retreat_speed: float = 400.0
+## With Retreat Distance, whether the demon waits that far from the man, and not by his side, while
+## it cannot attack yet: through what is left of a bite's Recover Time once it has backed off, which
+## goes on there, and through its draw of Max Hesitation, as when his blink ends. Then it runs at
+## him and warns of the bite on the way, so the pause comes after each attack and none before it
+## (ADR 0051). Off, Recover Time ends as it backs off.
+@export var waits_at_retreat_distance: bool = false
+## With Retreat Distance, how far past it, in px, the demon paces while it keeps back from the man:
+## while it cannot attack yet, with Waits At Retreat Distance, and while he takes no hits, as in his
+## blink. It goes back and forth between the two at Retreat Pace Speed, facing him, turns back at an
+## edge or a wall and passes through other demons (ADR 0053), so it never stands still while it
+## waits (ADR 0052). With no room behind it, inside Retreat Distance, it stands. 0 stands still at
+## Retreat Distance.
+@export_range(0.0, 500.0, 10.0, "suffix:px") var retreat_pace_width: float = 0.0
+## Speed, in px/s, at which it paces: well below Chase Speed, so its run at the man once it can
+## attack reads as the start of the attack. Each demon's own, by its draw of Pack Variation of Chase
+## Speed, so a pack paces out of step, and faster or slower by Pace Spread where several meet.
+@export_range(10.0, 1000.0, 10.0, "suffix:px/s") var retreat_pace_speed: float = 180.0
 
 @export_group("Pack")
 ## How far, in px, the demon keeps its body from the body of another demon that stands between it
 ## and the man and is not backing off: it keeps that far behind it, or steps back to it, and attacks
-## from there, so two demons never look like one (ADR 0024). In every other state too, on its floor,
-## it stops or turns that far from another demon as at a wall, and steps away from one nearer than
-## that at Pack Push Speed (ADR 0046). 0 keeps no distance: they can share a spot.
+## from there, so two demons never look like one (ADR 0024). While it hunts a man in sight, only a
+## demon at his side holds it back so, and the others it passes through on the move (ADR 0053). In
+## every other state too, on its floor, it stops or turns that far from another demon as at a wall,
+## and steps away from one nearer than that at Pack Push Speed (ADR 0046). 0 keeps no distance: they
+## can share a spot.
 @export_range(0.0, 500.0, 2.0, "suffix:px") var pack_spacing: float = 0.0:
 	set(value):
 		pack_spacing = value
@@ -127,10 +169,29 @@ extends Resource
 ## its Retreat Speed and Retreat Distance again each time it backs off, so two that come together
 ## drift apart instead of moving in step (ADR 0024, ADR 0027). 0 makes them all the same.
 @export_range(0.0, 0.5, 0.01) var pack_variation: float = 0.0
+## How much faster or slower than its own Retreat Pace Speed, as a share of it, a demon paces among
+## others on its floor going its way whose bodies overlap its own: the one in front that much
+## faster, the one at the back that much slower, and those between evenly in between, so demons
+## that meet pacing the same way part instead of moving as one (ADR 0053). 0 leaves each at its
+## own speed.
+@export_range(0.0, 0.75, 0.05) var pace_spread: float = 0.0
 ## Most seconds a demon waits, once it can attack, before it may: each time it becomes able to, as
 ## when an attack is over or the man stops blinking, it draws a new wait from 0 to this, so demons
-## that the same moment sets free do not attack together (ADR 0027). 0 never waits.
+## that the same moment sets free do not attack together (ADR 0027). 0 never waits. Hesitates
+## Before First Attack says whether the first attack after it notices the man waits too.
 @export_range(0.0, 2.0, 0.05, "suffix:s") var max_hesitation: float = 0.0
+## Whether the demon also draws its wait of Max Hesitation before its first attack after it
+## notices the man. Off, that attack comes as soon as it can after the alert, whose mark and sound
+## already warn of it, with no Recover Time left from an earlier bite (ADR 0051); held back on the
+## way, as by the man's blink, by losing sight of him or by leaving the floor, it draws a wait
+## again, as it does before every attack after that. On, it also waits out that Recover Time.
+@export var hesitates_before_first_attack: bool = true
+## How many demons may attack one man at once from each side of him: the first able to takes a
+## turn, which it holds through its warning until its bite or lunge is made, and the others on that
+## side wait for a free one, each drawing its wait of Max Hesitation anew, so which goes next is up
+## to the draws (ADR 0053). With Waits At Retreat Distance they wait there; without, where the chase
+## takes them. 0 lets every demon attack at once.
+@export_range(0, 6) var attackers_per_side: int = 0
 
 @export_group("Crucifix")
 ## Seconds the demon stays still once it lands from the crucifix's throw, before it can chase again.
@@ -203,6 +264,15 @@ func get_reach_height() -> float:
 	for attack: DemonAttack in attacks:
 		reach = maxf(reach, attack.max_height_difference)
 	return reach
+
+
+## SP the bite on its back takes: the damage of the first bite in Attacks, so it bites as hard as it
+## does in an attack; 0 with no bite.
+func get_back_bite_damage() -> float:
+	for attack: DemonAttack in attacks:
+		if attack.animation == &"bite":
+			return attack.damage
+	return 0.0
 
 
 ## A pause of share of the way from Patrol Pause Min to Max, share from 0 to 1, in whole physics
