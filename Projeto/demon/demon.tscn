@@ -13,6 +13,7 @@
 [ext_resource type="AudioStream" uid="uid://bpoa7jbrvdybb" path="res://assets/audio/demon_search.wav" id="11_search"]
 [ext_resource type="AudioStream" uid="uid://b5dy3n1l8novm" path="res://assets/audio/demon_take_off.wav" id="12_take_off"]
 [ext_resource type="AudioStream" uid="uid://bnaebg4uygkcb" path="res://assets/audio/demon_land.wav" id="13_land"]
+[ext_resource type="Script" path="res://demon/demon_back_bite.gd" id="14_back_bite"]
 
 [sub_resource type="RectangleShape2D" id="RectangleShape2D_body"]
 size = Vector2(48, 96)
@@ -27,6 +28,9 @@ radius = 480.0
 [sub_resource type="RectangleShape2D" id="RectangleShape2D_pack"]
 resource_local_to_scene = true
 size = Vector2(240, 96)
+
+[sub_resource type="RectangleShape2D" id="RectangleShape2D_back"]
+size = Vector2(48, 48)
 
 [node name="Demon" type="CharacterBody2D"]
 collision_layer = 4
@@ -146,6 +150,27 @@ unique_name_in_owner = true
 position = Vector2(0, -48)
 shape = SubResource("RectangleShape2D_hit")
 
+[node name="BackBite" type="Area2D" parent="." node_paths=PackedStringArray("hitbox", "body")]
+unique_name_in_owner = true
+process_mode = 4
+collision_layer = 0
+collision_mask = 2
+monitorable = false
+script = ExtResource("14_back_bite")
+hitbox = NodePath("BackBiteHitbox")
+body = NodePath("..")
+
+[node name="BackBiteShape" type="CollisionShape2D" parent="BackBite"]
+position = Vector2(0, -122)
+shape = SubResource("RectangleShape2D_back")
+
+[node name="BackBiteHitbox" parent="BackBite" instance=ExtResource("5_hitbox")]
+process_mode = 4
+
+[node name="BackBiteHitboxShape" type="CollisionShape2D" parent="BackBite/BackBiteHitbox"]
+position = Vector2(0, -122)
+shape = SubResource("RectangleShape2D_back")
+
 [connection signal="state_changed" from="." to="Placeholder" method="_on_demon_state_changed"]
 [connection signal="warning_started" from="." to="Placeholder" method="_on_demon_warning_started"]
 [connection signal="barked" from="." to="Placeholder" method="_on_demon_barked"]
@@ -153,3 +178,4 @@ shape = SubResource("RectangleShape2D_hit")
 [connection signal="landed" from="." to="Placeholder" method="_on_demon_landed"]
 [connection signal="state_changed" from="." to="Mark" method="_on_demon_state_changed"]
 [connection signal="hold_sink_changed" from="Hitbox" to="SinkingDrawing" method="set_sink"]
+[connection signal="hold_sink_changed" from="BackBite/BackBiteHitbox" to="SinkingDrawing" method="set_sink"]

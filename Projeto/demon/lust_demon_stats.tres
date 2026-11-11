@@ -34,6 +34,7 @@ return_speed = 200.0
 patrol_width = 480.0
 attacks = Array[ExtResource("2_attack")]([SubResource("Resource_bite"), SubResource("Resource_lunge")])
 attacks_invulnerable_man = true
+bites_who_lands_on_it = true
 retreat_distance = 130.0
 waits_at_retreat_distance = true
 retreat_pace_width = 60.0

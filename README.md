@@ -319,7 +319,21 @@ Em grupo, cada demónio decide sozinho, mas o conjunto lê-se como uma matilha:
   para escapar tem de fugir ou erguer o crucifixo. No segundo depois de ela se soltar de um
   agarrão, e com ela agarrada por todos os que a podem agarrar, nenhum ataca, e cada um espera no
   seu vaivém (Attacks Invulnerable Man, ADR 0055). Sem esse valor, como nos outros demónios,
-  nenhum ataca enquanto ela pisca.
+  nenhum ataca enquanto ela pisca;
+- mordem quem lhes cai em cima. A personagem que aterra num cão, mesmo só na borda das costas,
+  leva a mordida dele (10 SP) e é atirada 300 px para longe e 100 px para cima, mais do que numa
+  mordida (150 px e 40 px). Assim nunca desliza de costas em costas por cima de uma matilha: com
+  cinco cães, fica 2 passos de física em cima deles, contra 19 antes, e aterra a 384 px do meio.
+  Cada aterragem morde uma vez, também quando cai entre dois cães, em cima dos dois, e cada
+  aterragem nova volta a morder, também no mesmo cão. A mordida entra em qualquer piscar, também
+  no segundo depois de a personagem se soltar de um agarrão. Com o SP baixo, agarra-a como
+  qualquer pancada, e ela cai através do cão até ao chão, onde se afunda, nunca em cima dele. Num
+  buraco fundo demais para o arremesso a tirar de lá, as mordidas acabam num agarrão: num buraco
+  de 240 px com um cão, 9 mordidas e o agarrão aos 3 s. Com o cão junto a uma parede que não lhe
+  deixa espaço ao lado dele, o arremesso vai para o lado aberto, e não contra a parede e de volta
+  para cima do cão. Só morde quem aterra no cão: encostar-se a ele, saltar ao lado dele ou
+  atravessá-lo, mesmo a saltar para fora dele, não (Bites Who Lands On It, ADR 0056). Sem esse
+  valor, como nos outros demónios, a personagem é só empurrada para fora de cima dele (ADR 0022).
 
 Todos os saltos de um demónio caem com a mesma gravidade e com o mesmo ângulo, como um salto dado
 com menos força: um salto mais curto é mais baixo e mais rápido. O de 420 px sobe 32 px e dura
@@ -835,6 +849,7 @@ godot --headless --fixed-fps 60 --path Projeto --script res://tests/test_demon_s
 godot --headless --fixed-fps 60 --path Projeto --script res://tests/test_hit_boxes.gd
 godot --headless --fixed-fps 60 --path Projeto --script res://tests/test_knockback.gd
 godot --headless --fixed-fps 60 --path Projeto --script res://tests/test_stacked_bodies.gd
+godot --headless --fixed-fps 60 --path Projeto --script res://tests/test_dog_back_bite.gd
 godot --headless --fixed-fps 60 --path Projeto --script res://tests/test_grab_rules.gd
 godot --headless --fixed-fps 60 --path Projeto --script res://tests/test_grab_escape.gd
 godot --headless --fixed-fps 60 --path Projeto --script res://tests/test_crucifix_block.gd
@@ -1106,7 +1121,9 @@ A separação entre *hitbox* (o que causa dano) e *hurtbox* (o que recebe dano) 
 atravesse um inimigo sem o empurrar e, se for desejado, que os inimigos se atinjam entre si. Hoje, a
 `Hitbox` dos demónios está em `enemy_hitbox` e não procura nada; a `Hurtbox` da personagem está em
 `player_hurtbox` e procura apenas em `enemy_hitbox`. Só quem recebe o golpe procura, pelo que cada
-golpe é detetado uma vez, de um só lado.
+golpe é detetado uma vez, de um só lado. A mordida nas costas dos cães não muda isto: o
+`DemonBackBite` procura em `player` o corpo da personagem, para saber quando ela está de pé no cão,
+mas o golpe continua a ser detetado só pela `Hurtbox` (ADR 0056).
 
 A camada `camera_bounds` é a das zonas de câmara (`CameraZone`): retângulos que limitam o que o ecrã
 mostra enquanto a personagem está dentro deles. As zonas não detetam colisões; a câmara lê-lhes a
@@ -1406,7 +1423,22 @@ não é esta cena com a perseguição desligada.
   máxima, e com a velocidade máxima a 0 a personagem agarrada continuava a 720 px/s (medido no
   `test_grab_escape.gd`, antes da correção). A invulnerabilidade da `Hurtbox` pode deixar entrar
   uma `Hitbox` que a penetre: o piscar depois de uma pancada deixa entrar os ataques dos demónios
-  do nível 1, e o segundo depois de um agarrão não deixa entrar nenhum (ADR 0055).
+  do nível 1, e o segundo depois de um agarrão não deixa entrar nenhum (ADR 0055), salvo a mordida
+  nas costas dos cães, que entra em qualquer invulnerabilidade, mas não com a `Hurtbox` fechada
+  (ADR 0056). A mordida nas costas usa as mesmas peças. O `DemonBackBite`
+  (`demon/demon_back_bite.gd`) procura o corpo da personagem num espaço com a largura do cão e
+  48 px de altura, por cima das costas, alto o bastante para a encontrar antes de ela aterrar, mesmo
+  a cair à velocidade máxima. Liga a sua `Hitbox` em cada passo em que ela aterra no cão, segundo a
+  colisão do último movimento dela, e por isso nunca morde quem só lhe toca de lado ou por baixo,
+  nem quem o atravessa. Se ela entrar nas costas a andar, de um chão à altura delas, é empurrada
+  para fora antes de ser encontrada: não é mordida, mas também não fica em cima. A primeira mordida
+  a acertar arruma as que outros cães tenham ligado para ela, e nenhuma outra se liga até ela sair
+  do chão. Assim, entre dois cães, só um morde, também quando ela, agarrada, cai através de um para
+  as costas do outro. Ao ligar a mordida, vê se ela cabe ao lado do cão, do lado para onde seria
+  atirada; se uma parede não deixar, a `Hitbox` atira-a para o outro lado (`knockback_side`). A
+  `Hitbox` só entra na física enquanto está ligada, e num demónio sem a mordida o `DemonBackBite`
+  fica todo fora da física. Um cão que ainda não a tinha visto e a agarra pelas costas fica com ela
+  como alvo, porque o GRAB larga quem não tem alvo (ADR 0056).
 - **Matilha sem coordenador.** Cada demónio decide sozinho, com uma área que encontra os outros
   demónios à sua frente, um sorteio próprio da espera antes de atacar e velocidades próprias. A vez
   de atacar (ADR 0053) também dispensa um nó coordenador no nível: os demónios partilham um registo,
@@ -1587,7 +1619,13 @@ não é esta cena com a perseguição desligada.
   lado. O demónio só pergunta ao `KnockOff` com a personagem dentro da sua área de visão, onde ela
   tem sempre de estar para ele lhe estar em cima, ou no passo a seguir a ter sido empurrado: se ela
   desaparecer de baixo dele, por um respawn ou pelas teclas da sala de treino, o empurrão acaba em
-  vez de ficar preso (ADR 0049; o custo medido vem mais abaixo, nesta secção).
+  vez de ficar preso (ADR 0049; o custo medido vem mais abaixo, nesta secção). Quem vai a subir,
+  como a personagem atirada por uma pancada desde o passo anterior, já está a sair de cima e não é
+  empurrado: sem isso, o empurrão apagava o arremesso, e ela subia 0,1 px em vez de 40 com o de uma
+  mordida (ADR 0056). Quem está agarrado também não é empurrado: atravessa logo o corpo em que está
+  de pé, e o seguinte, se estiver em cima de dois, para que nenhum agarrão a segure em cima de um
+  cão; cai até ao chão e afunda-se lá (ADR 0056). Por isso o `KnockOff` atravessa vários corpos ao
+  mesmo tempo, cada um até as caixas se afastarem.
 
 Antes de decidir se a perseguição precisava de ser otimizada, fixaram-se dois limites para 50
 demónios a perseguir ao mesmo tempo, muitos mais do que um ecrã terá: um limite para a média por
@@ -1788,6 +1826,24 @@ otimizar, com a causa por medir. A perseguição continua acima da margem de um 
 um passo de 16,6 ms, e 50 ou 200 demónios juntos à volta da personagem não são um caso que um nível
 tenha.
 
+A mordida nas costas dos cães (ADR 0056; 2026-11-10) dá a cada cão uma área que procura a
+personagem por cima das costas. Mediu-se como acima, contra o commit anterior, em seis execuções
+alternadas de cada, com o PC mais ocupado do que na tabela. Os valores são medianas:
+
+| Parte da medida, passo inteiro em média | Antes | Com a mordida | Diferença |
+|---|---|---|---|
+| 10 a perseguir | 0,41 ms | 0,44 ms | +6 % |
+| 50 a perseguir | 2,64 ms | 3,07 ms | +16 % |
+| 200 a perseguir | 29,5 ms | 35,2 ms | +19 % |
+| 50 de ronda, sem a ver | 1,16 ms | 1,32 ms | +14 % |
+| 50 de ronda por dez ecrãs | 0,69 ms | 0,67 ms | no ruído |
+
+Com os demónios espalhados por dez ecrãs, como num nível, a diferença perde-se no ruído, porque os
+que estão fora do ecrã ficam parados, e a área de um demónio parado quase não custa. Um demónio sem
+a mordida não paga nada. A primeira versão, com duas áreas em todos os demónios, custava 11 a 15 %
+também a esses. Ficou de lado procurar a personagem pela área de visão que o cão já tem: poupava a
+área, mas obrigava a uma visão maior do que o cão e a refazer os testes.
+
 O `test_demon.gd` verifica, com a personagem e o crucifixo verdadeiros, a visão (a distância e as
 paredes), a perseguição e a desistência, a paragem nas bordas e nos degraus, o aviso e o seu tempo,
 a altura, a distância e a direção do salto, também num salto mais rápido e num de metade da
@@ -1875,9 +1931,18 @@ o pico 12 px acima do topo; 144 px, sem estocada, teto baixo e plataforma por ci
 (96 e 240 px, a 300 e a 600 px/s; 288 px e teto por cima não), o crucifixo e a personagem destruída
 a meio, o regresso pelo caminho guardado, a procura a subir e a descer, e a imagem e os sinais ao
 descolar e aterrar. O `test_demon_path.gd` (6 casos) verifica a pilha do caminho sem física. O
-`test_stacked_bodies.gd` (15 casos) verifica que nem a personagem nem um demónio ficam um em cima
+`test_stacked_bodies.gd` (10 casos) verifica que nem a personagem nem um demónio ficam um em cima
 do outro: saem para o lado, nunca para cima, também num buraco de um corpo, num canto, durante um
-agarrão e com o demónio a andar, e com os corpos sobrepostos nenhum ataque acerta.
+agarrão e com o demónio a andar, e com os corpos sobrepostos nenhum ataque acerta. O
+`test_dog_back_bite.gd` (21 casos) verifica a mordida nas costas dos cães: uma por aterragem, com o
+SP e o arremesso certos, também entre dois cães e na borda das costas, até 1 px, de seis alturas, e
+outra a cada aterragem no mesmo cão; a matilha que deixa de a levar por cima; nada de lado, a
+atravessar nem numa plataforma logo acima de um cão; o agarrão com o SP baixo, que a faz cair
+através do cão, também em cima de dois cães, onde só um a morde e a segura, e a fuga; o buraco
+fundo, onde as mordidas acabam num agarrão; o cão junto a uma parede, que a atira para o lado
+aberto quando ela não cabe ao lado dele, mesmo por meio píxel, e por cima de uma parede mais baixa
+do que ele; qualquer piscar, a `Hurtbox` fechada, o arremesso que o empurrão já não apaga, a
+mordida ligada e desligada com o jogo a correr e os valores dos dois cães.
 
 #### Overlay de depuração
 
