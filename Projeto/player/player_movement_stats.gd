@@ -36,9 +36,10 @@ extends Resource
 ## Seconds a press of Jump is kept while the player cannot jump, so it still jumps on landing.
 ## Rounded to whole physics frames; 0 keeps the press for its own frame only.
 @export_range(0.0, 0.2, 0.01, "suffix:s") var jump_buffer_time: float = 0.1
-## Most px the feet may be below the top of a ledge he falls into, moving or pushing toward it, for
-## him to be lifted onto it, as if the jump had reached it (ADR 0059). Only walls of the level,
-## never a demon, and only with room overhead. A sixth of his height; 0 turns it off.
+## Most px the feet may be below the top of a ledge he falls into, moving toward it or only touching
+## it, for him to be lifted onto it, as if the jump had reached it (ADR 0059). Only walls of the
+## level, never a demon nor a one-way platform, and only with room overhead. A sixth of his height;
+## 0 turns it off.
 @export_range(0.0, 48.0, 1.0, "suffix:px") var ledge_assist_height: float = 16.0
 
 @export_group("Wall")
@@ -57,9 +58,9 @@ extends Resource
 @export_range(0.0, 1.0, 0.01, "suffix:s") var knockback_max_time: float = 0.4
 ## Speed across, in px/s, at which landing on a body the player can't stand on, such as a demon,
 ## shoves him off it sideways, never up. He keeps it, with no run nor jump, until he lands on
-## something else, or for Knockback Max Time at most. Above Max Run Speed, so it reads as a shove: from
-## right over the middle of a dog, 112 px long, he is off it in about 7 physics frames, and off the
-## middle of a pack of three, close together, within a third of a second (ADR 0047).
+## something else, or for Knockback Max Time at most. Above Max Run Speed, so it reads as a shove:
+## from right over the middle of a dog, 112 px long, he is off it in about 7 physics frames, and off
+## the middle of a pack of three, close together, within a third of a second (ADR 0047).
 @export_range(1.0, 2000.0, 10.0, "suffix:px/s") var knock_off_speed: float = 720.0
 
 

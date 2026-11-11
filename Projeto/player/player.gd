@@ -288,9 +288,9 @@ func _shove_off_what_cannot_be_stood_on() -> void:
 	_knockback_frames_left = stats.get_knockback_max_frames()
 
 
-## True when the last move_and_slide() touched a wall the player can get on (ADR 0058): pushing into
-## it, or with no run input and a wall off Knock Off Layers among the ones touched, so a demon's side
-## still takes a push. Pushing away from it never gets him on.
+## True when the last move_and_slide() touched a wall the player can get on (ADR 0058): pushing
+## into it, or with no run input and a wall off Knock Off Layers among the ones touched, so a
+## demon's side still takes a push. Pushing away from it never gets him on.
 func _is_holding_a_wall() -> bool:
 	if not is_on_wall():
 		return false
@@ -308,30 +308,41 @@ func _touches_a_wall_off_knock_off_layers() -> bool:
 	return false
 
 
-## True for a collision with a wall, not a floor nor a ceiling, of a body on none of Knock Off
-## Layers: the level's own, never a demon.
+## True for a collision with a wall, not a floor nor a ceiling, on none of Knock Off Layers: the
+## level's own, a body or tiles, never a demon. The layers come from the physics server, since a
+## TileMapLayer is no CollisionObject2D. A collider freed since the last move, such as a demon gone,
+## is no wall.
 func _is_a_level_wall(collision: KinematicCollision2D) -> bool:
 	var limit: float = floor_max_angle + FLOOR_ANGLE_THRESHOLD
 	if collision.get_angle(up_direction) <= limit or collision.get_angle(-up_direction) <= limit:
 		return false
-	var body: CollisionObject2D = collision.get_collider() as CollisionObject2D
-	return body != null and body.collision_layer & knock_off_layers == 0
+	if collision.get_collider() == null:
+		return false
+	var layers: int = PhysicsServer2D.body_get_collision_layer(collision.get_collider_rid())
+	return layers & knock_off_layers == 0
 
 
 ## Lifts the player onto a ledge he falls into with his feet a little below its top (ADR 0059). Off
-## the floor, at the top of a jump or falling, moving or pushing toward a wall of the level that the
-## next step would hit, he goes up by the fewest whole px, at most Ledge Assist Height, that let the
-## step carry him over it, and stops falling, so he lands on it. Never onto a demon, never while he
-## pushes away, and not grabbed, held still or in a knockback. Never through a ceiling either, with
-## no check of its own: he is taller than any lift, so a lift into a ceiling leaves him inside it,
-## and test_move() first pushes him back out, below it, where the wall still stops the step.
+## the floor, at the top of a jump or falling, moving toward a wall of the level, or touching one
+## with no speed across, that the next step would hit, he goes up by the fewest whole px, at most
+## Ledge Assist Height, that let the step carry him over it, and a px across, onto its edge, and
+## stops falling, so he lands on it even with no speed across, which would leave him hanging by the
+## face. Like the wall slide, it takes no push. A one-way platform has no side for the step to hit.
+## Up there, off its face, the wall's coyote frames end, as on landing, so Jump jumps from the
+## ledge, not off the face. He is never lifted onto a demon, nor while he pushes away, is grabbed,
+## held still or in a knockback. Never through a ceiling either, with no check of its own: he is
+## taller than any lift, so a lift into a ceiling leaves him inside it, and test_move() pushes him
+## back out, below it, where the wall still stops the step. With Ledge Assist Height under 1, no
+## lift is tried.
 func _assist_onto_a_ledge(delta: float) -> void:
-	if (stats.ledge_assist_height < 1.0 or velocity.y < 0.0 or _held_still or is_knocked_back()
+	if (velocity.y < 0.0 or _held_still or is_knocked_back()
 			or (_state != State.IN_AIR and _state != State.ON_WALL)):
 		return
-	var pushing: float = input.get_run_direction()
-	var side: float = signf(velocity.x) if velocity.x != 0.0 else pushing
-	if side == 0.0 or pushing == -side:
+	var side: float = signf(velocity.x)
+	# get_wall_normal() only holds while is_on_wall().
+	if side == 0.0 and is_on_wall():
+		side = -signf(get_wall_normal().x)
+	if side == 0.0 or input.get_run_direction() == -side:
 		return
 	var step: Vector2 = Vector2(side * maxf(absf(velocity.x) * delta, 1.0), 0.0)
 	if not test_move(global_transform, step, _ledge_hit) or not _is_a_level_wall(_ledge_hit):
@@ -339,8 +350,9 @@ func _assist_onto_a_ledge(delta: float) -> void:
 	for lift: int in range(1, floori(stats.ledge_assist_height) + 1):
 		var up: Vector2 = up_direction * lift
 		if not test_move(global_transform.translated(up), step):
-			global_position += up
+			global_position += up + Vector2(side, 0.0)
 			velocity.y = 0.0
+			_wall_coyote_frames_left = 0
 			return
 
 
