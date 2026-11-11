@@ -2,6 +2,7 @@
 
 [ext_resource type="Script" path="res://camera/game_camera.gd" id="1_script"]
 [ext_resource type="Resource" path="res://camera/camera_stats.tres" id="2_stats"]
+[ext_resource type="Script" path="res://activity/activity_tracker.gd" id="3_tracker"]
 
 [node name="GameCamera" type="Camera2D"]
 process_physics_priority = 1
@@ -9,3 +10,6 @@ process_callback = 0
 editor_draw_limits = true
 script = ExtResource("1_script")
 stats = ExtResource("2_stats")
+
+[node name="ActivityTracker" type="Node" parent="."]
+script = ExtResource("3_tracker")

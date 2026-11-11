@@ -32,7 +32,9 @@ extends CharacterBody2D
 ## on until he breaks free and throws it off, away from him (ADR 0028). Its body and the man's stop
 ## each other, so it never gets on his spot (ADR 0022), and it never stands on him: on his head it
 ## is shoved off sideways at Knock Off Speed, whatever its state, unless it holds him (ADR 0047), and
-## his head is never a floor on its way. It only tells what it does, by
+## his head is never a floor on its way. It is a member of the level's ActivityTracker: at rest,
+## standing or on patrol on its floor, far off the screen, it sleeps, and busy it goes on wherever
+## it is. It only tells what it does, by
 ## state_changed, warning_started, attack_landed, barked, took_off and landed: the art and the
 ## sounds listen, and it
 ## never touches them.
@@ -103,6 +105,10 @@ const FLOOR_SIDE_DEPTH: float = 2.0
 ## Bodies on these physics layers can't be stood on: standing on one shoves the demon off it
 ## sideways, at Knock Off Speed in Stats. The scene puts the man's layer here (ADR 0047).
 @export_flags_2d_physics var knock_off_layers: int = 0
+## How far past its body, in px, the demon has to be awake: some part of it acts on the man that
+## far out, such as the biggest dog's ring. At 0, its body counts, and without Chases Only On
+## Screen as far round as it sees.
+@export_range(0.0, 4000.0, 8.0, "suffix:px") var activity_reach: float = 0.0
 
 var _state: State = State.IDLE
 ## One DemonState of each State, at its State's index (ADR 0034), made in _ready, and the one the
@@ -203,6 +209,7 @@ func _ready() -> void:
 	_hitbox.hold_ended.connect(_on_hitbox_hold_ended)
 	stats.changed.connect(_apply_stats)
 	_apply_stats()
+	ActivityTracker.join(self)
 
 
 ## Its state moves it, then it keeps apart from the pack and from the man's side; standing on a body
@@ -307,6 +314,24 @@ func stand_here() -> void:
 ## For its states: true while the demon is on the screen.
 func is_on_screen() -> bool:
 	return _senses.is_on_screen()
+
+
+## For the ActivityTracker: the rect of the world the demon has to be awake for. Its body, and
+## Activity Reach round it; without Chases Only On Screen, at least its Sight Distance round it, so
+## the man, always on the screen, is never inside the sight of a demon asleep. With it, the body is
+## enough: off the screen it starts nothing.
+func get_activity_rect() -> Rect2:
+	var reach: float = activity_reach
+	if not stats.chases_only_on_screen:
+		reach = maxf(reach, stats.sight_distance)
+	return Rect2(_box.global_position - _half_size, 2.0 * _half_size).grow(reach)
+
+
+## For the ActivityTracker: true while the demon is at rest, standing or on patrol on its floor, so
+## it may sleep. After the man, looking for him, on its way back, in the air, thrown or holding him,
+## it goes on wherever it is.
+func can_sleep() -> bool:
+	return (_state == State.IDLE or _state == State.PATROL) and is_on_floor()
 
 
 ## For its states: a draw from 0 to 1 from the demon's own generator, so a seed repeats it.

@@ -760,6 +760,7 @@ Remote; os restantes valores são lidos sempre que são usados.
     ├── crucifix/      crucifixo: cena, script e valores
     ├── demon/         demónios que perseguem: cena, scripts, os estados (states/) e os valores de cada nível
     ├── camera/        câmara do jogo e zonas de câmara
+    ├── activity/      atividade fora do ecrã: o ActivityTracker, que adormece o que está parado longe do ecrã
     ├── debug/         overlay de depuração e vista dos demónios da sala de teste
     ├── levels/        salas, níveis, a entrada de cada nível na lista do menu (LevelEntry) e os pontos de chegada (ArrivalPoint)
     ├── offers/        tentações: o autoload Offers, uma oferta por ficheiro (OfferData), o catálogo e os efeitos
@@ -868,6 +869,9 @@ godot --headless --fixed-fps 60 --path Projeto --script res://tests/test_gym_hin
 godot --headless --fixed-fps 60 --path Projeto --script res://tests/test_gym_stations.gd
 godot --headless --fixed-fps 60 --path Projeto --script res://tests/test_gym.gd
 godot --headless --fixed-fps 60 --path Projeto --script res://tests/test_gym_dogs.gd
+godot --headless --fixed-fps 60 --path Projeto --script res://tests/test_activity_tracker.gd
+godot --headless --fixed-fps 60 --path Projeto --script res://tests/test_demon_activity.gd
+godot --headless --fixed-fps 60 --path Projeto --script res://tests/test_parallax_activity.gd
 ```
 
 O `test_input_profiles.gd` escreve seis ERROR, das tentativas de atribuir teclas inválidas, todos
@@ -933,6 +937,16 @@ dados e famílias de personagens".
 
 ```
 godot --headless --fixed-fps 60 --path Projeto --script res://tests/measure_demon.gd
+```
+
+O `measure_level1.gd` também não verifica resultados: em cinco pontos do percurso do nível 1, mede
+quanto custa cada frame com o `ActivityTracker` desligado e ligado, e com o processamento de todos
+os cães e desenhos com paralaxe desligado, o mínimo que custariam. Em cada ponto, o rastreador é
+medido primeiro desligado num e primeiro ligado no seguinte, para que nenhum dos dois seja sempre
+o primeiro. Os números e a decisão estão em "Atividade fora do ecrã".
+
+```
+godot --headless --fixed-fps 60 --path Projeto --script res://tests/measure_level1.gd
 ```
 
 ### A personagem por dentro
@@ -1841,7 +1855,8 @@ atualiza uma vez por segundo, pelo que um único frame lento permanece visível 
 Mostra também o estado e a velocidade da personagem e, depois de cada salto, o tipo de salto, as
 tolerâncias usadas, em passos de física, e a altura atingida. Um salto completo mostra
 240 px, o mesmo valor que os testes medem. Com a câmara ligada, mostra ainda a zona de câmara em que
-a personagem está e as distâncias atuais da antecipação e do olhar para baixo. Mostra ainda os SP,
+a personagem está e as distâncias atuais da antecipação e do olhar para baixo, e quantos membros do
+`ActivityTracker` estão acordados (ver "Atividade fora do ecrã"). Mostra ainda os SP,
 a velocidade atual da regeneração e se os SP estão baixos ou acabaram. A tecla F3 mostra e esconde
 o texto.
 
@@ -2225,6 +2240,105 @@ original.
 
 Ficam de fora as armadilhas, o checkpoint, que ainda não existe, e o diálogo, que ainda não é
 iniciado por nada no jogo. A estação de cada uma acrescenta-se quando a mecânica entrar no jogo.
+
+#### Atividade fora do ecrã
+
+O nível 1 tornou-se mais lento noutro computador. O Godot já não desenha o que está fora do ecrã:
+cada desenho, e cada bloco de tiles, só é enviado à placa gráfica quando aparece. O que continua a
+custar em cada frame, esteja onde estiver, é o que se processa: os scripts e a física de cada cão e
+de cada desenho do fundo com paralaxe. O nível 1 tem 86 cães e 850 desenhos com paralaxe. Mediu-se
+com o `measure_level1.gd` em cinco pontos do percurso, sem janela, em nenhum dos quais havia cães no
+ecrã (2026-11-11, um computador ligado à corrente, uma execução):
+
+| Nível 1, por frame | Frame inteiro | Scripts de física | Scripts de processamento |
+|---|---|---|---|
+| Como estava | 5,3 a 5,7 ms | 2,5 a 2,8 ms | 2,1 ms |
+| Sem o processamento dos cães | 2,1 a 2,3 ms | 0,3 ms | 1,5 a 1,7 ms |
+| Sem o da paralaxe | 3,9 a 4,1 ms | 2,6 a 2,7 ms | 0,6 a 0,7 ms |
+| Sem nenhum dos dois | 0,37 a 0,50 ms | 0,2 a 0,3 ms | 0,05 ms |
+
+Os cães, parados fora do ecrã, custavam cerca de 3,2 ms por frame, e a paralaxe cerca de 1,4 ms: em
+conjunto, mais de 90 % do frame. A cena antiga da fase 2, com 33 cães e sem paralaxe, ficava abaixo
+de 1,1 ms. Com janela, no ponto de partida, o mesmo computador desenhava a fase 2 e o nível 1 ao
+limite de 144 imagens por segundo do ecrã, pelo que a diferença estava no processador e não na placa
+gráfica.
+
+A decisão foi adormecer o que está em repouso e longe do ecrã, e acordá-lo quando o ecrã se
+aproxima. Fá-lo o `ActivityTracker` (`activity/activity_tracker.gd`), um nó da câmara do jogo
+(`camera/game_camera.tscn`): qualquer nível com essa câmara o tem, sem mudar a cena do nível. As
+regras são estas:
+
+- A zona é o retângulo do ecrã, com o zoom das zonas de câmara, e não um círculo. O ecrã é
+  retangular (16:9), e um círculo que lhe cobrisse os cantos manteria acordada uma área 1,84 vezes
+  maior do que o ecrã.
+- Um membro acorda quando o seu retângulo chega a 480 px do ecrã (Wake Margin) e adormece quando
+  fica a mais de 960 px (Sleep Margin). Entre as duas distâncias, mantém o que estava, pelo que nada
+  fica a alternar junto à margem. A diferença de 480 px corresponde a 0,67 s de corrida (720 px/s).
+- Só adormece o que está em repouso. Um cão parado ou em ronda no seu chão pode adormecer; a
+  perseguir, à procura, a voltar ao posto, no ar, projetado ou a agarrar, continua a ser processado,
+  esteja a que distância estiver. Um cão que persegue a personagem não para porque ela se afastou.
+- Adormecer é o modo de processamento Disabled do Godot: o membro deixa de correr os scripts, as
+  animações e os temporizadores, e as suas áreas saem da física, mas continua a ser desenhado se
+  estiver no ecrã. Ao acordar, recupera o seu próprio modo. O corpo de um cão adormecido fica como
+  obstáculo fixo (Disable Mode Make Static), pelo que um cão acordado nunca o atravessa.
+- Cada membro é verificado dez vezes por segundo, repartidos pelos frames, e todos de uma vez no
+  primeiro frame e quando o ecrã salta mais de 480 px num só frame, como num recomeço.
+- Sem câmara, como nos testes, tudo fica acordado, a mesma regra dos sentidos dos demónios.
+
+O cão da luxúria (`lust_demon_stats.tres`) só começa uma perseguição no ecrã e desiste a 160 px
+fora dele (ADR 0032 e 0038). Por isso, adormecê-lo quando está parado longe do ecrã não muda nada do
+que o jogador vê. Um cão sem Chases Only On Screen fica acordado enquanto a personagem puder estar
+dentro do seu alcance de visão. O campo Activity Reach do demónio alarga a zona de um cão que atue
+sobre a personagem para lá do corpo. O cão maior da fase 3, cujo anel abre os portões até 736 px do
+centro, vai precisar de Activity Reach 736 quando entrar no nível: na vertical, o corpo e a margem
+de 480 px só cobrem 704 px.
+
+Um desenho com paralaxe adormecido fica onde estava ao adormecer, que não é onde estaria com a
+câmara atual. Por isso, a sua zona junta os dois sítios. Com uma profundidade baixa, o ecrã, ao
+voltar, encontraria primeiro o sítio onde o desenho parou, e este apareceria parado no lugar errado.
+No `test_parallax_activity.gd`, com profundidade 0,3, uma versão que só usava o sítio certo mostrava
+o desenho parado em 53 frames, e a que junta os dois em nenhum.
+
+Com o rastreador, o `measure_level1.gd` mediu o mesmo nível com ele desligado e ligado, em
+alternância, nos cinco pontos, em seis execuções seguidas (30 comparações), no mesmo dia, com o
+computador a trabalhar com a bateria. Com a bateria, o processador trabalhava a cerca de dois terços
+da frequência máxima, e os valores absolutos variaram mais do dobro de uma execução para outra.
+Por isso, conta a comparação dentro de cada par (ADR 0048):
+
+| Nível 1, por frame, com a bateria | Média | Pior frame |
+|---|---|---|
+| Rastreador desligado | 5,3 a 13,9 ms | 6,8 a 20,0 ms |
+| Rastreador ligado | 0,7 a 2,8 ms | 1,4 a 5,2 ms |
+| Sem o processamento de cães e paralaxe | 0,3 a 1,2 ms | |
+
+Com o rastreador ligado, cada frame custou, na mediana dos 30 pares, 17,5 % do que custava desligado
+(de 8,6 % a 38 %), menos 5,4 ms por frame. Ficaram acordados 32 a 105 dos 937 membros, conforme o
+ponto. Sem o rastreador e com a bateria, o pior frame chegou a 20 ms, mais do que os 16,6 ms de um
+frame a 60 imagens por segundo; com ele, não passou de 5,2 ms.
+
+Ficaram de lado três alternativas:
+
+- Zonas de atividade a partir das zonas de câmara (113 no nível 1). Nada mudaria a meio de uma
+  sala, mas as zonas têm tamanhos muito diferentes, cada nível novo teria de as mapear, e o cão em
+  perseguição precisaria na mesma de uma exceção.
+- O `VisibleOnScreenEnabler2D` do Godot, que depende do desenho do ecrã. Esse desenho não existe
+  nos testes sem janela, a mesma razão por que os sentidos dos demónios não o usam.
+- Esconder o que está longe. O Godot já não desenha o que está fora do ecrã, pelo que não se
+  ganharia nada.
+
+Para tornar membro outra coisa, como um inimigo, uma plataforma que se move ou uma armadilha, o
+script chama `ActivityTracker.join(self)` no `_ready` e tem um método `get_activity_rect()`, com o
+retângulo do mundo onde está ou atua. Se tiver de continuar a ser processado fora do ecrã em certos
+estados, tem também um `can_sleep()`, que devolve falso nesses estados. O overlay de depuração mostra
+quantos membros estão acordados. O campo Enabled do `ActivityTracker`, no separador Remote, desliga-o
+durante o jogo, para comparar.
+
+O `test_activity_tracker.gd` verifica as regras com membros de teste. O `test_demon_activity.gd`
+verifica que um cão a perseguir continua a mais de 7 800 px do ecrã, que um cão parado longe do ecrã
+adormece e está acordado em todos os frames em que aparece, e que um cão a voltar ao posto só
+adormece quando lá chega. Com o repouso mal definido, de modo a que tudo pudesse adormecer, o cão a
+perseguir parava, e o teste falhava. O `test_parallax_activity.gd` verifica que um desenho
+adormecido nunca está no ecrã.
 
 ### Convenções de código
 
