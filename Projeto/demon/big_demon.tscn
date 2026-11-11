@@ -1,8 +1,61 @@
 [gd_scene format=3]
 
 [ext_resource type="PackedScene" path="res://demon/demon.tscn" id="1_demon"]
+[ext_resource type="Resource" path="res://demon/big_demon_stats.tres" id="2_stats"]
+
+[sub_resource type="RectangleShape2D" id="RectangleShape2D_body"]
+size = Vector2(140, 70)
+
+[sub_resource type="RectangleShape2D" id="RectangleShape2D_hit"]
+size = Vector2(200, 70)
 
 [node name="BigDemon" instance=ExtResource("1_demon")]
+editor_description = "The regular dog a quarter bigger: body, hit box, art (with its stride and how deep it sinks) and the checks at its feet, with its art drawn darker so it reads apart at a glance (the Sprite's Self Modulate; its Modulate is the Placeholder's tint, set on every frame). Its stats are the regular dog's but for the damage of each attack."
+stats = ExtResource("2_stats")
+
+[node name="CollisionShape2D" parent="." index="0"]
+position = Vector2(0, -35)
+shape = SubResource("RectangleShape2D_body")
 
 [node name="Placeholder" parent="." index="1"]
 color = Color(0, 0, 0, 1)
+polygon = PackedVector2Array(-70, -70, 70, -70, 70, 0, -70, 0)
+
+[node name="Sprite" parent="." index="2"]
+self_modulate = Color(0.6, 0.6, 0.6, 1)
+scale = Vector2(0.625, 0.625)
+
+[node name="DemonAnimation" parent="." index="3"]
+stride_length = 325.0
+
+[node name="Mark" parent="." index="4"]
+position = Vector2(0, -140)
+
+[node name="DemonSounds" parent="." index="5"]
+position = Vector2(0, -35)
+
+[node name="SinkingDrawing" parent="." index="6"]
+depth = 120.0
+
+[node name="SightArea" parent="." index="7"]
+position = Vector2(0, -60)
+
+[node name="PackArea" parent="." index="8"]
+position = Vector2(0, -35)
+
+[node name="LineOfSight" parent="." index="9"]
+position = Vector2(0, -60)
+
+[node name="LedgeCheck" parent="." index="11"]
+position = Vector2(76, -1)
+
+[node name="StepCheck" parent="." index="12"]
+position = Vector2(78, -1)
+
+[node name="RepellableShape" parent="Repellable"]
+position = Vector2(0, -35)
+shape = SubResource("RectangleShape2D_body")
+
+[node name="HitboxShape" parent="Hitbox"]
+position = Vector2(0, -35)
+shape = SubResource("RectangleShape2D_hit")
