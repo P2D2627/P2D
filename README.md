@@ -84,24 +84,27 @@ segundo, seja qual for o monitor.
 
 ### Deslocação horizontal
 
-A personagem tem uma única velocidade, 720 px/s, sem botão de corrida, e percorre a largura de um
-ecrã Full HD (1920 px) em menos de 3 segundos. Atinge essa velocidade em 0,1 s e, quando a tecla é libertada, desliza 48 px (uma
-largura) até parar. A sensação de peso fica a cargo da apresentação (animação de aterragem, som e
-câmara), para que os controlos se mantenham rápidos. As reduções de velocidade resultam de
-elementos do jogo, como o crucifixo e o nível da preguiça.
+A personagem tem uma única velocidade, 600 px/s, sem botão de corrida, e percorre a largura de um
+ecrã Full HD (1920 px) em pouco mais de 3 segundos. Atinge essa velocidade em 0,18 s, ao fim de
+61 px, e, quando a tecla é libertada, desliza 40 px (pouco menos de uma largura) até parar. O
+arranque demorado dá peso à personagem, e a travagem curta mantém a resposta quando o jogador quer
+parar. Os valores foram revistos depois dos testes com o grupo e com os professores, em que a
+personagem parecia rápida e leve demais. A corrida abrandou, o arranque ficou mais pesado e a
+subida do salto mais calma, com a mesma altura e o mesmo alcance. As reduções de velocidade
+resultam de elementos do jogo, como o crucifixo e o nível da preguiça.
 
 ### Queda
 
-A velocidade de queda aumenta até um máximo de 1400 px/s, atingido após uma queda de 143 px, cerca
-de uma altura e meia. Como a velocidade de queda é limitada, o dano de queda, quando for
+A velocidade de queda aumenta até um máximo de 1400 px/s, atingido após uma queda de 166 px, cerca
+de uma altura e três quartos. Como a velocidade de queda é limitada, o dano de queda, quando for
 implementado, será calculado a partir da altura de onde a personagem cai.
 
 ### Salto de altura variável
 
 Com o botão premido até ao ponto mais alto, o salto atinge 240 px, duas vezes e meia a altura da
-personagem. Com o botão largado logo, o salto mínimo sobe 88 px; com o botão premido durante 0,1 s,
-sobe 153 px. Entre estes valores, a altura depende do tempo durante o qual o botão é mantido. A subida demora 0,35 s e a descida cerca de
-0,25 s, o que evita que o salto pareça flutuar.
+personagem. Com o botão largado logo, o salto mínimo sobe 86 px; com o botão premido durante 0,1 s,
+sobe 139 px. Entre estes valores, a altura depende do tempo durante o qual o botão é mantido. A
+subida demora 0,45 s e a descida 0,27 s, o que evita que o salto pareça flutuar.
 
 O salto é definido pela altura e pelo tempo até ao ponto mais alto, a partir dos quais se calculam
 a gravidade e a velocidade inicial (Pittman, 2016). Assim, o salto completo atinge exatamente a
@@ -112,7 +115,7 @@ altura definida. Libertar o botão durante a subida aumenta a gravidade, o que e
 Durante o salto ou a queda, a personagem pode mudar de direção com 70 % da aceleração que tem no
 chão. Acelerar, travar e inverter o sentido demoram, por isso, cerca de uma vez e meia o tempo
 correspondente no chão. Ao largar a direção a meio de um salto em corrida, a personagem desliza
-71 px até parar, contra 48 px no chão.
+59 px até parar, contra 40 px no chão.
 
 O controlo aéreo permite corrigir um salto mal calculado. O jogo avalia o jogador pelas escolhas
 que faz, e mortes causadas pelos controlos levariam a aceitar atalhos por frustração. O valor de
@@ -120,48 +123,56 @@ que faz, e mortes causadas pelos controlos levariam a aceitar atalhos por frustr
 
 ### Tolerâncias do salto
 
-Um salto pedido uma fração de segundo fora de tempo é aceite. O objetivo é que um salto que o
-jogador sente como dado a tempo não falhe sem razão aparente, o que se confundiria com falta de
-resposta dos controlos; o efeito será confirmado em playtest. As tolerâncias beneficiam também quem
-reage mais devagar.
+Um salto pedido uma fração de segundo fora de tempo é aceite, e um salto que fica poucos píxeis
+abaixo de um degrau também chega a ele. O objetivo é que um salto que o jogador sente como certo
+não falhe sem razão aparente, o que se confundiria com falta de resposta dos controlos; o efeito
+será confirmado em playtest. As tolerâncias beneficiam também quem reage mais devagar.
 
-- Tolerância de borda (*coyote time*): durante 0,07 s (4 passos de física) depois de sair de uma
+- Tolerância de borda (*coyote time*): durante 0,1 s (6 passos de física) depois de sair de uma
   plataforma sem saltar, a personagem ainda pode saltar. A correr, o último salto aceite parte com a
-  parte de trás do corpo 37 a 48 px para lá da borda, conforme o ponto de onde a corrida começa.
-- Tolerância de aterragem (*jump buffer*): um salto pedido até 0,07 s antes de aterrar fica guardado
+  parte de trás do corpo 51 a 60 px para lá da borda, conforme o ponto de onde a corrida começa.
+- Tolerância de aterragem (*jump buffer*): um salto pedido até 0,1 s antes de aterrar fica guardado
   e é executado no primeiro instante em contacto com o chão. A altura continua a depender do tempo
   durante o qual o botão é mantido: um toque dado antes da aterragem produz o salto mínimo.
+- Ajuda nos degraus: se a personagem cai contra a parede de um degrau com os pés até 16 px abaixo
+  do topo, um sexto da sua altura, a andar para ele ou só encostada, sobe o que falta e pousa.
+  Como o deslize, não obriga a empurrar. Não atua durante a subida do salto, que já a leva por
+  cima, nem quando o jogador empurra para o lado oposto, nem nos demónios, para que os encontros
+  com eles não mudem. Nas plataformas de sentido único também não atua, porque não têm um lado
+  contra o qual a personagem bata.
 
 Durante a tolerância de borda, a gravidade continua a atuar, para que a personagem não pareça
-caminhar no ar. Por isso, o último salto aceite parte 13 px abaixo da borda e sobe 227 px acima
-dela, menos 13 px do que um salto dado na borda. Os dois tempos são provisórios e serão afinados
-com a câmara e nos níveis.
+caminhar no ar. Por isso, o último salto aceite parte 27,5 px abaixo da borda e sobe 212,5 px acima
+dela, menos 27,5 px do que um salto dado na borda. Os dois tempos passaram de 0,07 s para 0,1 s
+depois dos testes com o grupo e com os professores, e podem ainda ser afinados nos níveis.
 
 ### Paredes
 
 No ar, encostada a uma parede, a personagem pode deslizar e saltar da parede.
 
-O deslize começa quando o jogador empurra a personagem contra a parede e mantém-se sem que a
-direção continue premida. Termina quando o jogador empurra para o lado oposto, salta, chega ao chão
-ou a parede acaba. Na descida, a velocidade fica limitada a 350 px/s, um quarto da velocidade
-máxima de queda: se a personagem cair mais depressa, trava de imediato para esse valor; se cair
-mais devagar, como no topo de um salto, continua a acelerar até ele. A 350 px/s, desce uma altura
-do corpo em 0,28 s. Na subida, não há travão. Dispensar a direção premida durante o deslize segue
-as Game Accessibility Guidelines (s.d.-a), que recomendam não obrigar o jogador a manter teclas
-premidas.
+O deslize começa quando a personagem toca numa parede no ar, sem ser preciso empurrar, e mantém-se
+sem nenhuma direção premida. Termina quando o jogador empurra para o lado oposto, salta, chega ao
+chão ou a parede acaba. No lado de um demónio continua a ser preciso empurrar, para que encostar-se
+a um demónio no ar não trave a queda. Na descida, a velocidade fica limitada a 350 px/s, um quarto
+da velocidade máxima de queda: se a personagem cair mais depressa, trava de imediato para esse
+valor; se cair mais devagar, como no topo de um salto, continua a acelerar até ele. A 350 px/s,
+desce uma altura do corpo em 0,28 s. Na subida, não há travão. Dispensar a direção premida, para
+entrar no deslize e para o manter, segue as Game Accessibility Guidelines (s.d.-a), que recomendam
+não obrigar o jogador a manter teclas premidas. Antes, só se entrava no deslize a empurrar contra a
+parede, e nos testes com o grupo e com os professores o deslize quase não aparecia.
 
 O salto da parede é dado com a tecla de saltar sempre que a personagem toca numa parede no ar,
 empurrando-a ou não. A personagem sai para o lado oposto à parede, à velocidade máxima da corrida e
 com a altura de um salto completo (240 px). Como a direção do salto é sempre a de afastamento da
 parede, numa chaminé basta premir a tecla de saltar, o que mantém os controlos simples (Game
 Accessibility Guidelines, s.d.-b). Durante 0,2 s após o salto, a corrida não responde, e a
-personagem afasta-se 144 px da parede. É este bloqueio que impede a subida de uma parede isolada:
-mesmo com a melhor combinação de teclas, cada salto devolve a personagem à mesma parede 96 px mais
+personagem afasta-se 120 px da parede. É este bloqueio que impede a subida de uma parede isolada:
+mesmo com a melhor combinação de teclas, cada salto devolve a personagem à mesma parede 234 px mais
 abaixo. Entre duas paredes próximas, numa chaminé, a subida não tem limite; na chaminé da sala de
-teste, com 120 px de largura, cada salto sobe 90 px premindo apenas a tecla de saltar. A regra de
+teste, com 120 px de largura, cada salto sobe 87 px premindo apenas a tecla de saltar. A regra de
 que uma parede isolada não se sobe por saltos da parede aguarda a confirmação do grupo.
 
-Tal como na borda de uma plataforma, existe uma tolerância: durante 0,07 s depois de largar uma
+Tal como na borda de uma plataforma, existe uma tolerância: durante 0,1 s depois de largar uma
 parede, a tecla de saltar ainda produz o salto da parede. Os valores do deslize e do bloqueio são
 provisórios e serão afinados com a câmara e nos níveis.
 
@@ -182,7 +193,7 @@ engano. Durante a pausa, o tempo de uso para.
 
 Erguido, o crucifixo:
 
-- abranda a personagem: a velocidade máxima desce de 720 px/s para 180 px/s (25 %);
+- abranda a personagem: a velocidade máxima desce de 600 px/s para 150 px/s (25 %);
 - impede o salto. Um salto pedido com o crucifixo erguido é descartado, e não acontece quando o
   crucifixo baixa;
 - afasta os demónios e as almas perdidas que estiverem a menos de 200 px; o que estiver mais longe
@@ -237,7 +248,7 @@ estados:
 | Parado | Espera no seu posto, onde o nível o colocou e virado para onde o nível o virou, até reparar na personagem. Com ronda, é a pausa entre duas idas, sorteada por cada demónio entre 0,8 e 2 s. |
 | Ronda | Vai e vem a passo, a 150 px/s, num troço de 480 px do seu chão, centrado no posto. Vira-se nas pontas, à beira de um desnível e contra uma parede. Fora do ecrã, fica parado. |
 | Alerta | Ao reparar na personagem, vira-se para ela e fica 0,3 s parado onde está, o tempo de ladrar, antes de a perseguir. Por cima da cabeça surge um "!", com um bip agudo; o "!" fica mais 0,5 s já na perseguição, para se conseguir ler. |
-| Perseguir | Segue-a a cerca de 560 px/s, no chão onde está. A personagem corre a 720 px/s, pelo que fugir resulta, mas com pouca margem. |
+| Perseguir | Segue-a a cerca de 560 px/s, no chão onde está, e até 616 px/s com a variação da matilha. A personagem corre a 600 px/s: foge ao cão médio, com pouca margem, mas por agora os mais rápidos da matilha apanham-na. |
 | Aviso | Antes de cada ataque, mostra qual vem, para que o jogador tenha tempo de reagir: antes da mordida, alarga-se e baixa durante 0,2 s, sem parar de correr; antes do salto, para e encolhe durante 0,35 s. |
 | Atirar-se | Salta para onde a personagem vai estar, entre 200 e 420 px, e fica 0,35 s parado onde aterra. |
 | Recuar | Depois de cada ataque, afasta-se de frente para a personagem, a cerca de 400 px/s, até ficar a cerca de 130 px dela, e volta a atacar. |
@@ -401,65 +412,68 @@ no mapa.
 | Medida | Valor | Em dimensões da personagem |
 |---|---|---|
 | Altura do salto completo (altura máxima dos pés) | 240 px | 2,5 alturas |
-| Altura do salto com o botão premido durante 0,1 s | 153 px | 1,6 alturas |
-| Altura do salto mínimo, com o botão largado logo | 88 px | menos de 1 altura |
-| Vão mais largo que um salto em corrida atravessa, de borda a borda | 479 a 490 px | 10 larguras |
-| Vão mais largo, com o salto dado no último instante da tolerância de borda | 520 a 531 px | 11 larguras |
-| Altura máxima, acima da borda, do salto dado no último instante da tolerância de borda | 227 px | 2,4 alturas |
-| Tempo no ar num salto completo | 0,6 s | |
-| Distância de travagem no chão | 48 px | 1 largura |
-| Distância de travagem no ar | 71 px | 1,5 larguras |
-| Queda até à velocidade máxima | 143 px | 1,5 alturas |
-| Altura máxima de um salto completo junto a uma parede seguido de um salto da parede | 475 px | 4,9 alturas |
-| Distância à parede no ponto mais alto desse salto, com a direção para fora | 252 px | 5,3 larguras |
-| Distância de um salto da parede, com a direção para fora, até voltar à altura de partida | 444 px | 9,3 larguras |
-| Chaminé mais larga que se sobe premindo apenas a tecla de saltar ao tocar na parede | 222 px | 4,6 larguras |
-| Chaminé mais larga que se sobe premindo a tecla 0,07 s depois de tocar na parede | 178 px | 3,7 larguras |
-| Chaminé mais larga que se sobe com a melhor combinação de teclas | 480 px | 10 larguras |
-| Subida por salto numa chaminé de 120 px, premindo apenas a tecla de saltar | 90 px | quase 1 altura |
-| Descida por salto numa parede isolada, com a melhor combinação de teclas | 96 px | 1 altura |
+| Altura do salto com o botão premido durante 0,1 s | 139 px | 1,4 alturas |
+| Altura do salto mínimo, com o botão largado logo | 86 px | menos de 1 altura |
+| Vão mais largo que um salto em corrida atravessa, de borda a borda | 488 a 497 px | 10 larguras |
+| Vão mais largo, com o salto dado no último instante da tolerância de borda | 538 a 547 px | 11 larguras |
+| Altura máxima, acima da borda, do salto dado no último instante da tolerância de borda | 212,5 px | 2,2 alturas |
+| Tempo no ar num salto completo | 0,72 s | |
+| Distância de travagem no chão | 40 px | 0,8 larguras |
+| Distância de travagem no ar | 59 px | 1,2 larguras |
+| Queda até à velocidade máxima | 166 px | 1,7 alturas |
+| Altura máxima de um salto completo junto a uma parede seguido de um salto da parede | 477 px | 5 alturas |
+| Distância à parede no ponto mais alto desse salto, com a direção para fora | 270 px | 5,6 larguras |
+| Distância de um salto da parede, com a direção para fora, até voltar à altura de partida | 440 px | 9,2 larguras |
+| Chaminé mais larga que se sobe premindo apenas a tecla de saltar ao tocar na parede | 211 px | 4,4 larguras |
+| Chaminé mais larga que se sobe premindo a tecla 0,1 s depois de tocar na parede | 200 px | 4,2 larguras |
+| Chaminé mais larga que se sobe com a melhor combinação de teclas | 478 px | 10 larguras |
+| Subida por salto numa chaminé de 120 px, premindo apenas a tecla de saltar | 87 px | quase 1 altura |
+| Descida por salto numa parede isolada, com a melhor combinação de teclas | 234 px | 2,4 alturas |
 | Tempo de deslize por cada altura do corpo | 0,28 s | |
+| Subida máxima da ajuda nos degraus | 16 px | um sexto de altura |
 
 - Os vãos máximos variam alguns píxeis com o ponto de onde a corrida começa, porque a física avança
-  em passos de 1/60 s; foram medidos a partir de 12 pontos de partida, e a tabela dá o menor e o
-  maior valor.
-- Longe de paredes, uma plataforma a 240 px só é alcançável com um salto completo. Os níveis devem
-  deixar margem.
+  em passos de 1/60 s; foram medidos a partir de 10 pontos de partida, e a tabela dá o menor e o
+  maior valor. Já contam com a ajuda nos degraus, que apanha os saltos que chegam à borda oposta um
+  pouco abaixo do topo.
+- Longe de paredes, uma plataforma a 240 px só é alcançável com um salto completo. A ajuda nos
+  degraus estende esse alcance em até 16 px, se o salto acabar contra a parede da plataforma. Os
+  níveis devem deixar margem.
 - A personagem ainda consegue saltar com parte do corpo fora da plataforma, e os vãos medidos já
   contam com isso.
 - A tolerância de borda é uma margem para o jogador, e não alcance para o nível. Um vão que deva ser
-  sempre transponível não deve passar de 431 px: o menor vão máximo medido (479 px) menos uma
+  sempre transponível não deve passar de 440 px: o menor vão máximo medido (488 px) menos uma
   largura do corpo, para que o salto ainda passe se for dado até uma largura antes da borda. Um vão
-  que deva ser intransponível deve medir pelo menos 579 px: o maior vão medido com a tolerância
-  (531 px) mais uma largura do corpo.
+  que deva ser intransponível deve medir pelo menos 595 px: o maior vão medido com a tolerância
+  (547 px) mais uma largura do corpo.
 - Se uma opção de acessibilidade vier a alargar a tolerância de borda, o limite dos vãos
-  intransponíveis terá de subir: com 0,2 s, o máximo permitido no Inspector, o vão chega aos 559 px.
+  intransponíveis terá de subir, e o vão volta a ser medido com o novo tempo.
 - As medidas das paredes não dependem do ponto de partida, porque cada salto da parede define as
   duas velocidades da personagem.
 - Uma parede que a personagem consiga tocar durante um salto aumenta a altura alcançável. Uma
   plataforma que deva ser sempre alcançável com a ajuda de uma parede não deve ficar a mais de
-  379 px acima do ponto de partida: a altura medida (475 px) menos uma altura do corpo. Uma
+  381 px acima do ponto de partida: a altura medida (477 px) menos uma altura do corpo. Uma
   plataforma que deva ser inalcançável, havendo uma parede ao alcance de um salto, deve ficar a pelo
-  menos 571 px: a altura medida mais uma altura do corpo.
+  menos 573 px: a altura medida mais uma altura do corpo.
 - A altura medida junto a uma parede supõe que o jogador larga a tecla de saltar durante um só passo
   de física (1/60 s) antes de a premir para o salto da parede. Nesse passo, a personagem ainda sobe
   sem o botão premido e fica sujeita à gravidade do salto curto, razão pela qual a altura não chega
-  ao dobro de um salto completo (480 px). Largando a tecla durante 4 passos (0,07 s), a altura
-  máxima desce para 458 px e, durante 6 passos (0,1 s), para 446 px. Com o salto da parede dado até
-  0,07 s fora do melhor momento, e a tecla largada durante um só passo, a personagem chega aos
-  462 px. Todos estes valores ficam entre os dois limites anteriores (379 e 571 px).
-- Uma chaminé que deva ser sempre subida não deve passar de 174 px de largura: a maior largura
-  medida premindo apenas a tecla de saltar (222 px) menos uma largura do corpo. Premir a tecla
-  0,07 s depois de tocar na parede reduz essa largura para 178 px, valor que a margem cobre. Uma
-  chaminé que não deva ser subida deve medir pelo menos 528 px: a maior largura medida com a melhor
-  combinação de teclas (480 px) mais uma largura do corpo. Entre 174 e 528 px, a subida depende da
+  ao dobro de um salto completo (480 px). Largar a tecla durante mais passos baixa a altura máxima.
+  Com o salto da parede dado até 0,1 s fora do melhor momento, e a tecla largada durante um só
+  passo, a personagem chega aos 461 px. Os dois valores medidos ficam entre os dois limites
+  anteriores (381 e 573 px).
+- Uma chaminé que deva ser sempre subida não deve passar de 163 px de largura: a maior largura
+  medida premindo apenas a tecla de saltar (211 px) menos uma largura do corpo. Premir a tecla
+  0,1 s depois de tocar na parede reduz essa largura para 200 px, valor que a margem cobre. Uma
+  chaminé que não deva ser subida deve medir pelo menos 526 px: a maior largura medida com a melhor
+  combinação de teclas (478 px) mais uma largura do corpo. Entre 163 e 526 px, a subida depende da
   perícia do jogador, pelo que estas larguras devem ficar fora do caminho obrigatório, reservadas a
   desafios opcionais.
 - Uma parede isolada não se sobe por saltos da parede, qualquer que seja a sua altura: cada
-  salto devolve a personagem à parede 96 px mais abaixo. O topo dessa parede alcança-se como o de
+  salto devolve a personagem à parede 234 px mais abaixo. O topo dessa parede alcança-se como o de
   uma plataforma, com um salto normal; uma parede de 200 px, por exemplo, sobe-se assim.
-- Os valores ainda serão afinados, com a câmara e depois nos níveis. Após cada afinação, as medidas
-  voltam a ser obtidas com o `measure_movement.gd` (ver "Testes e medidas").
+- Os valores podem ainda ser afinados nos níveis. Após cada afinação, as medidas voltam a ser
+  obtidas com o `measure_movement.gd` (ver "Testes e medidas").
 - Os níveis podem vir a ser construídos com tiles ou com cenário pintado. Quando o tamanho do tile
   for definido, estas medidas serão convertidas em tiles.
 
@@ -473,7 +487,7 @@ deste jogo: a corrida, as chaminés, as subidas e as quedas. As medidas foram ob
 |---|---|---|
 | Janela | a câmara só se desloca quando a personagem sai de um retângulo à volta do ponto que segue: 64 px para cada lado, 250 px acima e nenhum abaixo | um salto completo (240 px) e o balanço numa chaminé de 120 px (72 px) não movem a câmara |
 | Suavização | em cada passo, a câmara percorre uma fração da distância que falta, independente da frequência de imagem | 95 % da distância em 0,5 s |
-| Antecipação | a câmara mostra 300 px a mais do lado para onde a personagem corre e só troca de lado depois de a personagem recuar 180 px a partir do ponto mais afastado | em corrida, 1,5 s de percurso visível à frente; a troca de lado conclui-se em cerca de 1,2 s, sem ultrapassar a posição final |
+| Antecipação | a câmara mostra 300 px a mais do lado para onde a personagem corre e só troca de lado depois de a personagem recuar 180 px a partir do ponto mais afastado | em corrida, 1,67 s de percurso visível à frente; a troca de lado conclui-se em cerca de 1,2 s, sem ultrapassar a posição final |
 | Reenquadramento | ao pousar num chão mais alto, a câmara centra-se nesse chão | numa escada de degraus de 200 px, a câmara sobe um degrau de cada vez |
 | Olhar para baixo | numa queda superior a um salto completo, a câmara mostra 400 px a mais abaixo da personagem | à velocidade máxima de queda, 0,51 s de queda visível abaixo dos pés |
 | Zonas | enquanto a personagem está numa zona de câmara, o ecrã não mostra nada acima nem abaixo dela e, com o limite horizontal ligado, nada para os lados | a correr para uma borda de uma zona com o limite horizontal ligado ou a cair para o fundo de uma zona, o ecrã para na borda; junto a uma parede, depois de uma inversão de sentido, o ecrã só se desloca quando a personagem se afasta o suficiente para precisar da antecipação (a partir de 200 px da parede, 0,9 s depois da inversão) |
@@ -613,7 +627,7 @@ Inspector do Godot, como os do movimento.
 | Window Down | 0 px | a altura da janela abaixo do ponto seguido; com 0, a câmara acompanha logo qualquer descida |
 | Follow Sharpness | 6 /s | a rapidez da suavização |
 | Look Ahead Distance | 300 px | a distância da antecipação |
-| Turn Threshold | 180 px | o recuo necessário para a antecipação trocar de lado; acima dos 174 px de balanço na chaminé mais larga que se sobe apenas com o salto |
+| Turn Threshold | 180 px | o recuo necessário para a antecipação trocar de lado; acima dos 163 px de balanço na chaminé mais larga que se sobe apenas com o salto |
 | Look Ahead Sharpness | 4 /s | a rapidez da troca de lado |
 | Look Down Threshold | 250 px | a queda, abaixo do último chão, a partir da qual a câmara olha para baixo |
 | Look Down Distance | 400 px | a distância do olhar para baixo |
@@ -686,19 +700,20 @@ do Godot e edita-se no Inspector. As alterações aplicam-se à personagem em to
 
 | Campo no Inspector | Valor atual | O que controla |
 |---|---|---|
-| Max Run Speed | 720 px/s | a velocidade horizontal |
-| Time To Max Speed | 0,1 s | o tempo de aceleração |
+| Max Run Speed | 600 px/s | a velocidade horizontal |
+| Time To Max Speed | 0,18 s | o tempo de aceleração |
 | Time To Stop | 0,15 s | o tempo de travagem e, por consequência, o deslize |
 | Air Control | 0,7 | a fração da aceleração e da travagem do chão que se mantém no ar (1: igual ao chão; 0: nenhuma, e empurrar para o lado oposto deixa de soltar a personagem de uma parede) |
-| Fall Gravity | 7850 px/s² | a aceleração da queda |
+| Fall Gravity | 6600 px/s² | a aceleração da queda |
 | Max Fall Speed | 1400 px/s | a velocidade máxima de queda |
 | Jump Height | 240 px | a altura do salto completo |
-| Time To Peak | 0,35 s | o tempo até ao ponto mais alto do salto |
+| Time To Peak | 0,45 s | o tempo até ao ponto mais alto do salto |
 | Min Jump Height | 80 px | a altura do salto mínimo; um toque sobe alguns px acima deste valor |
-| Coyote Time | 0,07 s | o tempo, depois de sair de uma plataforma sem saltar ou de largar uma parede, durante o qual o salto ainda é aceite (0 desliga) |
-| Jump Buffer Time | 0,07 s | o tempo durante o qual um salto pedido no ar fica guardado à espera de ser possível (0 desliga) |
+| Coyote Time | 0,1 s | o tempo, depois de sair de uma plataforma sem saltar ou de largar uma parede, durante o qual o salto ainda é aceite (0 desliga) |
+| Jump Buffer Time | 0,1 s | o tempo durante o qual um salto pedido no ar fica guardado à espera de ser possível (0 desliga) |
+| Ledge Assist Height | 16 px | quanto abaixo do topo de um degrau podem ficar os pés para a personagem subir para ele, ao cair contra a parede dele, a andar para ele ou só encostada; só nas paredes do nível, nunca num demónio nem numa plataforma de sentido único (0 desliga) |
 | Wall Slide Speed | 350 px/s | a velocidade máxima de descida no deslize; a subida ao longo da parede não é travada |
-| Wall Jump Lock Time | 0,2 s | o tempo, depois de um salto da parede, durante o qual a corrida não responde; com 0,15 s ou menos, uma parede isolada passa a poder ser subida |
+| Wall Jump Lock Time | 0,2 s | o tempo, depois de um salto da parede, durante o qual a corrida não responde; com os valores antigos do movimento, 0,15 s ou menos deixava subir uma parede isolada, e com os atuais esse limite ainda não foi medido |
 
 Os valores do crucifixo estão no ficheiro `crucifix_stats.tres`, na pasta `crucifix/`, e editam-se
 da mesma forma. O Speed Multiplier e o Repel Radius aplicam-se de imediato, também com o jogo a
@@ -819,6 +834,7 @@ godot --headless --fixed-fps 60 --path Projeto --script res://tests/test_coyote_
 godot --headless --fixed-fps 60 --path Projeto --script res://tests/test_jump_buffer.gd
 godot --headless --fixed-fps 60 --path Projeto --script res://tests/test_wall_slide.gd
 godot --headless --fixed-fps 60 --path Projeto --script res://tests/test_wall_jump.gd
+godot --headless --fixed-fps 60 --path Projeto --script res://tests/test_ledge_assist.gd
 godot --headless --fixed-fps 60 --path Projeto --script res://tests/test_jump_signals.gd
 godot --headless --fixed-fps 60 --path Projeto --script res://tests/test_debug_overlay.gd
 godot --headless --fixed-fps 60 --path Projeto --script res://tests/test_demon_debug_view.gd
@@ -898,7 +914,7 @@ esperados.
 
 O `measure_movement.gd` não verifica resultados: imprime as medidas da secção "Medidas para o
 desenho de níveis", com os valores que estiverem no `.tres`. As medidas junto das bordas correm a
-partir de 12 pontos de partida, 1 px entre cada um, que cobrem um passo de física à velocidade
+partir de 10 pontos de partida, 1 px entre cada um, que cobrem um passo de física à velocidade
 máxima, e imprimem o menor e o maior valor.
 
 ```
@@ -964,9 +980,12 @@ ter efeito.
 A lógica organiza-se numa máquina de estados com três estados, definida por um `enum` no
 `player.gd`: no chão (`ON_FLOOR`), no ar (`IN_AIR`) e na parede (`ON_WALL`). Cada estado tem a sua
 função de física, e o estado só muda em `_update_state()`, no início de cada passo de física, a
-partir do resultado do último `move_and_slide()`. O chão tem prioridade. Para entrar no estado da
-parede é preciso empurrar a personagem contra ela, mas para permanecer nele não, pelo que o estado
-termina quando a personagem deixa de tocar na parede ou aterra. Preferiu-se o `enum` a um nó por
+partir do resultado do último `move_and_slide()`. O chão tem prioridade. Fora do chão, tocar numa
+parede do nível põe a personagem no estado da parede, a menos que o jogador empurre para o lado
+oposto; no lado de um demónio, é preciso empurrar. O estado termina quando a personagem deixa de
+tocar na parede, quando o jogador empurra para fora ou quando aterra. Uma parede do nível é um
+corpo ou um tile fora das Knock Off Layers. A camada lê-se no servidor de física, que serve para
+os dois, porque um `TileMapLayer` não é um `CollisionObject2D`. Preferiu-se o `enum` a um nó por
 estado (padrão State) porque os três estados partilham a gravidade, a corrida e os contadores.
 Segue-se a ordem proposta por Nystrom (2014, capítulo "State"): primeiro o `enum`, e o padrão State quando um estado
 passar a ter dados que só nele fazem sentido, como agarrar bordas. As animações vão depender do
@@ -1006,6 +1025,16 @@ primeiro sistema que precise dele.
   e esvazia-se nos passos seguintes. Quando as duas tolerâncias estão ativas, prevalece o salto da
   parede. Qualquer salto esvazia as tolerâncias e o pedido guardado, pelo que cada pedido continua
   a produzir um único salto.
+- A ajuda nos degraus corre logo antes do `move_and_slide()`. Se o passo seguinte, no sentido em que
+  a personagem se move ou, parada de lado, no da parede em que toca, bate numa parede do nível, o
+  `test_move()` procura, de píxel em píxel até ao Ledge Assist Height, a menor subida a partir da
+  qual esse passo fica livre. A personagem sobe essa altura, e mais 1 px para cima da borda, para
+  pousar mesmo sem velocidade de lado; sem esse píxel, ficava a pairar junto à face, subida em
+  cada passo. Deixa de cair, e a tolerância de parede esvazia-se, como ao
+  aterrar, para que a tecla de saltar não dê um salto da parede para trás. Um teto não precisa de
+  verificação própria: a personagem é mais alta do que qualquer subida, e o `test_move()`
+  empurra-a para fora do teto, para baixo, onde a parede ainda trava o passo. O
+  `test_ledge_assist.gd` verifica-o.
 - A personagem emite um sinal em cada salto: `jumped` no salto do chão, incluindo os que usam as
   tolerâncias, e `wall_jumped` no salto da parede, que não emite o primeiro. Ambos enviam dois
   valores: os passos de física decorridos desde que a personagem deixou o chão ou a parede (0 se
@@ -1078,7 +1107,8 @@ Desta opção resultam duas regras:
 A `Camera2D` passa a ser processada no passo de física, e o Godot emite um aviso se ela estiver
 configurada para o modo Idle. Pela mesma razão, a suavização própria da `Camera2D` (Position
 Smoothing) não é usada: com a interpolação ativa, é aplicada mais do que uma vez por passo de física,
-e o mesmo valor deixa a câmara a 81 px da personagem em corrida, contra 144 px sem interpolação. A
+e o mesmo valor deixava a câmara a 81 px da personagem a correr a 720 px/s, a velocidade da altura,
+contra 144 px sem interpolação. A
 câmara do jogo faz a sua própria suavização, uma vez por passo.
 
 #### Input: ações nomeadas com teclas físicas
