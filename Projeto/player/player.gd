@@ -27,6 +27,10 @@ enum State { ON_FLOOR, IN_AIR, ON_WALL, GRABBED }
 
 ## Name of death's modifier on the player.
 const DEATH_SOURCE: StringName = &"death"
+## Share of a run step under which the speed counts as on its target. velocity keeps 32-bit floats,
+## so a ramp that should end on its last frame can stop a few ten-thousandths of a px/s short, as
+## from 600 px/s in 0.15 s, and would take one frame more.
+const RAMP_SNAP_SHARE: float = 0.001
 
 ## Movement values. Every player that uses the same file shares them.
 @export var stats: PlayerMovementStats
@@ -471,6 +475,8 @@ func _apply_run(delta: float, control: float) -> void:
 	var target_speed: float = direction * top_speed
 	var step: float = top_speed / ramp_time * control * delta
 	velocity.x = move_toward(velocity.x, target_speed, step)
+	if absf(velocity.x - target_speed) < step * RAMP_SNAP_SHARE:
+		velocity.x = target_speed
 
 
 ## Max Run Speed, as the modifiers leave it.

@@ -3,9 +3,9 @@ extends Resource
 
 @export_group("Run")
 ## Top running speed, in px/s.
-@export_range(0.0, 2000.0, 10.0, "suffix:px/s") var max_run_speed: float = 720.0
+@export_range(0.0, 2000.0, 10.0, "suffix:px/s") var max_run_speed: float = 600.0
 ## Seconds to go from standing still to top speed.
-@export_range(0.01, 1.0, 0.01, "suffix:s") var time_to_max_speed: float = 0.1
+@export_range(0.01, 1.0, 0.01, "suffix:s") var time_to_max_speed: float = 0.18
 ## Seconds to stop from top speed after letting go.
 @export_range(0.01, 1.0, 0.01, "suffix:s") var time_to_stop: float = 0.15
 ## Share of the running acceleration and braking kept in the air: 1 is the same as on the floor, 0
@@ -14,7 +14,7 @@ extends Resource
 
 @export_group("Gravity")
 ## Downward acceleration while falling, in px/s².
-@export_range(0.0, 20000.0, 10.0, "suffix:px/s²") var fall_gravity: float = 7850.0
+@export_range(0.0, 20000.0, 10.0, "suffix:px/s²") var fall_gravity: float = 6600.0
 ## Top falling speed, in px/s.
 @export_range(0.0, 5000.0, 10.0, "suffix:px/s") var max_fall_speed: float = 1400.0
 ## Top falling speed while a demon holds him in the air (GRABBED), in px/s: slow, so his escape shows
@@ -26,16 +26,16 @@ extends Resource
 @export_range(1.0, 1000.0, 1.0, "suffix:px") var jump_height: float = 240.0
 ## Seconds from leaving the floor to the top of a full jump. Rounded to whole physics frames, so
 ## the jump peaks exactly at Jump Height.
-@export_range(0.05, 1.0, 0.01, "suffix:s") var time_to_peak: float = 0.35
+@export_range(0.05, 1.0, 0.01, "suffix:s") var time_to_peak: float = 0.45
 ## Height of the lowest jump, from a quick tap on Jump, in px. A tap peaks a few px above it,
 ## because the take-off frame always rises at full take-off speed.
 @export_range(1.0, 1000.0, 1.0, "suffix:px") var min_jump_height: float = 80.0
 ## Seconds after leaving the floor without jumping in which Jump still works as on the floor.
 ## Rounded to whole physics frames; 0 turns it off.
-@export_range(0.0, 0.2, 0.01, "suffix:s") var coyote_time: float = 0.07
+@export_range(0.0, 0.2, 0.01, "suffix:s") var coyote_time: float = 0.1
 ## Seconds a press of Jump is kept while the player cannot jump, so it still jumps on landing.
 ## Rounded to whole physics frames; 0 keeps the press for its own frame only.
-@export_range(0.0, 0.2, 0.01, "suffix:s") var jump_buffer_time: float = 0.07
+@export_range(0.0, 0.2, 0.01, "suffix:s") var jump_buffer_time: float = 0.1
 
 @export_group("Wall")
 ## Top falling speed while sliding down a wall, in px/s. Going up along a wall is not slowed.
@@ -53,7 +53,7 @@ extends Resource
 @export_range(0.0, 1.0, 0.01, "suffix:s") var knockback_max_time: float = 0.4
 ## Speed across, in px/s, at which landing on a body the player can't stand on, such as a demon,
 ## shoves him off it sideways, never up. He keeps it, with no run nor jump, until he lands on
-## something else, or for Knockback Max Time at most. Top run speed, so it reads as a shove: from
+## something else, or for Knockback Max Time at most. Above Max Run Speed, so it reads as a shove: from
 ## right over the middle of a dog, 112 px long, he is off it in about 7 physics frames, and off the
 ## middle of a pack of three, close together, within a third of a second (ADR 0047).
 @export_range(1.0, 2000.0, 10.0, "suffix:px/s") var knock_off_speed: float = 720.0
