@@ -27,6 +27,13 @@ enum State { ON_FLOOR, IN_AIR, ON_WALL, GRABBED }
 
 ## Name of death's modifier on the player.
 const DEATH_SOURCE: StringName = &"death"
+## Radians a surface may lean past Floor Max Angle and still count as a floor or a ceiling, as in
+## CharacterBody2D, so a wall to _is_a_level_wall() is a wall to is_on_wall().
+const FLOOR_ANGLE_THRESHOLD: float = 0.01
+## Share of a run step under which the speed counts as on its target. velocity keeps 32-bit floats,
+## so a ramp that should end on its last frame can stop a few ten-thousandths of a px/s short, as
+## from 600 px/s in 0.15 s, and would take one frame more.
+const RAMP_SNAP_SHARE: float = 0.001
 
 ## Movement values. Every player that uses the same file shares them.
 @export var stats: PlayerMovementStats
@@ -75,6 +82,8 @@ var _grabbed: bool = false
 var _was_on_floor: bool = false
 ## True once he has died, so he dies once.
 var _is_dead: bool = false
+## What the next step would hit, for _assist_onto_a_ledge(): one, kept, so no frame makes a new one.
+var _ledge_hit: KinematicCollision2D = KinematicCollision2D.new()
 
 ## The drawing faces left; it is mirrored while the player faces right.
 @onready var _sprite: AnimatedSprite2D = $Sprite
@@ -90,7 +99,8 @@ func _ready() -> void:
 
 ## A knockback runs instead of the state's own physics until it ends. Landing ends it: on the floor
 ## and no longer going up, so the frame it takes off from the floor on still counts. The top of a
-## body he can't stand on doesn't count: it shoves him off instead.
+## body he can't stand on doesn't count: it shoves him off instead. Just before moving, a fall into
+## a ledge a little below its top lifts him onto it (ADR 0059).
 func _physics_process(delta: float) -> void:
 	_update_state()
 	_shove_off_what_cannot_be_stood_on()
@@ -108,6 +118,7 @@ func _physics_process(delta: float) -> void:
 				_physics_on_wall(delta)
 			State.GRABBED:
 				_physics_grabbed(delta)
+	_assist_onto_a_ledge(delta)
 	move_and_slide()
 	_update_facing()
 
@@ -234,10 +245,11 @@ func _on_grab_escape_died() -> void:
 
 
 ## Changes the state from what the last move_and_slide() found, so the take-off frame still runs
-## as on the floor and the landing frame as in the air. A grab comes first, then the floor. Getting
-## on a wall takes a push into it, from the air or from the floor; staying on it does not, so the
-## player leaves it when it no longer touches it, or lands. Held still, he is off it, so he falls as
-## in the air. Touching the floor is heard as landed once, grabbed or not.
+## as on the floor and the landing frame as in the air. A grab comes first, then the floor. Off the
+## floor, touching a wall puts the player on it unless he pushes away from it; a demon's side takes
+## a push into it (ADR 0058). Staying on it takes neither, so he leaves it when it no longer touches
+## it, or lands. Held still, he is off it, so he falls as in the air. Touching the floor is heard as
+## landed once, grabbed or not.
 func _update_state() -> void:
 	var on_floor: bool = is_on_floor()
 	var touched_down: bool = on_floor and not _was_on_floor
@@ -251,7 +263,7 @@ func _update_state() -> void:
 	else:
 		match _state:
 			State.ON_FLOOR, State.IN_AIR, State.GRABBED:
-				_state = State.ON_WALL if _is_pushing_into_a_wall() else State.IN_AIR
+				_state = State.ON_WALL if _is_holding_a_wall() else State.IN_AIR
 			State.ON_WALL:
 				if not is_on_wall():
 					_state = State.IN_AIR
@@ -276,12 +288,72 @@ func _shove_off_what_cannot_be_stood_on() -> void:
 	_knockback_frames_left = stats.get_knockback_max_frames()
 
 
-## True when the last move_and_slide() touched a wall and the run input points into it.
-func _is_pushing_into_a_wall() -> bool:
+## True when the last move_and_slide() touched a wall the player can get on (ADR 0058): pushing
+## into it, or with no run input and a wall off Knock Off Layers among the ones touched, so a
+## demon's side still takes a push. Pushing away from it never gets him on.
+func _is_holding_a_wall() -> bool:
 	if not is_on_wall():
 		return false
 	var direction: float = input.get_run_direction()
-	return direction != 0.0 and direction == -signf(get_wall_normal().x)
+	if direction != 0.0:
+		return direction == -signf(get_wall_normal().x)
+	return _touches_a_wall_off_knock_off_layers()
+
+
+## True when one of the walls the last move_and_slide() touched is a wall of the level.
+func _touches_a_wall_off_knock_off_layers() -> bool:
+	for index: int in get_slide_collision_count():
+		if _is_a_level_wall(get_slide_collision(index)):
+			return true
+	return false
+
+
+## True for a collision with a wall, not a floor nor a ceiling, on none of Knock Off Layers: the
+## level's own, a body or tiles, never a demon. The layers come from the physics server, since a
+## TileMapLayer is no CollisionObject2D. A collider freed since the last move, such as a demon gone,
+## is no wall.
+func _is_a_level_wall(collision: KinematicCollision2D) -> bool:
+	var limit: float = floor_max_angle + FLOOR_ANGLE_THRESHOLD
+	if collision.get_angle(up_direction) <= limit or collision.get_angle(-up_direction) <= limit:
+		return false
+	if collision.get_collider() == null:
+		return false
+	var layers: int = PhysicsServer2D.body_get_collision_layer(collision.get_collider_rid())
+	return layers & knock_off_layers == 0
+
+
+## Lifts the player onto a ledge he falls into with his feet a little below its top (ADR 0059). Off
+## the floor, at the top of a jump or falling, moving toward a wall of the level, or touching one
+## with no speed across, that the next step would hit, he goes up by the fewest whole px, at most
+## Ledge Assist Height, that let the step carry him over it, and a px across, onto its edge, and
+## stops falling, so he lands on it even with no speed across, which would leave him hanging by the
+## face. Like the wall slide, it takes no push. A one-way platform has no side for the step to hit.
+## Up there, off its face, the wall's coyote frames end, as on landing, so Jump jumps from the
+## ledge, not off the face. He is never lifted onto a demon, nor while he pushes away, is grabbed,
+## held still or in a knockback. Never through a ceiling either, with no check of its own: he is
+## taller than any lift, so a lift into a ceiling leaves him inside it, and test_move() pushes him
+## back out, below it, where the wall still stops the step. With Ledge Assist Height under 1, no
+## lift is tried.
+func _assist_onto_a_ledge(delta: float) -> void:
+	if (velocity.y < 0.0 or _held_still or is_knocked_back()
+			or (_state != State.IN_AIR and _state != State.ON_WALL)):
+		return
+	var side: float = signf(velocity.x)
+	# get_wall_normal() only holds while is_on_wall().
+	if side == 0.0 and is_on_wall():
+		side = -signf(get_wall_normal().x)
+	if side == 0.0 or input.get_run_direction() == -side:
+		return
+	var step: Vector2 = Vector2(side * maxf(absf(velocity.x) * delta, 1.0), 0.0)
+	if not test_move(global_transform, step, _ledge_hit) or not _is_a_level_wall(_ledge_hit):
+		return
+	for lift: int in range(1, floori(stats.ledge_assist_height) + 1):
+		var up: Vector2 = up_direction * lift
+		if not test_move(global_transform.translated(up), step):
+			global_position += up + Vector2(side, 0.0)
+			velocity.y = 0.0
+			_wall_coyote_frames_left = 0
+			return
 
 
 ## Coyote frames fill up, the wall's coyote frames and a wall jump's lock end, a kept press of Jump
@@ -471,6 +543,8 @@ func _apply_run(delta: float, control: float) -> void:
 	var target_speed: float = direction * top_speed
 	var step: float = top_speed / ramp_time * control * delta
 	velocity.x = move_toward(velocity.x, target_speed, step)
+	if absf(velocity.x - target_speed) < step * RAMP_SNAP_SHARE:
+		velocity.x = target_speed
 
 
 ## Max Run Speed, as the modifiers leave it.

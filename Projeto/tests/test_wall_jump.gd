@@ -1,6 +1,6 @@
-# Checks the wall jump (ADR 0010). In the air against a wall, pushing into it or not, Jump kicks the
-# player away from the wall at top running speed and as high as a full jump from the floor, and then
-# the run does nothing for Wall Jump Lock Time, or until a landing. Against a wall the jump is the
+# Checks the wall jump. In the air against a wall, pushing into it or not, Jump kicks the player
+# away from the wall at top running speed and as high as a full jump from the floor, and then the
+# run does nothing for Wall Jump Lock Time, or until a landing. Against a wall the jump is the
 # wall's, even with coyote frames left, but on the floor it is the floor's, even after landing from
 # a slide; one press makes one jump, and a press kept a little before touching the wall still kicks.
 # So does a press for Coyote Time's frames after leaving the wall, and no longer; a kick or a
@@ -161,7 +161,7 @@ func _landing_ends_the_lock() -> bool:
 			_note(kicked, "no wall jump")])
 
 
-## Against a wall the jump is the wall's, and one press makes one jump, as on the floor (ADR 0008).
+## Against a wall the jump is the wall's, and one press makes one jump, as on the floor.
 ## Standing against the wall without pushing, the floor goes away, and a press while coyote frames
 ## are left kicks off the wall. The kick uses the press and the coyote frames up, so nothing else
 ## jumps after it. A second jump on the very next frame would start at the kick's own speed, which

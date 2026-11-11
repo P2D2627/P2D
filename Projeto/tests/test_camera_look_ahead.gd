@@ -15,7 +15,8 @@ const CAMERA_SCENE: PackedScene = preload("res://camera/game_camera.tscn")
 ## The least run, in seconds, the screen must show ahead of the player at full run.
 const SECONDS_AHEAD: float = 1.5
 ## The widest chimney climbed pressing only Jump on touching a wall, wall face to wall face, in px,
-## as measure_movement.gd measures it.
+## as measure_movement.gd measured it with the movement before 2026-11-11. It measures 211 px now,
+## so this wider one keeps the test on the safe side.
 const WIDEST_TAPPED_CHIMNEY: float = 222.0
 ## A smoothing so fast that one step closes the whole distance, to see the look ahead on its own.
 const INSTANT_SHARPNESS: float = 1.0e6
