@@ -159,7 +159,8 @@ func is_knocked_back() -> bool:
 ## Holds the player where he is, as a demon's grab does (ADR 0021): he stops at once, a knockback
 ## under way ends, and in the air he rises no more and falls straight down, since gravity still
 ## pulls; against a wall too, as in the air. Until let_go(), nothing shoves him off what he stands
-## on. Keeping him from running and jumping is the holder's, with a MovementModifier.
+## on, and he falls through a demon he stands on, so a grab never holds him on top of one (ADR
+## 0056). Keeping him from running and jumping is the holder's, with a MovementModifier.
 func hold_still() -> void:
 	_held_still = true
 	velocity = Vector2(0.0, maxf(velocity.y, 0.0))
@@ -206,7 +207,8 @@ func _update_facing() -> void:
 ## On every frame he stands on a body on Knock Off Layers, shoves the player off it the way KnockOff
 ## says: along its top at Knock Off Speed, as a knockback that lasts until he lands on something
 ## else. Landing is not the only way onto one: a shove that is stopped, or a demon that gets under
-## him, leaves him there too (ADR 0022). Held still, he is not shoved.
+## him, leaves him there too (ADR 0022). Held still, he is not shoved: he falls through it (ADR
+## 0056).
 func _shove_off_what_cannot_be_stood_on() -> void:
 	var direction: float = _knock_off.update(knock_off_layers, _held_still)
 	if direction == 0.0:

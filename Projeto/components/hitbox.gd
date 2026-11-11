@@ -20,13 +20,20 @@ signal hold_sink_changed(sink: float)
 signal hold_ended(hurtbox: Hurtbox)
 
 ## What the hit does, which the owner sets from its attack before activate(), so they are not in
-## the Inspector: SP it takes, and how far, in px along the floor away from the hitbox, and how high
-## it throws what it lands on; and whether it pierces a Hurtbox's invulnerability, landing through
-## one started as pierceable, as the man's after a hit (ADR 0055).
+## the Inspector: SP it takes, and how far, in px along the floor, and how high it throws what it
+## lands on; and whether it pierces a Hurtbox's invulnerability, landing through one started as
+## pierceable, as the man's after a hit (ADR 0055).
 var damage: float = 0.0
 var knockback_distance: float = 0.0
 var knockback_height: float = 0.0
 var pierces_invulnerability: bool = false
+## Whether it also lands through an invulnerability not started as pierceable, as the man's after he
+## breaks free of a grab: the bite on a dog's back, so he can't stand on a pack even then (ADR
+## 0056). A closed Hurtbox still keeps it out.
+var pierces_any_invulnerability: bool = false
+## Which way it throws what it lands on: 0 away from it, as most hits do; 1 to the right or -1 to
+## the left, as the bite on a dog's back by a wall, to the open side (ADR 0056).
+var knockback_side: float = 0.0
 
 var _active: bool = false
 ## The Hurtboxes this activation has landed on, so it lands once on each.

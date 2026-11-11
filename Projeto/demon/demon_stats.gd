@@ -4,9 +4,10 @@ extends Resource
 ## What a kind of demon is: how far it sees, how fast it chases, and its attacks. All the demons of
 ## one level share one file, such as lust_demon_stats.tres, with its attacks inside it, and a new
 ## level's demons are another file with the same fields. Where a demon is placed and the art it
-## shows are not here. Sight Distance and Pack Spacing say when they change, so the demon resizes
-## what it sees and the room it keeps at once, also while the game runs and they are changed in the
-## Remote tab; the others are read each time they are used.
+## shows are not here. Sight Distance, Pack Spacing and Bites Who Lands On It say when they change,
+## so the demon resizes what it sees and the room it keeps, and turns the bite on its back on or
+## off, at once, also while the game runs and they are changed in the Remote tab; the others are
+## read each time they are used.
 
 @export_group("Senses")
 ## How near, in px, the man has to come for the demon to see him, with no wall in between.
@@ -99,6 +100,22 @@ extends Resource
 ## Distance from him. Either way, it starts none at a man held by as many demons as can, or just
 ## after he breaks free of a hold.
 @export var attacks_invulnerable_man: bool = false
+
+@export_group("Back Bite")
+## Whether the demon bites whoever lands on it, as in an attack, so the man can't ride a pack
+## (ADR 0056): once on each landing, also on two demons at once, and never from the side nor from
+## inside it. The bite takes the SP of its first bite in Attacks and throws him further than a bite
+## does, through any blink of his, whatever Attacks Invulnerable Man says; with his SP low, it
+## grabs him, as any hit, and he falls through the demon to sink on the floor below it. Off, he is
+## only shoved off its top (ADR 0022).
+@export var bites_who_lands_on_it: bool = false:
+	set(value):
+		bites_who_lands_on_it = value
+		emit_changed()
+## How far, in px along the floor away from the demon, and how high the bite on its back throws the
+## man: more than a bite's, so he comes off the demon and, mostly, off its pack.
+@export_range(0.0, 1000.0, 10.0, "suffix:px") var back_bite_knockback_distance: float = 300.0
+@export_range(1.0, 400.0, 1.0, "suffix:px") var back_bite_knockback_height: float = 100.0
 
 @export_group("Retreat")
 ## How far from the man, in px, the demon backs off after each attack, landed or not, before it
@@ -247,6 +264,15 @@ func get_reach_height() -> float:
 	for attack: DemonAttack in attacks:
 		reach = maxf(reach, attack.max_height_difference)
 	return reach
+
+
+## SP the bite on its back takes: the damage of the first bite in Attacks, so it bites as hard as it
+## does in an attack; 0 with no bite.
+func get_back_bite_damage() -> float:
+	for attack: DemonAttack in attacks:
+		if attack.animation == &"bite":
+			return attack.damage
+	return 0.0
 
 
 ## A pause of share of the way from Patrol Pause Min to Max, share from 0 to 1, in whole physics

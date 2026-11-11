@@ -201,6 +201,8 @@ var _was_shoving: bool = false
 @onready var _step_check: RayCast2D = %StepCheck
 @onready var _repellable: Repellable = %Repellable
 @onready var _hitbox: Hitbox = %Hitbox
+## Bites whoever lands on its back, with Bites Who Lands On It (ADR 0056).
+@onready var _back_bite: DemonBackBite = %BackBite
 @onready var _box: CollisionShape2D = $CollisionShape2D
 @onready var _half_size: Vector2 = _box.shape.get_rect().size / 2.0
 
@@ -228,13 +230,17 @@ func _ready() -> void:
 	_hitbox.hit_landed.connect(_on_hitbox_hit_landed)
 	_hitbox.hold_started.connect(_on_hitbox_hold_started)
 	_hitbox.hold_ended.connect(_on_hitbox_hold_ended)
+	_back_bite.stats = stats
+	_back_bite.hold_started.connect(_on_back_bite_hold_started)
+	_back_bite.hold_ended.connect(_on_hitbox_hold_ended)
 	stats.changed.connect(_apply_stats)
 	_apply_stats()
 
 
 ## Its state moves it, then it keeps apart from the pack and from the man's side; standing on a body
-## on Knock Off Layers, the shove off it takes over the move. The man's head is never a floor on its
-## way back nor where its post's floor is found.
+## on Knock Off Layers, the shove off it takes over the move, and in GRAB it falls through the body
+## instead (ADR 0056). The man's head is never a floor on its way back nor where its post's floor
+## is found.
 func _physics_process(delta: float) -> void:
 	_bite_frames_left = maxi(_bite_frames_left - 1, 0)
 	_target.track(delta)
@@ -1294,11 +1300,13 @@ func _has_floor_at(offset_x: float) -> bool:
 
 
 ## The pack area reaches a body width and Pack Spacing past this demon's body, so it finds a demon
-## as soon as its body is that near.
+## as soon as its body is that near. The bite on its back is on with Bites Who Lands On It (ADR
+## 0056).
 func _apply_stats() -> void:
 	_senses.set_sight_distance(stats.sight_distance)
 	(_pack_shape.shape as RectangleShape2D).size = Vector2(
 			2.0 * (3.0 * _half_size.x + stats.pack_spacing), 2.0 * _half_size.y)
+	_back_bite.set_on(stats.bites_who_lands_on_it)
 
 
 ## For its states, and the only way the demon changes state: the state it leaves tidies up, the new
@@ -1417,6 +1425,17 @@ func _on_hitbox_hold_started(_hurtbox: Hurtbox) -> void:
 	velocity.x = 0.0
 	velocity.y = maxf(velocity.y, 0.0)
 	change_state(State.GRAB)
+
+
+## The bite on its back holds the man, as its Hitbox's hit does, and he falls through the demon to
+## the floor (KnockOff). A demon that was not after him, as one he lands on before it sees him,
+## first takes the man on its back as the one it holds: with no one to hold, GRAB would let go at
+## once.
+func _on_back_bite_hold_started(hurtbox: Hurtbox) -> void:
+	var rider: Node2D = _back_bite.get_rider()
+	if not has_target() and rider != null:
+		_target.take(rider)
+	_on_hitbox_hold_started(hurtbox)
 
 
 ## The man broke free and throws it off, away from him, facing him all the way.

@@ -9,6 +9,8 @@ extends Area2D
 ## once per activation, unless it is invulnerable, also when an earlier hit of the same frame made
 ## it so, or closed. An invulnerability started as pierceable, as the man's after a hit, still lets
 ## in a Hitbox that pierces it, as a level-1 dog's bite, so a pack brings him down fast (ADR 0055).
+## One that pierces any invulnerability, as the bite on a dog's back, lands also through one not
+## started as pierceable (ADR 0056).
 ## Closed, with set_closed(), no hit lands for as long as its owner says, as with the man held by
 ## as many demons as can hold him (ADR 0029), but it is not invulnerable, so nothing blinks; opened
 ## again, a Hitbox that overlapped all along lands at once.
@@ -82,9 +84,11 @@ func can_be_pierced() -> bool:
 	return not _closed and _unpierceable_frames_left == 0
 
 
-## True while hitbox can land now: as any hit, or through a pierceable invulnerability if it pierces.
+## True while hitbox can land now: as any hit, through a pierceable invulnerability if it pierces
+## one, or through any if it pierces any; never while closed.
 func _lets_in(hitbox: Hitbox) -> bool:
-	return takes_hits() or (hitbox.pierces_invulnerability and can_be_pierced())
+	return takes_hits() or (hitbox.pierces_invulnerability and can_be_pierced()) \
+			or (hitbox.pierces_any_invulnerability and not _closed)
 
 
 func _on_area_entered(area: Area2D) -> void:
