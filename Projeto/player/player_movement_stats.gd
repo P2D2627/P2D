@@ -36,6 +36,10 @@ extends Resource
 ## Seconds a press of Jump is kept while the player cannot jump, so it still jumps on landing.
 ## Rounded to whole physics frames; 0 keeps the press for its own frame only.
 @export_range(0.0, 0.2, 0.01, "suffix:s") var jump_buffer_time: float = 0.1
+## Most px the feet may be below the top of a ledge he falls into, moving or pushing toward it, for
+## him to be lifted onto it, as if the jump had reached it (ADR 0059). Only walls of the level,
+## never a demon, and only with room overhead. A sixth of his height; 0 turns it off.
+@export_range(0.0, 48.0, 1.0, "suffix:px") var ledge_assist_height: float = 16.0
 
 @export_group("Wall")
 ## Top falling speed while sliding down a wall, in px/s. Going up along a wall is not slowed.
