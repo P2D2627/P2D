@@ -73,9 +73,10 @@ extends Resource
 @export_range(0.0, 10.0, 0.1, "suffix:s") var patrol_pause_max: float = 2.0
 
 @export_group("Chase")
-## Speed, in px/s, at which the demon drags itself towards the man. Below the man's running speed,
-## so running away always works.
-@export_range(0.0, 2000.0, 10.0, "suffix:px/s") var chase_speed: float = 560.0
+## Speed, in px/s, at which the demon drags itself towards the man. Below the man's running speed
+## even for the fastest of a pack (times 1 + Pack Variation), so running away always works, and above
+## Retreat Speed even for the slowest of a pack against the fastest, so backing off reads as such.
+@export_range(0.0, 2000.0, 10.0, "suffix:px/s") var chase_speed: float = 510.0
 
 @export_group("Jump")
 ## Height, in px, of the highest step the demon jumps up onto after a man out of its reach above it

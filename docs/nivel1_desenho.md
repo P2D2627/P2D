@@ -103,7 +103,7 @@ afinação indicados, e são provisórios até serem afinados em jogo.
 |---|---|---|---|
 | dimensão do homem e do cão | 48 × 96 px | 1 × 2 | `player.tscn`, `demon.tscn` |
 | corrida do homem | 600 px/s | | README |
-| perseguição do cão | 560 px/s, até 616 com a variação da matilha | | `demon_stats.gd`: em terreno plano, o homem foge ao cão médio, mas por agora não aos mais rápidos da matilha |
+| perseguição do cão | 510 px/s, até 561 com a variação da matilha | | `demon_stats.gd`: em terreno plano, o homem foge sempre, mesmo aos mais rápidos da matilha |
 
 **Saltos do homem**
 
@@ -554,7 +554,7 @@ regras o pode confirmar a partir da cena, e "à mão" que exige leitura do desen
 | 37 | Cada sítio alto onde o homem possa esperar tem uma saída para fora da vista dos cães | rocha que corte a linha de vista, ou subida até os cães saírem do ecrã | à mão |
 | | **Cães que saltam (só com Jump Height ou Max Drop acima de 0)** | | |
 | 38 | Um refúgio fica acima do que o cão sobe mais o alcance dos ataques | mais de Jump Height + 24 px acima do chão de cada cão (com 96 px, 3 tiles ou mais) | teste |
-| 39 | Uma descida mais funda do que Jump Height existe só onde se aceita que o cão fique lá em baixo, porque não tem volta; lá em baixo há chão livre até onde ele aterra | até Max Drop; à velocidade da perseguição (até 616 px/s), chão livre até 5 tiles depois da quina numa queda de 96 px e até 7 tiles numa de 240 px | teste |
+| 39 | Uma descida mais funda do que Jump Height existe só onde se aceita que o cão fique lá em baixo, porque não tem volta; lá em baixo há chão livre até onde ele aterra | até Max Drop; à velocidade da perseguição (até 561 px/s), chão livre até 5 tiles depois da quina numa queda de 96 px (medidos 230 px) e até 7 tiles numa de 240 px (medidos 314 px) | teste |
 | 40 | No caminho de um cão, nenhum chão fica à mesma altura do chão do seu posto sem ser o próprio | os chãos distinguem-se só pela altura: o cão ficaria preso ao voltar | teste |
 
 ## 12. Ordem do trabalho
