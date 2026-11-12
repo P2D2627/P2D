@@ -279,7 +279,8 @@ func _update_facing() -> void:
 ## On every frame he stands on a body on Knock Off Layers, shoves the player off it the way KnockOff
 ## says: along its top at Knock Off Speed, as a knockback that lasts until he lands on something
 ## else. Landing is not the only way onto one: a shove that is stopped, or a demon that gets under
-## him, leaves him there too (ADR 0022). Held still, he is not shoved.
+## him, leaves him there too (ADR 0022). Held still, he is not shoved: he falls through it (ADR
+## 0056).
 func _shove_off_what_cannot_be_stood_on() -> void:
 	var direction: float = _knock_off.update(knock_off_layers, _held_still or _grabbed)
 	if direction == 0.0:

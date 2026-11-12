@@ -1,15 +1,16 @@
 # Prints what chasing demons cost on a physics frame. It puts 10, 50 and 200 demons of demon.tscn on
 # the floor, all inside Sight Distance of the man, who stands still with the crucifix down, so every
-# one of them chases him: one at a time bites or lunges, and while he blinks after the hit the
-# others wait at Retreat Distance (ADR 0025), the busiest a pack gets; then 50 on patrol, with the
-# man out of their sight, as a level's demons spend most of their time (ADR 0033): first all on the
-# screen, which with no camera is all of the world, and then spread along ten screens with a camera,
-# as in a level, where those off its screen stand. Between the two, 50 below the man on a shelf out
-# of their reach, first standing, with no Out Of Reach Pace Width, and then pacing with that of
-# lust_demon_stats.tres (ADR 0039); and 50 that jump (ADR 0042) below the man on a block, one they
-# climb and one too high for them. Each part starts with a new
-# man, with full SP: the demons drain it, and a grab that killed him would hold him for good, since
-# only a Level starts the room over. Each cost is what the demons add to the same room with no
+# one of them chases him: one on each side of him at a time bites or lunges, also while he blinks
+# after a hit, and the others pace near him (ADR 0052, 0053 and 0055), the busiest a pack gets;
+# then 50 on patrol, with the man out of their sight, as a level's demons spend most of their time
+# (ADR 0033): first all on the screen, which with no camera is all of the world, and then spread
+# along ten screens with a camera, as in a level, where those off its screen stand. Between the
+# two, 50 below the man on a shelf out of their reach, first standing, with no Out Of Reach Pace
+# Width, and then pacing with that of lust_demon_stats.tres (ADR 0039); and 50 that jump (ADR 0042)
+# below the man on a block, one they climb and one too high for them. Each part starts with a new
+# man, whose Max SP is raised in memory so far that no part brings him low: a pack takes 100 SP low
+# in about two seconds and then grabs him (ADR 0055), and the rest of the part would measure demons
+# holding him or waiting, not after him. Each cost is what the demons add to the same room with no
 # demons, on average and on the worst frame. The whole frame: the time from one physics frame to the
 # next, which with --fixed-fps and no window waits for nothing, so it takes in the physics server's
 # step over the demons' bodies and areas. The scripts, inside it: from a node that runs before every
@@ -18,8 +19,9 @@
 # frames, and stays at 0 through the first measures, which are over in less than a second. Before
 # the measures, it prints the lunge of lust_demon_stats.tres on flat floor and how its demons first
 # attack a man standing still, and with each measure, how many demons started their warning on its
-# worst frame. It checks nothing: the exit code is 1 only if the player never lands or a demon is
-# not after the man when the measure starts. The README quotes the result in the demon's section.
+# worst frame. It checks nothing: the exit code is 1 only if the player never lands, a demon is not
+# after the man when the measure starts, or the man goes low all the same. The README quotes the
+# result in the demon's section.
 # Run from the repository root:
 # godot --headless --fixed-fps 60 --path Projeto --script res://tests/measure_demon.gd
 extends "res://tests/support/player_test.gd"
@@ -58,6 +60,9 @@ const FARTHEST: float = 450.0
 const SETTLE_FRAMES: int = 30
 ## Physics frames each measure averages over: five seconds of chasing and attacking.
 const MEASURED_FRAMES: int = 300
+## Max SP of each new man, in memory, so no part of the measure brings him low and no demon grabs
+## him: a pack takes the file's 100 SP low in about two seconds (ADR 0055).
+const MAN_MAX_SP: float = 1000000.0
 ## The most 50 demons may add to a physics frame on average, in ms: about a quarter above the
 ## measures with the bite and the lunge of ADR 0020 (1.15 to 1.20 ms over seven runs, 2026-10-20),
 ## so a change that makes them dearer shows here before 2 ms. A demon after the man costs about
@@ -127,6 +132,8 @@ const PILLAR_HEIGHT: float = 144.0
 var _warnings: int = 0
 ## Demons that left their floor in JUMP or DROP since the measure of jumping demons started.
 var _take_offs: int = 0
+## True once the man of the part being measured went low, which MAN_MAX_SP should never let happen.
+var _man_went_low: bool = false
 
 
 func _initialize() -> void:
@@ -134,7 +141,8 @@ func _initialize() -> void:
 	var player: Player = await _fresh_player(null)
 	if player == null:
 		return
-	await _print_lunge()
+	if not await _print_lunge():
+		return
 	player = await _fresh_player(player)
 	if player == null:
 		return
@@ -235,22 +243,42 @@ func _initialize() -> void:
 			% [BUDGET_DEMONS, 2.0 * LEVEL_HALF_WIDTH, root.get_visible_rect().size.x, walking,
 					level.frame - empty.frame, level.worst_frame - empty.frame,
 					level.scripts - empty.scripts, level.worst_scripts - empty.scripts])
+	if not _never_went_low():
+		return
 	await remove_player(player)
 	quit(0)
 
 
-## A new man landed on the floor, with full SP and no grab, in place of player, which goes; null if
-## he never lands, after saying so and quitting with 1. Each part of the measure starts with one:
-## the demons drain his SP, and once a grab kills him he stays held, since only a Level starts the
-## room over (ADR 0026).
+## A new man landed on the floor, with MAN_MAX_SP and no grab, in place of player, which goes; null
+## if player went low or the new man never lands, after saying so and quitting with 1. Each part of
+## the measure starts with one.
 func _fresh_player(player: Player) -> Player:
 	if player != null:
+		if not _never_went_low():
+			return null
 		await remove_player(player)
 	var fresh: Player = await spawn_on_floor(FLOOR_START)
 	if fresh == null:
 		printerr("The player never landed.")
 		quit(1)
+		return null
+	var soul_points: SoulPoints = fresh.soul_points
+	soul_points.stats = soul_points.stats.duplicate() as SoulPointsStats
+	soul_points.stats.max_sp = MAN_MAX_SP
+	soul_points.heal(MAN_MAX_SP)
+	_man_went_low = false
+	soul_points.low_changed.connect(_on_man_low_changed)
 	return fresh
+
+
+## False if the man went low since he came in, after saying so and quitting with 1: the demons
+## grabbed him, so part of the measure was of demons holding him or waiting, not after him.
+func _never_went_low() -> bool:
+	if _man_went_low:
+		printerr("The man went low with %.0f Max SP: the measure is not of demons after him."
+				% MAN_MAX_SP)
+		quit(1)
+	return not _man_went_low
 
 
 ## count demons spread evenly along a level LEVEL_HALF_WIDTH to each side of the camera.
@@ -383,13 +411,16 @@ func _measure(first: Stamp, last: Stamp) -> Cost:
 
 
 ## Prints the attack of lust_demon_stats.tres the demon warns of first on flat floor, at the man
-## standing still, LUNGE_START away, with every attack's Chance Per Second at 1 and Max Hesitation
-## at 0 for it, so it is the lunge, at once, and not a bite after the demon ran in while it
-## hesitated: how high it rises and how far it lands from where it warned, with what the attack asks
-## of both at a man standing that far, and the time from take-off to the first physics frame it
-## stands on the floor again. It lands short of what it asked, against the man, where it stops (ADR
-## 0022). The chances and the hesitation go back to the file's before the measures.
-func _print_lunge() -> void:
+## standing still, LUNGE_START away, with every attack's Chance Per Second at 1, Max Hesitation at 0
+## and Waits At Retreat Distance off for it, so it is the lunge, at once, and not a bite after the
+## demon ran in while it hesitated, or because LUNGE_START was within its wait by its draw of
+## Retreat Distance (ADR 0053): how high it rises and how far it lands from where it warned, with
+## what the attack asks of both at a man standing that far, and the time from take-off to the first
+## physics frame it stands on the floor again. It lands short of what it asked, against the man,
+## where it stops (ADR 0022). The chances, the hesitation and the wait go back to the file's before
+## the measures. False if the demon warns first of an attack that is not a lunge, or never lunges,
+## after saying so and quitting with 1.
+func _print_lunge() -> bool:
 	var demon: Demon = DEMON_SCENE.instantiate() as Demon
 	demon.position = FLOOR_START + Vector2(-LUNGE_START, 0.0)
 	var chances: PackedFloat64Array = []
@@ -398,35 +429,47 @@ func _print_lunge() -> void:
 		attack.chance_per_second = 1.0
 	var hesitation: float = demon.stats.max_hesitation
 	demon.stats.max_hesitation = 0.0
+	var waits: bool = demon.stats.waits_at_retreat_distance
+	demon.stats.waits_at_retreat_distance = false
 	var warned_of: Array[DemonAttack] = []
 	demon.warning_started.connect(func(attack: DemonAttack) -> void: warned_of.append(attack))
 	root.add_child(demon)
-	await wait_until(func() -> bool: return demon.get_state() == Demon.State.WARNING)
+	var warned: bool = await wait_until(
+			func() -> bool: return demon.get_state() == Demon.State.WARNING)
 	var take_off: Vector2 = demon.position
-	await wait_until(func() -> bool: return demon.get_state() == Demon.State.LUNGE)
-	var start: int = Engine.get_physics_frames()
-	var peak_y: float = demon.position.y
-	while not demon.is_on_floor():
-		peak_y = minf(peak_y, demon.position.y)
-		await physics_frame
-	var seconds: float = float(Engine.get_physics_frames() - start + 1) \
-			/ Engine.physics_ticks_per_second
-	var attack: DemonAttack = warned_of[0]
-	var asked: float = attack.get_lunge_distance_to(FLOOR_START.x - take_off.x, 0.0)
-	print("Attack '%s' of lust_demon_stats.tres: %.2f px up (asked %.1f), lands %.1f px from where it warned (asked %.0f), %.3f s from take-off to standing"
-			% [attack.animation, take_off.y - peak_y, attack.get_lunge_height(asked),
-					demon.position.x - take_off.x, asked, seconds])
+	var lunged: bool = false
+	if warned and not warned_of[0].keeps_chasing:
+		lunged = await wait_until(func() -> bool: return demon.get_state() == Demon.State.LUNGE)
+	if lunged:
+		var start: int = Engine.get_physics_frames()
+		var peak_y: float = demon.position.y
+		while not demon.is_on_floor():
+			peak_y = minf(peak_y, demon.position.y)
+			await physics_frame
+		var seconds: float = float(Engine.get_physics_frames() - start + 1) \
+				/ Engine.physics_ticks_per_second
+		var attack: DemonAttack = warned_of[0]
+		var asked: float = attack.get_lunge_distance_to(FLOOR_START.x - take_off.x, 0.0)
+		print("Attack '%s' of lust_demon_stats.tres: %.2f px up (asked %.1f), lands %.1f px from where it warned (asked %.0f), %.3f s from take-off to standing"
+				% [attack.animation, take_off.y - peak_y, attack.get_lunge_height(asked),
+						demon.position.x - take_off.x, asked, seconds])
 	for index: int in chances.size():
 		demon.stats.attacks[index].chance_per_second = chances[index]
 	demon.stats.max_hesitation = hesitation
+	demon.stats.waits_at_retreat_distance = waits
 	demon.queue_free()
+	if not lunged:
+		printerr("The demon %.0f px from the man did not lunge first." % LUNGE_START)
+		quit(1)
+		return false
 	await wait_frames(SETTLE_FRAMES)
+	return true
 
 
 ## Prints how APPROACHES demons of lust_demon_stats.tres, put in together FARTHEST from the man
-## standing still, first attack him: how many did in WATCHED_FRAMES, which is few, since the others
-## wait while he blinks after each hit (ADR 0025), and for each attack, how many started with it,
-## and the nearest and farthest from him they did.
+## standing still, first attack him: how many did in WATCHED_FRAMES, which is few, since they all
+## come from his left and only one on each side of him attacks at a time (ADR 0053), and for each
+## attack, how many started with it, and the nearest and farthest from him they did.
 func _print_attacks() -> void:
 	var distances: Dictionary[StringName, Array] = {}
 	var demons: Array[Demon] = []
@@ -462,3 +505,8 @@ func _on_demon_state_changed(_previous: Demon.State, current: Demon.State) -> vo
 
 func _on_demon_took_off() -> void:
 	_take_offs += 1
+
+
+func _on_man_low_changed(is_low: bool) -> void:
+	if is_low:
+		_man_went_low = true

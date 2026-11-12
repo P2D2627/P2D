@@ -16,6 +16,7 @@
 [ext_resource type="Texture2D" path="res://assets/sprites/demon/dog_run.png" id="14_dog_run"]
 [ext_resource type="Script" path="res://demon/demon_animation.gd" id="15_animation"]
 [ext_resource type="Texture2D" path="res://assets/sprites/demon/dog_idle_cell.png" id="16_dog_idle"]
+[ext_resource type="Script" path="res://demon/demon_back_bite.gd" id="14_back_bite"]
 
 [sub_resource type="RectangleShape2D" id="RectangleShape2D_body"]
 size = Vector2(112, 56)
@@ -102,6 +103,9 @@ animations = [{
 "name": &"run",
 "speed": 12.0
 }]
+
+[sub_resource type="RectangleShape2D" id="RectangleShape2D_back"]
+size = Vector2(48, 48)
 
 [node name="Demon" type="CharacterBody2D"]
 collision_layer = 4
@@ -235,6 +239,27 @@ unique_name_in_owner = true
 position = Vector2(0, -28)
 shape = SubResource("RectangleShape2D_hit")
 
+[node name="BackBite" type="Area2D" parent="." node_paths=PackedStringArray("hitbox", "body")]
+unique_name_in_owner = true
+process_mode = 4
+collision_layer = 0
+collision_mask = 2
+monitorable = false
+script = ExtResource("14_back_bite")
+hitbox = NodePath("BackBiteHitbox")
+body = NodePath("..")
+
+[node name="BackBiteShape" type="CollisionShape2D" parent="BackBite"]
+position = Vector2(0, -122)
+shape = SubResource("RectangleShape2D_back")
+
+[node name="BackBiteHitbox" parent="BackBite" instance=ExtResource("5_hitbox")]
+process_mode = 4
+
+[node name="BackBiteHitboxShape" type="CollisionShape2D" parent="BackBite/BackBiteHitbox"]
+position = Vector2(0, -122)
+shape = SubResource("RectangleShape2D_back")
+
 [connection signal="state_changed" from="." to="Placeholder" method="_on_demon_state_changed"]
 [connection signal="warning_started" from="." to="Placeholder" method="_on_demon_warning_started"]
 [connection signal="barked" from="." to="Placeholder" method="_on_demon_barked"]
@@ -242,3 +267,4 @@ shape = SubResource("RectangleShape2D_hit")
 [connection signal="landed" from="." to="Placeholder" method="_on_demon_landed"]
 [connection signal="state_changed" from="." to="Mark" method="_on_demon_state_changed"]
 [connection signal="hold_sink_changed" from="Hitbox" to="SinkingDrawing" method="set_sink"]
+[connection signal="hold_sink_changed" from="BackBite/BackBiteHitbox" to="SinkingDrawing" method="set_sink"]
