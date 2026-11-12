@@ -248,7 +248,7 @@ estados:
 | Parado | Espera no seu posto, onde o nível o colocou e virado para onde o nível o virou, até reparar na personagem. Com ronda, é a pausa entre duas idas, sorteada por cada demónio entre 0,8 e 2 s. |
 | Ronda | Vai e vem a passo, a 150 px/s, num troço de 480 px do seu chão, centrado no posto. Vira-se nas pontas, à beira de um desnível e contra uma parede. Fora do ecrã, fica parado. |
 | Alerta | Ao reparar na personagem, vira-se para ela e fica 0,3 s parado onde está, o tempo de ladrar, antes de a perseguir. Por cima da cabeça surge um "!", com um bip agudo; o "!" fica mais 0,5 s já na perseguição, para se conseguir ler. |
-| Perseguir | Segue-a a cerca de 560 px/s, no chão onde está, e até 616 px/s com a variação da matilha. A personagem corre a 600 px/s: foge ao cão médio, com pouca margem, mas por agora os mais rápidos da matilha apanham-na. |
+| Perseguir | Segue-a a cerca de 510 px/s, no chão onde está, e até 561 px/s com a variação da matilha. A personagem corre a 600 px/s: em terreno plano foge sempre, aos mais rápidos da matilha com pouca margem. |
 | Aviso | Antes de cada ataque, mostra qual vem, para que o jogador tenha tempo de reagir: antes da mordida, alarga-se e baixa durante 0,2 s, sem parar de correr; antes do salto, para e encolhe durante 0,35 s. |
 | Atirar-se | Salta para onde a personagem vai estar, entre 200 e 420 px, e fica 0,35 s parado onde aterra. |
 | Recuar | Depois de cada ataque, afasta-se de frente para a personagem, a cerca de 400 px/s, até ficar a cerca de 130 px dela, e volta a atacar. |
@@ -334,10 +334,9 @@ demónios usam-na com 96 px e 240 px:
   por cima dele ou a borda do seu chão deixam-no fora de alcance, como antes.
 - **Descer.** Com a personagem abaixo do seu alcance, desce a borda aos saltos, com o mesmo salto.
   Antes de descolar, joga o arco passo a passo e só salta se aterrar num chão até Max Drop mais
-  abaixo; uma parede, um teto ou o vazio deixam-no fora de alcance. À velocidade da perseguição
-  (560 px/s, até 616 px/s com a variação da matilha), o corpo aterra todo até cerca de 220 px
-  depois da quina numa queda de 96 px, e até cerca de 315 px numa de 240 px; lá em baixo, esse chão
-  tem de estar livre.
+  abaixo; uma parede, um teto ou o vazio deixam-no fora de alcance. À velocidade do cão mais rápido
+  da matilha (561 px/s), o corpo aterra todo até cerca de 230 px depois da quina numa queda de 96 px,
+  e até cerca de 314 px numa de 240 px; lá em baixo, esse chão tem de estar livre.
 - **Voltar.** O demónio guarda o caminho por onde saiu do seu chão, até 8 passos, e no regresso
   refá-lo do último para o primeiro. Um passo que não consegue desfazer, como uma queda mais funda
   do que o seu salto, deixa-o nesse chão (ver "Posto e regresso"). Ao procurar a personagem, sobe e
