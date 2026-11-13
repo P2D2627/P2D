@@ -10,7 +10,7 @@ extends Node
 ## the drawing in its own px, so Depth is divided by the drawing's scale on screen, and art drawn big
 ## and scaled down sinks as far as a stand-in.
 
-const SHADER: Shader = preload("res://scenes/characters/components/sink.gdshader")
+const SHADER: Shader = preload("res://scenes/others/shaders/sink.gdshader")
 const DEPTH_PARAMETER: StringName = &"sink_depth"
 
 @export var drawing: CanvasItem

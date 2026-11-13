@@ -2,7 +2,7 @@
 
 [ext_resource type="Script" path="res://main.gd" id="1_script"]
 [ext_resource type="Script" path="res://scenes/levels/level_entry.gd" id="2_level_entry"]
-[ext_resource type="PackedScene" path="res://scenes/levels/test_room.tscn" id="3_test_room"]
+[ext_resource type="PackedScene" path="res://scenes/levels/test_room/test_room.tscn" id="3_test_room"]
 [ext_resource type="PackedScene" path="res://scenes/screens/main_menu.tscn" id="5_main_menu"]
 [ext_resource type="PackedScene" path="res://scenes/screens/pause_menu.tscn" id="6_pause_menu"]
 [ext_resource type="PackedScene" path="res://scenes/levels/lust/LustLevel_Phase1_Cave.tscn" id="7_lust_level"]

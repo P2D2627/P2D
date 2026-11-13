@@ -10,7 +10,7 @@ extends "res://tests/support/player_test.gd"
 
 const Checks = preload("res://tests/support/level_camera_checks.gd")
 const SCENE_PATH: String = "res://scenes/levels/lust/lust_phase_2.tscn"
-const MAP_PATH: String = "res://scenes/levels/lust/lust_phase_2.txt"
+const MAP_PATH: String = "res://scenes/levels/lust/builders/lust_phase_2.txt"
 const TILE: float = 48.0
 
 

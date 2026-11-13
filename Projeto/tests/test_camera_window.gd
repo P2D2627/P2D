@@ -9,7 +9,7 @@
 # godot --headless --fixed-fps 60 --path Projeto --script res://tests/test_camera_window.gd
 extends "res://tests/support/player_test.gd"
 
-const TEST_ROOM_SCENE: PackedScene = preload("res://scenes/levels/test_room.tscn")
+const TEST_ROOM_SCENE: PackedScene = preload("res://scenes/levels/test_room/test_room.tscn")
 const CAMERA_SCENE: PackedScene = preload("res://scenes/others/camera/game_camera.tscn")
 ## The width of the test room's chimneys, wall face to wall face, in px.
 const CHIMNEY_WIDTH: float = 120.0

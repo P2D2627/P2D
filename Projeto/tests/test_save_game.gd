@@ -14,7 +14,7 @@ extends "res://tests/support/menu_test.gd"
 const SAVE_PATH: String = "user://test_save.cfg"
 const PHASE_1_PATH: String = "res://scenes/levels/lust/LustLevel_Phase1_Cave.tscn"
 const PHASE_2_PATH: String = "res://scenes/levels/lust/LustLevel_Phase2.tscn"
-const TEST_ROOM_PATH: String = "res://scenes/levels/test_room.tscn"
+const TEST_ROOM_PATH: String = "res://scenes/levels/test_room/test_room.tscn"
 const PHASE_2_ROOT: StringName = &"LustPhase2"
 const AN_EVENT: StringName = &"an_event"
 ## Physics frames to wait for a phase change, fade in included.

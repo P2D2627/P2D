@@ -6,7 +6,7 @@
 extends SceneTree
 
 const LEVEL_PATH: String = "res://scenes/levels/lust/level1.tscn"
-const BUILDER_PATH: String = "res://scenes/levels/lust/build_level1.gd"
+const BUILDER_PATH: String = "res://scenes/levels/lust/builders/build_level1.gd"
 
 
 func _initialize() -> void:

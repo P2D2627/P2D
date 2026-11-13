@@ -21,7 +21,7 @@ const ROCK_ALTERNATIVE: int = 0
 ## The four ways from a tiles' corner into the cells around it, clockwise from up-left.
 const WAYS: Array[Vector2i] = [Vector2i(-1, -1), Vector2i(1, -1), Vector2i(1, 1), Vector2i(-1, 1)]
 ## Darkens each piece from the rock's surface inwards.
-const FADE_SHADER: Shader = preload("res://scenes/levels/rim_fade.gdshader")
+const FADE_SHADER: Shader = preload("res://scenes/others/shaders/rim_fade.gdshader")
 
 ## The rock it lines.
 @export var tiles: TileMapLayer
