@@ -2464,6 +2464,13 @@ as opções.
 | Os acontecimentos únicos, como já ter falado com a Velvet | Não se repetem, nem contam duas vezes. |
 | O nome do homem | As falas usam-no; o ecrã do nome ainda não existe. |
 
+As estatísticas da partida (`RunStats`: mortes e tempo por fase) são a exceção no sentido contrário:
+uma morte tem de ficar contada, por isso a morte nunca as repõe. Guardam-se num ficheiro próprio, ao
+lado da gravação (`user://save_run.cfg`), em cada gravação, em cada morte e ao sair para o menu ou
+fechar o jogo. O Continue repõe-nas e um jogo novo apaga-as. Ficam fora do `save.cfg` para que a
+morte continue a não alterar a gravação: o que lá está volta a ser exatamente o que estava no último
+checkpoint.
+
 Não se guardam os SP, os demónios, a câmara nem as tolerâncias do movimento: cada fase é uma cena
 nova e reconstrói-os. As opções do jogador ficam em ficheiro próprio, porque não pertencem a uma
 partida.

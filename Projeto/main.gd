@@ -12,6 +12,10 @@ extends Node
 ## the phase over from the save, not only the level but GameState too. An accepted upgrade is the
 ## exception: it can never be taken back, so it saves at once. A level that does not start the game
 ## plays outside the run, with nothing saved and nothing put back.
+## The run's numbers (RunStats: deaths, time) are the other exception, the other way: a death must
+## count, so they are never put back on a death. They are written beside the save on each save, on
+## each death, and on leaving for the menu or quitting; Continue reads them, and a new game empties
+## them.
 
 ## The levels the main menu offers, in this order: each one a title and a scene. One left empty, or
 ## with no scene, stays out of the menu, with a warning.
@@ -38,6 +42,7 @@ var _in_the_run: bool = false
 @onready var _save_indicator: SaveIndicator = %SaveIndicator
 @onready var _progress: GameProgress = get_node(^"/root/GameState") as GameProgress
 @onready var _offers: GameOffers = get_node_or_null(^"/root/Offers") as GameOffers
+@onready var _run_stats: GameRunStats = get_node_or_null(^"/root/RunStats") as GameRunStats
 
 
 func _ready() -> void:
@@ -74,7 +79,10 @@ func _unhandled_input(event: InputEvent) -> void:
 		get_viewport().set_input_as_handled()
 
 
+## Closing the window keeps the run's numbers, as Quit does.
 func _notification(what: int) -> void:
+	if what == NOTIFICATION_WM_CLOSE_REQUEST:
+		_save_the_run()
 	if (what == NOTIFICATION_APPLICATION_FOCUS_OUT and pause_on_focus_loss and _has_level()
 			and not _changing_phase and not get_tree().paused):
 		_pause()
@@ -94,6 +102,8 @@ func _play_level(index: int) -> void:
 	_in_the_run = entry.starts_game
 	if _in_the_run:
 		_progress.reset()
+		if _run_stats != null:
+			_run_stats.reset()
 	_progress.arrival_point = &""
 	_start_level(entry.scene)
 	_main_menu.hide()
@@ -110,13 +120,24 @@ func _on_continue_requested() -> void:
 		return
 	_in_the_run = true
 	_progress.from_save(saved["state"])
+	if _run_stats != null:
+		_run_stats.from_save(_save_file.read_run())
 	_start_level(load(saved["scene"]) as PackedScene)
 	_main_menu.hide()
 
 
 ## True once the phase at scene_path and the state are on disk. Outside the run, nothing is saved.
 func _save(scene_path: String) -> bool:
-	return _in_the_run and _save_file.write(scene_path, _progress.to_save())
+	if not (_in_the_run and _save_file.write(scene_path, _progress.to_save())):
+		return false
+	_save_the_run()
+	return true
+
+
+## The run's numbers on disk, beside the save; outside the run, nothing.
+func _save_the_run() -> void:
+	if _in_the_run and _run_stats != null:
+		_save_file.write_run(_run_stats.to_save())
 
 
 ## A save point of the level in the slot was reached.
@@ -179,6 +200,8 @@ func _restart_level(level: Node, scene: PackedScene) -> void:
 	if not is_instance_valid(level) or level.get_parent() != _level_slot:
 		return
 	_clear_level()
+	# The death counts: the numbers go to disk before the save puts the rest back.
+	_save_the_run()
 	_go_back_to_the_save()
 	_start_level(scene)
 
@@ -235,11 +258,13 @@ func _change_phase(next_scene_path: String, arrival: StringName) -> void:
 
 
 func _on_quit_requested() -> void:
+	_save_the_run()
 	get_tree().quit()
 
 
 func _on_main_menu_requested() -> void:
 	_resume()
+	_save_the_run()
 	_clear_level()
 	_main_menu.set_can_continue(_save_file.exists())
 	_main_menu.open()
