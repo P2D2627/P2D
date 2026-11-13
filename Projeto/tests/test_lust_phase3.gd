@@ -18,7 +18,7 @@
 # godot --headless --fixed-fps 60 --path Projeto --script res://tests/test_lust_phase3.gd
 extends "res://tests/support/player_test.gd"
 
-const LEVEL_SCENE: PackedScene = preload("res://scenes/levels/Lust/LustLevel_Phase3.tscn")
+const LEVEL_SCENE: PackedScene = preload("res://scenes/levels/lust/LustLevel_Phase3.tscn")
 const TILE: float = 48.0
 ## The start ledge's top, where the player begins.
 const START_LEDGE_TOP: float = 112.0 * TILE

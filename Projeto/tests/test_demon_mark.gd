@@ -7,7 +7,7 @@
 # godot --headless --fixed-fps 60 --path Projeto --script res://tests/test_demon_mark.gd
 extends "res://tests/support/player_test.gd"
 
-const DEMON_SCENE: PackedScene = preload("res://demon/demon.tscn")
+const DEMON_SCENE: PackedScene = preload("res://scenes/characters/demon/demon.tscn")
 ## Physics frames of leeway on each side of a time the mark counts.
 const LEEWAY_FRAMES: int = 2
 ## Physics steps a second for the case at a higher rate.

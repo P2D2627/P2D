@@ -8,7 +8,7 @@
 # godot --headless --fixed-fps 60 --path Projeto --script res://tests/test_gym_dogs.gd
 extends "res://tests/support/player_test.gd"
 
-const GYM_SCENE: PackedScene = preload("res://levels/gym/gym.tscn")
+const GYM_SCENE: PackedScene = preload("res://scenes/levels/gym/gym.tscn")
 ## The top of every station's floor, in its own coordinates.
 const FLOOR_TOP: float = 1000.0
 ## How far above a floor a placed man starts, in px, so he lands on it. His origin is his feet.

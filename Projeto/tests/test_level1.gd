@@ -7,7 +7,7 @@
 # godot --headless --fixed-fps 60 --path Projeto --script res://tests/test_level1.gd
 extends "res://tests/test_lust_phase_2.gd"
 
-const LEVEL_PATH: String = "res://levels/lust/level1.tscn"
+const LEVEL_PATH: String = "res://scenes/levels/lust/level1.tscn"
 ## A tile of air in phase 1's start room, in F's room and in phase 2's start room.
 const S_ROOM_CELL: Vector2i = Vector2i(112, 365)
 const F_ROOM_CELL: Vector2i = Vector2i(349, 260)

@@ -145,7 +145,7 @@ func _broken_levels_are_left_out_and_the_rest_work() -> bool:
 	no_scene.title = "No scene"
 	var room: LevelEntry = LevelEntry.new()
 	room.title = "Room"
-	room.scene = load("res://levels/test_room.tscn") as PackedScene
+	room.scene = load("res://scenes/levels/test_room/test_room.tscn") as PackedScene
 	var levels: Array[LevelEntry] = [null, no_scene, room]
 	var main: Node = await new_main(levels)
 	var menu: CanvasLayer = _menu(main)

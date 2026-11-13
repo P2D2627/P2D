@@ -11,9 +11,9 @@
 extends "res://tests/support/player_test.gd"
 
 ## Stand-ins for the cooldown's, the available and the unavailable sounds.
-const COOLDOWN_STAND_IN: AudioStream = preload("res://assets/audio/footstep_1.wav")
-const AVAILABLE_STAND_IN: AudioStream = preload("res://assets/audio/footstep_2.wav")
-const UNAVAILABLE_STAND_IN: AudioStream = preload("res://assets/audio/footstep_3.wav")
+const COOLDOWN_STAND_IN: AudioStream = preload("res://assets/audio/sfx/footstep_1.wav")
+const AVAILABLE_STAND_IN: AudioStream = preload("res://assets/audio/sfx/footstep_2.wav")
+const UNAVAILABLE_STAND_IN: AudioStream = preload("res://assets/audio/sfx/footstep_3.wav")
 ## The floor's top is at y = 0, from x = FLOOR_LEFT to x = FLOOR_RIGHT.
 const FLOOR_LEFT: float = -200.0
 const FLOOR_RIGHT: float = 6000.0

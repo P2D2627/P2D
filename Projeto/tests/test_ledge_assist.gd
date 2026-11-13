@@ -34,7 +34,7 @@ const TILE_LEDGE_COLUMNS: int = 4
 ## The left end of a one-way platform of the levels' tiles, met going right, with its top at
 ## LEDGE_TOP and TILE_LEDGE_COLUMNS tiles long.
 const ONE_WAY_FACE: float = 5300.0
-const TILE_SET: TileSet = preload("res://scenes/levels/Lust/cave_placeholder_tiles.tres")
+const TILE_SET: TileSet = preload("res://scenes/others/tilesets/cave_placeholder_tiles.tres")
 ## The levels' solid block: a full cell on the physics layer of the levels' walls.
 const SOLID_SOURCE: int = 0
 const SOLID_ATLAS: Vector2i = Vector2i(0, 0)

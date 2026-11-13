@@ -8,8 +8,8 @@
 # godot --headless --fixed-fps 60 --path Projeto --script res://tests/test_level1_phase3.gd
 extends "res://tests/test_lust_phase_2.gd"
 
-const LEVEL_PATH: String = "res://levels/lust/level1.tscn"
-const PHASE_3_MAP: String = "res://levels/lust/level1_phase3.txt"
+const LEVEL_PATH: String = "res://scenes/levels/lust/level1.tscn"
+const PHASE_3_MAP: String = "res://scenes/levels/lust/builders/level1_phase3.txt"
 const PREFIX: String = "P3"
 ## Physics frames for the ring to see the man put inside it, and for nothing to happen while he is far.
 const AREA_FRAMES: int = 5

@@ -1,13 +1,13 @@
 [gd_scene format=3 uid="uid://dxdcrctncxxrr"]
 
 [ext_resource type="Script" path="res://main.gd" id="1_script"]
-[ext_resource type="Script" path="res://levels/level_entry.gd" id="2_level_entry"]
-[ext_resource type="PackedScene" path="res://levels/test_room.tscn" id="3_test_room"]
-[ext_resource type="PackedScene" path="res://ui/main_menu.tscn" id="5_main_menu"]
-[ext_resource type="PackedScene" path="res://ui/pause_menu.tscn" id="6_pause_menu"]
-[ext_resource type="PackedScene" path="res://scenes/levels/Lust/LustLevel_Phase1_Cave.tscn" id="7_lust_level"]
-[ext_resource type="PackedScene" path="res://ui/save_indicator.tscn" id="8_save_indicator"]
-[ext_resource type="PackedScene" path="res://levels/gym/gym.tscn" id="8_gym"]
+[ext_resource type="Script" path="res://scenes/levels/level_entry.gd" id="2_level_entry"]
+[ext_resource type="PackedScene" path="res://scenes/levels/test_room/test_room.tscn" id="3_test_room"]
+[ext_resource type="PackedScene" path="res://scenes/screens/main_menu.tscn" id="5_main_menu"]
+[ext_resource type="PackedScene" path="res://scenes/screens/pause_menu.tscn" id="6_pause_menu"]
+[ext_resource type="PackedScene" path="res://scenes/levels/lust/LustLevel_Phase1_Cave.tscn" id="7_lust_level"]
+[ext_resource type="PackedScene" path="res://scenes/screens/save_indicator.tscn" id="8_save_indicator"]
+[ext_resource type="PackedScene" path="res://scenes/levels/gym/gym.tscn" id="8_gym"]
 
 [sub_resource type="Resource" id="Resource_test_room"]
 script = ExtResource("2_level_entry")

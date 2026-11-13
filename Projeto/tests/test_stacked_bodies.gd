@@ -12,7 +12,7 @@
 # godot --headless --fixed-fps 60 --path Projeto --script res://tests/test_stacked_bodies.gd
 extends "res://tests/support/player_test.gd"
 
-const DEMON_SCENE: PackedScene = preload("res://demon/demon.tscn")
+const DEMON_SCENE: PackedScene = preload("res://scenes/characters/demon/demon.tscn")
 ## A little above the floor, so a body lands on its own before a case starts.
 const SPAWN_Y: float = -2.0
 ## The floor of every case, wide enough that nothing walks off it.

@@ -29,7 +29,7 @@
 # godot --headless --fixed-fps 60 --path Projeto --script res://tests/test_grab_escape.gd
 extends "res://tests/support/player_test.gd"
 
-const HITBOX_SCENE: PackedScene = preload("res://components/hitbox.tscn")
+const HITBOX_SCENE: PackedScene = preload("res://scenes/characters/components/hitbox.tscn")
 ## The floor runs from FLOOR_LEFT to FLOOR_RIGHT with its top at y = 0; the man starts on it.
 const FLOOR_LEFT: float = -2000.0
 const FLOOR_RIGHT: float = 2000.0

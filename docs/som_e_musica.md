@@ -263,7 +263,7 @@ Ficheiros sem evento:
 
 ## 6. Revisão dos ficheiros existentes
 
-Medição feita a 2026-11-10 aos 21 WAV de `Projeto/assets/audio/`, com um script que lê o cabeçalho e
+Medição feita a 2026-11-10 aos 21 WAV que hoje estão em `Projeto/assets/audio/sfx/`, com um script que lê o cabeçalho e
 as amostras de cada ficheiro. Todos estão a 44,1 kHz. Nos canais, "2 (iguais)" quer dizer que os dois
 canais têm as mesmas amostras. O início do som conta até o sinal passar 40 dB abaixo do pico do próprio
 ficheiro. Nos loops, a junção dá o volume médio (RMS) dos primeiros 50 ms, dos últimos 50 ms e do
@@ -317,8 +317,8 @@ O que a medição mostra:
 - Estão fora do jogo o `crucifix_hold.wav`, o `hit.wav` e o `low_sp.wav`.
 - Nos Créditos do README só estão os quatro bips. Se algum dos outros 17 ficheiros usa material de
   terceiros, regista-se lá com a origem e a licença.
-- Os ficheiros estão na raiz de `assets/audio/`. A música entra em `assets/audio/music/` (secção 3.5),
-  e os efeitos passam para `assets/audio/sfx/` no painel FileSystem do editor, num passo à parte.
+- Os efeitos estão em `assets/audio/sfx/` desde a reorganização das pastas (PR #242). A música entra
+  em `assets/audio/music/` (secção 3.5).
 
 O que se refaz combina-se com o Veríssimo, a partir desta revisão e da audição no jogo.
 

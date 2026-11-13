@@ -10,8 +10,8 @@
 # godot --headless --fixed-fps 60 --path Projeto --script res://tests/test_demon_debug_view.gd
 extends "res://tests/support/player_test.gd"
 
-const TEST_ROOM_SCENE: PackedScene = preload("res://levels/test_room.tscn")
-const PLAYER_MOVEMENT_STATS: String = "res://player/player_movement_stats.tres"
+const TEST_ROOM_SCENE: PackedScene = preload("res://scenes/levels/test_room/test_room.tscn")
+const PLAYER_MOVEMENT_STATS: String = "res://scenes/characters/player/player_movement_stats.tres"
 ## The demons the test room puts in.
 const ROOM_DEMONS: int = 4
 const HIDING_WALL_SHAPE: NodePath = ^"HidingWall/CollisionShape2D"

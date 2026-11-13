@@ -5,7 +5,7 @@
 # godot --headless --fixed-fps 60 --path Projeto --script res://tests/test_lethal_spikes.gd
 extends "res://tests/support/player_test.gd"
 
-const SPIKES_SCENE: PackedScene = preload("res://traps/lethal_spikes.tscn")
+const SPIKES_SCENE: PackedScene = preload("res://scenes/objects/traps/lethal_spikes.tscn")
 const TILE: float = 48.0
 const FLOOR_LEFT: float = -2000.0
 const FLOOR_RIGHT: float = 2000.0

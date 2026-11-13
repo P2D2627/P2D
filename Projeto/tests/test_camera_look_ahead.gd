@@ -11,7 +11,7 @@
 # godot --headless --fixed-fps 60 --path Projeto --script res://tests/test_camera_look_ahead.gd
 extends "res://tests/support/player_test.gd"
 
-const CAMERA_SCENE: PackedScene = preload("res://camera/game_camera.tscn")
+const CAMERA_SCENE: PackedScene = preload("res://scenes/others/camera/game_camera.tscn")
 ## The least run, in seconds, the screen must show ahead of the player at full run.
 const SECONDS_AHEAD: float = 1.3
 ## The widest chimney climbed pressing only Jump on touching a wall, wall face to wall face, in px,
@@ -78,7 +78,7 @@ func _initialize() -> void:
 ## the look ahead, minus what the window and the smoothing leave behind. And the turn threshold is
 ## wider than what the player crosses in the widest chimney climbed tapping Jump.
 func _the_values_meet_their_criteria() -> bool:
-	var stats: CameraStats = load("res://camera/camera_stats.tres") as CameraStats
+	var stats: CameraStats = load("res://scenes/others/camera/camera_stats.tres") as CameraStats
 	var player: Player = PLAYER_SCENE.instantiate() as Player
 	var run_speed: float = player.stats.max_run_speed
 	var chimney_sway: float = WIDEST_TAPPED_CHIMNEY - body_size(player).x

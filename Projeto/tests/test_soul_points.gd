@@ -19,8 +19,8 @@
 # godot --headless --fixed-fps 60 --path Projeto --script res://tests/test_soul_points.gd
 extends "res://tests/support/base_test.gd"
 
-const STATS: SoulPointsStats = preload("res://player/soul_points_stats.tres")
-const PLAYER_SCENE: PackedScene = preload("res://player/player.tscn")
+const STATS: SoulPointsStats = preload("res://scenes/characters/player/soul_points_stats.tres")
+const PLAYER_SCENE: PackedScene = preload("res://scenes/characters/player/player.tscn")
 ## The Max SP, Low Threshold and pause after a hit the cases are written for, set on a copy of the
 ## stats file, so tuning the file changes no case.
 const TEST_MAX_SP: float = 100.0
