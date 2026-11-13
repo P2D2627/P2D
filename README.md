@@ -615,7 +615,7 @@ ligado mostra mais ar para lá dos seus lados do que mostraria com a âncora tro
 personagem começa numa zona ancorada em baixo.
 
 A nova fase 2 do nível 1 (`scenes/levels/lust/lust_phase_2.tscn`, 142 × 257 tiles) é construída a partir do
-texto `scenes/levels/lust/lust_phase_2.txt` por `scenes/levels/lust/build_lust_phase_2.gd`, que também coloca as 77
+texto `scenes/levels/lust/builders/lust_phase_2.txt` por `scenes/levels/lust/builders/build_lust_phase_2.gd`, que também coloca as 77
 zonas de câmara. Todas têm o limite horizontal ligado, para que o ecrã só mostre outra passagem através
 da rocha, que tem pelo menos 9 tiles entre passagens lado a lado e 6 entre passagens sobrepostas. O
 `test_lust_phase_2.gd` aplica as mesmas verificações de câmara e confirma que cada portão só se alcança
@@ -623,13 +623,13 @@ depois do seu desbloqueador. O `test_lust_phase_2_route.gd` joga o nível do in�
 com a personagem real: 107 movimentos, os dois desbloqueadores e a saída.
 
 O nível 1 completo (`scenes/levels/lust/level1.tscn`, 371 × 379 tiles) junta numa só cena o tutorial, a nova fase 1 e a
-fase 2, sem carregamentos entre elas. A primeira versão foi construída a partir do texto `scenes/levels/lust/level1.txt`
-por `scenes/levels/lust/build_level1.gd`, que acrescenta as 124 zonas de câmara e copia os avisos, a Velvet e o demónio do
+fase 2, sem carregamentos entre elas. A primeira versão foi construída a partir do texto `scenes/levels/lust/builders/level1.txt`
+por `scenes/levels/lust/builders/build_level1.gd`, que acrescenta as 124 zonas de câmara e copia os avisos, a Velvet e o demónio do
 corredor da cena onde o tutorial foi feito, que fica como estava. Desde então, a cena é o nível: os tiles, os cães,
 os espigões, as plataformas e as zonas editam-se à mão no editor do Godot, tile a tile e peça a peça. O construtor
 recusa-se a escrever por cima de uma cena que já existe; só o faz com a opção `-- --force`, que descarta as
 edições feitas à mão (a arte e o fundo são preservados mesmo nesse caso). O contorno de pedras segue o mesmo
-princípio: `scenes/levels/lust/build_stone_rim.gd` gera-o uma vez a partir dos tiles (uma faixa por cada troço reto de
+princípio: `scenes/levels/lust/builders/build_stone_rim.gd` gera-o uma vez a partir dos tiles (uma faixa por cada troço reto de
 chão, teto ou parede e uma peça por cada canto, 2628 peças) e grava as peças na cena, onde passam a editar-se pedra
 a pedra. O script também se recusa a escrever por cima das peças já gravadas, salvo com `-- --force`. Depois de uma
 mudança grande nos tiles, volta a gerar-se o contorno com essa opção, o que descarta os retoques feitos às pedras. O tutorial liga à fase 1 por um corredor de 12
@@ -642,7 +642,7 @@ ligações e os pontos de gravação e deixa os 99 cães (13 da fase 3) a patrul
 movimentos com a personagem real.
 
 A fase 3 do nível 1 foi acrescentada à mesma cena, a partir do desenho do grupo no Miro, por
-`scenes/levels/lust/add_level1_phase3.gd`, que lê o texto `scenes/levels/lust/level1_phase3.txt` (154 × 158 tiles) e o junta ao
+`scenes/levels/lust/builders/add_level1_phase3.gd`, que lê o texto `scenes/levels/lust/builders/level1_phase3.txt` (154 × 158 tiles) e o junta ao
 nível tal como está, sem o reconstruir, para não perder as edições feitas à mão. Escava o ar e coloca 12 cães, o maior
 cão, 181 tiles de picos (25 faixas nas paredes, rodadas 90°), 52 tiles de plataformas que desabam, três portões, dois
 desbloqueadores, 38 zonas de câmara e um ponto de gravação no início da fase. Recusa-se a correr duas vezes e a
@@ -791,9 +791,10 @@ camada respeita.
 Para acrescentar arte nova ao fundo:
 
 1. Exportar o PNG em cinzentos, com fundo transparente, para `Projeto/assets/sprites/backgrounds/`.
-2. Abrir o fundo do nível, em `Projeto/scenes/levels/background/`. Um nível novo cria o seu com Scene › New
-   Inherited Scene a partir de `level_background.tscn` e coloca-o como primeiro nó da cena do nível,
-   para ficar atrás de tudo; a sala de teste usa `test_room_background.tscn`.
+2. Abrir o fundo do nível, na pasta do nível. Um nível novo cria o seu com Scene › New Inherited
+   Scene a partir de `Projeto/scenes/levels/background/level_background.tscn`, guarda-o na sua pasta
+   e coloca-o como primeiro nó da cena do nível, para ficar atrás de tudo; a sala de teste usa
+   `test_room/test_room_background.tscn`.
 3. Arrastar o PNG para a camada da sua distância, onde passa a ser um Sprite2D.
 4. Escolher a rampa da camada no campo Ramp.
 5. Correr a cena do nível com F6 e confirmar a posição e as cores.
@@ -884,18 +885,20 @@ Remote; os restantes valores são lidos sempre que são usados.
     ├── default_bus_layout.tres   buses de áudio
     ├── addons/        plugins de terceiros: o Dialogue Manager, que dá as falas
     ├── assets/        arte e som
-    │   ├── audio/       efeitos sonoros
+    │   ├── audio/       som, por tipo: os efeitos sonoros em sfx/
     │   ├── fonts/       tipos de letra (por enquanto vazia)
     │   └── sprites/     uma pasta por grupo: player/, demon_lust/, environment/, backgrounds/ e ramps/
     ├── dialogue/      as falas, um ficheiro .dialogue por nível
     ├── scenes/        cenas, scripts e ficheiros de dados, por tipo e, dentro de cada tipo, por sistema
     │   ├── autoload/    serviços globais: as opções do jogador (Settings), o registo moral (Moral), o progresso do jogo (GameState), as tentações (Offers, em offers/), a gravação e os perfis de controlos
     │   ├── characters/  a personagem (player/), o crucifixo (crucifix/), os demónios (demon/, com os estados em states/) e os componentes que mais de um sistema usa (components/)
-    │   ├── levels/      salas e níveis: as peças e os scripts comuns, a sala de teste, o fundo (background/), a sala de treino (gym/) e o nível 1 (lust/)
+    │   ├── levels/      uma pasta por nível: a sala de teste (test_room/), a sala de treino (gym/) e o nível 1 (lust/, com os construtores e os mapas em texto em builders/); na raiz, as peças e os scripts comuns e o fundo de que os níveis partem (background/)
     │   ├── objects/     peças com comportamento: portões (gates/), plataformas (platforms/) e armadilhas (traps/)
-    │   ├── others/      câmara (camera/), depuração (debug/), shaders partilhados (shaders/) e conjuntos de tiles (tilesets/)
+    │   ├── others/      câmara (camera/), depuração (debug/), todos os shaders (shaders/) e conjuntos de tiles (tilesets/)
     │   └── screens/     menus, ecrã das opções e indicador de gravação
-    ├── tests/         testes e medidas que correm sem janela
+    ├── tests/         testes automáticos (test_*.gd), que correm sem janela
+    │   ├── launchers/ abrem o jogo num ponto escolhido, para ver à mão (por agora, o fim da fase 2)
+    │   ├── measures/  medições, que imprimem números em vez de verificar resultados
     │   └── support/   preparação comum aos testes
     └── themes/        o tema comum da interface (ui_theme.tres)
 ```
@@ -906,20 +909,31 @@ Dentro de `scenes/`, as pastas dividem-se por tipo e, em cada tipo, por sistema.
 sistema reúne a cena, os scripts e os ficheiros de dados (`.tres`) de uma parte do jogo, que se
 encontram assim num único local, como recomenda a documentação do Godot
 ([Project organization](https://docs.godotengine.org/en/stable/tutorials/best_practices/project_organization.html)).
-A arte é a exceção: fica em `assets/`, separada das cenas que a usam, como pede a estrutura de CDJ.
+A arte é uma exceção: fica em `assets/`, separada das cenas que a usam, como pede a estrutura de CDJ.
+Os shaders e os conjuntos de tiles são outra: ficam juntos em `scenes/others/`, por tipo, porque
+servem várias partes do jogo e é por tipo que se procuram.
 
-Para que a organização se mantenha à medida que o jogo cresce, seguem-se cinco regras:
+Para que a organização se mantenha à medida que o jogo cresce, seguem-se oito regras:
 
-- Um sistema novo, como um demónio ou um menu, recebe a sua pasta dentro do tipo a que pertence.
+- Um sistema novo, como um demónio ou um menu, recebe a sua pasta dentro do tipo a que pertence, e
+  um nível novo recebe a sua em `scenes/levels/`. As peças que qualquer nível pode usar ficam na
+  raiz de `scenes/levels/`.
 - `scenes/characters/components/` recebe apenas o que dois ou mais sistemas usam; o resto fica na
   pasta do sistema a que pertence.
 - O que é global e não pertence a nenhum sistema, como o estado do jogo, as opções gravadas ou a
   gravação, fica em `scenes/autoload/`.
+- Os shaders ficam todos em `scenes/others/shaders/` e os conjuntos de tiles em
+  `scenes/others/tilesets/`, mesmo os que só um sistema usa.
+- O som também se divide por tipo: os efeitos sonoros ficam em `assets/audio/sfx/`, e a música e os
+  ambientes terão pastas suas ao lado desta.
+- O que não faz parte do jogo fica em pastas à parte: os construtores de um nível, com os mapas em
+  texto de que partem, em `builders/`, dentro da pasta do nível; em `tests/`, as medições em
+  `measures/` e os lançadores em `launchers/`.
 - Os nomes de pastas e de ficheiros usam minúsculas e `_` (snake_case). O sistema de ficheiros do
   jogo exportado (o PCK) distingue maiúsculas, mesmo num jogo exportado em Windows, cujo editor não
   as distingue: um caminho que só difere nelas funciona no editor e falha no jogo exportado (secção
-  Case sensitivity da mesma página da documentação). Por agora há duas exceções, as cenas antigas
-  do nível 1 (`LustLevel_*.tscn`) e o `Passadeira.png`.
+  Case sensitivity da mesma página da documentação). Por agora há uma exceção, as cenas antigas
+  do nível 1 (`LustLevel_*.tscn`).
 - Um sistema não acede ao interior de outro: comunica por sinais ou por uma referência atribuída no
   Inspector, nunca por um caminho na árvore de nós.
 
@@ -927,14 +941,20 @@ Os ficheiros movem-se e renomeiam-se no painel FileSystem do editor, que atualiz
 entre cenas e recursos; no fim, uma pesquisa pelo caminho antigo em todo o projeto confirma que
 nenhum script, incluindo os testes, ficou a apontar para ele.
 
-A pasta `tests/` fica à parte, para que a exportação a possa excluir de uma só vez. Os jogos
-exportados vão para `builds/`, na raiz do repositório, fora do projeto Godot e do git.
+A pasta `tests/` e as pastas `builders/` ficam à parte, para que a exportação as possa excluir com
+um filtro por pasta. Os jogos exportados vão para `builds/`, na raiz do repositório, fora do projeto
+Godot e do git.
 
-A passagem para esta estrutura fez-se por script, em dois commits, porque o git, em Windows, não
-regista num só commit uma mudança que só troca maiúsculas (`Lust/` para `lust/`). Mudaram de pasta
-199 ficheiros, com os seus `.import` e `.uid`, e 415 referências passaram para os caminhos novos. Os testes deram os
-mesmos resultados antes e depois, teste a teste, nenhuma cena ou recurso ficou a apontar para um
-caminho antigo, e o projeto importa sem erros num clone novo.
+A passagem para esta estrutura fez-se por script, em três commits. Em Windows, o git não distingue
+maiúsculas (`core.ignorecase`), e o `git add` não vê uma mudança que só as troca. Por isso, o
+primeiro commit tirou as cenas de `Lust/` antes de a pasta passar a `lust/`, e o nome antigo do
+`Passadeira.png` saiu do índice (`git rm --cached`) antes de o ficheiro passar a `passadeira.png`.
+O terceiro commit separou o que o segundo deixara misturado: os shaders, a sala de teste, os efeitos
+sonoros, os construtores e as medições. Os dois primeiros mudaram de pasta 199 ficheiros, com os
+seus `.import` e `.uid`, e passaram 415 referências para os caminhos novos; o terceiro passou 40
+ficheiros para outra pasta, deu nome novo a um e atualizou 60 referências. Os testes deram os mesmos resultados antes e depois de cada mudança,
+teste a teste, nenhuma cena ou recurso ficou a apontar para um caminho antigo, e o projeto importa
+sem erros num clone novo.
 
 Para um nível aparecer no Play, acrescenta-se à lista Levels do Main, no Inspector do `main.tscn`
 (Add Element › New LevelEntry, com o título e a cena). A ordem da lista é a dos botões. Um elemento
@@ -951,8 +971,8 @@ não é versionada e pode ser apagada sem perda de trabalho.
 
 ### Testes e medidas
 
-Os scripts de `Projeto/tests/` correm sem janela, a partir da raiz do repositório (`godot` designa
-o executável do Godot 4.7). Os testes terminam com o código 0 quando passam e 1 quando falham:
+Os scripts de `Projeto/tests/` correm a partir da raiz do repositório e, exceto os lançadores, sem
+janela (`godot` designa o executável do Godot 4.7). Os testes terminam com o código 0 quando passam e 1 quando falham:
 
 ```
 godot --headless --fixed-fps 60 --path Projeto --script res://tests/test_jump_height.gd
@@ -1051,7 +1071,7 @@ partir de 10 pontos de partida, 1 px entre cada um, que cobrem um passo de físi
 máxima, e imprimem o menor e o maior valor.
 
 ```
-godot --headless --fixed-fps 60 --path Projeto --script res://tests/measure_movement.gd
+godot --headless --fixed-fps 60 --path Projeto --script res://tests/measures/measure_movement.gd
 ```
 
 O `measure_crucifix_repel.gd` também não verifica resultados: mede quanto custa, num passo de
@@ -1060,7 +1080,7 @@ em chamadas seguidas e no pior caso, e compara esse custo com o limite de 0,05 m
 decisão estão em "Crucifixo: componentes e modificadores de movimento".
 
 ```
-godot --headless --fixed-fps 60 --path Projeto --script res://tests/measure_crucifix_repel.gd
+godot --headless --fixed-fps 60 --path Projeto --script res://tests/measures/measure_crucifix_repel.gd
 ```
 
 O `measure_soul_points.gd` também não verifica resultados: aplica um golpe que deixa a personagem
@@ -1069,7 +1089,7 @@ comparação, o tempo até sair do SP baixo e até encher, e os SP recuperados n
 pausa. Imprime também o que o crucifixo cura durante a pausa. Os números citados em "SP" vêm daqui.
 
 ```
-godot --headless --fixed-fps 60 --path Projeto --script res://tests/measure_soul_points.gd
+godot --headless --fixed-fps 60 --path Projeto --script res://tests/measures/measure_soul_points.gd
 ```
 
 O `measure_demon.gd` também não verifica resultados: mede quanto acrescentam a cada passo de física
@@ -1081,7 +1101,7 @@ presa até ao fim. Os números e a decisão estão em "Demónio: estados,
 dados e famílias de personagens".
 
 ```
-godot --headless --fixed-fps 60 --path Projeto --script res://tests/measure_demon.gd
+godot --headless --fixed-fps 60 --path Projeto --script res://tests/measures/measure_demon.gd
 ```
 
 ### A personagem por dentro
@@ -1625,7 +1645,7 @@ não é esta cena com a perseguição desligada.
   isso uma prioridade de física mais baixa (Process Physics Priority −1), e move-se antes dos
   demónios em cada passo.
 - **Afundar com um shader.** O afundar corta o desenho na linha dos pés, com um shader
-  (`scenes/characters/components/sink.gdshader`) que o componente `SinkingDrawing` controla. Mover os corpos para
+  (`scenes/others/shaders/sink.gdshader`) que o componente `SinkingDrawing` controla. Mover os corpos para
   baixo exigia, em todos os níveis, um chão com pelo menos 96 px de espessura onde um demónio
   agarra, e numa plataforma fina a personagem saía por baixo. O valor do shader não passa pela
   physics interpolation, que só move posições, por isso o desenho volta ao sítio no próprio passo
@@ -2537,7 +2557,7 @@ iniciado por nada no jogo. A estação de cada uma acrescenta-se quando a mecân
 - Dialogue Manager 4.1.0, de Nathan Hoad. Licença MIT. Plugin de diálogo, em
   `Projeto/addons/dialogue_manager/`. https://github.com/nathanhoad/godot_dialogue_manager
 - `demon_alert.wav`, `demon_search.wav`, `demon_take_off.wav` e `demon_land.wav`, em
-  `Projeto/assets/audio/`: bips provisórios gerados por síntese de ondas sinusoidais, sem
+  `Projeto/assets/audio/sfx/`: bips provisórios gerados por síntese de ondas sinusoidais, sem
   material de terceiros. Saem quando chegarem os sons definitivos.
 - `level1_cave_map.png` e `level1_cave_shade.png`, em `Projeto/assets/sprites/backgrounds/`:
   imagens provisórias geradas com IA (Claude) a partir do mapa do nível 1, sem material de

@@ -1,6 +1,6 @@
 Lust, level 1, phase 3 and the room after phase 2, from the group's Miro drawing (frame LEVEL 1 PHASE 3). One
 character is one 48 px tile, on phase 3's own grid; offset puts its top left on level 1's grid. Added to
-scenes/levels/lust/level1.tscn once, by scenes/levels/lust/add_level1_phase3.gd, over solid rock; from then on the scene is
+scenes/levels/lust/level1.tscn once, by scenes/levels/lust/builders/add_level1_phase3.gd, over solid rock; from then on the scene is
 the level, and this file follows it, the platforms, spikes and collapsing platforms edited by hand included (a
 strip moved by part of a tile is on its nearest tiles), so the tests can check the scene against it. Made by
 the tools outside the repository.
