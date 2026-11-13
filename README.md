@@ -999,6 +999,7 @@ godot --headless --fixed-fps 60 --path Projeto --script res://tests/test_run_rec
 godot --headless --fixed-fps 60 --path Projeto --script res://tests/test_level_run_stats.gd
 godot --headless --fixed-fps 60 --path Projeto --script res://tests/test_dialogue_skip.gd
 godot --headless --fixed-fps 60 --path Projeto --script res://tests/test_death_offer_pacer.gd
+godot --headless --fixed-fps 60 --path Projeto --script res://tests/test_asmodeus_deaths.gd
 godot --headless --fixed-fps 60 --path Projeto --script res://tests/test_moral_dialogue.gd
 godot --headless --fixed-fps 60 --path Projeto --script res://tests/test_gym_hint.gd
 godot --headless --fixed-fps 60 --path Projeto --script res://tests/test_gym_stations.gd
@@ -2368,6 +2369,11 @@ jogador poderia aprender por tentativa e erro a "limpar" a fala com respostas hu
 deixaria de medir o que o jogador escolhe. A soma única foi preferida a contar apenas as tentações,
 que ignoraria a soberba nas respostas, e a ter um limiar por categoria, que daria seis valores
 difíceis de afinar e de explicar.
+
+O tom também escolhe falas diretamente. No presente da Asmodeu, o homem fala com soberba se o
+estádio já subiu ou se deu mais respostas arrogantes do que humildes (`Moral.leans_arrogant()`).
+Assim, um homem que respondeu sempre com arrogância fala com arrogância, mesmo antes de os pontos
+chegarem ao estádio 1. Contar as respostas não soma pontos.
 
 | Valor | Referência |
 |---|---|

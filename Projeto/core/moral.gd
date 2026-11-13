@@ -50,6 +50,11 @@ func has_taken(id: StringName) -> bool:
 	return _record.has_taken(id)
 
 
+## Whether he gave more arrogant answers than humble ones; the lines read it beside stage().
+func leans_arrogant() -> bool:
+	return _record.leans_arrogant()
+
+
 ## 0, 1 or 2: the variant of his lines, worse as it goes up.
 func stage() -> int:
 	return _record.stage()

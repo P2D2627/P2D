@@ -119,8 +119,8 @@ Asmodeus: Then you walk. It's a long floor, darling, and everyone on it wants a 
 => END
 
 ~ asmodeus_second_offer
-{{GameState.player_name}}: [i](out of breath, leaning on the door)[/i] This is the same room. All that climbing, for the same room.
-Asmodeus: Every road on this floor ends in my bed, darling. You just took the long one.
+{{GameState.player_name}}: [i](out of breath)[/i] You again. All that climbing, and you are still here.
+Asmodeus: Every road on this floor ends with me, darling. You just took the long one.
 Asmodeus: Let me tell you a story. Your sister's wedding.
 {{GameState.player_name}}: Not the wedding.
 Asmodeus: A farm by the river. Wine since noon. Two bridesmaids, one night.
@@ -150,6 +150,33 @@ Asmodeus: My offer stands. One night. Then the stairs.
 	Asmodeus: I know everything about you, darling. I was there. Both times.
 => END
 
+~ asmodeus_deaths
+if RunStats.same_spot_deaths() >= 3
+	Asmodeus: {{RunStats.same_spot_deaths()}} times, darling. Same spot. Even I get bored of the same spot.
+elif RunStats.phase_minutes() >= 10
+	Asmodeus: {{RunStats.phase_minutes()}} minutes on this stretch. My bed is right here, you know.
+else
+	Asmodeus: Down again? You fall so prettily.
+$> Offers.present(&"lust_shortcut")
+Asmodeus: Say yes, and you never climb this again.
+- I have earned a rest.
+	$> Moral.record_tone(&"arrogant")
+	Asmodeus: Of course you have.
+	$> Offers.accept(&"lust_shortcut")
+- I cannot do this anymore.
+	$> Moral.record_tone(&"humble")
+	Asmodeus: [i](softly)[/i] Shh. I know.
+	$> Offers.accept(&"lust_shortcut")
+- He is with me. I will get up again.
+	$> Offers.refuse(&"lust_shortcut")
+	$> Moral.record_tone(&"humble")
+	Asmodeus: Then go. I'll be right here.
+- I do not need you. I will do it alone.
+	$> Offers.refuse(&"lust_shortcut")
+	$> Moral.record_tone(&"arrogant")
+	Asmodeus: That's what you said last time.
+=> END
+
 ~ asmodeus_gift
 if Moral.has_taken(&"lust_shortcut")
 	Asmodeus: You see? I keep my promises. Unlike some.
@@ -167,7 +194,7 @@ Asmodeus: The price? Hardly anything. You'll never know again if they want you, 
 if GameState.has_crucifix
 	Asmodeus: And your little cross won't like it. It burns near me. Keep one or the other.
 - Give it to me.
-	if Moral.stage() >= 1
+	if Moral.stage() >= 1 or Moral.leans_arrogant()
 		{{GameState.player_name}}: I am here by mistake. He will understand why I need it.
 	else
 		{{GameState.player_name}}: [i](quietly)[/i] Forgive me. I cannot do this alone.
@@ -175,7 +202,7 @@ if GameState.has_crucifix
 	Asmodeus: There. Now nobody will look away from you again.
 - Keep it.
 	$> Offers.refuse(&"charm")
-	if Moral.stage() >= 1
+	if Moral.stage() >= 1 or Moral.leans_arrogant()
 		{{GameState.player_name}}: I have the Lord. I do not need your tricks.
 		Asmodeus: Faith. How sweet. It's always the faithful who fall the furthest.
 	else

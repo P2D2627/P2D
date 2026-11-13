@@ -1,7 +1,9 @@
 # Checks the autoload Moral with the real lines (#169). It is in the tree, at stage 0, and says
 # stage_changed once when the man takes a shortcut, and 0 again on reset(). In Lust's asmodeus_gift,
 # refusing the charm with "Keep it." gives his humble line at stage 0, and the worse one after he
-# took Lust's shortcut, read by the lines through Moral.stage(). A stand-in game state holds what
+# took Lust's shortcut, read by the lines through Moral.stage(). At stage 0, it is also the worse one
+# when he gave more arrogant answers than humble ones (Moral.leans_arrogant()), and not on a tie.
+# A stand-in game state holds what
 # those lines read, since GameState does not exist yet. Moral is reset before and after each case.
 # Run from the repository root; the exit code is 0 on pass and 1 on fail:
 # godot --headless --fixed-fps 60 --path Projeto --script res://tests/test_moral_dialogue.gd
@@ -43,8 +45,27 @@ func _initialize() -> void:
 	var results: Array[bool] = []
 	results.append(_moral_says_each_stage_change_once())
 	results.append(await _keep_it_is_humble_at_stage_0_and_worse_after_the_shortcut())
+	results.append(await _keep_it_is_worse_when_he_answered_more_proudly())
 	_moral.reset()
 	finish(results)
+
+
+## Still at stage 0, with as many humble as arrogant answers the line stays humble; with one
+## arrogant answer more, it takes the worse one, as his tone so far says.
+func _keep_it_is_worse_when_he_answered_more_proudly() -> bool:
+	_moral.reset()
+	_moral.record_tone(&"arrogant")
+	_moral.record_tone(&"humble")
+	var tied: DialogueLine = await _answer_to_refusal()
+	_moral.record_tone(&"arrogant")
+	var stage: int = _moral.stage()
+	var proud: DialogueLine = await _answer_to_refusal()
+	_moral.reset()
+	var tied_text: String = tied.text if tied != null else "none"
+	var proud_text: String = proud.text if proud != null else "none"
+	return report(stage == 0 and tied_text == CLEAN_LINE and proud_text == WORSE_LINE,
+			"\"%s\" with tied answers: \"%s\"; with one arrogant more, still at stage %d: \"%s\""
+			% [REFUSAL, tied_text, stage, proud_text])
 
 
 func _moral_says_each_stage_change_once() -> bool:

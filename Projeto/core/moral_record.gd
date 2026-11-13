@@ -136,6 +136,12 @@ func get_tone_count(tone: StringName) -> int:
 	return 0
 
 
+## Whether he gave more arrogant answers than humble ones. It adds no points: the lines read it
+## beside the stage, so a man who answered proudly speaks proudly even before the stage goes up.
+func leans_arrogant() -> bool:
+	return _arrogant_answers > _humble_answers
+
+
 ## The longest he listened to offer_id before refusing it, or 0 if he never did; for the judgment.
 func get_listening_seconds(offer_id: StringName) -> float:
 	return _listening.get(offer_id, 0.0)
