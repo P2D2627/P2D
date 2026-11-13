@@ -885,7 +885,7 @@ Remote; os restantes valores são lidos sempre que são usados.
     ├── core/          serviços globais: as opções do jogador (autoload Settings), o registo moral (autoload Moral), o progresso do jogo (autoload GameState), as estatísticas da partida (autoload RunStats), o ficheiro da gravação e os perfis de controlos
     ├── player/        personagem: cena, scripts, valores do movimento, SP e agarrão
     ├── crucifix/      crucifixo: cena, script e valores
-    ├── demon/         demónios que perseguem: cena, scripts, os estados (states/) e os valores de cada nível
+    ├── demon/         demónios que perseguem: cena, scripts, os estados (states/) e os valores de cada nível; os demónios que falam (Velvet, Asmodeu)
     ├── camera/        câmara do jogo e zonas de câmara
     ├── debug/         overlay de depuração e vista dos demónios da sala de teste
     ├── levels/        salas, níveis, a entrada de cada nível na lista do menu (LevelEntry) e os pontos de chegada (ArrivalPoint)
@@ -1000,6 +1000,7 @@ godot --headless --fixed-fps 60 --path Projeto --script res://tests/test_level_r
 godot --headless --fixed-fps 60 --path Projeto --script res://tests/test_dialogue_skip.gd
 godot --headless --fixed-fps 60 --path Projeto --script res://tests/test_death_offer_pacer.gd
 godot --headless --fixed-fps 60 --path Projeto --script res://tests/test_asmodeus_deaths.gd
+godot --headless --fixed-fps 60 --path Projeto --script res://tests/test_asmodeus.gd
 godot --headless --fixed-fps 60 --path Projeto --script res://tests/test_moral_dialogue.gd
 godot --headless --fixed-fps 60 --path Projeto --script res://tests/test_gym_hint.gd
 godot --headless --fixed-fps 60 --path Projeto --script res://tests/test_gym_stations.gd
@@ -2502,6 +2503,12 @@ mesmo sítio, a primeira chega à terceira morte. A regra vive numa classe sem n
 `RunStats` alimenta-a com cada morte, avisa quando há uma oferta à espera e guarda-a com as
 estatísticas, para que a morte não a apague. Morrer não conta para a moral; só a resposta à oferta
 conta.
+
+A Asmodeu é um nó próprio (`demon/asmodeus.tscn`), provisório até chegar a arte: um polígono
+cor-de-rosa escuro com o nome por cima. Não combate. O nível pede-lhe que fale a partir de um cue
+das falas. Ela aparece, prende o homem como a Velvet (sem correr, saltar nem erguer o crucifixo),
+fala no balão do jogo e desaparece. O que acontece a seguir decidem as falas, através das ofertas.
+O `test_asmodeus.gd` verifica que o homem fica preso enquanto ela fala e é largado no fim.
 
 #### Gravação do jogo
 
