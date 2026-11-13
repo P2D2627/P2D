@@ -6,7 +6,7 @@ extends Node
 ## while the game is paused (process mode Always), so Esc can resume it; the level slot is the part
 ## that pauses. When the player walks into a phase's exit, the next phase takes the level's place
 ## behind a fade to black, and so does the phase an accepted shortcut leads to, with the man at its
-## ArrivalPoint. Reaching the end of a phase is the game's checkpoint: a new game, each
+## ArrivalPoint. An exit with no next phase ends the level, back to the main menu. Reaching the end of a phase is the game's checkpoint: a new game, each
 ## phase change and each SavePoint save, the Save Indicator says so, and the menu's Continue comes
 ## back there. Until the next save, what the man does is as if he had not done it: a death starts
 ## the phase over from the save, not only the level but GameState too. An accepted upgrade is the
@@ -221,7 +221,30 @@ func _go_back_to_the_save() -> void:
 ## from inside one, and the engine does not let collisions be switched off there. A path that cannot
 ## load leaves the player in the current phase.
 func _on_phase_exit_reached(next_scene_path: String) -> void:
-	_change_phase(next_scene_path, &"")
+	if next_scene_path.is_empty():
+		_finish_level()
+	else:
+		_change_phase(next_scene_path, &"")
+
+
+## The level's last exit: behind the fade to black, the level goes and the main menu comes back. The
+## run's numbers are written first. The save stays as it was.
+func _finish_level() -> void:
+	# Ended while the phase still fades in, as when its lines are skipped at once: it ends after.
+	while _changing_phase:
+		await get_tree().process_frame
+	if not _has_level():
+		return
+	_changing_phase = true
+	_level_slot.set_deferred(&"process_mode", Node.PROCESS_MODE_DISABLED)
+	await _fade_to(1.0)
+	_save_the_run()
+	_clear_level()
+	_level_slot.process_mode = Node.PROCESS_MODE_PAUSABLE
+	_main_menu.set_can_continue(_save_file.exists())
+	_main_menu.open()
+	await _fade_to(0.0)
+	_changing_phase = false
 
 
 ## An accepted offer, as Lust's shortcut, takes him to the phase at scene_path, at its ArrivalPoint

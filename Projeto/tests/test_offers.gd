@@ -13,7 +13,7 @@ extends "res://tests/support/player_test.gd"
 const SHORTCUT: StringName = &"lust_shortcut"
 const CHARM: StringName = &"charm"
 const CLAIM: StringName = &"claim"
-const PHASE_3_PATH: String = "res://scenes/levels/Lust/LustLevel_Phase3.tscn"
+const LEVEL_1_PATH: String = "res://levels/lust/level1.tscn"
 const TENT: StringName = &"asmodeus_tent"
 const TEST_ROOM: PackedScene = preload("res://levels/test_room.tscn")
 ## Seconds he listens before refusing, in the listening case, on a clock of the test's own.
@@ -122,7 +122,7 @@ func _a_shortcut_waits_for_the_balloon_to_close() -> bool:
 	dialogue_manager.dialogue_ended.emit(null)
 	_offers.scene_requested.disconnect(listen)
 	_clean()
-	return report(during == 0 and asked == [[PHASE_3_PATH, TENT]],
+	return report(during == 0 and asked == [[LEVEL_1_PATH, TENT]],
 			"The shortcut with a balloon: %d asks while it shows, then %s" % [during, asked])
 
 
@@ -135,7 +135,7 @@ func _without_a_balloon_a_shortcut_asks_at_once() -> bool:
 	_offers.accept(SHORTCUT)
 	_offers.scene_requested.disconnect(listen)
 	_clean()
-	return report(asked == [[PHASE_3_PATH, TENT]],
+	return report(asked == [[LEVEL_1_PATH, TENT]],
 			"The shortcut with no balloon asks at once: %s" % [asked])
 
 

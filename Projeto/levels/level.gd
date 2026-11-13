@@ -33,6 +33,8 @@ const CELL_FORMAT: String = "cell_%d_%d"
 @export_range(64.0, 4096.0, 16.0, "suffix:px") var death_cell_size: float = 768.0
 
 var _restart_timer: Timer
+var _camera_zones: Array[CameraZone] = []
+var _camera_zones_found: bool = false
 var _run_stats: GameRunStats
 
 
@@ -64,9 +66,8 @@ func get_run_id() -> StringName:
 ## Where a death at point counts: the smallest camera zone of this level around it, or a cell.
 func zone_at(point: Vector2) -> StringName:
 	var best: CameraZone = null
-	for node: Node in get_tree().get_nodes_in_group(CameraZone.GROUP):
-		var zone: CameraZone = node as CameraZone
-		if zone == null or not is_ancestor_of(zone) or not zone.has_point(point):
+	for zone: CameraZone in _get_camera_zones():
+		if not zone.has_point(point):
 			continue
 		if best == null or zone.get_area() < best.get_area():
 			best = zone
@@ -74,6 +75,17 @@ func zone_at(point: Vector2) -> StringName:
 		return StringName(best.name)
 	var cell: Vector2i = Vector2i((point / death_cell_size).floor())
 	return StringName(CELL_FORMAT % [cell.x, cell.y])
+
+
+## This level's camera zones, looked up once: in the game they never change.
+func _get_camera_zones() -> Array[CameraZone]:
+	if _camera_zones_found:
+		return _camera_zones
+	for node: Node in get_tree().get_nodes_in_group(CameraZone.GROUP):
+		if node is CameraZone and is_ancestor_of(node):
+			_camera_zones.append(node as CameraZone)
+	_camera_zones_found = true
+	return _camera_zones
 
 
 func _follow_the_phases() -> void:

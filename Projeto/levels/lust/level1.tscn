@@ -38,6 +38,9 @@
 [ext_resource type="Texture2D" uid="uid://bjlrc5hg2itgi" path="res://assets/sprites/Tiles/rocha7.png" id="bd_rocha7"]
 [ext_resource type="Texture2D" uid="uid://dvy8d8xp0tx6d" path="res://assets/sprites/Tiles/rocha8.png" id="bd_rocha8"]
 [ext_resource type="Script" uid="uid://bgkod5pssmkft" path="res://levels/stone_rim.gd" id="st_rim"]
+[ext_resource type="PackedScene" path="res://demon/asmodeus.tscn" id="as_scene"]
+[ext_resource type="Script" path="res://demon/asmodeus_director.gd" id="as_director"]
+[ext_resource type="Script" path="res://levels/arrival_point.gd" id="as_arrival"]
 
 [sub_resource type="CanvasItemMaterial" id="CanvasItemMaterial_shade"]
 blend_mode = 3
@@ -48103,7 +48106,7 @@ collision_layer = 0
 collision_mask = 2
 monitorable = false
 script = ExtResource("10_236yj")
-next_scene_path = "res://scenes/levels/Lust/LustLevel_Phase3.tscn"
+walk_in_leads_on = false
 
 [node name="CollisionShape2D" type="CollisionShape2D" parent="PhaseExit" unique_id=1944260528]
 position = Vector2(0, -72)
@@ -48286,3 +48289,19 @@ limit_right = 17808
 limit_bottom = 18192
 player = NodePath("../Player")
 level_tiles = NodePath("../Tiles")
+
+[node name="AsmodeusTent" type="Marker2D" parent="."]
+position = Vector2(8664, 7344)
+script = ExtResource("as_arrival")
+id = &"asmodeus_tent"
+
+[node name="Asmodeus" parent="." node_paths=PackedStringArray("player", "stills") instance=ExtResource("as_scene")]
+position = Vector2(8844, 7344)
+player = NodePath("../Player")
+stills = [NodePath("../Dogs")]
+
+[node name="AsmodeusDirector" type="Node" parent="." node_paths=PackedStringArray("asmodeus", "level", "exit")]
+script = ExtResource("as_director")
+asmodeus = NodePath("../Asmodeus")
+level = NodePath("..")
+exit = NodePath("../PhaseExit")

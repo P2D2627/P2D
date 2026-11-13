@@ -5,7 +5,9 @@ extends Node2D
 ## calls talk() with a cue of lust.dialogue, at the start of a phase, when his deaths bring an offer
 ## or at the end of the level, and she appears, talks and goes. While she talks the man stands
 ## still, with no run, no jump and no crucifix, as with Velvet; he moves again on the physics frame
-## after her last line, so the press that closed it does not make him jump. appear_at() puts her
+## after her last line, so the press that closed it does not make him jump. What Stills names (the
+## dogs) stands still while she talks, so nothing bites the man she holds. When she talks is up to
+## the level's AsmodeusDirector. appear_at() puts her
 ## next to where he is, for the offer that waits at the entrance of a zone. Only Visible While
 ## Talking off keeps her on screen between talks. She never decides what happens after a talk: the
 ## lines accept or refuse through Offers, and whoever called talk() hears talk_ended.
@@ -31,8 +33,13 @@ const SOURCE: StringName = &"asmodeus"
 @export var visible_while_talking_only: bool = true
 ## Where she stands from the man when appear_at() puts her next to him.
 @export var appear_offset: Vector2 = Vector2(180.0, 0.0)
+## What stands still while she talks, as the level's dogs, so none bites the man she holds: each
+## one is switched off, its children too, and back on after.
+@export var stills: Array[Node] = []
 
 var _talking_cue: String = ""
+## The process mode each of Stills had before she talked.
+var _modes_before: Dictionary[Node, ProcessMode] = {}
 ## No run and no jump while she talks.
 var _modifier: MovementModifier = MovementModifier.new(0.0, 1.0, true)
 
@@ -51,6 +58,11 @@ func is_talking() -> bool:
 	return not _talking_cue.is_empty()
 
 
+## The cue she is talking from; empty when she is not talking.
+func get_talking_cue() -> String:
+	return _talking_cue
+
+
 ## Puts her next to point, on the man's side Appear Offset says.
 func appear_at(point: Vector2) -> void:
 	global_position = point + appear_offset
@@ -66,6 +78,7 @@ func talk(cue: String) -> void:
 	player.hold_still()
 	if is_instance_valid(crucifix):
 		crucifix.block(SOURCE)
+	_still_the_stills()
 	var balloon: DialogueBalloon = balloon_scene.instantiate()
 	balloon.next_action = next_action
 	balloon.skip_action = next_action
@@ -88,8 +101,23 @@ func _on_balloon_tree_exited() -> void:
 	player.let_go()
 	if is_instance_valid(crucifix):
 		crucifix.unblock(SOURCE)
+	_wake_the_stills()
 	var cue: String = _talking_cue
 	_talking_cue = ""
 	if visible_while_talking_only:
 		hide()
 	talk_ended.emit(cue)
+
+
+func _still_the_stills() -> void:
+	for node: Node in stills:
+		if is_instance_valid(node):
+			_modes_before[node] = node.process_mode
+			node.process_mode = Node.PROCESS_MODE_DISABLED
+
+
+func _wake_the_stills() -> void:
+	for node: Node in _modes_before:
+		if is_instance_valid(node):
+			node.process_mode = _modes_before[node]
+	_modes_before.clear()

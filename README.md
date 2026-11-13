@@ -10,7 +10,7 @@ aceita.
 
 > **Estado:** a personagem jogável já anda, salta e tem controlo no ar, desliza nas paredes e salta
 > delas, e o salto tolera pedidos ligeiramente fora de tempo. O jogo abre num menu principal, que dá
-> acesso à sala de teste e ao blockout do nível 1, e tem pausa e opções gravadas. A câmara do jogo
+> acesso à sala de teste e ao nível 1, e tem pausa e opções gravadas. A câmara do jogo
 > está descrita em "Câmara". Na sala de teste, dois demónios perseguem a personagem, mordem-na e,
 > com o SP baixo, agarram-na; o crucifixo afasta-os, e quem morre recomeça a sala. Ainda não há
 > arte, e o som começou pela personagem e pelo crucifixo.
@@ -38,12 +38,13 @@ cada sala) está em `docs/nivel1_desenho.md`, e os artigos que o fundamentam em 
    Durante o jogo, a tecla F3 mostra e esconde o texto de depuração descrito em "Overlay de
    depuração", e a tecla F4 retira 10 SP à personagem, como um golpe, para experimentar a
    regeneração descrita em "SP".
-5. O nível 1 em blockout (Play ▸ Level 1: Lust (blockout)) tem as fases 1, 2 e 3, com tiles
-   provisórios de 48 px, cada uma na sua cena. A fase 1 começa no tutorial, que ensina os controlos
-   e continua sem cortes para a sala inicial. Depois sobe da esquerda para a direita e termina numa
-   sala com uma porta; ao atravessá-la, o ecrã escurece e a fase 2 começa no canto inferior direito.
-   O retângulo verde assinala a porta para a fase seguinte. Cada fase também corre sozinha com F6,
-   sem gravar nada.
+5. O nível 1 (Play ▸ Level 1: Lust) é uma só cena, `levels/lust/level1.tscn`, com o tutorial e as
+   fases 1, 2 e 3, e é ele que inicia uma partida nova. No início das fases 2 e 3, a Asmodeu
+   aparece e oferece o atalho; depois de várias mortes nessas fases, volta a oferecê-lo à entrada
+   da zona onde ele morre (ver "Ofertas por mortes"). Na saída, depois da fase 3 ou pelo atalho,
+   ela oferece o dom e despede-se, e o jogo volta ao menu principal. O blockout antigo, com uma cena
+   por fase, continua na lista como Level 1: Lust (old blockout), sem iniciar partida. Cada cena
+   também corre sozinha com F6, sem gravar nada.
 6. Entrar numa fase grava o jogo, o que é indicado por "Saving..." no canto do ecrã, e o menu
    principal passa a mostrar Continue, descrito em "Gravação do jogo".
 7. A sala de treino (Play ▸ Gym (training room)) põe à prova, uma de cada vez, as mecânicas que já
@@ -1001,6 +1002,7 @@ godot --headless --fixed-fps 60 --path Projeto --script res://tests/test_dialogu
 godot --headless --fixed-fps 60 --path Projeto --script res://tests/test_death_offer_pacer.gd
 godot --headless --fixed-fps 60 --path Projeto --script res://tests/test_asmodeus_deaths.gd
 godot --headless --fixed-fps 60 --path Projeto --script res://tests/test_asmodeus.gd
+godot --headless --fixed-fps 60 --path Projeto --script res://tests/test_lust_asmodeus.gd
 godot --headless --fixed-fps 60 --path Projeto --script res://tests/test_moral_dialogue.gd
 godot --headless --fixed-fps 60 --path Projeto --script res://tests/test_gym_hint.gd
 godot --headless --fixed-fps 60 --path Projeto --script res://tests/test_gym_stations.gd
@@ -2285,7 +2287,9 @@ seguinte. Quando a personagem entra nessa área, o Main escurece o ecrã em 0,25
 pela outra e volta a clarear. As duas fases do nível 1 levaram, em conjunto, cerca de 0,1 s a
 carregar (medido a 2026-10-19), pelo que o carregamento termina antes de o ecrã ficar preto. Durante
 a passagem, o Esc não pausa. Uma fase aberta com F6 não tem o Main: a porta muda de cena diretamente,
-sem escurecer. O `test_phase_exit.gd` verifica as duas situações.
+sem escurecer. O `test_phase_exit.gd` verifica as duas situações. Uma `PhaseExit` sem fase seguinte é
+o fim do nível: o Main escurece o ecrã e volta ao menu principal (no nível 1, só depois das últimas
+falas da Asmodeu).
 
 A pausa usa `get_tree().paused`. O Main corre sempre (Process Mode Always) e só o `LevelSlot` é
 Pausable: o nível para e o Main continua a receber o Esc. O overlay de depuração continua ativo, e o
@@ -2405,10 +2409,11 @@ num atalho e o nível retira o crucifixo das mãos do homem.
 
 O efeito de uma oferta aceite só se aplica quando o balão de diálogo fecha. Assim, um atalho nunca
 muda a fase com uma conversa aberta. Há dois tipos de efeito: ir para outra fase, que é o atalho,
-e receber um upgrade, que são os dons. O atalho de Asmodeu leva à fase 3 da luxúria, com a mesma
+e receber um upgrade, que são os dons. O atalho de Asmodeu leva ao fim do nível 1, com a mesma
 passagem a preto das saídas de fase, e põe o homem no ponto de chegada (`ArrivalPoint`) junto à
-tenda, no fim do túnel final. A gravação guarda esse ponto, pelo que uma morte ou o Continue o
-devolvem à tenda, e não ao início da fase. Perder o crucifixo não é o custo de uma oferta em
+tenda, na saída do nível, onde ela lhe oferece logo o dom. A gravação guarda esse ponto, pelo que uma morte ou o Continue o
+devolvem à tenda, e não ao início da fase: um save point já alcançado não o leva para o seu ponto de
+renascimento quando ele chega por um ponto de chegada. Perder o crucifixo não é o custo de uma oferta em
 particular: é uma regra do jogo, guardada no `GameState`. O primeiro upgrade aceite, seja ele qual
 for, tira o crucifixo.
 
@@ -2505,10 +2510,31 @@ estatísticas, para que a morte não a apague. Morrer não conta para a moral; s
 conta.
 
 A Asmodeu é um nó próprio (`demon/asmodeus.tscn`), provisório até chegar a arte: um polígono
-cor-de-rosa escuro com o nome por cima. Não combate. O nível pede-lhe que fale a partir de um cue
-das falas. Ela aparece, prende o homem como a Velvet (sem correr, saltar nem erguer o crucifixo),
-fala no balão do jogo e desaparece. O que acontece a seguir decidem as falas, através das ofertas.
-O `test_asmodeus.gd` verifica que o homem fica preso enquanto ela fala e é largado no fim.
+cor-de-rosa escuro com o nome por cima. Não combate. Quando fala, aparece ao lado do homem, prende-o
+como a Velvet (sem correr, saltar nem erguer o crucifixo), fala no balão do jogo e desaparece.
+Enquanto fala, os cães do nível ficam parados (Asmodeus › Stills), para que nenhum morda o homem
+preso. O que acontece a seguir decidem as falas, através das ofertas.
+
+Quando é que ela fala decide outro nó do nível 1, o `AsmodeusDirector`, que só escolhe o cue:
+
+| Momento | Cue |
+|---|---|
+| Primeira chegada ao início da fase 2 (o save point com Starts Phase 2) | `asmodeus_offer` |
+| Primeira chegada ao início da fase 3 | `asmodeus_second_offer` |
+| Com uma oferta por mortes à espera, ao entrar na zona dela (ou ao renascer lá dentro) | `asmodeus_deaths` |
+| Na saída do nível, aceite ou não o atalho | `asmodeus_gift` e depois `stairs` |
+
+A oferta por mortes só é verificada enquanto há uma à espera; sem ela, o diretor não faz nada a
+cada frame. Aceitar o atalho fecha as ofertas por mortes. A saída do nível (`PhaseExit` sem fase
+seguinte e com Walk In Leads On desligado) só termina o nível depois da última fala de `stairs`;
+nessa altura o Main escurece o ecrã e volta ao menu principal.
+
+O `test_asmodeus.gd` verifica que o homem fica preso enquanto ela fala e é largado no fim. O
+`test_lust_asmodeus.gd` joga o nível 1 dentro do Main: a oferta do início da fase 2 recusada, uma
+oferta por mortes que espera fora da zona e aparece ao entrar nela, o atalho aceite até à tenda, o
+dom, as escadas e o regresso ao menu, e a oferta do início da fase 3. Os testes de percurso do
+nível 1 retiram o diretor, tal como já não deixavam a Velvet falar, porque verificam o mapa e não as
+conversas.
 
 #### Gravação do jogo
 

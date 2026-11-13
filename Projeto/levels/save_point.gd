@@ -5,7 +5,8 @@ extends Area2D
 ## first time the man walks in, it marks Event in GameState and says so through reached, and Main,
 ## which holds the level in its slot, saves. From then on, the level starts with the man at Respawn:
 ## it goes before GameCamera in the scene, so the camera starts there too. Run on its own with F6,
-## nothing saves, but GameState keeps the event until the game closes.
+## nothing saves, but GameState keeps the event until the game closes. When GameState names an
+## ArrivalPoint, the man starts there instead.
 
 ## The man walked in for the first time.
 signal reached
@@ -34,7 +35,8 @@ func _ready() -> void:
 	assert(player != null, "SavePoint: assign the man to Player.")
 	assert(respawn != null, "SavePoint: assign a Marker2D to Respawn.")
 	body_entered.connect(_on_body_entered)
-	if _progress.has_event(event):
+	# Brought in at an ArrivalPoint, as by Lust's shortcut, he starts there, not at Respawn.
+	if _progress.has_event(event) and _progress.arrival_point.is_empty():
 		player.global_position = respawn.global_position
 
 
