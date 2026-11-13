@@ -3,15 +3,15 @@
 importer="texture"
 type="CompressedTexture2D"
 uid="uid://dt4tiwx23eyfw"
-path="res://.godot/imported/cave_placeholder_tile.png-9c4184fc08bc30200d38c69be0f22c9c.ctex"
+path="res://.godot/imported/cave_placeholder_tile.png-5e4bb8b37fc54329e21c20c11480cde5.ctex"
 metadata={
 "vram_texture": false
 }
 
 [deps]
 
-source_file="res://scenes/levels/Lust/cave_placeholder_tile.png"
-dest_files=["res://.godot/imported/cave_placeholder_tile.png-9c4184fc08bc30200d38c69be0f22c9c.ctex"]
+source_file="res://assets/sprites/environment/cave_placeholder_tile.png"
+dest_files=["res://.godot/imported/cave_placeholder_tile.png-5e4bb8b37fc54329e21c20c11480cde5.ctex"]
 
 [params]
 

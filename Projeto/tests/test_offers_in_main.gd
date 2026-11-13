@@ -8,7 +8,7 @@
 extends "res://tests/support/menu_test.gd"
 
 const SAVE_PATH: String = "user://test_offers_in_main.cfg"
-const TEST_ROOM_PATH: String = "res://levels/test_room.tscn"
+const TEST_ROOM_PATH: String = "res://scenes/levels/test_room.tscn"
 const CHARM: StringName = &"charm"
 const SHORTCUT: StringName = &"lust_shortcut"
 

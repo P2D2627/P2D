@@ -7,8 +7,8 @@
 # godot --headless --fixed-fps 60 --path Projeto --script res://tests/test_camera_keeps_player_on_screen.gd
 extends "res://tests/support/player_test.gd"
 
-const TEST_ROOM_SCENE: PackedScene = preload("res://levels/test_room.tscn")
-const CAMERA_SCENE: PackedScene = preload("res://camera/game_camera.tscn")
+const TEST_ROOM_SCENE: PackedScene = preload("res://scenes/levels/test_room.tscn")
+const CAMERA_SCENE: PackedScene = preload("res://scenes/others/camera/game_camera.tscn")
 ## The level the hand-driven cases use: wider and taller than the screen.
 const LEVEL: Rect2 = Rect2(0.0, -2000.0, 6000.0, 3000.0)
 ## How far from an edge of the level the player stands in the hand-driven cases, in px.

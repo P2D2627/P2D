@@ -5,7 +5,7 @@
 extends SceneTree
 
 const MAIN_SCENE_PATH: String = "res://main.tscn"
-const PHASE_2_PATH: String = "res://levels/lust/LustLevel_Phase2.tscn"
+const PHASE_2_PATH: String = "res://scenes/levels/lust/LustLevel_Phase2.tscn"
 ## On the floor, right of the exit (x 216 to 312).
 const NEAR_THE_END: Vector2 = Vector2(624.0, 1050.0)
 ## Frames the automatic run walks left and then waits for the fade, at 60 per second.

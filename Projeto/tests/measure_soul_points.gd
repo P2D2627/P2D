@@ -10,8 +10,8 @@
 # godot --headless --fixed-fps 60 --path Projeto --script res://tests/measure_soul_points.gd
 extends "res://tests/support/base_test.gd"
 
-const STATS: SoulPointsStats = preload("res://player/soul_points_stats.tres")
-const CRUCIFIX_STATS: CrucifixStats = preload("res://crucifix/crucifix_stats.tres")
+const STATS: SoulPointsStats = preload("res://scenes/characters/player/soul_points_stats.tres")
+const CRUCIFIX_STATS: CrucifixStats = preload("res://scenes/characters/crucifix/crucifix_stats.tres")
 ## The SP a hit leaves the man with: below the file's Low Threshold of 25.
 const HIT_LEAVES: float = 20.0
 ## The regenerations compared with the file's: start and top speed in SP/s, and ramp time in s. The

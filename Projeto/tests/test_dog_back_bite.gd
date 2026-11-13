@@ -20,11 +20,11 @@
 # godot --headless --fixed-fps 60 --path Projeto --script res://tests/test_dog_back_bite.gd
 extends "res://tests/support/player_test.gd"
 
-const DEMON_SCENE: PackedScene = preload("res://demon/demon.tscn")
+const DEMON_SCENE: PackedScene = preload("res://scenes/characters/demon/demon.tscn")
 ## The stats of the game's dogs, which must bite who lands on them.
 const DOG_STATS_PATHS: Array[String] = [
-	"res://demon/lust_demon_stats.tres",
-	"res://levels/jumping_demon_stats.tres",
+	"res://scenes/characters/demon/lust_demon_stats.tres",
+	"res://scenes/characters/demon/jumping_demon_stats.tres",
 ]
 ## A little above the floor, so a body lands on its own before a case starts.
 const SPAWN_Y: float = -2.0

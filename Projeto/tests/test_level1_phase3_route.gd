@@ -5,7 +5,7 @@
 # godot --headless --fixed-fps 60 --path Projeto --script res://tests/test_level1_phase3_route.gd
 extends "res://tests/support/route_test.gd"
 
-const SCENE_PATH: String = "res://levels/lust/level1.tscn"
+const SCENE_PATH: String = "res://scenes/levels/lust/level1.tscn"
 const ROUTE_PATH: String = "res://tests/support/level1_phase3_route.json"
 ## With these events the level starts at phase 3's S, and Velvet does not stop the man to talk.
 const EVENTS: Array[StringName] = [&"velvet_met", &"tutorial_done", &"lust_phase_2_reached", &"lust_phase_3_reached"]

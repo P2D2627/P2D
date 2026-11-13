@@ -79,10 +79,10 @@
 # godot --headless --fixed-fps 60 --path Projeto --script res://tests/test_demon.gd
 extends "res://tests/support/player_test.gd"
 
-const DEMON_SCENE: PackedScene = preload("res://demon/demon.tscn")
+const DEMON_SCENE: PackedScene = preload("res://scenes/characters/demon/demon.tscn")
 ## The values that go into the game, which only the case of the level's values reads.
-const LUST_DEMON_STATS: String = "res://demon/lust_demon_stats.tres"
-const PLAYER_MOVEMENT_STATS: String = "res://player/player_movement_stats.tres"
+const LUST_DEMON_STATS: String = "res://scenes/characters/demon/lust_demon_stats.tres"
+const PLAYER_MOVEMENT_STATS: String = "res://scenes/characters/player/player_movement_stats.tres"
 ## The values every case's demon gets. Give Up Time is short, so the case does not wait long.
 const SIGHT_DISTANCE: float = 480.0
 const LOSE_DISTANCE: float = 720.0

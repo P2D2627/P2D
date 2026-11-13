@@ -6,7 +6,7 @@
 # godot --headless --fixed-fps 60 --path Projeto --script res://tests/test_collapsing_platform.gd
 extends "res://tests/support/player_test.gd"
 
-const PLATFORM_SCENE: PackedScene = preload("res://platforms/collapsing_platform.tscn")
+const PLATFORM_SCENE: PackedScene = preload("res://scenes/objects/platforms/collapsing_platform.tscn")
 const TILE: float = 48.0
 const FLOOR_HALF_WIDTH: float = 1000.0
 ## The platform's top edge above the floor (y = 0): under a full jump, over the man's head.

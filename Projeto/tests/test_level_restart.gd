@@ -8,7 +8,7 @@
 # godot --headless --fixed-fps 60 --path Projeto --script res://tests/test_level_restart.gd
 extends "res://tests/support/menu_test.gd"
 
-const TEST_ROOM_PATH: String = "res://levels/test_room.tscn"
+const TEST_ROOM_PATH: String = "res://scenes/levels/test_room.tscn"
 ## Physics frames on either side of the end of the wait: the swap comes at the end of the frame the
 ## wait ends on, and the old copy is freed at the end of the next.
 const SETTLE_FRAMES: int = 3

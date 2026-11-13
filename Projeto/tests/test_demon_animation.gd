@@ -12,7 +12,7 @@
 # godot --headless --fixed-fps 60 --path Projeto --script res://tests/test_demon_animation.gd
 extends "res://tests/support/player_test.gd"
 
-const DEMON_SCENE: PackedScene = preload("res://demon/demon.tscn")
+const DEMON_SCENE: PackedScene = preload("res://scenes/characters/demon/demon.tscn")
 const FLOOR_LEFT: float = -2000.0
 const FLOOR_RIGHT: float = 2000.0
 const START: Vector2 = Vector2(0.0, -2.0)

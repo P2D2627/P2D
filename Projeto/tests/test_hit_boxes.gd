@@ -16,8 +16,8 @@
 # godot --headless --fixed-fps 60 --path Projeto --script res://tests/test_hit_boxes.gd
 extends "res://tests/support/base_test.gd"
 
-const HITBOX_SCENE: PackedScene = preload("res://components/hitbox.tscn")
-const HURTBOX_SCENE: PackedScene = preload("res://components/hurtbox.tscn")
+const HITBOX_SCENE: PackedScene = preload("res://scenes/characters/components/hitbox.tscn")
+const HURTBOX_SCENE: PackedScene = preload("res://scenes/characters/components/hurtbox.tscn")
 ## Radius of every shape the cases give the two areas, in px.
 const SHAPE_RADIUS: float = 16.0
 ## Where the Hurtbox of every case is, away from the origin.

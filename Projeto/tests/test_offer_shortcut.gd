@@ -7,8 +7,8 @@
 extends "res://tests/support/menu_test.gd"
 
 const SAVE_PATH: String = "user://test_offer_shortcut.cfg"
-const PHASE_1_PATH: String = "res://levels/lust/LustLevel_Phase1_Cave.tscn"
-const PHASE_3_PATH: String = "res://levels/lust/LustLevel_Phase3.tscn"
+const PHASE_1_PATH: String = "res://scenes/levels/lust/LustLevel_Phase1_Cave.tscn"
+const PHASE_3_PATH: String = "res://scenes/levels/lust/LustLevel_Phase3.tscn"
 const PHASE_3_ROOT: StringName = &"LustPhase3"
 const SHORTCUT: StringName = &"lust_shortcut"
 const TENT: StringName = &"asmodeus_tent"

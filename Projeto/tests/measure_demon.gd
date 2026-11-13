@@ -49,7 +49,7 @@ class Cost:
 	var worst_frame_warnings: int = 0
 
 
-const DEMON_SCENE: PackedScene = preload("res://demon/demon.tscn")
+const DEMON_SCENE: PackedScene = preload("res://scenes/characters/demon/demon.tscn")
 ## How many demons chase the man in each measure.
 const DEMON_COUNTS: Array[int] = [10, 50, 200]
 ## Nearest and farthest a demon starts from the man, in px: inside the 480 px Sight Distance of
@@ -110,7 +110,7 @@ const SHELF_INSET: float = 100.0
 const OUT_OF_REACH_NEAREST: float = 320.0
 const OUT_OF_REACH_FARTHEST: float = 950.0
 const OUT_OF_REACH_HELD: float = 10.0
-const LUST_DEMON_STATS: String = "res://demon/lust_demon_stats.tres"
+const LUST_DEMON_STATS: String = "res://scenes/characters/demon/lust_demon_stats.tres"
 ## How many demons stand out of reach below the shelf in a measure with room for all of them to
 ## keep Pack Spacing (ADR 0046): they settle and stop, where BUDGET_DEMONS keep pushing each other
 ## (ADR 0048).
@@ -124,7 +124,7 @@ const ROOMY_DEMONS: int = 10
 ## PILLAR_HEIGHT is over their Jump Height, so they chase him to its foot and stay out of his reach
 ## for as long as they see him (ADR 0044). The measure starts as they see him, so it takes in their
 ## walk there and their take-offs.
-const JUMPING_DEMON_STATS: String = "res://levels/jumping_demon_stats.tres"
+const JUMPING_DEMON_STATS: String = "res://scenes/characters/demon/jumping_demon_stats.tres"
 const STEP_HEIGHT: float = 96.0
 const PILLAR_HEIGHT: float = 144.0
 

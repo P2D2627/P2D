@@ -5,8 +5,8 @@
 # godot --headless --fixed-fps 60 --path Projeto --script res://tests/test_level1_art.gd
 extends SceneTree
 
-const LEVEL_PATH: String = "res://levels/lust/level1.tscn"
-const BUILDER_PATH: String = "res://levels/lust/build_level1.gd"
+const LEVEL_PATH: String = "res://scenes/levels/lust/level1.tscn"
+const BUILDER_PATH: String = "res://scenes/levels/lust/build_level1.gd"
 
 
 func _initialize() -> void:

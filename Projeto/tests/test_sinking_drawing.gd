@@ -7,7 +7,7 @@
 # godot --headless --fixed-fps 60 --path Projeto --script res://tests/test_sinking_drawing.gd
 extends "res://tests/support/player_test.gd"
 
-const DEMON_SCENE: PackedScene = preload("res://demon/demon.tscn")
+const DEMON_SCENE: PackedScene = preload("res://scenes/characters/demon/demon.tscn")
 ## The floor runs from FLOOR_LEFT to FLOOR_RIGHT with its top at y = 0; the two demons start just
 ## above it, apart.
 const FLOOR_LEFT: float = -2000.0

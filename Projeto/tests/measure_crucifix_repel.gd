@@ -10,7 +10,7 @@
 # godot --headless --fixed-fps 60 --path Projeto --script res://tests/measure_crucifix_repel.gd
 extends "res://tests/support/player_test.gd"
 
-const REPELLABLE_SCENE: PackedScene = preload("res://components/repellable.tscn")
+const REPELLABLE_SCENE: PackedScene = preload("res://scenes/characters/components/repellable.tscn")
 ## How many stand-in demons sit inside the radius in each measure.
 const DEMON_COUNTS: Array[int] = [10, 50, 200]
 const DEMON_RADIUS: float = 16.0

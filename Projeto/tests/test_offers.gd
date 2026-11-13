@@ -13,9 +13,9 @@ extends "res://tests/support/player_test.gd"
 const SHORTCUT: StringName = &"lust_shortcut"
 const CHARM: StringName = &"charm"
 const CLAIM: StringName = &"claim"
-const PHASE_3_PATH: String = "res://levels/lust/LustLevel_Phase3.tscn"
+const PHASE_3_PATH: String = "res://scenes/levels/lust/LustLevel_Phase3.tscn"
 const TENT: StringName = &"asmodeus_tent"
-const TEST_ROOM: PackedScene = preload("res://levels/test_room.tscn")
+const TEST_ROOM: PackedScene = preload("res://scenes/levels/test_room.tscn")
 ## Seconds he listens before refusing, in the listening case, on a clock of the test's own.
 const LISTEN_SECONDS: float = 4.5
 

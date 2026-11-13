@@ -17,7 +17,7 @@
 # godot --headless --fixed-fps 60 --path Projeto --script res://tests/test_crucifix.gd
 extends "res://tests/support/player_test.gd"
 
-const REPELLABLE_SCENE: PackedScene = preload("res://components/repellable.tscn")
+const REPELLABLE_SCENE: PackedScene = preload("res://scenes/characters/components/repellable.tscn")
 ## The wall's face is at x = WALL_FACE, on the player's left; the floor's top is at y = 0.
 const WALL_FACE: float = 0.0
 const WALL_THICKNESS: float = 200.0

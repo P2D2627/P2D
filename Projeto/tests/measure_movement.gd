@@ -7,9 +7,9 @@
 # godot --headless --fixed-fps 60 --path Projeto --script res://tests/measure_movement.gd
 extends "res://tests/support/base_test.gd"
 
-const PLAYER_SCENE: PackedScene = preload("res://player/player.tscn")
+const PLAYER_SCENE: PackedScene = preload("res://scenes/characters/player/player.tscn")
 ## The player's Stats, the same resource its scene uses, read here before any player exists.
-const STATS: PlayerMovementStats = preload("res://player/player_movement_stats.tres")
+const STATS: PlayerMovementStats = preload("res://scenes/characters/player/player_movement_stats.tres")
 ## Half the width of the ground: wide enough that the player never runs off it.
 const GROUND_HALF_WIDTH: float = 50000.0
 const GROUND_THICKNESS: float = 100.0

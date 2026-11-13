@@ -7,8 +7,8 @@
 # godot --headless --fixed-fps 60 --path Projeto --script res://tests/test_tutorial_hints.gd
 extends "res://tests/support/base_test.gd"
 
-const KEY_PROMPT_SCENE: PackedScene = preload("res://levels/key_prompt.tscn")
-const LEVEL_1_PATH: String = "res://levels/lust/level1.tscn"
+const KEY_PROMPT_SCENE: PackedScene = preload("res://scenes/levels/key_prompt.tscn")
+const LEVEL_1_PATH: String = "res://scenes/levels/lust/level1.tscn"
 const HINT_X: float = 1000.0
 const MARGIN: float = 300.0
 const FADE: float = 0.2

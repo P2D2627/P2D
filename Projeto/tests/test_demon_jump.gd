@@ -26,7 +26,7 @@
 # godot --headless --fixed-fps 60 --path Projeto --script res://tests/test_demon_jump.gd
 extends "res://tests/support/player_test.gd"
 
-const DEMON_SCENE: PackedScene = preload("res://demon/demon.tscn")
+const DEMON_SCENE: PackedScene = preload("res://scenes/characters/demon/demon.tscn")
 
 ## The cases' demon: the test_demon.gd values it chases with, one attack that never lunges, with
 ## the level's Max Height Difference as its reach, and Jump Height of two tiles.

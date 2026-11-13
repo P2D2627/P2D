@@ -1,0 +1,9 @@
+[gd_resource type="ShaderMaterial" format=3]
+
+[ext_resource type="Shader" path="res://scenes/others/shaders/color_ramp.gdshader" id="1_cxk7v"]
+[ext_resource type="Texture2D" path="res://assets/sprites/ramps/lust_ramp.jpg" id="2_8mvl7"]
+
+[resource]
+shader = ExtResource("1_cxk7v")
+shader_parameter/ramp = ExtResource("2_8mvl7")
+shader_parameter/reverse = false

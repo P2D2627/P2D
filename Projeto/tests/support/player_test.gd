@@ -8,7 +8,7 @@ extends "res://tests/support/base_test.gd"
 ## A PlayerInput a test drives by hand; see stand_in_input.gd. Not annotated, so it can be used as
 ## a type.
 const StandInInput = preload("res://tests/support/stand_in_input.gd")
-const PLAYER_SCENE: PackedScene = preload("res://player/player.tscn")
+const PLAYER_SCENE: PackedScene = preload("res://scenes/characters/player/player.tscn")
 ## Physics frames to wait for anything before giving up.
 const MAX_FRAMES: int = 600
 const PLATFORM_THICKNESS: float = 100.0

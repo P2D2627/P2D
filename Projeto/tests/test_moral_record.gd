@@ -17,7 +17,7 @@
 # godot --headless --fixed-fps 60 --path Projeto --script res://tests/test_moral_record.gd
 extends "res://tests/support/player_test.gd"
 
-const STATS: MoralStats = preload("res://core/moral_stats.tres")
+const STATS: MoralStats = preload("res://scenes/autoload/moral_stats.tres")
 ## The game's catalog. Loaded, not preloaded, as Offers explains.
 var _game_catalog: OfferCatalog = GameOffers.get_catalog()
 const DIALOGUE_FOLDER: String = "res://dialogue/"

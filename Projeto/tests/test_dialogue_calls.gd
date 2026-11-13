@@ -9,9 +9,9 @@ extends "res://tests/support/player_test.gd"
 const DIALOGUE_FOLDER: String = "res://dialogue/"
 ## The autoloads the lines call, by the name they use, and the script each one runs.
 const AUTOLOADS: Dictionary[String, String] = {
-	"GameState": "res://core/game_state.gd",
-	"Moral": "res://core/moral.gd",
-	"Offers": "res://offers/offers.gd",
+	"GameState": "res://scenes/autoload/game_state.gd",
+	"Moral": "res://scenes/autoload/moral.gd",
+	"Offers": "res://scenes/autoload/offers/offers.gd",
 }
 ## A call to an autoload: its name, then the function's.
 const CALL_PATTERN: String = "\\b(\\w+)\\.(\\w+)\\("

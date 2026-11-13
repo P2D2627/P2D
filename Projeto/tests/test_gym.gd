@@ -6,7 +6,7 @@
 # godot --headless --fixed-fps 60 --path Projeto --script res://tests/test_gym.gd
 extends "res://tests/support/player_test.gd"
 
-const GYM_SCENE: PackedScene = preload("res://levels/gym/gym.tscn")
+const GYM_SCENE: PackedScene = preload("res://scenes/levels/gym/gym.tscn")
 ## How wide each station is, in px: one screen.
 const STATION_WIDTH: float = 1920.0
 ## The top of every station's floor, in its own coordinates.
