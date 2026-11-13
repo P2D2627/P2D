@@ -728,7 +728,7 @@ O desenho dos níveis deve ter em conta quatro consequências deste comportament
   com os pés logo abaixo da fronteira e a zona de baixo do tamanho do ecrã, a cabeça fica fora do
   ecrã, até 86 px.
 
-Os valores da câmara estão no ficheiro `camera_stats.tres`, em `Projeto/camera/`, e editam-se no
+Os valores da câmara estão no ficheiro `camera_stats.tres`, em `Projeto/scenes/others/camera/`, e editam-se no
 Inspector do Godot, como os do movimento.
 
 | Campo no Inspector | Valor atual | O que controla |
@@ -791,7 +791,7 @@ camada respeita.
 Para acrescentar arte nova ao fundo:
 
 1. Exportar o PNG em cinzentos, com fundo transparente, para `Projeto/assets/sprites/backgrounds/`.
-2. Abrir o fundo do nível, em `Projeto/background/`. Um nível novo cria o seu com Scene › New
+2. Abrir o fundo do nível, em `Projeto/scenes/levels/background/`. Um nível novo cria o seu com Scene › New
    Inherited Scene a partir de `level_background.tscn` e coloca-o como primeiro nó da cena do nível,
    para ficar atrás de tudo; a sala de teste usa `test_room_background.tscn`.
 3. Arrastar o PNG para a camada da sua distância, onde passa a ser um Sprite2D.
@@ -915,9 +915,11 @@ Para que a organização se mantenha à medida que o jogo cresce, seguem-se cinc
   pasta do sistema a que pertence.
 - O que é global e não pertence a nenhum sistema, como o estado do jogo, as opções gravadas ou a
   gravação, fica em `scenes/autoload/`.
-- Os nomes de pastas e de ficheiros usam minúsculas e `_` (snake_case). Em Windows, um caminho que
-  só difere nas maiúsculas funciona no editor, mas o Godot avisa que falha no jogo exportado para
-  sistemas que as distinguem.
+- Os nomes de pastas e de ficheiros usam minúsculas e `_` (snake_case). O sistema de ficheiros do
+  jogo exportado (o PCK) distingue maiúsculas, mesmo num jogo exportado em Windows, cujo editor não
+  as distingue: um caminho que só difere nelas funciona no editor e falha no jogo exportado (secção
+  Case sensitivity da mesma página da documentação). Por agora há duas exceções, as cenas antigas
+  do nível 1 (`LustLevel_*.tscn`) e o `Passadeira.png`.
 - Um sistema não acede ao interior de outro: comunica por sinais ou por uma referência atribuída no
   Inspector, nunca por um caminho na árvore de nós.
 
@@ -930,7 +932,7 @@ exportados vão para `builds/`, na raiz do repositório, fora do projeto Godot e
 
 A passagem para esta estrutura fez-se por script, em dois commits, porque o git, em Windows, não
 regista num só commit uma mudança que só troca maiúsculas (`Lust/` para `lust/`). Mudaram de pasta
-206 ficheiros, com os seus `.import` e `.uid`, e trocaram-se 436 caminhos. Os testes deram os
+199 ficheiros, com os seus `.import` e `.uid`, e 415 referências passaram para os caminhos novos. Os testes deram os
 mesmos resultados antes e depois, teste a teste, nenhuma cena ou recurso ficou a apontar para um
 caminho antigo, e o projeto importa sem erros num clone novo.
 

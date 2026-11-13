@@ -1,5 +1,5 @@
 Lust, phase 2 (level 1): the group's Miro drawing on the tile grid. One character is one 48 px tile; the first
-grid line is the top row. Build the scene with levels/lust/build_lust_phase_2.gd.
+grid line is the top row. Build the scene with scenes/levels/lust/build_lust_phase_2.gd.
 # rock, . air, P start, F finish, - platform, = collapsing platform, ^ spikes, d dog, D big dog, A B gate,
 a b the gate's unlocker. P, F, d, D, a, b and ^ stand on the tile below them. Zone lines: name, first column,
 first row, last column, last row, then its camera values.

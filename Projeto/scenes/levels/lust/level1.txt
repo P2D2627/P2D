@@ -1,5 +1,5 @@
 Lust, level 1 as one map, tutorial, phase 1 and phase 2, joined by two short passages. One character is one 48 px
-tile; the first grid line is the top row. Build the scene with levels/lust/build_level1.gd. The map comes from
+tile; the first grid line is the top row. Build the scene with scenes/levels/lust/build_level1.gd. The map comes from
 the tools outside the repository, so change it there or here, not both.
 # rock, . air, P start, F finish, - platform, = collapsing platform, ^ spikes, d dog, D big dog, A B
 gate, a b the gate's unlocker. P, F, d, D, a, b and ^ stand on the tile below them. The camera's zones and

@@ -1,6 +1,6 @@
 Level 1's camera: its zones and lookouts, on level1.txt's tile grid (one tile is 48 px; column and row 0 at the
 top left). It is apart from the map so that a map made again keeps it; build_level1.gd reads both, and leaves out
-any zone lines left in the map. The cave's habits (scenes/levels/Lust/LustLevel_Phase1_Cave.tscn): the screen's
+any zone lines left in the map. The cave's habits (scenes/levels/lust/LustLevel_Phase1_Cave.tscn): the screen's
 bottom on the zone's floor and two tiles more (vertical_anchor=1, bottom_margin=96); rooms at zoom 1.3, low
 tunnels at 1.45 with fit_height, auto_zoom on, free across; shafts held across at zoom 2.0 with bottom_margin=200
 and auto_zoom off. A room is held across (limit_horizontally) only where free it would show another passage, as
