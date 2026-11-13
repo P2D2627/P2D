@@ -18,6 +18,8 @@ const GROUP: StringName = &"save_points"
 @export var player: Player
 ## Where the man starts once this stretch is over.
 @export var respawn: Marker2D
+## The phase of the level that starts here, for RunStats; 0 when the stretch starts no phase.
+@export_range(0, 9) var starts_phase: int = 0
 
 @onready var _progress: GameProgress = get_node(^"/root/GameState") as GameProgress
 
@@ -34,6 +36,11 @@ func _ready() -> void:
 	body_entered.connect(_on_body_entered)
 	if _progress.has_event(event):
 		player.global_position = respawn.global_position
+
+
+## Whether the man got here, in this run or before the save the level started from.
+func is_reached() -> bool:
+	return _progress.has_event(event)
 
 
 func _on_body_entered(_body: Node2D) -> void:

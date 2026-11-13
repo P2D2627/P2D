@@ -13152,26 +13152,29 @@ max_x = 4704.0
 
 [node name="GateA" parent="Gates" unique_id=428846173 instance=ExtResource("2_4n2nv")]
 position = Vector2(12144, 1200)
+slide_way = null
 
 [node name="GateB" parent="Gates" unique_id=1727274378 instance=ExtResource("2_4n2nv")]
 position = Vector2(16128, 7824)
 height_tiles = 5
+slide_way = null
 
 [node name="P3Gate1" parent="Gates" unique_id=433074669 instance=ExtResource("2_4n2nv")]
 position = Vector2(3576, 3360)
 width_tiles = 5
 height_tiles = 1
-slide_way = 1
+slide_way = null
 
 [node name="P3Gate2" parent="Gates" unique_id=740821796 instance=ExtResource("2_4n2nv")]
 position = Vector2(7896, 3744)
 width_tiles = 5
 height_tiles = 1
-slide_way = 2
+slide_way = null
 
 [node name="P3Gate3" parent="Gates" unique_id=999937206 instance=ExtResource("2_4n2nv")]
 position = Vector2(4416, 5328)
 height_tiles = 6
+slide_way = null
 
 [node name="Tiles" type="TileMapLayer" parent="." unique_id=1555182734]
 texture_filter = 1
@@ -13180,7 +13183,7 @@ tile_map_data = PackedByteArray("AAAAAAAAAAAAAAAAAAABAAAAAAAAAAAAAAACAAAAAAAAAAA
 tile_set = ExtResource("3_265vi")
 
 [node name="Player" parent="." unique_id=1108148048 instance=ExtResource("14_my875")]
-position = Vector2(6437, 3950)
+position = Vector2(5074, 17519)
 
 [node name="Dogs" type="Node2D" parent="." unique_id=624563792]
 
@@ -48248,6 +48251,7 @@ script = ExtResource("17_da51d")
 event = &"lust_phase_2_reached"
 player = NodePath("../Player")
 respawn = NodePath("Respawn")
+starts_phase = 2
 
 [node name="Respawn" type="Marker2D" parent="Phase2Save" unique_id=2109438384]
 top_level = true
@@ -48265,6 +48269,7 @@ script = ExtResource("17_da51d")
 event = &"lust_phase_3_reached"
 player = NodePath("../Player")
 respawn = NodePath("Respawn")
+starts_phase = 3
 
 [node name="Respawn" type="Marker2D" parent="Phase3Save" unique_id=1129611881]
 top_level = true

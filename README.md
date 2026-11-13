@@ -882,7 +882,7 @@ Remote; os restantes valores são lidos sempre que são usados.
     ├── project.godot
     ├── main.tscn      cena principal: menus, pausa e o nível em jogo (script main.gd)
     ├── default_bus_layout.tres   buses de áudio
-    ├── core/          serviços globais: as opções do jogador (autoload Settings), o registo moral (autoload Moral), o progresso do jogo (autoload GameState), o ficheiro da gravação e os perfis de controlos
+    ├── core/          serviços globais: as opções do jogador (autoload Settings), o registo moral (autoload Moral), o progresso do jogo (autoload GameState), as estatísticas da partida (autoload RunStats), o ficheiro da gravação e os perfis de controlos
     ├── player/        personagem: cena, scripts, valores do movimento, SP e agarrão
     ├── crucifix/      crucifixo: cena, script e valores
     ├── demon/         demónios que perseguem: cena, scripts, os estados (states/) e os valores de cada nível
@@ -995,6 +995,8 @@ godot --headless --fixed-fps 60 --path Projeto --script res://tests/test_crucifi
 godot --headless --fixed-fps 60 --path Projeto --script res://tests/test_sinking_drawing.gd
 godot --headless --fixed-fps 60 --path Projeto --script res://tests/test_level_restart.gd
 godot --headless --fixed-fps 60 --path Projeto --script res://tests/test_moral_record.gd
+godot --headless --fixed-fps 60 --path Projeto --script res://tests/test_run_record.gd
+godot --headless --fixed-fps 60 --path Projeto --script res://tests/test_level_run_stats.gd
 godot --headless --fixed-fps 60 --path Projeto --script res://tests/test_moral_dialogue.gd
 godot --headless --fixed-fps 60 --path Projeto --script res://tests/test_gym_hint.gd
 godot --headless --fixed-fps 60 --path Projeto --script res://tests/test_gym_stations.gd
@@ -1007,7 +1009,8 @@ O `test_input_profiles.gd` escreve seis ERROR, das tentativas de atribuir teclas
 esperados. O `test_soul_points.gd` escreve quatro ERROR, das quantidades de dano e de cura
 inválidas, também esperados. O `test_moral_record.gd` escreve seis WARNING, de uma tentação
 desconhecida (aceite e consultada), de um tom desconhecido e de três tempos de escuta inválidos,
-igualmente esperados.
+igualmente esperados. O `test_run_record.gd` escreve três WARNING, de mortes sem nível, sem zona e
+na fase 0, também esperados.
 
 Todos os scripts de testes e de medidas estendem `tests/support/base_test.gd`, diretamente ou
 através de outro ficheiro de suporte. Antes de o autoload `Settings` estar pronto, esse ficheiro
@@ -2412,6 +2415,27 @@ adiado até o balão fechar e o crucifixo perdido com o primeiro upgrade. O `tes
 verifica os dados: ids únicos, todos os ids das falas presentes no catálogo, e um atalho que aponta
 para uma fase e um ponto de chegada que existem. O `test_offer_shortcut.gd` percorre o atalho no
 jogo, e o `test_dialogue_calls.gd` confirma que todas as funções chamadas pelas falas existem.
+
+#### Estatísticas da partida: mortes, zonas e tempo
+
+O autoload `RunStats` conta as mortes do homem por fase e por zona de cada nível. Estes números
+servem as falas dos demónios (por exemplo, "morreste tantas vezes no mesmo sítio") e o julgamento
+final, que mostra ao homem o que fez, com números. Não entram no registo moral: só as decisões
+contam para a moral, e morrer não é uma decisão. Nada disto aparece no ecrã durante o jogo.
+
+A fase é dada pelo próprio nível. Cada nível começa na fase indicada em First Phase, que
+normalmente é 1. Os pontos de gravação que abrem uma fase têm o número dela em Starts Phase. No
+nível 1, a fase 2 começa no `Phase2Save` e a fase 3 no `Phase3Save`. Ao arrancar, o nível fica na
+fase do ponto mais avançado já alcançado. A zona de uma morte é a zona de câmara mais pequena que
+contém o homem. Os níveis já estão divididos nestas zonas, com nomes de sítios, por isso não é
+preciso marcar nada à parte. Fora de todas as zonas, a morte conta numa célula de 768 px
+(Death Cell Size). A zona só se procura no momento da morte, e não em cada frame. Os números de cada
+nível guardam-se em separado, para que a fase 1 do nível 2 não some às mortes da fase 1 do nível 1.
+
+O `RunStats` fica fora do `GameState` porque a morte repõe o `GameState` como estava na última
+gravação, e uma morte tem de ficar contada. As regras estão numa classe sem nós (`RunRecord`),
+testada isoladamente no `test_run_record.gd`. O `test_level_run_stats.gd` verifica, no nível 1, a
+fase ao arrancar e ao entrar no `Phase2Save`, e a zona de uma morte.
 
 #### Gravação do jogo
 
