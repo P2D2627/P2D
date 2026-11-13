@@ -889,7 +889,7 @@ Remote; os restantes valores são lidos sempre que são usados.
     ├── camera/        câmara do jogo e zonas de câmara
     ├── debug/         overlay de depuração e vista dos demónios da sala de teste
     ├── levels/        salas, níveis, a entrada de cada nível na lista do menu (LevelEntry) e os pontos de chegada (ArrivalPoint)
-    ├── offers/        tentações: o autoload Offers, uma oferta por ficheiro (OfferData), o catálogo e os efeitos
+    ├── offers/        tentações: o autoload Offers, uma oferta por ficheiro (OfferData), o catálogo, os efeitos e o ritmo das ofertas por mortes
     ├── background/    fundo em camadas: as camadas (BackgroundLayer), o modelo e o fundo de cada nível
     ├── ui/            menus, ecrã das opções, o balão de diálogo e o tema comum (ui_theme.tres)
     ├── components/    componentes usados por mais de um sistema: Repellable, Hitbox, Hurtbox, SinkingDrawing e KnockOff
@@ -998,6 +998,7 @@ godot --headless --fixed-fps 60 --path Projeto --script res://tests/test_moral_r
 godot --headless --fixed-fps 60 --path Projeto --script res://tests/test_run_record.gd
 godot --headless --fixed-fps 60 --path Projeto --script res://tests/test_level_run_stats.gd
 godot --headless --fixed-fps 60 --path Projeto --script res://tests/test_dialogue_skip.gd
+godot --headless --fixed-fps 60 --path Projeto --script res://tests/test_death_offer_pacer.gd
 godot --headless --fixed-fps 60 --path Projeto --script res://tests/test_moral_dialogue.gd
 godot --headless --fixed-fps 60 --path Projeto --script res://tests/test_gym_hint.gd
 godot --headless --fixed-fps 60 --path Projeto --script res://tests/test_gym_stations.gd
@@ -2463,7 +2464,38 @@ O `RunStats` fica fora do `GameState` porque a morte repõe o `GameState` como e
 gravação, e uma morte tem de ficar contada. As regras estão numa classe sem nós (`RunRecord`),
 testada isoladamente no `test_run_record.gd`. O `test_level_run_stats.gd` verifica, no nível 1, a
 fase ao arrancar e ao entrar no `Phase2Save`, a zona de uma morte e o tempo, que para durante a
-pausa e se mantém quando a fase recomeça.
+pausa e se mantém quando a fase recomeça, e o aviso de uma oferta por mortes.
+
+#### Ofertas por mortes: cada vez mais seguidas
+
+Durante um nível, a única oferta é o atalho: saltar o resto do nível e ir diretamente ao fim. O
+demónio do nível oferece-o no início das fases 2 e 3 e também quando o homem vai morrendo. A fase 1
+faz-se sempre, por isso as mortes nela não trazem ofertas. O upgrade (o dom do demónio) só é
+oferecido no fim do nível.
+
+Cada morte nas fases 2 e 3 acrescenta "pressão": 1, mais 0,5 por cada morte que ele já teve na
+mesma zona. Morrer sempre no mesmo sítio traz a oferta mais cedo. Quando a pressão chega ao limiar,
+fica uma oferta à espera na zona dessa morte, e a pressão volta a zero. O primeiro limiar é sorteado
+entre 4 e 7, e cada limiar seguinte é 70 % do anterior, nunca abaixo de 1,5, com uma variação
+sorteada de 15 % para cada lado. O jogador nunca consegue contar até à oferta, mas sente que ela
+aperta à medida que falha. Enquanto uma oferta espera, as mortes não somam. Depois de ele aceitar o
+atalho, acabam as ofertas nesse nível.
+
+| Valor (`offers/death_offer_stats.tres`) | Referência |
+|---|---|
+| Primeira fase com ofertas | 2 |
+| Primeiro limiar | sorteado entre 4 e 7 |
+| Peso de cada morte anterior na mesma zona | +0,5 |
+| Cada limiar seguinte | 70 % do anterior |
+| Limiar mínimo | 1,5 |
+| Variação sorteada | ±15 % |
+
+Com uma morte em cada zona, as ofertas chegam ao fim de 4, 3, 2, 2… mortes. Morrendo sempre no
+mesmo sítio, a primeira chega à terceira morte. A regra vive numa classe sem nós
+(`DeathOfferPacer`), testada no `test_death_offer_pacer.gd` com números fixos, sem sorteio. O
+`RunStats` alimenta-a com cada morte, avisa quando há uma oferta à espera e guarda-a com as
+estatísticas, para que a morte não a apague. Morrer não conta para a moral; só a resposta à oferta
+conta.
 
 #### Gravação do jogo
 

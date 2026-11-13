@@ -3,7 +3,9 @@
 # that phase, and walking into phase 2's save moves him on. A death counts in the phase he is in,
 # inside the smallest camera zone around him, and a death outside every zone counts in a cell.
 # Time adds up in the phase while the level runs, stops while the game is paused, and is not lost
-# when a new copy of the level takes the place of the old one, as after a death.
+# when a new copy of the level takes the place of the old one, as after a death. RunStats says once
+# when deaths make a shortcut offer due, keeps it waiting through a save, and starts the offers over
+# in another level.
 # Run from the repository root; the exit code is 0 on pass and 1 on fail:
 # godot --headless --fixed-fps 60 --path Projeto --script res://tests/test_level_run_stats.gd
 extends "res://tests/support/player_test.gd"
@@ -34,7 +36,31 @@ func _initialize() -> void:
 	results.append(await _a_death_counts_in_the_smallest_zone())
 	results.append(await _outside_every_zone_a_death_counts_in_a_cell())
 	results.append(await _time_counts_in_the_phase_but_not_while_paused())
+	results.append(_run_stats_says_when_an_offer_is_due_and_keeps_it())
 	finish(results)
+
+
+## In phase 2, deaths in one zone bring death_offer_due once, for that zone; the save keeps the
+## offer waiting; and another level starts the offers over, with nothing waiting.
+func _run_stats_says_when_an_offer_is_due_and_keeps_it() -> bool:
+	_stats.reset()
+	_stats.enter(&"a_level", 2)
+	var due: Array[StringName] = []
+	var on_due: Callable = func(zone: StringName) -> void: due.append(zone)
+	_stats.death_offer_due.connect(on_due)
+	for death: int in 30:
+		_stats.record_death(&"pit")
+	_stats.death_offer_due.disconnect(on_due)
+	var data: Dictionary = _stats.to_save()
+	_stats.reset()
+	_stats.from_save(data)
+	var kept: bool = _stats.has_death_offer() and _stats.get_death_offer_zone() == &"pit"
+	_stats.enter(&"another_level", 1)
+	var started_over: bool = not _stats.has_death_offer()
+	_stats.reset()
+	return report(due == [&"pit"] and kept and started_over,
+			"RunStats: offers due %s (expected one, at pit), kept by a save %s, another level starts over %s"
+			% [due, kept, started_over])
 
 
 func _fresh_it_is_phase_1_of_level1() -> bool:
