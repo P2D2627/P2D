@@ -2,7 +2,7 @@
 
 [ext_resource type="Script" uid="uid://dk7gbxbjswifi" path="res://demon/tutorial_demon.gd" id="1_script"]
 [ext_resource type="Resource" uid="uid://cpsgq8t821mct" path="res://dialogue/lust.dialogue" id="2_lust"]
-[ext_resource type="PackedScene" uid="uid://73jm5qjy52vq" path="res://addons/dialogue_manager/example_balloon/example_balloon.tscn" id="3_balloon"]
+[ext_resource type="PackedScene" path="res://ui/dialogue_balloon.tscn" id="3_balloon"]
 [ext_resource type="PackedScene" path="res://levels/key_prompt.tscn" id="4_key_prompt"]
 
 [sub_resource type="RectangleShape2D" id="RectangleShape2D_g4v7s"]

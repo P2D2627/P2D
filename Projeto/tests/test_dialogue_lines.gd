@@ -4,7 +4,7 @@
 # the balloon keeps that line on screen above them and hides the ones already asked, which come
 # marked as not allowed. A stand-in game state holds the player's name and the balloon's locals,
 # since GameState does not exist yet. The last case opens dialogue/lust_waking_preview.tscn, the
-# example balloon on the first cue of Lust.
+# game's balloon on the first cue of Lust.
 # Run from the repository root; the exit code is 0 on pass and 1 on fail:
 # godot --headless --fixed-fps 60 --path Projeto --script res://tests/test_dialogue_lines.gd
 extends "res://tests/support/player_test.gd"
@@ -98,11 +98,11 @@ func _curly_quotes_and_the_ellipsis_are_kept() -> bool:
 
 
 func _the_preview_shows_the_first_line_of_waking() -> bool:
-	var preview: DialogueManagerExampleBalloon = PREVIEW_SCENE.instantiate()
+	var preview: DialogueBalloon = PREVIEW_SCENE.instantiate()
 	root.add_child(preview)
 	var shown: bool = await wait_until(func() -> bool:
 		return preview.dialogue_line != null and preview.dialogue_line.text == "Lord...")
-	var passed: bool = shown and not preview.character_label.visible
+	var passed: bool = shown and not preview.is_speaker_shown()
 	preview.queue_free()
 	await process_frame
 	return report(passed, "the preview opens on \"Lord...\" with no name shown")

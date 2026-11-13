@@ -891,7 +891,7 @@ Remote; os restantes valores são lidos sempre que são usados.
     ├── levels/        salas, níveis, a entrada de cada nível na lista do menu (LevelEntry) e os pontos de chegada (ArrivalPoint)
     ├── offers/        tentações: o autoload Offers, uma oferta por ficheiro (OfferData), o catálogo e os efeitos
     ├── background/    fundo em camadas: as camadas (BackgroundLayer), o modelo e o fundo de cada nível
-    ├── ui/            menus, ecrã das opções e o tema comum (ui_theme.tres)
+    ├── ui/            menus, ecrã das opções, o balão de diálogo e o tema comum (ui_theme.tres)
     ├── components/    componentes usados por mais de um sistema: Repellable, Hitbox, Hurtbox, SinkingDrawing e KnockOff
     ├── tests/         testes e medidas que correm sem janela
     │   └── support/   preparação comum aos testes
@@ -997,6 +997,7 @@ godot --headless --fixed-fps 60 --path Projeto --script res://tests/test_level_r
 godot --headless --fixed-fps 60 --path Projeto --script res://tests/test_moral_record.gd
 godot --headless --fixed-fps 60 --path Projeto --script res://tests/test_run_record.gd
 godot --headless --fixed-fps 60 --path Projeto --script res://tests/test_level_run_stats.gd
+godot --headless --fixed-fps 60 --path Projeto --script res://tests/test_dialogue_skip.gd
 godot --headless --fixed-fps 60 --path Projeto --script res://tests/test_moral_dialogue.gd
 godot --headless --fixed-fps 60 --path Projeto --script res://tests/test_gym_hint.gd
 godot --headless --fixed-fps 60 --path Projeto --script res://tests/test_gym_stations.gd
@@ -2415,6 +2416,26 @@ adiado até o balão fechar e o crucifixo perdido com o primeiro upgrade. O `tes
 verifica os dados: ids únicos, todos os ids das falas presentes no catálogo, e um atalho que aponta
 para uma fase e um ponto de chegada que existem. O `test_offer_shortcut.gd` percorre o atalho no
 jogo, e o `test_dialogue_calls.gd` confirma que todas as funções chamadas pelas falas existem.
+
+#### Balão de diálogo: retrato e saltar falas
+
+As falas aparecem no balão do próprio jogo (`ui/dialogue_balloon.tscn`), feito a partir do balão
+de exemplo do Dialogue Manager, como o plugin recomenda. O `addons/` fica como veio. Além do que o
+exemplo já fazia (as falas a escrever-se, as respostas e o toque que mostra a fala inteira), o
+balão mostra o retrato de quem fala. Até a arte chegar (S3), o retrato é provisório: um quadrado
+com a cor da personagem e a inicial do nome. Os retratos finais entram no Inspector (Portraits), um
+por personagem, sem mudar código.
+
+Manter o Espaço premido durante 0,6 s (Skip Hold Time) salta as falas até à próxima com respostas,
+ou até ao fim da conversa. Uma barra fina enche-se enquanto se mantém a tecla. O salto nunca escolhe
+uma resposta pelo jogador e corre na mesma o que as falas saltadas fazem, como apresentar uma
+oferta. Um toque curto continua só a avançar uma fala. O Dialogue Manager não tem esta função: o seu
+autor recomenda acrescentá-la no balão, que é o que se fez. O número de falas saltadas fica nas
+estatísticas da partida, para o julgamento final, e não conta para a moral.
+
+O `test_dialogue_skip.gd` verifica que o salto para nas respostas sem escolher nenhuma, que a oferta
+das falas saltadas é apresentada, que um toque curto não salta, que uma conversa sem respostas
+termina e que o retrato provisório mostra a inicial.
 
 #### Estatísticas da partida: mortes, zonas e tempo
 
