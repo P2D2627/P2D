@@ -1,7 +1,7 @@
 class_name Hitbox
 extends Area2D
 
-## What causes damage, such as a demon's bite. It is used through its scene, components/hitbox.tscn,
+## What causes damage, such as a demon's bite. It is used through its scene, scenes/characters/components/hitbox.tscn,
 ## which puts it on the enemy_hitbox physics layer and keeps it from looking for anything itself:
 ## the Hurtbox is the one that looks. Instance the scene as a child of what attacks, give it a
 ## CollisionShape2D child, and keep it on, with activate(), only while the attack can land. Each

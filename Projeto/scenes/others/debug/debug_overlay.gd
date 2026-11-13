@@ -15,7 +15,7 @@ const DAMAGE_ACTION: StringName = &"debug_damage"
 # try the offers before the lines reach them in play. Once every offer is answered in its
 # .dialogue and the levels lead up to it, remove them: these three constants, their branches in
 # _unhandled_input, _answer_offer, _offer_to_answer, the three actions in project.godot, F7 to F9
-# in RESERVED_KEYS of core/input_profiles.gd, and their rows in the README.
+# in RESERVED_KEYS of scenes/autoload/input_profiles.gd, and their rows in the README.
 const ACCEPT_OFFER_ACTION: StringName = &"debug_accept_offer"
 const REFUSE_OFFER_ACTION: StringName = &"debug_refuse_offer"
 const RESET_RUN_ACTION: StringName = &"debug_reset_run"

@@ -1,4 +1,4 @@
-# Adds level 1's phase 3 to the level as it is now: the scene, levels/lust/level1.tscn, is edited by hand, so it is
+# Adds level 1's phase 3 to the level as it is now: the scene, scenes/levels/lust/level1.tscn, is edited by hand, so it is
 # not built again; phase 3 goes into the solid rock above phase 1 and left of phase 2, from its text map,
 # level1_phase3.txt (see that file). It carves the air and lays the platforms there, and adds the dogs, the biggest
 # dog, the collapsing platforms, the spikes (on the walls too, turned on their side), the three gates, the two
@@ -44,7 +44,7 @@ const RESHAPED: String = "#.-^"
 ## How far, in px, a loose rock's middle may be from the floor or ceiling it stands on: half the tallest drawing.
 const ROCK_REACH: float = 384.0
 const RIM_PATH: NodePath = ^"Art/StoneRim"
-## The stones of a kind are drawn together, in this order (see levels/stone_rim.gd), so a stone laid goes after
+## The stones of a kind are drawn together, in this order (see scenes/levels/stone_rim.gd), so a stone laid goes after
 ## the last one of its kind. Both corners are one kind: they are laid mixed, after the rest.
 const STONE_KINDS: PackedStringArray = ["LeftWall", "RightWall", "Ceiling", "Floor", "Corner"]
 ## The backdrop's loose rocks: the drawings (512 px squares, the rock in the middle) and, for each of the backdrop's

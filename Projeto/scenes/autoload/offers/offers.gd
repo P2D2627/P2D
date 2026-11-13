@@ -143,7 +143,7 @@ func set_log_path(path: String) -> void:
 func _find(id: StringName) -> OfferData:
 	var offer: OfferData = get_catalog().find(id)
 	if offer == null:
-		push_warning("Offers: %s is not in the offer catalog, offers/offer_catalog.tres." % id)
+		push_warning("Offers: %s is not in the offer catalog, scenes/autoload/offers/offer_catalog.tres." % id)
 	return offer
 
 

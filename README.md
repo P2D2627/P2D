@@ -393,7 +393,7 @@ demónios usam-na com 96 px e 240 px:
 Ao descolar, o retângulo provisório estica (0,8 × 1,25) e, ao aterrar, encolhe (1,25 × 0,75),
 voltando ao tamanho em 0,2 s; cada um tem um bip provisório.
 
-Os valores são os do demónio da luxúria, num ficheiro de dados (`demon/lust_demon_stats.tres`);
+Os valores são os do demónio da luxúria, num ficheiro de dados (`scenes/characters/demon/lust_demon_stats.tres`);
 mudam sem alterar código e são provisórios. O aviso é, por agora, um retângulo que muda de forma e
 de cor, com uma forma para cada ataque, à espera da arte e do som; a mordida precisa de uma animação
 e de um som próprios. O demónio do tutorial, que fala e não persegue, terá uma cena própria
@@ -434,7 +434,7 @@ empurrado para o lado a 600 px/s. Se os dois ficarem presos, porque o empurrão 
 dois lados, como num buraco da largura de um corpo, atravessam-se ao fim de 0,1 s até se
 separarem; enquanto se sobrepõem, o demónio não ataca.
 
-Os valores estão em `player/grab_stats.tres` (o agarrão), no ficheiro de dados dos demónios (o dano
+Os valores estão em `scenes/characters/player/grab_stats.tres` (o agarrão), no ficheiro de dados dos demónios (o dano
 e os arremessos) e na cena da personagem (a invulnerabilidade), e são provisórios. Soltar-se
 mantendo o salto premido, em vez de o premir repetidamente, já existe no código e chega às opções
 numa tarefa seguinte, para quem não consegue premir depressa.
@@ -446,16 +446,16 @@ ajusta no Inspector. Por agora são formas provisórias, até chegar a arte.
 
 | Elemento | Cena | Comportamento | Medida |
 |---|---|---|---|
-| Portão | `gates/gate.tscn` | barra uma passagem à personagem, aos demónios e à visão destes; desbloqueado, sobe a sua própria altura, por trás da rocha; com Slide Way em Left ou Right, é um alçapão e desliza para esse lado a sua própria largura | desliza em 0,8 s (48 passos de física) |
-| Desbloqueador | `gates/gate_unlocker.tscn` | ativa-se uma vez, com o crucifixo erguido ao pé dele, e abre os portões da lista Gates; o crucifixo não sabe que ele existe, porque o reconhece como mais um elemento repelível (`components/crucifix_sensor.gd`), que não se move | alcance de 200 px, o raio do crucifixo |
-| Anel de proximidade | `gates/proximity_unlocker.tscn` | ativa-se uma vez, na primeira vez que a personagem entra no círculo, sem crucifixo, e abre os portões da lista Gates | alcance (Reach) de 288 px por omissão |
-| Picos letais | `traps/lethal_spikes.tscn` | um toque mata a personagem de imediato, com qualquer valor de SP; os demónios passam por cima sem efeito | parte que mata com 24 px de altura e 4 px de folga em cada ponta, para um salto que passe à vista passar mesmo |
-| Plataforma que desaba | `platforms/collapsing_platform.tscn` | usa o mesmo tile das plataformas de sentido único; pousar nela faz com que pisque e desapareça; saltar através dela, de baixo, não a ativa; volta ao fim de Come Back Time, com 0 fica desaparecida até o nível recomeçar | desaparece em 0,6 s (36 passos) e volta ao fim de 3 s |
+| Portão | `scenes/objects/gates/gate.tscn` | barra uma passagem à personagem, aos demónios e à visão destes; desbloqueado, sobe a sua própria altura, por trás da rocha; com Slide Way em Left ou Right, é um alçapão e desliza para esse lado a sua própria largura | desliza em 0,8 s (48 passos de física) |
+| Desbloqueador | `scenes/objects/gates/gate_unlocker.tscn` | ativa-se uma vez, com o crucifixo erguido ao pé dele, e abre os portões da lista Gates; o crucifixo não sabe que ele existe, porque o reconhece como mais um elemento repelível (`scenes/characters/components/crucifix_sensor.gd`), que não se move | alcance de 200 px, o raio do crucifixo |
+| Anel de proximidade | `scenes/objects/gates/proximity_unlocker.tscn` | ativa-se uma vez, na primeira vez que a personagem entra no círculo, sem crucifixo, e abre os portões da lista Gates | alcance (Reach) de 288 px por omissão |
+| Picos letais | `scenes/objects/traps/lethal_spikes.tscn` | um toque mata a personagem de imediato, com qualquer valor de SP; os demónios passam por cima sem efeito | parte que mata com 24 px de altura e 4 px de folga em cada ponta, para um salto que passe à vista passar mesmo |
+| Plataforma que desaba | `scenes/objects/platforms/collapsing_platform.tscn` | usa o mesmo tile das plataformas de sentido único; pousar nela faz com que pisque e desapareça; saltar através dela, de baixo, não a ativa; volta ao fim de Come Back Time, com 0 fica desaparecida até o nível recomeçar | desaparece em 0,6 s (36 passos) e volta ao fim de 3 s |
 
 A largura e a altura destes elementos definem-se em tiles, no Inspector. A morte imediata é o método
 `die()` da personagem, que a imobiliza e fecha a sua caixa de dano, enquanto o nível recomeça. O cão
-grande (`demon/big_demon.tscn`) é, por agora, um demónio normal pintado de preto, para se distinguir
-no mapa. O maior cão (`demon/biggest_demon.tscn`), no fim da fase 3 do nível 1, é o demónio normal oito
+grande (`scenes/characters/demon/big_demon.tscn`) é, por agora, um demónio normal pintado de preto, para se distinguir
+no mapa. O maior cão (`scenes/characters/demon/biggest_demon.tscn`), no fim da fase 3 do nível 1, é o demónio normal oito
 vezes maior (corpo de 896 × 448 px, caixa de ataque, arte e verificações aos pés) com um anel de
 proximidade de 736 px de alcance à volta do meio do corpo: chegar perto dele abre os portões da sua
 lista Opens. Por agora não faz mais nada de diferente de um cão normal.
@@ -614,22 +614,22 @@ para os dois lados, nem o nível de baixo através do chão, que nenhuma zona co
 ligado mostra mais ar para lá dos seus lados do que mostraria com a âncora trocada, e que a
 personagem começa numa zona ancorada em baixo.
 
-A nova fase 2 do nível 1 (`levels/lust/lust_phase_2.tscn`, 142 × 257 tiles) é construída a partir do
-texto `levels/lust/lust_phase_2.txt` por `levels/lust/build_lust_phase_2.gd`, que também coloca as 77
+A nova fase 2 do nível 1 (`scenes/levels/lust/lust_phase_2.tscn`, 142 × 257 tiles) é construída a partir do
+texto `scenes/levels/lust/lust_phase_2.txt` por `scenes/levels/lust/build_lust_phase_2.gd`, que também coloca as 77
 zonas de câmara. Todas têm o limite horizontal ligado, para que o ecrã só mostre outra passagem através
 da rocha, que tem pelo menos 9 tiles entre passagens lado a lado e 6 entre passagens sobrepostas. O
 `test_lust_phase_2.gd` aplica as mesmas verificações de câmara e confirma que cada portão só se alcança
 depois do seu desbloqueador. O `test_lust_phase_2_route.gd` joga o nível do início ao fim, sem os cães,
 com a personagem real: 107 movimentos, os dois desbloqueadores e a saída.
 
-O nível 1 completo (`levels/lust/level1.tscn`, 371 × 379 tiles) junta numa só cena o tutorial, a nova fase 1 e a
-fase 2, sem carregamentos entre elas. A primeira versão foi construída a partir do texto `levels/lust/level1.txt`
-por `levels/lust/build_level1.gd`, que acrescenta as 124 zonas de câmara e copia os avisos, a Velvet e o demónio do
+O nível 1 completo (`scenes/levels/lust/level1.tscn`, 371 × 379 tiles) junta numa só cena o tutorial, a nova fase 1 e a
+fase 2, sem carregamentos entre elas. A primeira versão foi construída a partir do texto `scenes/levels/lust/level1.txt`
+por `scenes/levels/lust/build_level1.gd`, que acrescenta as 124 zonas de câmara e copia os avisos, a Velvet e o demónio do
 corredor da cena onde o tutorial foi feito, que fica como estava. Desde então, a cena é o nível: os tiles, os cães,
 os espigões, as plataformas e as zonas editam-se à mão no editor do Godot, tile a tile e peça a peça. O construtor
 recusa-se a escrever por cima de uma cena que já existe; só o faz com a opção `-- --force`, que descarta as
 edições feitas à mão (a arte e o fundo são preservados mesmo nesse caso). O contorno de pedras segue o mesmo
-princípio: `levels/lust/build_stone_rim.gd` gera-o uma vez a partir dos tiles (uma faixa por cada troço reto de
+princípio: `scenes/levels/lust/build_stone_rim.gd` gera-o uma vez a partir dos tiles (uma faixa por cada troço reto de
 chão, teto ou parede e uma peça por cada canto, 2628 peças) e grava as peças na cena, onde passam a editar-se pedra
 a pedra. O script também se recusa a escrever por cima das peças já gravadas, salvo com `-- --force`. Depois de uma
 mudança grande nos tiles, volta a gerar-se o contorno com essa opção, o que descarta os retoques feitos às pedras. O tutorial liga à fase 1 por um corredor de 12
@@ -642,7 +642,7 @@ ligações e os pontos de gravação e deixa os 99 cães (13 da fase 3) a patrul
 movimentos com a personagem real.
 
 A fase 3 do nível 1 foi acrescentada à mesma cena, a partir do desenho do grupo no Miro, por
-`levels/lust/add_level1_phase3.gd`, que lê o texto `levels/lust/level1_phase3.txt` (154 × 158 tiles) e o junta ao
+`scenes/levels/lust/add_level1_phase3.gd`, que lê o texto `scenes/levels/lust/level1_phase3.txt` (154 × 158 tiles) e o junta ao
 nível tal como está, sem o reconstruir, para não perder as edições feitas à mão. Escava o ar e coloca 12 cães, o maior
 cão, 181 tiles de picos (25 faixas nas paredes, rodadas 90°), 52 tiles de plataformas que desabam, três portões, dois
 desbloqueadores, 38 zonas de câmara e um ponto de gravação no início da fase. Recusa-se a correr duas vezes e a
@@ -763,7 +763,7 @@ camada, mais devagar se desloca no ecrã (efeito de parallax), o que dá profund
 desenhos adicionais. Na sala de teste, a camada distante desloca-se 0,25 px por cada pixel que a
 câmara percorre e cobre o ecrã em qualquer ponto da sala, tanto nos ecrãs 16:9 como nos 21:9.
 
-O fundo de cada nível parte do modelo `background/level_background.tscn`, que já contém as quatro
+O fundo de cada nível parte do modelo `scenes/levels/background/level_background.tscn`, que já contém as quatro
 camadas previstas, da mais distante para a mais próxima:
 
 | Camada | Scroll Scale | Conteúdo | Cobertura do ecrã (Cover) |
@@ -807,7 +807,7 @@ editor mostra as camadas sem este deslocamento, pelo que a posição final se co
 ## Afinação do movimento
 
 Os valores do movimento estão reunidos no ficheiro `player_movement_stats.tres`, na pasta
-`player/` do projeto Godot (`Projeto/player/` no repositório). Abre-se no painel FileSystem
+`scenes/characters/player/` do projeto Godot (`Projeto/scenes/characters/player/` no repositório). Abre-se no painel FileSystem
 do Godot e edita-se no Inspector. As alterações aplicam-se à personagem em todas as cenas.
 
 | Campo no Inspector | Valor atual | O que controla |
@@ -827,7 +827,7 @@ do Godot e edita-se no Inspector. As alterações aplicam-se à personagem em to
 | Wall Slide Speed | 350 px/s | a velocidade máxima de descida no deslize; a subida ao longo da parede não é travada |
 | Wall Jump Lock Time | 0,2 s | o tempo, depois de um salto da parede, durante o qual a corrida não responde; com os valores antigos do movimento, 0,15 s ou menos deixava subir uma parede isolada, e com os atuais esse limite ainda não foi medido |
 
-Os valores do crucifixo estão no ficheiro `crucifix_stats.tres`, na pasta `crucifix/`, e editam-se
+Os valores do crucifixo estão no ficheiro `crucifix_stats.tres`, na pasta `scenes/characters/crucifix/`, e editam-se
 da mesma forma. O Speed Multiplier e o Repel Radius aplicam-se de imediato, também com o jogo a
 correr, quando são mudados no separador Remote do editor; os restantes valores são lidos sempre que
 são usados.
@@ -842,7 +842,7 @@ são usados.
 | Repel Speed | 1500 px/s | a velocidade a que são empurrados para fora desse raio |
 | Heal Per Second | 5 SP/s | a cura por cada segundo com o crucifixo erguido |
 
-Os valores dos SP estão no ficheiro `soul_points_stats.tres`, na pasta `player/`. O Max SP e o Low
+Os valores dos SP estão no ficheiro `soul_points_stats.tres`, na pasta `scenes/characters/player/`. O Max SP e o Low
 Threshold aplicam-se de imediato, também com o jogo a correr, quando são mudados no separador
 Remote; os restantes valores são lidos sempre que são usados.
 
@@ -882,49 +882,63 @@ Remote; os restantes valores são lidos sempre que são usados.
     ├── project.godot
     ├── main.tscn      cena principal: menus, pausa e o nível em jogo (script main.gd)
     ├── default_bus_layout.tres   buses de áudio
-    ├── core/          serviços globais: as opções do jogador (autoload Settings), o registo moral (autoload Moral), o progresso do jogo (autoload GameState), o ficheiro da gravação e os perfis de controlos
-    ├── player/        personagem: cena, scripts, valores do movimento, SP e agarrão
-    ├── crucifix/      crucifixo: cena, script e valores
-    ├── demon/         demónios que perseguem: cena, scripts, os estados (states/) e os valores de cada nível
-    ├── camera/        câmara do jogo e zonas de câmara
-    ├── debug/         overlay de depuração e vista dos demónios da sala de teste
-    ├── levels/        salas, níveis, a entrada de cada nível na lista do menu (LevelEntry) e os pontos de chegada (ArrivalPoint)
-    ├── offers/        tentações: o autoload Offers, uma oferta por ficheiro (OfferData), o catálogo e os efeitos
-    ├── background/    fundo em camadas: as camadas (BackgroundLayer), o modelo e o fundo de cada nível
-    ├── ui/            menus, ecrã das opções e o tema comum (ui_theme.tres)
-    ├── components/    componentes usados por mais de um sistema: Repellable, Hitbox, Hurtbox, SinkingDrawing e KnockOff
+    ├── addons/        plugins de terceiros: o Dialogue Manager, que dá as falas
+    ├── assets/        arte e som
+    │   ├── audio/       efeitos sonoros
+    │   ├── fonts/       tipos de letra (por enquanto vazia)
+    │   └── sprites/     uma pasta por grupo: player/, demon_lust/, environment/, backgrounds/ e ramps/
+    ├── dialogue/      as falas, um ficheiro .dialogue por nível
+    ├── scenes/        cenas, scripts e ficheiros de dados, por tipo e, dentro de cada tipo, por sistema
+    │   ├── autoload/    serviços globais: as opções do jogador (Settings), o registo moral (Moral), o progresso do jogo (GameState), as tentações (Offers, em offers/), a gravação e os perfis de controlos
+    │   ├── characters/  a personagem (player/), o crucifixo (crucifix/), os demónios (demon/, com os estados em states/) e os componentes que mais de um sistema usa (components/)
+    │   ├── levels/      salas e níveis: as peças e os scripts comuns, a sala de teste, o fundo (background/), a sala de treino (gym/) e o nível 1 (lust/)
+    │   ├── objects/     peças com comportamento: portões (gates/), plataformas (platforms/) e armadilhas (traps/)
+    │   ├── others/      câmara (camera/), depuração (debug/), shaders partilhados (shaders/) e conjuntos de tiles (tilesets/)
+    │   └── screens/     menus, ecrã das opções e indicador de gravação
     ├── tests/         testes e medidas que correm sem janela
     │   └── support/   preparação comum aos testes
-    └── assets/        sprites, audio, fonts
+    └── themes/        o tema comum da interface (ui_theme.tres)
 ```
 
-O projeto organiza-se por sistema: cada pasta reúne a cena, os scripts e os ficheiros de dados
-(`.tres`) de uma parte do jogo, que se encontram assim num único local. É a organização que a
-documentação do Godot descreve como a mais comum, com os recursos junto das cenas que os usam
+O projeto segue a estrutura de pastas das aulas de Conceção e Desenvolvimento de Jogos (CDJ): a
+arte e o som em `assets/`, as cenas e os scripts em `scenes/` e o tema da interface em `themes/`.
+Dentro de `scenes/`, as pastas dividem-se por tipo e, em cada tipo, por sistema. Cada pasta de
+sistema reúne a cena, os scripts e os ficheiros de dados (`.tres`) de uma parte do jogo, que se
+encontram assim num único local, como recomenda a documentação do Godot
 ([Project organization](https://docs.godotengine.org/en/stable/tutorials/best_practices/project_organization.html)).
-Um sistema novo, como um demónio ou um menu, recebe a sua pasta. Os ficheiros movem-se e
-renomeiam-se no painel FileSystem do editor, que atualiza as referências entre cenas e recursos; no
-fim, uma pesquisa pelo caminho antigo em todo o projeto confirma que nenhum script, incluindo os
-testes, ficou a apontar para ele.
+A arte é a exceção: fica em `assets/`, separada das cenas que a usam, como pede a estrutura de CDJ.
 
-Para que a organização se mantenha à medida que o jogo cresce, seguem-se quatro regras:
+Para que a organização se mantenha à medida que o jogo cresce, seguem-se cinco regras:
 
-- `components/` recebe apenas o que dois ou mais sistemas usam; o resto fica na pasta do sistema a
-  que pertence.
-- O que é global e não pertence a nenhum sistema, como o estado do jogo, as opções gravadas ou o
-  áudio, fica numa pasta `core/`, criada quando surgir o primeiro desses serviços.
-- A arte e o som seguem uma única convenção, decidida com a primeira entrega: junto do sistema que
-  os usa, ou em `assets/` com as mesmas subpastas dos sistemas. As duas não se misturam.
+- Um sistema novo, como um demónio ou um menu, recebe a sua pasta dentro do tipo a que pertence.
+- `scenes/characters/components/` recebe apenas o que dois ou mais sistemas usam; o resto fica na
+  pasta do sistema a que pertence.
+- O que é global e não pertence a nenhum sistema, como o estado do jogo, as opções gravadas ou a
+  gravação, fica em `scenes/autoload/`.
+- Os nomes de pastas e de ficheiros usam minúsculas e `_` (snake_case). Em Windows, um caminho que
+  só difere nas maiúsculas funciona no editor, mas o Godot avisa que falha no jogo exportado para
+  sistemas que as distinguem.
 - Um sistema não acede ao interior de outro: comunica por sinais ou por uma referência atribuída no
   Inspector, nunca por um caminho na árvore de nós.
 
-A pasta `tests/` fica à parte, para que a exportação a possa excluir de uma só vez.
+Os ficheiros movem-se e renomeiam-se no painel FileSystem do editor, que atualiza as referências
+entre cenas e recursos; no fim, uma pesquisa pelo caminho antigo em todo o projeto confirma que
+nenhum script, incluindo os testes, ficou a apontar para ele.
+
+A pasta `tests/` fica à parte, para que a exportação a possa excluir de uma só vez. Os jogos
+exportados vão para `builds/`, na raiz do repositório, fora do projeto Godot e do git.
+
+A passagem para esta estrutura fez-se por script, em dois commits, porque o git, em Windows, não
+regista num só commit uma mudança que só troca maiúsculas (`Lust/` para `lust/`). Mudaram de pasta
+206 ficheiros, com os seus `.import` e `.uid`, e trocaram-se 436 caminhos. Os testes deram os
+mesmos resultados antes e depois, teste a teste, nenhuma cena ou recurso ficou a apontar para um
+caminho antigo, e o projeto importa sem erros num clone novo.
 
 Para um nível aparecer no Play, acrescenta-se à lista Levels do Main, no Inspector do `main.tscn`
 (Add Element › New LevelEntry, com o título e a cena). A ordem da lista é a dos botões. Um elemento
 deixado vazio, ou sem cena, fica fora do menu, com um aviso no Output.
 
-O nó raiz de cada nível tem o script `levels/level.gd` (`Level`), com a personagem do nível no campo
+O nó raiz de cada nível tem o script `scenes/levels/level.gd` (`Level`), com a personagem do nível no campo
 Player do Inspector. Quando a personagem morre, este script espera 1,5 s, para que a morte se veja,
 e recomeça o nível: no jogo, o Main troca-o por uma cópia nova da mesma cena; aberto com F6, o nível
 recarrega-se a si próprio. Uma cópia nova repõe a personagem, os demónios e a câmara como no início,
@@ -1070,11 +1084,11 @@ godot --headless --fixed-fps 60 --path Projeto --script res://tests/measure_demo
 
 ### A personagem por dentro
 
-A cena é `player/player.tscn`, com o script `player/player.gd`: um `CharacterBody2D` com uma
+A cena é `scenes/characters/player/player.tscn`, com o script `scenes/characters/player/player.gd`: um `CharacterBody2D` com uma
 caixa de colisão de 48 × 96 px e a origem nos pés, pelo que, num nível, a origem fica na linha do
 chão. Está na camada `player` e colide com `world`, `one_way_platform` e `enemy`. Os valores vêm de um
-recurso `PlayerMovementStats` (`player/player_movement_stats.gd`), guardado em
-`player/player_movement_stats.tres`.
+recurso `PlayerMovementStats` (`scenes/characters/player/player_movement_stats.gd`), guardado em
+`scenes/characters/player/player_movement_stats.tres`.
 
 O desenho é um `Sprite2D` com uma imagem provisória, feita a partir do desenho de conceito
 (`assets/sprites/player/player_concept.png`): uma célula de 192 × 192 px, com os pés na linha
@@ -1082,7 +1096,7 @@ y = 184, ao centro, e o corpo do tamanho da caixa de colisão (43 × 96 px). O s
 o que põe os pés na origem. As animações vão substituir esta imagem, com a mesma célula e a mesma
 linha dos pés.
 
-A personagem não lê o teclado diretamente. Um nó filho, `PlayerInput` (`player/player_input.gd`), é
+A personagem não lê o teclado diretamente. Um nó filho, `PlayerInput` (`scenes/characters/player/player_input.gd`), é
 o único que lê as ações da personagem no Input Map, e responde em cada passo de física a cinco
 perguntas: a direção da corrida e, para os botões de saltar e do crucifixo, se acabaram de ser
 premidos e se continuam premidos. A personagem recebe
@@ -1282,7 +1296,7 @@ A camada `camera_bounds` é a das zonas de câmara (`CameraZone`): retângulos q
 mostra enquanto a personagem está dentro deles. As zonas não detetam colisões; a câmara lê-lhes a
 geometria, e a camada serve para as identificar e desenhar no editor.
 
-A camada `repellable` é a da cena `components/repellable.tscn`, que se coloca em tudo o que o
+A camada `repellable` é a da cena `scenes/characters/components/repellable.tscn`, que se coloca em tudo o que o
 crucifixo afasta. A camada está definida na cena, no Inspector, e não no código. O crucifixo procura
 apenas nessa camada, pelo que um demónio ou uma alma só é afastado se tiver o componente.
 
@@ -1301,7 +1315,7 @@ O crucifixo foi construído para não criar dependências entre sistemas, com pa
 indústria:
 
 - **Componente** (Nystrom, 2014, capítulo "Component"). O crucifixo é uma cena própria
-  (`crucifix/crucifix.tscn`), filha da personagem. Lê o botão através do mesmo `PlayerInput` da
+  (`scenes/characters/crucifix/crucifix.tscn`), filha da personagem. Lê o botão através do mesmo `PlayerInput` da
   personagem, pelo que uma inteligência artificial, uma cena animada ou um teste também o controlam.
 - **Modificadores de movimento.** A personagem não sabe que o crucifixo existe. Aceita
   modificadores (`MovementModifier`), cada um com uma fração da velocidade, uma fração da altura do
@@ -1326,7 +1340,7 @@ indústria:
   contam-se em passos de física inteiros, como as tolerâncias do salto, para que os testes os
   verifiquem ao passo exato. Os sinais `cooldown_started` e `cooldown_finished`, e o tempo restante
   de cada fase, servem o HUD.
-- **Componente `Repellable`** (`components/repellable.tscn`), à semelhança dos *hitboxes* e
+- **Componente `Repellable`** (`scenes/characters/components/repellable.tscn`), à semelhança dos *hitboxes* e
   *hurtboxes*. É uma `Area2D` que se coloca nos demónios e nas almas perdidas, com a camada
   `repellable` definida na cena. O crucifixo empurra apenas o que tem este componente e não conhece
   os scripts dos demónios nem das almas; estes recebem o sinal `repelled`, para reagir com uma
@@ -1396,7 +1410,7 @@ premido de novo no jogo.
 
 #### SP: componente, dados e ligação ao crucifixo
 
-Os SP são um nó-componente, `SoulPoints` (`player/soul_points.gd`), filho da personagem, com os
+Os SP são um nó-componente, `SoulPoints` (`scenes/characters/player/soul_points.gd`), filho da personagem, com os
 valores num `Resource`, `SoulPointsStats`, como o movimento e o crucifixo. A personagem recebe-o no
 Inspector (propriedade Soul Points), para que tudo o que a fere ou cura o encontre através dela.
 Separado da personagem, o componente testa-se sem ela e não acrescenta mais um sistema ao script da
@@ -1420,7 +1434,7 @@ porque a personagem não ataca.
   mudam, e o componente aplica-os de imediato: um máximo mais baixo do que os SP atuais desce-os
   com ele.
 
-O crucifixo cura através de uma ligação na cena da personagem: em `player/player.tscn`, o sinal
+O crucifixo cura através de uma ligação na cena da personagem: em `scenes/characters/player/player.tscn`, o sinal
 `healed` do crucifixo está ligado ao método `heal` dos SP. Nenhum dos dois scripts conhece o outro;
 quem os liga é a cena que os contém. A alternativa seria o crucifixo chamar os SP através da
 personagem, como já faz com o modificador, mas essa exceção à convenção "call down, signal up"
@@ -1437,9 +1451,9 @@ ligação da cena.
 #### Demónio: estados, dados e famílias de personagens
 
 Todos os demónios que perseguem a personagem, em todos os níveis, usam uma só cena,
-`demon/demon.tscn`, com os valores num `Resource`, `DemonStats`, como o movimento, o crucifixo e os
+`scenes/characters/demon/demon.tscn`, com os valores num `Resource`, `DemonStats`, como o movimento, o crucifixo e os
 SP. Cada ataque é outro `Resource`, `DemonAttack`, e o `DemonStats` tem a lista dos ataques do
-demónio. Os do nível 1 estão em `demon/lust_demon_stats.tres`; os demónios de um nível novo são
+demónio. Os do nível 1 estão em `scenes/characters/demon/lust_demon_stats.tres`; os demónios de um nível novo são
 outro ficheiro com os mesmos campos, outros ataques e outra arte, sem código novo.
 
 As personagens dividem-se pelo que fazem, e não pela história: as que perseguem usam esta cena, e as
@@ -1453,7 +1467,7 @@ não é esta cena com a perseguição desligada.
   `GRAB`, `THROWN`, `REPELLED`, `STUNNED`, `RETURN`, `OUT_OF_REACH`, `PATROL`, `ALERT` e `SEARCH`)
   continuam a ser uma
   enumeração no `demon.gd`, que a arte, o som e os testes leem, mas o que o demónio faz em cada um
-  está num objeto próprio, uma classe derivada de `DemonState`, em `demon/states/` (o padrão State).
+  está num objeto próprio, uma classe derivada de `DemonState`, em `scenes/characters/demon/states/` (o padrão State).
   Com a ronda e o "fora de alcance", o `demon.gd` chegou às 825 linhas, e sete estados partilhavam
   um mesmo contador de passos, posto a zero à mão antes de cada mudança. Agora, cada estado guarda os
   seus contadores e diz o que prepara ao começar e o que arruma ao sair. O demónio cria os
@@ -1496,7 +1510,7 @@ não é esta cena com a perseguição desligada.
   direção. No `test_demon.gd`, com os valores do teste, o salto aterrou a 2,3 px de uma personagem
   parada e a 3,0 px de uma que se afastava a 50 px/s.
 - **Alvo e memória num componente.** O que o demónio sabe da personagem que persegue está no
-  `DemonTarget` (`demon/demon_target.gd`): a caixa e a `Hurtbox` dela, a velocidade a que anda, há
+  `DemonTarget` (`scenes/characters/demon/demon_target.gd`): a caixa e a `Hurtbox` dela, a velocidade a que anda, há
   quantos passos não a vê, e onde e quando a viu pela última vez. O componente só guarda e conta; é
   o `demon.gd` que decide desistir, procurar ou atacar. Ao largar a personagem, guarda o último
   sítio onde a viu, que é para onde a procura vai. Não é um nó da cena, pelas razões dos estados.
@@ -1505,7 +1519,7 @@ não é esta cena com a perseguição desligada.
   scripts foi, em mediana de quatro execuções alternadas, 0,91 ms antes e 0,99 ms depois, dentro do
   orçamento (ADR 0037).
 - **Sentidos num componente.** O que o demónio percebe da personagem está no `DemonSenses`
-  (`demon/demon_senses.gd`): uma área circular, do raio do Sight Distance, encontra-a, e um raio
+  (`scenes/characters/demon/demon_senses.gd`): uma área circular, do raio do Sight Distance, encontra-a, e um raio
   confirma que nenhuma parede está entre os olhos do demónio e o meio dela ou, se esse estiver
   tapado, a cabeça. Com um só ponto, uma personagem numa plataforma ficava escondida pela própria
   plataforma. O componente diz também se o demónio repara nela (à frente, ou atrás até ao Sight
@@ -1561,7 +1575,7 @@ não é esta cena com a perseguição desligada.
   sobe a meio de um salto: um empurrão a meio de um salto rápido chegou a levar o demónio
   a 133,66 px de altura, acima dos degraus que o travam (medido no `test_demon.gd`, antes da
   correção).
-- **Pancada e agarrão em componentes.** O ataque passa por dois componentes de `components/`: a
+- **Pancada e agarrão em componentes.** O ataque passa por dois componentes de `scenes/characters/components/`: a
   `Hitbox`, no demónio, na camada `enemy_hitbox`, ligada só enquanto o ataque pode acertar e com o
   dano e o arremesso do ataque; e a `Hurtbox`, na personagem, na camada `player_hurtbox`, que é a
   única que procura. Na personagem, o `HitReaction` decide entre tirar SP e agarrar, o `GrabEscape`
@@ -1579,7 +1593,7 @@ não é esta cena com a perseguição desligada.
   do nível 1, e o segundo depois de um agarrão não deixa entrar nenhum (ADR 0055), salvo a mordida
   nas costas dos cães, que entra em qualquer invulnerabilidade, mas não com a `Hurtbox` fechada
   (ADR 0056). A mordida nas costas usa as mesmas peças. O `DemonBackBite`
-  (`demon/demon_back_bite.gd`) procura o corpo da personagem num espaço com a largura do cão e
+  (`scenes/characters/demon/demon_back_bite.gd`) procura o corpo da personagem num espaço com a largura do cão e
   48 px de altura, por cima das costas, alto o bastante para a encontrar antes de ela aterrar, mesmo
   a cair à velocidade máxima. Liga a sua `Hitbox` em cada passo em que ela aterra no cão, segundo a
   colisão do último movimento dela, e por isso nunca morde quem só lhe toca de lado ou por baixo,
@@ -1609,7 +1623,7 @@ não é esta cena com a perseguição desligada.
   isso uma prioridade de física mais baixa (Process Physics Priority −1), e move-se antes dos
   demónios em cada passo.
 - **Afundar com um shader.** O afundar corta o desenho na linha dos pés, com um shader
-  (`components/sink.gdshader`) que o componente `SinkingDrawing` controla. Mover os corpos para
+  (`scenes/characters/components/sink.gdshader`) que o componente `SinkingDrawing` controla. Mover os corpos para
   baixo exigia, em todos os níveis, um chão com pelo menos 96 px de espessura onde um demónio
   agarra, e numa plataforma fina a personagem saía por baixo. O valor do shader não passa pela
   physics interpolation, que só move posições, por isso o desenho volta ao sítio no próprio passo
@@ -1761,7 +1775,7 @@ não é esta cena com a perseguição desligada.
   caça, com a personagem à vista, um demónio em movimento passa pelos outros, e só um encostado a
   ela o trava (ADR 0053); parado, afasta-se como os outros, e no vaivém vira junto de um parado.
 - **Ninguém fica em cima de ninguém (ADR 0047).** O componente `KnockOff`
-  (`components/knock_off.gd`) diz para que lado empurrar quem está de pé em cima da personagem ou
+  (`scenes/characters/components/knock_off.gd`) diz para que lado empurrar quem está de pé em cima da personagem ou
   de um demónio; quem o usa põe a velocidade (600 px/s nos dois). Antes, o demónio não tinha
   empurrão e podia ficar para sempre na cabeça da personagem. Num buraco de um corpo, o empurrão
   batia nas duas paredes e virava a cada passo: agora, se continuar em cima 6 passos (0,1 s) depois
@@ -2124,14 +2138,14 @@ crucifixo. O overlay mostra a oferta em causa, se já foi aceite, as recusas, o 
 homem ainda tem o crucifixo. As três teclas estão reservadas nos perfis de controlos, pelas mesmas
 razões do F4.
 
-O overlay é uma cena própria, `debug/debug_overlay.tscn`, num `CanvasLayer`, pelo que não se
+O overlay é uma cena própria, `scenes/others/debug/debug_overlay.tscn`, num `CanvasLayer`, pelo que não se
 desloca com a câmara. Recebe a personagem pelo Inspector e lê-a, ou fere-a com o F4, sem que ela
 dependa dele, pelo que a personagem é testada e exportada sem o overlay. Continua ativo com o jogo
 em pausa e, nas exportações de release, remove-se a si próprio, e o F4 com ele. O
 `test_debug_overlay.gd` verifica o comportamento nas versões de depuração; a remoção na versão de
 release só poderá ser confirmada na primeira exportação.
 
-Na sala de teste, uma segunda vista (`debug/demon_debug_view.gd`) desenha sobre cada demónio o
+Na sala de teste, uma segunda vista (`scenes/others/debug/demon_debug_view.gd`) desenha sobre cada demónio o
 estado em que está e há quanto tempo (em frames de física, que param na pausa, como os tempos dos
 estados), e uma seta para onde está virado. Ao longo do chão, desenha o
 posto e o troço da ronda. Enquanto o demónio persegue ou procura, marca com uma cruz o último sítio
@@ -2147,7 +2161,7 @@ pausa) e que a parede esconde a personagem logo atrás dela, mas não à frente.
 
 #### Câmara
 
-A câmara (`camera/game_camera.tscn`, script `GameCamera`) é uma `Camera2D` colocada ao lado
+A câmara (`scenes/others/camera/game_camera.tscn`, script `GameCamera`) é uma `Camera2D` colocada ao lado
 da personagem, na cena do nível, e não dentro da cena da personagem. Recebe a personagem pelo
 Inspector e lê-a sem que ela dependa da câmara; o nível pode assim parar a câmara numa cena
 cinemática sem alterar a personagem. É processada no passo de física e depois da personagem
@@ -2216,7 +2230,7 @@ ecrã em 1920 × 1080 antes de começar.
 
 #### Fundo em camadas
 
-O fundo é feito de nós `BackgroundLayer` (`background/background_layer.gd`), uma extensão do
+O fundo é feito de nós `BackgroundLayer` (`scenes/levels/background/background_layer.gd`), uma extensão do
 `Parallax2D` do Godot, um por camada. O `Parallax2D` desloca a camada uma fração (Scroll Scale) do
 movimento da câmara; a extensão acrescenta-lhe o que todas as camadas do jogo precisam:
 
@@ -2232,7 +2246,7 @@ movimento da câmara; a extensão acrescenta-lhe o que todas as camadas do jogo 
   Centered da imagem e o seu próprio Repeat Size, e, em FIT, também o Scroll Offset: estes campos não
   se acertam à mão.
 - A rampa de cor de cada camada (Ramp e Reverse Ramp). A camada cria um único material com o shader
-  `components/color_ramp.gdshader` e atribui-o a todas as peças sem material próprio, incluindo as
+  `scenes/others/shaders/color_ramp.gdshader` e atribui-o a todas as peças sem material próprio, incluindo as
   que entram depois; mudar a rampa muda todas as peças de uma vez, e retirá-la devolve-lhes as cores
   originais.
 
@@ -2314,11 +2328,11 @@ e remapeamento por captura da tecla seguinte.
   define.
 - Cada tecla está definida num único sítio. O perfil predefinido é o Input Map do `project.godot`,
   lido nas definições do projeto: uma tecla acrescentada em Project Settings ▸ Input Map passa a
-  fazer parte dele. O perfil das setas está definido uma só vez, em `core/input_profiles.gd`, e deixa
+  fazer parte dele. O perfil das setas está definido uma só vez, em `scenes/autoload/input_profiles.gd`, e deixa
   W, E, A, S e D livres para os upgrades. O Custom começa como cópia do predefinido.
 - O `Settings` guarda o perfil escolhido e as teclas do perfil personalizado e aplica-os ao Input
   Map. Como nenhum script lê teclas diretamente, a personagem e o crucifixo não mudaram.
-- No ecrã Controls (`ui/controls_menu.gd`), carregar no botão de uma ação do perfil Custom faz o
+- No ecrã Controls (`scenes/screens/controls_menu.gd`), carregar no botão de uma ação do perfil Custom faz o
   ecrã esperar pela próxima tecla ou botão do rato. O Esc ou o B cancelam sem alterar nada. A espera
   apanha a tecla antes de qualquer outro nó, pelo que o Esc não fecha a pausa.
 - Conflitos: se a tecla escolhida pertencia a outra ação, essa ação perde-a e, se ficar sem
@@ -2336,7 +2350,7 @@ e remapeamento por captura da tecla seguinte.
 - Nos testes, o `Settings` guarda as opções só em memória e não lê nem escreve o ficheiro do
   jogador (`GameSettings.ignore_player_file`, ver "Testes e medidas").
 
-O tamanho da letra e os espaços entre elementos estão num único tema, `ui/ui_theme.tres`, e nenhum
+O tamanho da letra e os espaços entre elementos estão num único tema, `themes/ui_theme.tres`, e nenhum
 nó define o seu próprio tamanho de letra: uma futura opção de tamanho do texto altera apenas o tema.
 
 #### Registo moral: escondido, uma soma e dois limiares
@@ -2366,9 +2380,9 @@ difíceis de afinar e de explicar.
 
 | Valor | Referência |
 |---|---|
-| Atalho ou dom de um demónio (Moral Weight, no ficheiro da oferta em `offers/`) | 1 ponto |
+| Atalho ou dom de um demónio (Moral Weight, no ficheiro da oferta em `scenes/autoload/offers/`) | 1 ponto |
 | Cada portagem roubada (idem) | 0,4 pontos |
-| Tentação sem ficheiro de oferta (`core/moral_stats.tres`, tal como os seguintes) | 1 ponto |
+| Tentação sem ficheiro de oferta (`scenes/autoload/moral_stats.tres`, tal como os seguintes) | 1 ponto |
 | Resposta arrogante | 0,15 pontos |
 | Ouvir uma proposta | 0,1 pontos por segundo além de 3 s, até 0,5 por proposta |
 | Estádio 1 / estádio 2 | a partir de 1 / de 3 pontos |
@@ -2381,8 +2395,8 @@ registo para um jogo novo, e o registo entra na gravação do jogo.
 #### Ofertas: tentações em dados
 
 Todas as tentações do jogo passam por um único sistema, o autoload `Offers`. Cada oferta é um
-ficheiro de dados (`OfferData`, em `offers/`) com quem a faz, o que oferece, o custo tal como o
-demónio o diz, o efeito de a aceitar e o peso moral. O catálogo (`offers/offer_catalog.tres`)
+ficheiro de dados (`OfferData`, em `scenes/autoload/offers/`) com quem a faz, o que oferece, o custo tal como o
+demónio o diz, o efeito de a aceitar e o peso moral. O catálogo (`scenes/autoload/offers/offer_catalog.tres`)
 reúne-as todas. Os níveis 2 e 3 acrescentam ficheiros e falas, sem código novo.
 
 As falas usam três chamadas: `Offers.present` quando a proposta é feita, e `Offers.accept` ou
@@ -2451,8 +2465,8 @@ com a opção de a manter já selecionada.
 
 #### Sala de treino
 
-A sala de treino (`levels/gym/gym.tscn`) permite experimentar cada mecânica isoladamente, sem
-atravessar um nível. É composta por estações, cenas próprias em `levels/gym/stations/`, colocadas
+A sala de treino (`scenes/levels/gym/gym.tscn`) permite experimentar cada mecânica isoladamente, sem
+atravessar um nível. É composta por estações, cenas próprias em `scenes/levels/gym/stations/`, colocadas
 lado a lado. Cada estação respeita o mesmo contrato:
 
 - tem 1920 px de largura (um ecrã) e começa em x = 1920 · n, pela ordem de `Stations`;
@@ -2479,7 +2493,7 @@ da estação correspondente, e o 0 à décima, mantendo os SP; não funcionam du
 quando a tecla está atribuída a uma ação no perfil Custom. Lêem as teclas diretamente, sem ações no
 mapa de controlos, porque servem apenas para depuração; por isso não há equivalente no comando.
 
-A estação 10 mostra os cães que saltam (ADR 0042), com os valores de `levels/jumping_demon_stats.tres`:
+A estação 10 mostra os cães que saltam (ADR 0042), com os valores de `scenes/characters/demon/jumping_demon_stats.tres`:
 o cão sobe um degrau de 96 px e não chega ao pilar de 144 px. O degrau vai até ao fim da estação,
 porque os chãos se distinguem só pela altura: um cão que passasse para outro chão à mesma altura
 do seu posto ficava preso à parede ao voltar. A queda de 240 px não aparece na sala, porque é mais

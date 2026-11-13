@@ -2,7 +2,7 @@ class_name Repellable
 extends Area2D
 
 ## Marks what the crucifix pushes away, such as demons and lost souls. It is used through its scene,
-## components/repellable.tscn, which puts it on the repellable physics layer, the one the crucifix
+## scenes/characters/components/repellable.tscn, which puts it on the repellable physics layer, the one the crucifix
 ## looks on, and keeps it from looking for anything itself: instance the scene as a child of the
 ## thing to push, give it a CollisionShape2D child and set Target. It is the only part of that thing
 ## the crucifix knows: the demon's or the soul's own script only listens to repelled, for an

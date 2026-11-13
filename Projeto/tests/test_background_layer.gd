@@ -1,4 +1,4 @@
-# Test of the background layers (BackgroundLayer, background/background_layer.gd) and of the level
+# Test of the background layers (BackgroundLayer, scenes/levels/background/background_layer.gd) and of the level
 # background template. A FIT picture covers the whole screen with the camera at each corner of its
 # limits and at their centre, on the game's 16:9 screen and on a 21:9 one, the widest the game is
 # made for, and grows only as much as that needs. FIT waits for a camera that arrives after the

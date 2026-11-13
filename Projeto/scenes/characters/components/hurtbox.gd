@@ -1,7 +1,7 @@
 class_name Hurtbox
 extends Area2D
 
-## What takes damage, such as the man. It is used through its scene, components/hurtbox.tscn, which
+## What takes damage, such as the man. It is used through its scene, scenes/characters/components/hurtbox.tscn, which
 ## puts it on the player_hurtbox physics layer, looking on enemy_hitbox. Instance the scene as a
 ## child of what gets hurt, give it a CollisionShape2D child and listen to hit_received: the Hurtbox
 ## only says it was hit, and its owner decides what the hit does, and for how long no other hit

@@ -1,6 +1,6 @@
 # Lays level 1's stone rim from its tiles once and saves the stones into the scene, as ordinary nodes under
 # Art/StoneRim: each straight run of floor, ceiling or wall one strip, each turn of the outline one corner piece (see
-# levels/stone_rim.gd). From then on the stones are edited by hand in the editor, stone by stone, and the rim no
+# scenes/levels/stone_rim.gd). From then on the stones are edited by hand in the editor, stone by stone, and the rim no
 # longer follows the tiles by itself. So it never lays them over stones already saved, unless asked with --force,
 # which throws the hand edits to the stones away. From the repository root, with the editor closed:
 # godot --headless --path Projeto --script res://scenes/levels/lust/build_stone_rim.gd

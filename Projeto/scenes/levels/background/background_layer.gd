@@ -49,7 +49,7 @@ const RAMP_SHADER: Shader = preload("res://scenes/others/shaders/color_ramp.gdsh
 
 @export_group("Color")
 ## The layer's colors, light on the left and black on the right, which replace the grays of every
-## piece in the layer that has no material of its own (components/color_ramp.gdshader): a 256 × 1
+## piece in the layer that has no material of its own (scenes/others/shaders/color_ramp.gdshader): a 256 × 1
 ## PNG or a GradientTexture1D. Without a ramp, the pieces keep the colors they were painted in.
 @export var ramp: Texture2D:
 	set(value):

@@ -1,4 +1,4 @@
-# Test of the tutorial's hints (TutorialHints, levels/tutorial_hints.gd). A hint shows while the man
+# Test of the tutorial's hints (TutorialHints, scenes/levels/tutorial_hints.gd). A hint shows while the man
 # is before it or less than Hide Margin past it; once he is farther, it fades out and stays hidden
 # when he walks back. A child without a KeyPrompt is never hidden. Level 1's tutorial has the script,
 # follows the level's Player, and counts its four hints: Move, Jump, WallJump and Crucifix, and not
