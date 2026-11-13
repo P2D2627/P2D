@@ -2432,10 +2432,17 @@ preciso marcar nada à parte. Fora de todas as zonas, a morte conta numa célula
 (Death Cell Size). A zona só se procura no momento da morte, e não em cada frame. Os números de cada
 nível guardam-se em separado, para que a fase 1 do nível 2 não some às mortes da fase 1 do nível 1.
 
+O `RunStats` mede também o tempo passado em cada fase, contado a partir do momento em que a fase
+começa. O tempo não volta a zero quando o homem morre e para durante a pausa, porque o nível fica
+parado. Não há relógio no ecrã: o tempo serve as falas (por exemplo, "já cá andas há dez minutos")
+e o julgamento final. Um relógio visível daria ao jogo um ar de corrida contra o tempo, o que não
+condiz com o tom nem com o pilar "julgado sem saber".
+
 O `RunStats` fica fora do `GameState` porque a morte repõe o `GameState` como estava na última
 gravação, e uma morte tem de ficar contada. As regras estão numa classe sem nós (`RunRecord`),
 testada isoladamente no `test_run_record.gd`. O `test_level_run_stats.gd` verifica, no nível 1, a
-fase ao arrancar e ao entrar no `Phase2Save`, e a zona de uma morte.
+fase ao arrancar e ao entrar no `Phase2Save`, a zona de uma morte e o tempo, que para durante a
+pausa e se mantém quando a fase recomeça.
 
 #### Gravação do jogo
 
