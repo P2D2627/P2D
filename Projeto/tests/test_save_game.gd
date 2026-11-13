@@ -12,8 +12,8 @@
 extends "res://tests/support/menu_test.gd"
 
 const SAVE_PATH: String = "user://test_save.cfg"
-const PHASE_1_PATH: String = "res://scenes/levels/Lust/LustLevel_Phase1_Cave.tscn"
-const PHASE_2_PATH: String = "res://scenes/levels/Lust/LustLevel_Phase2.tscn"
+const PHASE_1_PATH: String = "res://levels/lust/LustLevel_Phase1_Cave.tscn"
+const PHASE_2_PATH: String = "res://levels/lust/LustLevel_Phase2.tscn"
 const TEST_ROOM_PATH: String = "res://levels/test_room.tscn"
 const PHASE_2_ROOT: StringName = &"LustPhase2"
 const AN_EVENT: StringName = &"an_event"

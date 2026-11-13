@@ -1,7 +1,7 @@
 [gd_resource type="TileSet" format=3 uid="uid://drm8v88csh0jd"]
 
 [sub_resource type="CompressedTexture2D" id="CompressedTexture2D_0tjth"]
-load_path = "res://.godot/imported/cave_placeholder_tile.png-9c4184fc08bc30200d38c69be0f22c9c.ctex"
+load_path = "res://.godot/imported/cave_placeholder_tile.png-5e4bb8b37fc54329e21c20c11480cde5.ctex"
 
 [sub_resource type="TileSetAtlasSource" id="TileSetAtlasSource_v1ufq"]
 texture = SubResource("CompressedTexture2D_0tjth")

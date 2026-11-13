@@ -3,7 +3,7 @@
 [ext_resource type="Script" uid="uid://bgppwl6ab4085" path="res://levels/level.gd" id="1_u5v65"]
 [ext_resource type="PackedScene" path="res://gates/gate.tscn" id="2_4n2nv"]
 [ext_resource type="Material" path="res://levels/lust/lust_ramp_material.tres" id="3_4n2nv"]
-[ext_resource type="TileSet" uid="uid://drm8v88csh0jd" path="res://scenes/levels/Lust/cave_placeholder_tiles.tres" id="3_265vi"]
+[ext_resource type="TileSet" uid="uid://drm8v88csh0jd" path="res://scenes/others/tilesets/cave_placeholder_tiles.tres" id="3_265vi"]
 [ext_resource type="PackedScene" path="res://platforms/collapsing_platform.tscn" id="4_bsk1r"]
 [ext_resource type="PackedScene" path="res://traps/lethal_spikes.tscn" id="5_4yepc"]
 [ext_resource type="PackedScene" path="res://gates/gate_unlocker.tscn" id="6_m0evm"]
@@ -48100,7 +48100,7 @@ collision_layer = 0
 collision_mask = 2
 monitorable = false
 script = ExtResource("10_236yj")
-next_scene_path = "res://scenes/levels/Lust/LustLevel_Phase3.tscn"
+next_scene_path = "res://levels/lust/LustLevel_Phase3.tscn"
 
 [node name="CollisionShape2D" type="CollisionShape2D" parent="PhaseExit" unique_id=1944260528]
 position = Vector2(0, -72)

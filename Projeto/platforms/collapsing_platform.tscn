@@ -1,7 +1,7 @@
 [gd_scene format=3]
 
 [ext_resource type="Script" path="res://platforms/collapsing_platform.gd" id="1_script"]
-[ext_resource type="TileSet" path="res://scenes/levels/Lust/cave_placeholder_tiles.tres" id="2_tiles"]
+[ext_resource type="TileSet" path="res://scenes/others/tilesets/cave_placeholder_tiles.tres" id="2_tiles"]
 
 [sub_resource type="RectangleShape2D" id="RectangleShape2D_rider"]
 resource_local_to_scene = true

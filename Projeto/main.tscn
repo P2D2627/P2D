@@ -5,7 +5,7 @@
 [ext_resource type="PackedScene" path="res://levels/test_room.tscn" id="3_test_room"]
 [ext_resource type="PackedScene" path="res://ui/main_menu.tscn" id="5_main_menu"]
 [ext_resource type="PackedScene" path="res://ui/pause_menu.tscn" id="6_pause_menu"]
-[ext_resource type="PackedScene" path="res://scenes/levels/Lust/LustLevel_Phase1_Cave.tscn" id="7_lust_level"]
+[ext_resource type="PackedScene" path="res://levels/lust/LustLevel_Phase1_Cave.tscn" id="7_lust_level"]
 [ext_resource type="PackedScene" path="res://ui/save_indicator.tscn" id="8_save_indicator"]
 [ext_resource type="PackedScene" path="res://levels/gym/gym.tscn" id="8_gym"]
 

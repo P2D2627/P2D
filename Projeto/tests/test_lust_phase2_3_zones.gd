@@ -9,8 +9,8 @@ extends "res://tests/support/player_test.gd"
 
 const Checks = preload("res://tests/support/level_camera_checks.gd")
 const LEVELS: Array[String] = [
-	"res://scenes/levels/Lust/LustLevel_Phase2.tscn",
-	"res://scenes/levels/Lust/LustLevel_Phase3.tscn",
+	"res://levels/lust/LustLevel_Phase2.tscn",
+	"res://levels/lust/LustLevel_Phase3.tscn",
 ]
 
 

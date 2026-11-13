@@ -17,7 +17,7 @@ extends "res://levels/lust/build_lust_phase_2.gd"
 ## Passed after -- to build over a scene that is already there.
 const FORCE_ARGUMENT: String = "--force"
 
-const TUTORIAL_SCENE: PackedScene = preload("res://scenes/levels/Lust/LustLevel_Phase1_Cave.tscn")
+const TUTORIAL_SCENE: PackedScene = preload("res://levels/lust/LustLevel_Phase1_Cave.tscn")
 const SAVE_POINT_SCRIPT: Script = preload("res://levels/save_point.gd")
 ## Where the tutorial's node goes, so that its floor stays on the map's tutorial floor.
 const TUTORIAL_POSITION: Vector2 = Vector2(0.0, 16608.0)

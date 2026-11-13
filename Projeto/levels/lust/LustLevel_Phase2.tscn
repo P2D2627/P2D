@@ -1,7 +1,7 @@
 [gd_scene format=4 uid="uid://p0krn7oe16cl"]
 
 [ext_resource type="Script" path="res://levels/level.gd" id="level_script"]
-[ext_resource type="TileSet" uid="uid://drm8v88csh0jd" path="res://scenes/levels/Lust/cave_placeholder_tiles.tres" id="1_mjweu"]
+[ext_resource type="TileSet" uid="uid://drm8v88csh0jd" path="res://scenes/others/tilesets/cave_placeholder_tiles.tres" id="1_mjweu"]
 [ext_resource type="PackedScene" path="res://debug/debug_overlay.tscn" id="2_lyjt1"]
 [ext_resource type="PackedScene" uid="uid://b1g88pca2y1w4" path="res://player/player.tscn" id="4_wgdd8"]
 [ext_resource type="PackedScene" path="res://camera/game_camera.tscn" id="7_s0b4w"]
@@ -409,7 +409,7 @@ collision_layer = 0
 collision_mask = 2
 monitorable = false
 script = ExtResource("pe_script")
-next_scene_path = "res://scenes/levels/Lust/LustLevel_Phase3.tscn"
+next_scene_path = "res://levels/lust/LustLevel_Phase3.tscn"
 
 [node name="CollisionShape2D" type="CollisionShape2D" parent="PhaseExit" unique_id=416494401]
 shape = SubResource("RectangleShape2D_phase_exit")

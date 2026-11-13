@@ -16,7 +16,7 @@
 extends "res://tests/support/player_test.gd"
 
 const CAMERA_SCENE: PackedScene = preload("res://camera/game_camera.tscn")
-const CAVE_TILES: TileSet = preload("res://scenes/levels/Lust/cave_placeholder_tiles.tres")
+const CAVE_TILES: TileSet = preload("res://scenes/others/tilesets/cave_placeholder_tiles.tres")
 ## The Auto Zoom case, in tiles: the columns of the corridor and the passage, the passage's rows, the
 ## corridor's rows and its floor's row; rock fills the rest of the rows from 0 to 20.
 const AUTO_COLUMNS: int = 40

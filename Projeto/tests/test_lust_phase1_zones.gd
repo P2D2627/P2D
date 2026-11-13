@@ -7,7 +7,7 @@
 extends "res://tests/support/player_test.gd"
 
 const Checks = preload("res://tests/support/level_camera_checks.gd")
-const LEVEL_SCENE: PackedScene = preload("res://scenes/levels/Lust/LustLevel_Phase1_Cave.tscn")
+const LEVEL_SCENE: PackedScene = preload("res://levels/lust/LustLevel_Phase1_Cave.tscn")
 const TILE: float = 48.0
 ## The start hall's floor: the top of its rock row.
 const HALL_FLOOR: float = 103.0 * TILE
