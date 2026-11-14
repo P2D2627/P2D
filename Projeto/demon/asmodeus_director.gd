@@ -8,7 +8,9 @@ extends Node
 ##   the zone it is for: at once if he comes back to life inside it, or as he walks in, before he
 ##   tries it again. While no offer waits, nothing is checked.
 ## - At the level's Exit, she talks from each of Ending Cues in turn (the gift, then the stairs), and
-##   only then does the exit lead on. Exit must have Walk In Leads On off.
+##   only then does the exit lead on, with Done Event marked and Done Arrival as where a Continue
+##   brings him. Exit must have Walk In Leads On off. With Done Event marked, the level is played on
+##   with no talks and the dogs still, until there is a next level to go to.
 ## A talk counts as had once he answers its offer, not when it starts: the answer marks it in
 ## GameState, as ANSWERED_PREFIX and the cue, and Main saves at once. Left before the answer, as by
 ## quitting, nothing of it is kept, and the talk comes again: a phase's cue as soon as he stands in
@@ -31,6 +33,10 @@ const ANSWERED_PREFIX: String = "answered_"
 @export var ending_cues: Array[String] = ["asmodeus_gift", "stairs"]
 ## The offer that, accepted, ends the offers for his deaths.
 @export var shortcut: StringName = &"lust_shortcut"
+## The GameState event that says the level is done, marked after the last of Ending Cues.
+@export var done_event: StringName = &"lust_done"
+## The ArrivalPoint a Continue brings him to once the level is done.
+@export var done_arrival: StringName = &"asmodeus_tent"
 
 ## True once the ending started, so walking in again does nothing.
 var _ending: bool = false
@@ -45,6 +51,9 @@ func _ready() -> void:
 	assert(level != null, "AsmodeusDirector: assign the Level.")
 	_run_stats = get_node(^"/root/RunStats") as GameRunStats
 	_progress = get_node(^"/root/GameState") as GameProgress
+	if _progress.has_event(done_event):
+		_stay_done()
+		return
 	var offers: GameOffers = get_node_or_null(^"/root/Offers") as GameOffers
 	if offers != null:
 		offers.accepted.connect(_on_offer_answered.bind(true))
@@ -115,7 +124,19 @@ func _on_exit_entered(_body: Node2D) -> void:
 		await asmodeus.talk_ended
 		if not is_inside_tree():
 			return
+	_progress.mark_event(done_event)
+	_progress.arrival_point = done_arrival
 	exit.lead_on()
+
+
+## The level is done, for now with no next one: he plays on in it, at Done Arrival, with nothing
+## left to say and Asmodeus's Stills (the dogs) standing still for good.
+func _stay_done() -> void:
+	_ending = true
+	set_physics_process(false)
+	for node: Node in asmodeus.stills:
+		if is_instance_valid(node):
+			node.process_mode = Node.PROCESS_MODE_DISABLED
 
 
 ## He answered an offer in her talk: the talk was had. Main saves on the same answer, after this.

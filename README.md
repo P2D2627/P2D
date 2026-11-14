@@ -2548,7 +2548,10 @@ diretor marca-a no `GameState` (`answered_` e o nome do cue), e a oferta por mor
 espera. Se o jogador sair antes de responder, a conversa do início de uma fase volta assim que ele
 pousa no chão depois do Continue, e a oferta por mortes continua à espera da sua zona. Aceitar o atalho fecha as ofertas por mortes. A saída do nível (`PhaseExit` sem fase
 seguinte e com Walk In Leads On desligado) só termina o nível depois da última fala de `stairs`;
-nessa altura o Main escurece o ecrã e volta ao menu principal.
+nessa altura o diretor marca o nível como feito (`lust_done`), com a tenda como ponto de chegada,
+o Main grava, escurece o ecrã e volta ao menu principal. Enquanto não houver nível 2, o Continue
+depois disso leva o homem à tenda e deixa-o jogar no nível já feito, sem falas nem ofertas e com
+os cães parados.
 
 O `test_asmodeus.gd` verifica que o homem fica preso enquanto ela fala e é largado no fim. O
 `test_lust_asmodeus.gd` joga o nível 1 dentro do Main: a oferta do início da fase 2 recusada, uma

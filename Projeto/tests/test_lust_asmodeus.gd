@@ -5,7 +5,8 @@
 #   asmodeus_deaths once he walks into it; it waits until he answers. Accepting takes him to the tent at the level's end: he
 #   stands there, not at phase 2's start, though he reached it. No more offers come for his deaths.
 # - At the tent she gives the gift, then the stairs, and only then the level ends: the main menu
-#   shows, no level in the slot, and the save keeps level 1 at the tent.
+#   shows, no level in the slot, and the save keeps level 1 at the tent, marked as done. Continue
+#   brings him back to the tent, in the level, with no talk and the dogs still.
 # - Reaching phase 3's save, she talks from asmodeus_second_offer.
 # - Left for the menu before the answer, a talk comes again after Continue, with what he said in it
 #   undone; answered, it is saved at once and does not come again. A death offer left before the
@@ -119,6 +120,22 @@ func _phase_2_then_deaths_then_the_shortcut_and_the_ending() -> Array[bool]:
 			("Shortcut: a new level %s, at the tent %s, no more offers %s, saved %s; the gift %s, "
 			+ "the stairs %s, then the level ends to the menu %s")
 			% [changed, at_the_tent, closed, saved_at, gift_said, stairs_said, ended]))
+
+	# Done: Continue brings him to the tent, playing on, with no talk and the dogs still.
+	var done_saved: bool = (SaveFile.new().read().get("state", {}).get("events", [])
+			as PackedStringArray).has("lust_done")
+	(main.get_node(^"%MainMenu") as MainMenu).continue_requested.emit()
+	await wait_until(func() -> bool: return level_in(main) != null, TALK_FRAMES)
+	level = level_in(main) as Level
+	var back_at_the_tent: bool = level != null and await _stands_at_the_tent(level)
+	await wait_frames(OUTSIDE_FRAMES)
+	var quiet: bool = level != null and not (level.get_node(^"Asmodeus") as Asmodeus).is_talking()
+	var dogs_stay: bool = level != null and not level.get_node(^"Dogs").can_process()
+	var still_in_it: bool = level_in(main) == level
+	results.append(report(done_saved and back_at_the_tent and quiet and dogs_stay and still_in_it,
+			("Done: saved as done %s; Continue brings him to the tent %s, with no talk %s, the dogs "
+			+ "still %s, and he stays in the level %s")
+			% [done_saved, back_at_the_tent, quiet, dogs_stay, still_in_it]))
 	await remove_main(main)
 	return results
 

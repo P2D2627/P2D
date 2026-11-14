@@ -242,13 +242,16 @@ func _on_phase_exit_reached(next_scene_path: String) -> void:
 
 
 ## The level's last exit: behind the fade to black, the level goes and the main menu comes back. The
-## run's numbers are written first. The save stays as it was.
+## run's numbers are written first, and the save keeps what the end marked, as that the level is
+## done.
 func _finish_level() -> void:
 	# Ended while the phase still fades in, as when its lines are skipped at once: it ends after.
 	while _changing_phase:
 		await get_tree().process_frame
 	if not _has_level():
 		return
+	# What the level's end marked in GameState, as that it is done, is kept.
+	_save_the_current_phase()
 	_changing_phase = true
 	_level_slot.set_deferred(&"process_mode", Node.PROCESS_MODE_DISABLED)
 	await _fade_to(1.0)
