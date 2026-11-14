@@ -2373,7 +2373,7 @@ julgamento, mas não soma nem retira pontos.
 
 Tudo o que o homem faz soma pontos a um único total. Uma tentação aceite soma o valor indicado para
 ela, contando uma só vez, mesmo que volte a ser aceite. Cada portagem roubada no nível 3 vale menos
-do que um atalho, porque esse nível tem três. Uma resposta arrogante soma pouco. Ouvir uma proposta
+do que um atalho, porque esse nível tem três. Uma resposta arrogante soma meio ponto e uma humilde tira meio ponto. Ouvir uma proposta
 só conta a partir de alguns segundos, e cada proposta tem um máximo; ouvida outra vez, por exemplo
 depois de recomeçar a fase, conta apenas a escuta mais longa. Dois limiares transformam o total no
 estádio 0, 1 ou 2, que escolhe a variante das falas do homem: quanto mais alto, pior ele fala.
@@ -2381,11 +2381,12 @@ Cada resposta conta sempre que é dada. Por isso, uma conversa com respostas nã
 fase recomeça; essa regra pertence ao estado do jogo (`GameState`), que guarda as conversas já
 ouvidas, e não ao registo moral.
 
-Uma resposta humilde fica contada, mas não retira pontos, e o total nunca desce. Se descontasse, o
-jogador poderia aprender por tentativa e erro a "limpar" a fala com respostas humildes, e o registo
-deixaria de medir o que o jogador escolhe. A soma única foi preferida a contar apenas as tentações,
-que ignoraria a soberba nas respostas, e a ter um limiar por categoria, que daria seis valores
-difíceis de afinar e de explicar.
+Uma resposta humilde retira 0,5 pontos, e é a única coisa que retira pontos. O total nunca desce
+abaixo de 0. Assim, a humildade pode compensar a soberba, mas um homem sem nada a pesar não fica com
+pontos negativos. Antes, uma resposta humilde só ficava contada; o grupo decidiu que a humildade
+deve pesar tanto como a soberba. A soma única foi preferida a contar apenas as tentações, que
+ignoraria a soberba nas respostas, e a ter um limiar por categoria, que daria seis valores difíceis
+de afinar e de explicar.
 
 O tom também escolhe falas diretamente. No presente da Asmodeu, o homem fala com soberba se o
 estádio já subiu ou se deu mais respostas arrogantes do que humildes (`Moral.leans_arrogant()`).
@@ -2394,15 +2395,18 @@ chegarem ao estádio 1. Contar as respostas não soma pontos.
 
 | Valor | Referência |
 |---|---|
-| Atalho ou dom de um demónio (Moral Weight, no ficheiro da oferta em `offers/`) | 1 ponto |
+| Atalho de um demónio (Moral Weight, no ficheiro da oferta em `offers/`) | 1 ponto |
+| Dom de um demónio, como o charm (idem) | 2 pontos |
 | Cada portagem roubada (idem) | 0,4 pontos |
 | Tentação sem ficheiro de oferta (`core/moral_stats.tres`, tal como os seguintes) | 1 ponto |
-| Resposta arrogante | 0,15 pontos |
+| Resposta arrogante | +0,5 pontos |
+| Resposta humilde | −0,5 pontos (o total nunca desce abaixo de 0) |
 | Ouvir uma proposta | 0,1 pontos por segundo além de 3 s, até 0,5 por proposta |
 | Estádio 1 / estádio 2 | a partir de 1 / de 3 pontos |
 
-São valores de referência, a afinar em jogo. Com eles, um atalho basta para a fala piorar, e as
-três portagens juntas pesam pouco mais do que um atalho. As regras estão numa classe sem nós
+São valores de referência, a afinar em jogo. Com eles, um atalho basta para a fala piorar, o atalho
+e o dom juntos chegam ao estádio 2, e as três portagens juntas pesam pouco mais do que um atalho.
+As regras estão numa classe sem nós
 (`MoralRecord`), testada isoladamente; o autoload limita-se a disponibilizá-la. O `reset()` limpa o
 registo para um jogo novo, e o registo entra na gravação do jogo.
 

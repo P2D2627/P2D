@@ -13,9 +13,11 @@ extends Resource
 @export_range(0.0, 5.0, 0.05) var unknown_temptation_points: float = 1.0
 
 @export_group("Tone")
-## Points each arrogant answer adds. A humble answer adds none and takes none away: if it did, the
-## player could learn to clean his speech by trial and error.
-@export_range(0.0, 1.0, 0.01) var arrogant_answer_points: float = 0.15
+## Points each arrogant answer adds.
+@export_range(0.0, 2.0, 0.05) var arrogant_answer_points: float = 0.5
+## Points each humble answer takes off. Nothing else takes points off, and the total never goes
+## below 0.
+@export_range(0.0, 2.0, 0.05) var humble_answer_points: float = 0.5
 
 @export_group("Listening")
 ## Seconds he can listen to an offer before refusing it with nothing counted.

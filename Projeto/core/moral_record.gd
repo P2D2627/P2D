@@ -113,20 +113,21 @@ func stage() -> int:
 
 
 ## The total of points, added up now from the stats, so a value tuned in the Remote tab counts at
-## once.
+## once. Humble answers take points off, and only they do; the total is never below 0.
 func get_points() -> float:
-	var points: float = _arrogant_answers * _stats.arrogant_answer_points
+	var points: float = (_arrogant_answers * _stats.arrogant_answer_points
+			- _humble_answers * _stats.humble_answer_points)
 	for id: StringName in _taken:
 		var offer: OfferData = _catalog.find(id)
 		points += offer.moral_weight if offer != null else _stats.unknown_temptation_points
 	for seconds: float in _listening.values():
 		points += clampf((seconds - _stats.listening_grace) * _stats.listening_points_per_second,
 				0.0, _stats.most_listening_points)
-	return points
+	return maxf(points, 0.0)
 
 
-## How many answers he gave in tone, HUMBLE or ARROGANT; 0 for any other. Humble answers add no
-## points, but the judgment shows him the numbers of both.
+## How many answers he gave in tone, HUMBLE or ARROGANT; 0 for any other. The judgment shows him
+## the numbers of both.
 func get_tone_count(tone: StringName) -> int:
 	match tone:
 		HUMBLE:
