@@ -118,6 +118,7 @@ func _initialize() -> void:
 	results.append(await _held_still_by_something_else_he_is_not_grabbed())
 	results.append(await _grabbed_high_up_he_falls_slowly())
 	results.append(await _holding_to_escape_plays_escape_and_shakes_nothing())
+	results.append(await _dead_from_something_else_while_held_he_cannot_break_free())
 	finish(results)
 
 
@@ -1024,6 +1025,40 @@ func _holding_to_escape_plays_escape_and_shakes_nothing() -> bool:
 			% [frames_held, still_held, playing, shown, by_its_clock, only_holding, heard.size(),
 			trauma])
 	camera.queue_free()
+	bite.queue_free()
+	await remove_player(man)
+	return verdict
+
+
+## Dead from something else while held, as on the lethal spikes, which call die(): the grab ends as a
+## death, once, so the prompt says he died; then no press counts, nothing is heard as a struggle, he
+## never breaks free and stays GRABBED, and his Hurtbox is closed, not blinking, so no demon grabs
+## the dead man again.
+func _dead_from_something_else_while_held_he_cannot_break_free() -> bool:
+	var man: Player = await _low_sp_man()
+	if man == null:
+		return report(false, "Dead while held: the man never landed")
+	var stand_in: StandInInput = man.input as StandInInput
+	var escape: GrabEscape = _escape_of(man)
+	var hurtbox: Hurtbox = man.get_node(^"Hurtbox") as Hurtbox
+	var bite: Hitbox = await _bite_and_wait_for_the_grab(man)
+	var struggles: Array[bool] = []
+	var ends: Array[String] = []
+	escape.struggled.connect(func(pressed: bool) -> void: struggles.append(pressed))
+	escape.broke_free.connect(func() -> void: ends.append("broke free"))
+	escape.died.connect(func() -> void: ends.append("died"))
+	man.die()
+	for _press: int in escape.stats.presses_to_escape + SETTLE_FRAMES:
+		await physics_frame
+		stand_in.press_jump()
+		await wait_frames(PRESS_GAP_FRAMES)
+	var state: Player.State = man.get_state()
+	var closed: bool = not hurtbox.takes_hits() and not hurtbox.is_invulnerable()
+	var passed: bool = (struggles.is_empty() and ends.size() == 1 and ends[0] == "died"
+			and state == Player.State.GRABBED and not escape.is_held() and closed)
+	var verdict: bool = report(passed,
+			("Dead while held: struggles heard %s, the grab ended %s, %s, held %s, Hurtbox closed "
+			+ "%s") % [struggles, ends, _state_name(state), escape.is_held(), closed])
 	bite.queue_free()
 	await remove_player(man)
 	return verdict

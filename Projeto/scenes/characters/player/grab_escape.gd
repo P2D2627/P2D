@@ -14,7 +14,9 @@ extends Node
 ## Hitbox that holds him hears start_hold() as it grabs or joins and end_hold() when he breaks free,
 ## so its demon holds on and lets go, and sink_hold() in between, so it sinks with him, also when it
 ## joins half way down. At his death they hold on and his Hurtbox closes, since the room starts
-## over. It only says when the grab starts and ends, and how far he sank: the player's scene
+## over. Dead from something else while held, as on spikes, the grab ends as a death there and then:
+## no press counts any more, and died tells the prompt. It only says when the grab starts and ends,
+## and how far he sank: the player's scene
 ## connects grabbed, broke_free and sink_changed to what else changes, such as the crucifix going
 ## down and his drawing sinking.
 
@@ -63,6 +65,7 @@ func _ready() -> void:
 	assert(hurtbox != null, "GrabEscape: assign the player's Hurtbox to Hurtbox.")
 	assert(stats != null, "GrabEscape: assign a GrabStats resource to Stats.")
 	hit_reaction.grab_hit.connect(_on_grab_hit)
+	player.died.connect(_on_player_died)
 
 
 ## Runs after the player's own physics, which goes first, so a press that breaks the man free does
@@ -87,14 +90,23 @@ func _physics_process(delta: float) -> void:
 			died.emit()
 
 
-## True while a demon holds the man.
+## True while a demon holds the man and he is alive: a dead man's grab is over.
 func is_held() -> bool:
-	return _rules != null and _rules.get_state() == GrabRules.State.HELD
+	return _rules != null and _rules.get_state() == GrabRules.State.HELD and not player.is_dead()
 
 
 ## How near the man is to breaking free, from 0 to 1; 0 while he is not held. For the prompt.
 func get_escape_progress() -> float:
 	return _rules.get_escape_progress() if is_held() else 0.0
+
+
+## Dead from something else while held, as on spikes: the grab ends as when its own time runs out,
+## with the Hurtbox closed and died, but where he is. When its own time ran out, it already did.
+func _on_player_died() -> void:
+	if _rules == null or _rules.get_state() != GrabRules.State.HELD:
+		return
+	hurtbox.set_closed(true)
+	died.emit()
 
 
 func _on_grab_hit(hitbox: Hitbox) -> void:

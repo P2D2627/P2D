@@ -413,7 +413,9 @@ toque troca a mão que a personagem tem levantada, para que cada toque se veja. 
 pode juntar-se a meio, e pede mais 6. Com dois, o agarrão fica cheio: nenhuma pancada entra, e os
 outros demónios esperam a cerca de 130 px. Se o jogador parar de premir, o progresso desce: ao fim de 0,25 s sem premir, perde metade
 da barra por segundo, pelo que quem prime 4 vezes por segundo não perde nada. Se não se soltar em
-3 s, a personagem morre, aparece "You died" e o nível recomeça 1,5 s depois.
+3 s, a personagem morre, aparece "You died" e o nível recomeça 1,5 s depois. Se morrer por outra
+causa enquanto está agarrada, como nos picos letais, o agarrão acaba da mesma forma: os toques
+deixam de contar e aparece "You died".
 
 Durante o agarrão, a personagem e os demónios que a agarram afundam-se no chão, até 96 px, ao ritmo
 do tempo que passa: o jogador vê quanto tempo lhe resta sem olhar para um número. O afundar é só
