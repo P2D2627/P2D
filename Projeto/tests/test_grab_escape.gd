@@ -1,15 +1,17 @@
 # Checks the grab on the man in his own scene (ADR 0021). At low SP, a bite grabs him: he stops at
 # once, also at a run, and can't run or jump; grabbed in the air, going up in a jump, against a wall
 # or thrown by a hit, he goes no higher and falls straight down as in the air, and nothing he lands
-# on shoves him off until he breaks free. The crucifix goes down and stays down, and another bite
+# on shoves him off: on a body he can't stand on, he falls through it onto the floor, so no grab
+# holds him on a demon (ADR 0056). The crucifix goes down and stays down, and another bite
 # while he is held changes nothing, also with his SP back above Low Threshold. The bite that grabbed
 # him hears that it holds him, once, and that he is free when he breaks free; another demon's bite
 # joins and asks for more presses, and a third's joins nothing: with the most holding him, his
 # Hurtbox takes no hits, with no blink, until he is free (ADR 0029). Presses of Jump free him on
 # Presses To Escape, with no jump on that frame or after; free, he runs again, the crucifix can go
-# up and he is invulnerable for a moment, after which a bite grabs him again and asks for every
-# press again. With no presses he dies on Time To Die and stays held, and takes no more hits, since
-# the room starts over. With Hold To Escape on, Jump held from before the grab gives nothing, and
+# up and he is invulnerable for a moment, also to a bite that pierces his blink after a hit (ADR
+# 0055), after which a bite grabs him again and asks for every press again. With no presses he dies
+# on Time To Die and stays held, and takes no more hits, since the room starts over. With Hold To
+# Escape on, Jump held from before the grab gives nothing, and
 # from a press on, holding frees him on Hold Time To Escape. The pause stops the grab's clock. The
 # stand-in prompt shows while he is held, with the grab's progress in its bar, and says he died when
 # the time runs out, so a man who can't move never looks free. Held, his drawing sinks at the pace
@@ -89,13 +91,14 @@ func _initialize() -> void:
 	results.append(await _grabbed_going_up_he_falls_straight_down())
 	results.append(await _grabbed_on_a_wall_he_falls_as_in_the_air())
 	results.append(await _grabbed_in_a_knockback_he_falls_straight_down())
-	results.append(await _held_he_is_not_shoved_off_until_he_breaks_free())
+	results.append(await _held_he_falls_through_what_he_can_t_stand_on())
 	results.append(await _held_with_sp_back_up_a_bite_still_hurts_nothing())
 	results.append(await _the_bite_that_grabs_holds_him_until_he_breaks_free())
 	results.append(await _a_second_demon_joins_the_grab_and_a_third_does_not())
 	results.append(await _held_by_the_most_demons_he_takes_no_hits_until_he_is_free())
 	results.append(await _presses_free_him_with_no_jump_and_he_moves_again())
 	results.append(await _free_he_is_grabbed_again_only_after_the_invulnerability())
+	results.append(await _free_a_bite_that_pierces_grabs_him_only_after_the_invulnerability())
 	results.append(await _with_no_presses_he_dies_and_stays_held())
 	results.append(await _dead_he_takes_no_more_hits())
 	results.append(await _holding_frees_him_only_from_a_press_in_the_grab())
@@ -282,9 +285,10 @@ func _grabbed_in_a_knockback_he_falls_straight_down() -> bool:
 
 
 ## Held, the man drops onto a body he can't stand on, a stand-in for a demon's on Knock Off Layers:
-## it does not shove him off, and he stays on it, held, moving by no more than HELD_DRIFT. Free, it
-## shoves him off again, down onto the floor (ADR 0022).
-func _held_he_is_not_shoved_off_until_he_breaks_free() -> bool:
+## it does not shove him off, and he does not stay on it either. He falls straight through it onto
+## the floor, still held and moving across by no more than HELD_DRIFT, so a grab never holds him on
+## top of a demon (ADR 0056). Free, he runs out of it, and the two collide again.
+func _held_he_falls_through_what_he_can_t_stand_on() -> bool:
 	var body: StaticBody2D = make_wall(-BODY_SIZE.x / 2.0, BODY_SIZE.x / 2.0, -BODY_SIZE.y)
 	var man: Player = spawn_player(Vector2(0.0, -BODY_SIZE.y - DROP_HEIGHT))
 	body.collision_layer = man.knock_off_layers
@@ -292,21 +296,22 @@ func _held_he_is_not_shoved_off_until_he_breaks_free() -> bool:
 	man.soul_points.take_damage(DAMAGE_TO_LOW)
 	var escape: GrabEscape = _escape_of(man)
 	var bite: Hitbox = await _bite_and_wait_for_the_grab(man)
-	var landed: bool = await wait_until(man.is_on_floor, MOST_FRAMES)
-	var start: Vector2 = man.position
-	await wait_frames(WATCH_FRAMES)
-	var moved: float = man.position.distance_to(start)
-	var on_it: bool = man.is_on_floor() and man.position.y < -BODY_SIZE.y / 2.0
+	var start_x: float = man.position.x
+	var through: bool = await wait_until(
+			func() -> bool: return man.is_on_floor() and man.position.y > -BODY_SIZE.y / 2.0,
+			MOST_FRAMES)
+	var across: float = absf(man.position.x - start_x)
 	var held: bool = escape.is_held()
 	await _press_until_free(escape, stand_in)
-	var shoved_off: bool = await wait_until(
-			func() -> bool: return man.is_on_floor() and man.position.y > -BODY_SIZE.y / 2.0,
-			WATCH_FRAMES)
-	var passed: bool = landed and on_it and held and moved <= HELD_DRIFT and shoved_off
+	stand_in.run_direction = 1.0
+	var colliding: bool = await wait_until(
+			func() -> bool: return not man.get_collision_exceptions().has(body), MOST_FRAMES)
+	stand_in.run_direction = 0.0
+	var passed: bool = through and across <= HELD_DRIFT and held and colliding
 	var verdict: bool = report(passed,
-			("Held, dropped on a body he can't stand on: landed %s, still on it %s, held %s, moved "
-			+ "%.2f px in %d frames; free, shoved off onto the floor %s") % [landed, on_it, held,
-			moved, WATCH_FRAMES, shoved_off])
+			("Held, dropped on a body he can't stand on: through it onto the floor %s, moved %.2f "
+			+ "px across (at most %.0f), held %s; free, out of it and colliding with it again %s")
+			% [through, across, HELD_DRIFT, held, colliding])
 	bite.queue_free()
 	body.queue_free()
 	await remove_player(man)
@@ -507,6 +512,32 @@ func _free_he_is_grabbed_again_only_after_the_invulnerability() -> bool:
 			("Bitten again as he broke free: held before Invulnerable Time %s, after it %s; one "
 			+ "press short of the new grab, held %s; signals %s") % [held_too_soon, held_again,
 			held_one_short, heard])
+	bite.queue_free()
+	await remove_player(man)
+	return verdict
+
+
+## As in _free_he_is_grabbed_again_only_after_the_invulnerability, with a bite that pierces a blink
+## after a hit, as a level-1 dog's does (ADR 0055): his time after breaking free is not pierceable,
+## so the bite still lands only when Invulnerable Time ends.
+func _free_a_bite_that_pierces_grabs_him_only_after_the_invulnerability() -> bool:
+	var man: Player = await _low_sp_man()
+	if man == null:
+		return report(false, "Grabbed again by a bite that pierces: the man never landed")
+	var escape: GrabEscape = _escape_of(man)
+	var bite: Hitbox = await _bite_and_wait_for_the_grab(man)
+	await _press_until_free(escape, man.input as StandInInput)
+	var pierceable: bool = _hurtbox_of(man).can_be_pierced()
+	var landings: Array[int] = _landings_of(bite)
+	bite.pierces_invulnerability = true
+	_bite_again(bite)
+	var invulnerable_frames: int = roundi(escape.invulnerable_time * Engine.physics_ticks_per_second)
+	await wait_frames(invulnerable_frames - SETTLE_FRAMES)
+	var held_too_soon: bool = escape.is_held() or not landings.is_empty()
+	var held_again: bool = await wait_until(escape.is_held, SETTLE_FRAMES + HIT_FRAMES)
+	var verdict: bool = report(not pierceable and not held_too_soon and held_again,
+			("A bite that pierces, on again as he broke free: his Hurtbox could be pierced %s; held "
+			+ "before Invulnerable Time %s, after it %s") % [pierceable, held_too_soon, held_again])
 	bite.queue_free()
 	await remove_player(man)
 	return verdict

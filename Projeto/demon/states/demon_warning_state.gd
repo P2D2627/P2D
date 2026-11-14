@@ -5,9 +5,11 @@ extends DemonState
 ## 0020). Before a lunge, it stands still, since the chase stopped it when the warning started, and
 ## aims as the warning starts where the man will be when it lands; at the end it lunges there
 ## (LUNGE). Before a bite on the run, it chases on, and at the end bites where it is, and goes back
-## to the chase. With the man taking no more hits, as when another demon's attack has just landed on
-## him, the warning ends and the demon chases on from this same frame. With the man gone, as on a
-## respawn that would swap only him, the warning ends and the demon stands or walks back, with no attack at where he was.
+## to the chase. While it waits for the man to take hits (waits_for_the_man_to_take_hits), as when
+## another demon's attack has just landed on him and its own cannot pierce his blink, or he has
+## just broken free of a hold, the warning ends and the demon chases on from this same frame. With
+## the man gone, as on a respawn that would swap only him, the warning ends and the demon stands
+## or walks back, with no attack at where he was.
 
 ## Physics frames the demon has warned for.
 var _frames: int = 0
@@ -27,7 +29,7 @@ func physics_update(delta: float) -> void:
 		_demon.velocity.x = 0.0
 		_demon.stand_or_return()
 		return
-	if _demon.target_takes_no_hits():
+	if _demon.waits_for_the_man_to_take_hits():
 		_demon.change_state_and_act(Demon.State.CHASE, delta)
 		return
 	var attack: DemonAttack = _demon.get_attack()

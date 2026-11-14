@@ -7,7 +7,9 @@ extends DemonState
 ## its floor over one it can drop onto (DROP) takes it there (ADR 0042). With him inside the Attack
 ## Range of one of its attacks, on about its own floor, and the attack's chance coming up, it warns
 ## of the attack (WARNING); a lunge's warning stops it, a bite's goes on with the chase. Once a bite
-## on the run is over, it backs off with Retreat Distance in Stats (RETREAT).
+## on the run is over, it backs off with Retreat Distance in Stats (RETREAT); with Waits At Retreat
+## Distance, it keeps that far from him until it can attack again, and then runs at him (ADR 0051).
+## With Retreat Pace Width, it paces there, as when it waits for him to take hits (ADR 0052).
 
 
 ## Leaving the chase ends a bite under way, and the backing off after it.
@@ -35,4 +37,4 @@ func physics_update(delta: float) -> void:
 		if not attack.keeps_chasing:
 			_demon.velocity.x = 0.0
 			return
-	_demon.go_after(gap, delta)
+	_demon.go_after_or_pace(gap, delta)

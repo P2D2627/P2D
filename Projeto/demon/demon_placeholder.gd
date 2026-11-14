@@ -32,9 +32,10 @@ extends Polygon2D
 ## The colour while the demon lies stunned: darker than the rectangle's own, where the warnings are
 ## lighter.
 @export var stunned_color: Color = Color(0.32, 0.08, 0.11)
-## The rectangle's Z Index while the demon lunges: above the other demons', so a lunge over one of
-## them reads as a leap past it, not into it.
-@export var lunge_z_index: int = 1
+## The rectangle's Z Index while the demon warns of an attack and while it lunges: above the other
+## demons', so one pacing by never hides the warning, and a lunge over one of them reads as a leap
+## past it, not into it (ADR 0053).
+@export var attack_z_index: int = 1
 ## The rectangle's Z Index while the demon holds the man: above his, which the level draws after
 ## its demons, so he reads as held in its jaws, not standing in front of it.
 @export var grab_z_index: int = 1
@@ -82,15 +83,15 @@ func _process(_delta: float) -> void:
 
 
 ## Flat and dark while stunned, back in its own shape and colour once the warning or the stun is
-## over, drawn over the other demons while it lunges, and over the man while it holds him. A hop,
-## stretch or squash under way ends with the state.
+## over, drawn over the other demons while it warns of an attack or lunges, and over the man while
+## it holds him. A hop, stretch or squash under way ends with the state.
 func _on_demon_state_changed(_previous: Demon.State, current: Demon.State) -> void:
 	_end_hop()
 	if _leap != null and _leap.is_valid():
 		_leap.kill()
 	match current:
-		Demon.State.LUNGE:
-			z_index = lunge_z_index
+		Demon.State.WARNING, Demon.State.LUNGE:
+			z_index = attack_z_index
 		Demon.State.GRAB:
 			z_index = grab_z_index
 		_:

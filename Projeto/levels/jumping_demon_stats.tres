@@ -8,7 +8,7 @@ script = ExtResource("2_attack")
 animation = &"bite"
 keeps_chasing = true
 attack_range = 100.0
-warning_time = 0.2
+warning_time = 0.1
 recover_time = 0.3
 
 [sub_resource type="Resource" id="Resource_lunge"]
@@ -35,8 +35,15 @@ patrol_width = 480.0
 jump_height = 96.0
 max_drop = 240.0
 attacks = Array[ExtResource("2_attack")]([SubResource("Resource_bite"), SubResource("Resource_lunge")])
+attacks_invulnerable_man = true
+bites_who_lands_on_it = true
 retreat_distance = 130.0
+waits_at_retreat_distance = true
+retreat_pace_width = 60.0
 pack_spacing = 24.0
 pack_variation = 0.1
-max_hesitation = 0.5
+pace_spread = 0.5
+max_hesitation = 0.3
+hesitates_before_first_attack = false
+attackers_per_side = 1
 stunned_time = 1.2

@@ -39,6 +39,10 @@ const MOVED: float = 1.0
 const SCREEN_AFTER_LEAD_FRAMES: int = 3
 ## Steps for the camera to settle when called by hand: 4 s.
 const SETTLE_STEPS: int = 240
+## After its slide at Zone Change Speed, a change of zone settles in this many seconds times 1 / the
+## slower of Follow Sharpness and Zone Change Sharpness: a critically damped spring then has
+## (1 + 20) × exp(-20), about 4e-8, of the distance left.
+const ZONE_SETTLE_TIMES: float = 20.0
 ## Physics frames to settle with the physics running: 2 s.
 const SETTLE_FRAMES: int = 120
 ## Physics frames a case waits for something before giving up: 5 s.
@@ -49,8 +53,10 @@ const LARGEST_STEP_SHARE: float = 0.1
 const EDGE_GAP: float = 100.0
 ## How far the freed-zone case moves the player inside the zone before freeing it, in px.
 const LATER_MOVE: float = 500.0
-## How far the zone-change case moves the player inside the new zone once the change is over, in px.
-const JUMP_IN_THE_ZONE: float = 1500.0
+## How far the zone-change case moves the player inside the new zone once the change is over, in px:
+## past the screen's edge, so keeping the player on screen takes a bigger step than Zone Change
+## Speed allows.
+const JUMP_IN_THE_ZONE: float = 3000.0
 ## The fall case: a ledge this high above the floor, ending at LEDGE_END_X, with the player starting
 ## LEDGE_START_GAP before its end; the zone's bottom is ZONE_FLOOR_DEPTH below the floor's top.
 const FALL_HEIGHT: float = 2500.0
@@ -262,7 +268,7 @@ func _moving_into_another_zone_the_camera_slides_to_its_range() -> bool:
 	var distance: float = absf(expected_x - before.x)
 	var largest_step: float = 0.0
 	var previous: Vector2 = before
-	for _step_index: int in SETTLE_STEPS:
+	for _step_index: int in _zone_change_settle_steps(camera, distance):
 		camera._physics_process(_step())
 		largest_step = maxf(largest_step, camera.global_position.distance_to(previous))
 		previous = camera.global_position
@@ -435,13 +441,14 @@ func _moving_into_another_zone_the_camera_keeps_to_zone_change_speed() -> bool:
 	_settle_by_hand(camera)
 	player.global_position = Vector2(screen.x + EDGE_GAP, screen.y / 2.0)
 	var most_per_step: float = camera.stats.zone_change_speed * _step()
+	var expected_x: float = screen.x + screen.x / 2.0
+	var distance: float = absf(expected_x - camera.global_position.x)
 	var largest_step: float = 0.0
 	var previous: Vector2 = camera.global_position
-	for _step_index: int in SETTLE_STEPS:
+	for _step_index: int in _zone_change_settle_steps(camera, distance):
 		camera._physics_process(_step())
 		largest_step = maxf(largest_step, camera.global_position.distance_to(previous))
 		previous = camera.global_position
-	var expected_x: float = screen.x + screen.x / 2.0
 	var settled_x: float = camera.global_position.x
 	player.global_position.x += JUMP_IN_THE_ZONE
 	var before_jump: Vector2 = camera.global_position
@@ -449,7 +456,7 @@ func _moving_into_another_zone_the_camera_keeps_to_zone_change_speed() -> bool:
 	var step_after_jump: float = camera.global_position.distance_to(before_jump)
 	await _remove_all([camera, player, left_zone, right_zone])
 	return report(largest_step <= most_per_step + SAME_SPOT and absf(settled_x - expected_x) < SAME_SPOT
-			and step_after_jump > most_per_step,
+			and step_after_jump > most_per_step + SAME_SPOT,
 			"Into the right zone: largest step %.1f px (Zone Change Speed allows %.1f), settled at %.2f (expected %.1f); then a %.0f px jump in the zone moves it %.1f px in one step"
 			% [largest_step, most_per_step, settled_x, expected_x, JUMP_IN_THE_ZONE, step_after_jump])
 
@@ -932,6 +939,13 @@ func _spawn_camera(player: Player) -> GameCamera:
 func _settle_by_hand(camera: GameCamera) -> void:
 	for _step_index: int in SETTLE_STEPS:
 		camera._physics_process(_step())
+
+
+## Steps for a change of zone of this distance to slide and settle, with the camera called by hand.
+func _zone_change_settle_steps(camera: GameCamera, distance: float) -> int:
+	var slide_time: float = distance / camera.stats.zone_change_speed
+	var slower: float = minf(camera.stats.follow_sharpness, camera.stats.zone_change_sharpness)
+	return ceili((slide_time + ZONE_SETTLE_TIMES / slower) / _step())
 
 
 ## The length of one physics step, in seconds.

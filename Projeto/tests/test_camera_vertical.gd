@@ -1,8 +1,8 @@
 # Test of the game camera's vertical moves. The values meet their criteria: neither a jump nor a
 # drop shorter than a full jump looks down, and at top falling speed the screen shows at least
-# 0.5 s of fall below the player's feet. Landing higher than the focus, inside the window, reframes
+# 0.25 s of fall below the player's feet. Landing higher than the focus, inside the window, reframes
 # the camera on the new floor. In a long fall the camera looks down only once the player is Look
-# Down Threshold below the last floor, shows half a second below the feet, and after the landing
+# Down Threshold below the last floor, shows 0.25 s of fall below the feet, and after the landing
 # comes back up and settles on the floor. A short drop and a full jump do not look down, and
 # neither does the fall of a player that appears in the air, before its first landing, nor a
 # player below the threshold going up. The swing down is a critically damped spring at Look Down
@@ -13,7 +13,7 @@ extends "res://tests/support/player_test.gd"
 
 const CAMERA_SCENE: PackedScene = preload("res://camera/game_camera.tscn")
 ## The least fall, in seconds, the screen must show below the player's feet at top falling speed.
-const SECONDS_BELOW: float = 0.5
+const SECONDS_BELOW: float = 0.25
 ## A smoothing so fast that one step closes the whole distance, to see the camera's moves on their own.
 const INSTANT_SHARPNESS: float = 1.0e6
 ## Where the cases that call the camera by hand put the player.
@@ -27,7 +27,8 @@ const SAME_SPOT: float = 0.01
 ## The floor's top is at y = 0, from -FLOOR_HALF_WIDTH to 3 × FLOOR_HALF_WIDTH.
 const FLOOR_HALF_WIDTH: float = 1000.0
 ## The long fall: a ledge this high above the floor, ending at x = 0, with the player starting on it.
-const HIGH_LEDGE: float = 1600.0
+## At top falling speed the trail has about 2.8 s to settle before the landing.
+const HIGH_LEDGE: float = 4000.0
 ## The short drop: a ledge this high, shorter than a full jump.
 const SHORT_DROP: float = 200.0
 ## Where the ledge cases start, on the ledge.
@@ -36,8 +37,10 @@ const LEDGE_START_X: float = -300.0
 const AIR_START_HEIGHT: float = 1000.0
 ## Physics frames a fall or a drop may take before the case gives up.
 const FALL_FRAMES: int = 240
-## Physics frames for the camera to settle after a landing: 1.5 s.
-const SETTLE_FRAMES: int = 90
+## After a landing, the follow settles in this many seconds times 1 / Follow Sharpness, which leaves
+## exp(-9) of the distance, and the look down in SETTLE_TIMES times 1 / Look Down Sharpness; the
+## long fall waits for the slower of the two.
+const LANDING_SETTLE_TIMES: float = 9.0
 ## How close to settled the camera must be after them, in px.
 const SETTLE_TOLERANCE: float = 0.5
 ## Physics frames of the full jump in the short-drop case: about 21 up and 15 down.
@@ -76,8 +79,8 @@ func _initialize() -> void:
 
 
 ## The look-down threshold is at least a full jump, and at top falling speed the screen shows at
-## least 0.5 s of fall below the feet: half the screen, plus the look down, minus what the smoothing
-## leaves behind.
+## least 0.25 s of fall below the feet: half the screen, plus the look down, minus the window below
+## the focus and what the smoothing leaves behind.
 func _the_values_meet_their_criteria() -> bool:
 	var stats: CameraStats = load("res://camera/camera_stats.tres") as CameraStats
 	var player: Player = PLAYER_SCENE.instantiate() as Player
@@ -86,11 +89,11 @@ func _the_values_meet_their_criteria() -> bool:
 	player.queue_free()
 	var weight: float = 1.0 - exp(-stats.follow_sharpness * _step())
 	var trail: float = fall_speed * _step() * (1.0 - weight) / weight
-	var below: float = _half_screen_height() + stats.look_down_distance - trail
+	var below: float = _half_screen_height() + stats.look_down_distance - stats.window_down - trail
 	var jump_stays_up: bool = stats.look_down_threshold >= jump_height
 	var sees_enough: bool = below >= SECONDS_BELOW * fall_speed
 	return report(jump_stays_up and sees_enough,
-			"Look-down threshold %.0f px for a %.0f px jump; at %.0f px/s, %.0f px below the feet, %.2f s (at least %.1f)"
+			"Look-down threshold %.0f px for a %.0f px jump; at %.0f px/s, %.0f px below the feet, %.2f s (at least %.2f)"
 			% [stats.look_down_threshold, jump_height, fall_speed, below, below / fall_speed,
 					SECONDS_BELOW])
 
@@ -114,9 +117,9 @@ func _landing_higher_reframes_on_the_new_floor() -> bool:
 			% [LANDING_RISE, before_landing, START.y, after_landing, START.y - LANDING_RISE])
 
 
-## Off a 1600 px ledge, the camera does not look down until the player is Look Down Threshold below
-## the ledge, then shows at least 0.5 s of fall below the feet at top falling speed; after the
-## landing it comes back up and settles on the floor.
+## Off a 4000 px ledge, the camera does not look down until the player is Look Down Threshold below
+## the ledge; at the end of the fall, at top falling speed, it shows at least 0.25 s of fall below
+## the feet; after the landing it comes back up and settles on the floor.
 func _a_long_fall_looks_down_enough_and_comes_back_up() -> bool:
 	var ledge: StaticBody2D = make_platform(-FLOOR_HALF_WIDTH, 0.0, -HIGH_LEDGE)
 	var ground: StaticBody2D = make_platform(-FLOOR_HALF_WIDTH, 3.0 * FLOOR_HALF_WIDTH)
@@ -128,7 +131,7 @@ func _a_long_fall_looks_down_enough_and_comes_back_up() -> bool:
 	var ledge_y: float = player.global_position.y
 	var threshold: float = camera.stats.look_down_threshold
 	var early_look_down: float = 0.0
-	var most_below: float = 0.0
+	var below_at_the_end: float = 0.0
 	var landed: bool = false
 	Input.action_press(&"move_right")
 	for _frame: int in FALL_FRAMES:
@@ -139,19 +142,22 @@ func _a_long_fall_looks_down_enough_and_comes_back_up() -> bool:
 		if player.global_position.y < ledge_y + threshold:
 			early_look_down = maxf(early_look_down, absf(camera.get_look_down()))
 		if player.velocity.y >= player.stats.max_fall_speed:
-			most_below = maxf(most_below,
-					camera.global_position.y + _half_screen_height() - player.global_position.y)
+			below_at_the_end = (camera.global_position.y + _half_screen_height()
+					- player.global_position.y)
 	Input.action_release(&"move_right")
-	for _frame: int in SETTLE_FRAMES:
+	var settle_time: float = maxf(LANDING_SETTLE_TIMES / camera.stats.follow_sharpness,
+			SETTLE_TIMES / camera.stats.look_down_sharpness)
+	for _frame: int in ceili(settle_time / _step()):
 		await physics_frame
 	var look_down_after: float = absf(camera.get_look_down())
 	var off_the_floor_after: float = absf(camera.global_position.y - player.global_position.y)
 	var fall_speed: float = player.stats.max_fall_speed
 	await _remove_all([camera, player, ledge, ground])
-	return report(landed and early_look_down == 0.0 and most_below >= SECONDS_BELOW * fall_speed
+	return report(landed and early_look_down == 0.0
+			and below_at_the_end >= SECONDS_BELOW * fall_speed
 			and look_down_after < SETTLE_TOLERANCE and off_the_floor_after < SETTLE_TOLERANCE,
-			"Fall of %.0f px: landed %s, look down before the threshold %.2f px, %.0f px below the feet at top speed (%.2f s); after settling, look down %.2f px, camera %.2f px off the floor"
-			% [HIGH_LEDGE, landed, early_look_down, most_below, most_below / fall_speed,
+			"Fall of %.0f px: landed %s, look down before the threshold %.2f px, %.0f px below the feet at the end of the fall (%.2f s); after settling, look down %.2f px, camera %.2f px off the floor"
+			% [HIGH_LEDGE, landed, early_look_down, below_at_the_end, below_at_the_end / fall_speed,
 					look_down_after, off_the_floor_after])
 
 

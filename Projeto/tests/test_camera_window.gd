@@ -28,18 +28,21 @@ const SMOOTHING_STEPS: int = 30
 ## How far the share of the distance left may be from exp(-sharpness × t).
 const SHARE_TOLERANCE: float = 0.001
 ## The floor of the cases with physics goes from -FLOOR_HALF_WIDTH to FLOOR_HALF_WIDTH.
-const FLOOR_HALF_WIDTH: float = 3000.0
+const FLOOR_HALF_WIDTH: float = 6000.0
 ## Just above the floor, so a player spawned there lands on its first frames.
 const FLOOR_SPAWN_HEIGHT: float = -2.0
-## Physics frames for the camera to settle after the player lands: 1.5 s, which at Follow Sharpness
-## 6 leaves exp(-9) of the distance.
+## Physics frames the cases with physics wait after the player lands, before they start: 1.5 s. The
+## camera starts on the landed player, so it has next to nothing left to settle.
 const SETTLE_FRAMES: int = 90
 ## Physics frames for a full jump to rise and land again: about 21 up and 15 down.
 const FULL_JUMP_FRAMES: int = 60
 ## How short of Jump Height a full jump may peak and still count as one, in px.
 const JUMP_PEAK_TOLERANCE: float = 1.0
-## Physics frames of the run: 2 s, long enough for the trail to stop growing.
-const RUN_FRAMES: int = 120
+## Physics frames the run waits to reach full speed before giving up: 5 s.
+const GIVE_UP_FRAMES: int = 300
+## At full speed, the trail settles for this many seconds times 1 / Follow Sharpness, which leaves
+## exp(-9) of what it still had to grow.
+const TRAIL_SETTLE_TIMES: float = 9.0
 ## How far the trail at full run may be from the expected one, in px.
 const TRAIL_TOLERANCE: float = 0.5
 
@@ -212,7 +215,11 @@ func _at_full_run_the_camera_trails_by_the_window_and_the_smoothing() -> bool:
 	var camera: GameCamera = _spawn_camera(player)
 	await _wait_physics_frames(SETTLE_FRAMES)
 	Input.action_press(&"move_right")
-	await _wait_physics_frames(RUN_FRAMES)
+	for _frame: int in GIVE_UP_FRAMES:
+		if is_equal_approx(player.velocity.x, player.stats.max_run_speed):
+			break
+		await physics_frame
+	await _wait_physics_frames(ceili(TRAIL_SETTLE_TIMES / camera.stats.follow_sharpness / _step()))
 	var trail: float = player.global_position.x - (camera.global_position.x - camera.get_look_ahead())
 	var speed: float = player.velocity.x
 	Input.action_release(&"move_right")

@@ -5,8 +5,10 @@
 # lands again. While the Hurtbox is invulnerable no hit lands, and an active, overlapping Hitbox
 # lands on the physics frame the invulnerability ends: its frames after the frame it started in,
 # also when the owner starts it from hit_received. A pause adds its frames, and a shorter time never
-# cuts a longer one short. Closed, it lets no hit land either, but is not invulnerable; opened, the
-# Hitbox that overlapped all along lands at once (ADR 0029). Two Hitboxes on the same frame land
+# cuts a longer one short. A Hitbox that pierces invulnerability lands at once through one started
+# as pierceable, but not through one that is not, which it waits out to the frame (ADR 0055).
+# Closed, the Hurtbox lets no hit land, not even one that pierces, but is not invulnerable; opened,
+# the Hitbox that overlapped all along lands at once (ADR 0029). Two Hitboxes on the same frame land
 # both, unless the first hit makes the Hurtbox invulnerable. A Hitbox freed while it overlaps leaves
 # the Hurtbox working. The scenes are on the layers the README names: the Hitbox on enemy_hitbox,
 # looking for nothing; the Hurtbox on player_hurtbox, looking only on enemy_hitbox.
@@ -65,6 +67,8 @@ func _initialize() -> void:
 	results.append(await _invulnerability_started_by_a_hit_lasts_as_long())
 	results.append(await _a_pause_adds_its_frames_to_the_invulnerability())
 	results.append(await _a_shorter_invulnerability_never_cuts_a_longer_one())
+	results.append(await _a_piercing_hitbox_lands_only_through_a_pierceable_invulnerability())
+	results.append(await _a_piercing_hitbox_lands_on_the_frame_the_unpierceable_time_ends())
 	results.append(await _closed_no_hit_lands_and_opened_it_lands_at_once())
 	results.append(await _two_hitboxes_on_one_frame_land_both())
 	results.append(await _a_hit_that_protects_stops_the_second_of_the_frame())
@@ -208,6 +212,44 @@ func _a_shorter_invulnerability_never_cuts_a_longer_one() -> bool:
 			% [INVULNERABLE_TIME, SHORTER_INVULNERABLE_TIME, still, after])
 
 
+## Through an invulnerability started as pierceable, as the man's after a hit, a Hitbox that pierces
+## lands at once and one that does not lands nothing; through one not started so, also with a
+## pierceable one started over it, or on a closed Hurtbox, the one that pierces lands nothing either
+## (ADR 0055). The Hurtbox stays invulnerable all along, so it blinks.
+func _a_piercing_hitbox_lands_only_through_a_pierceable_invulnerability() -> bool:
+	var pierced: int = await _hits_through_invulnerability(true, true)
+	var not_piercing: int = await _hits_through_invulnerability(false, true)
+	var unpierceable: int = await _hits_through_invulnerability(true, false)
+	var over_unpierceable: int = await _hits_through_invulnerability(true, true, true)
+	var closed: int = await _hits_through_invulnerability(true, true, false, true)
+	return _report(pierced == 1 and not_piercing == 0 and unpierceable == 0
+			and over_unpierceable == 0 and closed == 0,
+			"Hits in the first %d frames of an invulnerability (-1: no longer invulnerable): pierceable, by a Hitbox that pierces %d, expected 1; by one that does not %d, unpierceable %d, pierceable over unpierceable %d, closed %d, expected 0"
+			% [SETTLE_FRAMES, pierced, not_piercing, unpierceable, over_unpierceable, closed])
+
+
+## Through a pierceable invulnerability started over a shorter unpierceable one, a Hitbox that
+## pierces, on and overlapping all along, lands on the frame the unpierceable one ends, while the
+## Hurtbox still blinks.
+func _a_piercing_hitbox_lands_on_the_frame_the_unpierceable_time_ends() -> bool:
+	var hurtbox: Hurtbox = _new_hurtbox()
+	var hits: HitLog = HitLog.new(hurtbox)
+	var start_frame: int = Engine.get_physics_frames()
+	hurtbox.start_invulnerability(SHORTER_INVULNERABLE_TIME)
+	hurtbox.start_invulnerability(INVULNERABLE_TIME, true)
+	var hitbox: Hitbox = _new_hitbox(NEAR_OFFSET, false)
+	hitbox.pierces_invulnerability = true
+	hitbox.activate()
+	var frames: int = _frames_in(SHORTER_INVULNERABLE_TIME)
+	await _wait_physics_frames(frames + SETTLE_FRAMES)
+	var expected: int = start_frame + frames
+	var blinks: bool = hurtbox.is_invulnerable()
+	_free([hurtbox, hitbox])
+	return _report(hits.frames.size() == 1 and hits.frames[0] == expected and blinks,
+			"%d unpierceable frames from frame %d, within %d pierceable ones: hits on frames %s, expected [%d]; still invulnerable then %s"
+			% [frames, start_frame, _frames_in(INVULNERABLE_TIME), hits.frames, expected, blinks])
+
+
 ## Closed for a whole second with a Hitbox on and overlapping it all along, the Hurtbox takes no hit
 ## and is not invulnerable, so nothing blinks; opened, the Hitbox lands on that same frame.
 func _closed_no_hit_lands_and_opened_it_lands_at_once() -> bool:
@@ -317,6 +359,27 @@ func _new_hitbox(offset: Vector2, active: bool) -> Hitbox:
 	if active:
 		hitbox.activate()
 	return hitbox
+
+
+## The hits a Hitbox on and overlapping lands in the first SETTLE_FRAMES of an invulnerability of
+## INVULNERABLE_TIME: a Hitbox that pierces or not; the invulnerability pierceable or not, started
+## over an unpierceable one or not, on a Hurtbox closed or not. -1 if the Hurtbox is no longer
+## invulnerable by then, so no hit counts as landed through it.
+func _hits_through_invulnerability(pierces: bool, pierceable: bool,
+		over_unpierceable: bool = false, closed: bool = false) -> int:
+	var hurtbox: Hurtbox = _new_hurtbox()
+	var hits: HitLog = HitLog.new(hurtbox)
+	if over_unpierceable:
+		hurtbox.start_invulnerability(INVULNERABLE_TIME)
+	hurtbox.start_invulnerability(INVULNERABLE_TIME, pierceable)
+	hurtbox.set_closed(closed)
+	var hitbox: Hitbox = _new_hitbox(NEAR_OFFSET, false)
+	hitbox.pierces_invulnerability = pierces
+	hitbox.activate()
+	await _wait_physics_frames(SETTLE_FRAMES)
+	var landed: int = hits.hitboxes.size() if hurtbox.is_invulnerable() else -1
+	_free([hurtbox, hitbox])
+	return landed
 
 
 func _round_shape() -> CollisionShape2D:
