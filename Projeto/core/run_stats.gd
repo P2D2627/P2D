@@ -18,6 +18,11 @@ signal phase_changed(phase: int)
 signal death_offer_due(zone: StringName)
 
 const DEATH_OFFER_STATS: DeathOfferStats = preload("res://offers/death_offer_stats.tres")
+const LOG_HEADER: String = "time,level,phase,zone,x,y,zone_deaths,offer_due"
+
+## The log every new RunStats writes the deaths to, for playtests; empty keeps none.
+## tests/support/base_test.gd empties it, so the tests never write to the playtests' log.
+static var default_log_path: String = "user://deaths_log.csv"
 
 var _record: RunRecord = RunRecord.new()
 var _rng: RandomNumberGenerator = RandomNumberGenerator.new()
@@ -26,6 +31,7 @@ var _pacer: DeathOfferPacer = DeathOfferPacer.new(DEATH_OFFER_STATS, _rng)
 var _level: StringName = &""
 ## The phase of that level he is in, from 1.
 var _phase: int = 1
+var _log_path: String = default_log_path
 
 
 func _init() -> void:
@@ -52,13 +58,23 @@ func get_phase() -> int:
 	return _phase
 
 
-## He died inside zone of the level and phase he is in.
-func record_death(zone: StringName) -> void:
+## He died at point, inside zone of the level and phase he is in. Each death adds a line to a log
+## on disk, for playtests, with whether it brought a shortcut offer.
+func record_death(zone: StringName, point: Vector2 = Vector2.ZERO) -> void:
 	var deaths_before: int = _record.deaths_in_zone(_level, zone)
 	_record.record_death(_level, _phase, zone)
 	death_recorded.emit(_phase, zone)
-	if _pacer.record_death(_phase, zone, deaths_before):
+	var offer_due: bool = _pacer.record_death(_phase, zone, deaths_before)
+	CsvLog.append(_log_path, LOG_HEADER, "%s,%s,%d,%s,%.0f,%.0f,%d,%s" % [
+			Time.get_datetime_string_from_system(), _level, _phase, zone, point.x, point.y,
+			_record.deaths_in_zone(_level, zone), offer_due])
+	if offer_due:
 		death_offer_due.emit(zone)
+
+
+## Where the deaths are logged, as CSV; empty keeps none.
+func set_log_path(path: String) -> void:
+	_log_path = path
 
 
 ## Whether a shortcut offer waits for him, after his deaths.

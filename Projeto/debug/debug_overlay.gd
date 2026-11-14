@@ -20,6 +20,7 @@ const ACCEPT_OFFER_ACTION: StringName = &"debug_accept_offer"
 const REFUSE_OFFER_ACTION: StringName = &"debug_refuse_offer"
 const RESET_RUN_ACTION: StringName = &"debug_reset_run"
 const MS_PER_SECOND: float = 1000.0
+const SECONDS_PER_MINUTE: int = 60
 
 ## Whether the text shows when the scene starts.
 @export var start_visible: bool = true
@@ -44,6 +45,7 @@ var _peak_y: float = 0.0
 @onready var _offers: GameOffers = get_node_or_null(^"/root/Offers") as GameOffers
 @onready var _moral: GameMoral = get_node_or_null(^"/root/Moral") as GameMoral
 @onready var _progress: GameProgress = get_node_or_null(^"/root/GameState") as GameProgress
+@onready var _run_stats: GameRunStats = get_node_or_null(^"/root/RunStats") as GameRunStats
 
 
 func _ready() -> void:
@@ -81,7 +83,8 @@ func _unhandled_input(event: InputEvent) -> void:
 ## Rewrites the text on every frame while it shows, with new strings each time, which only debug
 ## builds pay for. Each section is its own function. The player's sections need a player that still
 ## exists, and the camera's a camera: none may be linked, or it may have been freed. The offers'
-## section is about his run, so it shows with a player too, and with the autoloads Offers and Moral.
+## section is about his run, so it shows with a player too, and with the autoloads Offers and Moral;
+## the run's numbers, with a player and the autoload RunStats.
 func _process(_delta: float) -> void:
 	var text: String = _performance_section()
 	if is_instance_valid(player):
@@ -94,6 +97,8 @@ func _process(_delta: float) -> void:
 		text += "\n" + _jump_section()
 	if is_instance_valid(player) and _offers != null and _moral != null:
 		text += "\n" + _offers_section()
+	if is_instance_valid(player) and _run_stats != null:
+		text += "\n" + _run_section()
 	_label.text = text
 
 
@@ -206,6 +211,26 @@ func _offers_section() -> String:
 	if _progress != null:
 		crucifix = "   crucifix %s" % ("held" if _progress.has_crucifix else "lost")
 	return "%s   moral stage %d%s" % [answered, _moral.stage(), crucifix]
+
+
+## The run's hidden numbers, which the player never sees: the phase he is in, his deaths there and
+## in the level, the zone of his last death, the time in the phase, and the pressure of his deaths
+## against the threshold of the next shortcut offer, with that offer's state: waiting at a zone, or
+## closed once he took the shortcut.
+func _run_section() -> String:
+	var pacer: DeathOfferPacer = _run_stats.get_death_offer_pacer()
+	var offer: String = "open"
+	if pacer.is_closed():
+		offer = "closed"
+	elif pacer.has_pending():
+		offer = "waits at %s" % pacer.get_pending_zone()
+	var last_zone: StringName = _run_stats.last_zone()
+	var seconds: int = floori(_run_stats.phase_seconds())
+	return ("run phase %d   deaths %d (level %d)   last death %s   time %d:%02d   "
+			+ "death offer %.1f / %.1f %s") % [_run_stats.get_phase(), _run_stats.deaths_in_phase(),
+			_run_stats.deaths_in_level(), last_zone if not last_zone.is_empty() else &"none",
+			seconds / SECONDS_PER_MINUTE, seconds % SECONDS_PER_MINUTE, pacer.get_pressure(),
+			pacer.get_threshold(), offer]
 
 
 ## One of the engine's time monitors, in ms instead of seconds.

@@ -2,7 +2,7 @@
 # Settings to keep its options in memory, from the defaults, and to neither read nor write the
 # player's settings file, so a test gives the same result on every computer, whatever options and
 # controls were chosen on it, and never changes the player's options. Nor does it touch the save
-# or the playtests' log of the offers. A script extends this file,
+# or the playtests' logs of the offers and the deaths. A script extends this file,
 # or a support file that does, instead of SceneTree, with
 # extends "res://tests/support/base_test.gd"
 extends SceneTree
@@ -12,6 +12,7 @@ func _init() -> void:
 	GameSettings.ignore_player_file = true
 	SaveFile.default_path = ""
 	GameOffers.default_log_path = ""
+	GameRunStats.default_log_path = ""
 
 
 ## Whether the player's settings file exists and, if it does, its text and the time it was last

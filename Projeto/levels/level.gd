@@ -126,7 +126,7 @@ func _on_upgrade_granted(_id: StringName, crucifix: Crucifix) -> void:
 
 
 func _on_player_died() -> void:
-	_run_stats.record_death(zone_at(player.global_position))
+	_run_stats.record_death(zone_at(player.global_position), player.global_position)
 	if restart_delay > 0.0:
 		_restart_timer.start(restart_delay)
 	else:

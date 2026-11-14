@@ -997,6 +997,7 @@ godot --headless --fixed-fps 60 --path Projeto --script res://tests/test_sinking
 godot --headless --fixed-fps 60 --path Projeto --script res://tests/test_level_restart.gd
 godot --headless --fixed-fps 60 --path Projeto --script res://tests/test_moral_record.gd
 godot --headless --fixed-fps 60 --path Projeto --script res://tests/test_run_record.gd
+godot --headless --fixed-fps 60 --path Projeto --script res://tests/test_deaths_log.gd
 godot --headless --fixed-fps 60 --path Projeto --script res://tests/test_level_run_stats.gd
 godot --headless --fixed-fps 60 --path Projeto --script res://tests/test_dialogue_skip.gd
 godot --headless --fixed-fps 60 --path Projeto --script res://tests/test_death_offer_pacer.gd
@@ -2133,6 +2134,17 @@ crucifixo. O overlay mostra a oferta em causa, se já foi aceite, as recusas, o 
 homem ainda tem o crucifixo. As três teclas estão reservadas nos perfis de controlos, pelas mesmas
 razões do F4.
 
+Uma linha `run` mostra os números escondidos da partida, que o jogador nunca vê:
+
+- a fase em curso;
+- as mortes nessa fase e no nível;
+- a zona da última morte;
+- o tempo passado na fase;
+- a pressão das mortes face ao limiar da próxima oferta do atalho;
+- o estado dessa oferta: aberta, à espera numa zona, ou fechada depois de o atalho ser aceite.
+
+Serve para afinar o ritmo das ofertas por mortes a jogar, sem ter de contar as mortes à mão.
+
 O overlay é uma cena própria, `debug/debug_overlay.tscn`, num `CanvasLayer`, pelo que não se
 desloca com a câmara. Recebe a personagem pelo Inspector e lê-a, ou fere-a com o F4, sem que ela
 dependa dele, pelo que a personagem é testada e exportada sem o overlay. Continua ativo com o jogo
@@ -2423,6 +2435,12 @@ ficheiro de cada oferta, para que cada valor exista num só sítio. Cada respost
 uma linha a `user://offers_log.csv`, com a oferta, a escolha, os segundos de escuta e o tempo de
 jogo. Serve os playtests: permite verificar se quem aceita o atalho é quem está a ter
 dificuldades.
+
+Para cruzar com esse registo, cada morte acrescenta uma linha a `user://deaths_log.csv`. A linha
+leva a hora, o nível, a fase, a zona e a posição, as mortes nessa zona até então e se a morte trouxe
+uma oferta do atalho. Os dois registos usam o mesmo código (`core/csv_log.gd`). Os testes não
+escrevem em nenhum deles. O `test_deaths_log.gd` verifica o cabeçalho, uma linha por morte, a
+marcação da morte que trouxe a oferta e que um caminho vazio não escreve nada.
 
 O `test_offers.gd` verifica aceitar, recusar, aceitar duas vezes, uma oferta inexistente, o efeito
 adiado até o balão fechar e o crucifixo perdido com o primeiro upgrade. O `test_offer_catalog.gd`
