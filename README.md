@@ -381,10 +381,9 @@ demónios usam-na com 96 px e 240 px:
   por cima dele ou a borda do seu chão deixam-no fora de alcance, como antes.
 - **Descer.** Com a personagem abaixo do seu alcance, desce a borda aos saltos, com o mesmo salto.
   Antes de descolar, joga o arco passo a passo e só salta se aterrar num chão até Max Drop mais
-  abaixo; uma parede, um teto ou o vazio deixam-no fora de alcance. À velocidade da perseguição
-  (560 px/s, até 616 px/s com a variação da matilha), o corpo aterra todo até cerca de 220 px
-  depois da quina numa queda de 96 px, e até cerca de 315 px numa de 240 px; lá em baixo, esse chão
-  tem de estar livre.
+  abaixo; uma parede, um teto ou o vazio deixam-no fora de alcance. À velocidade do cão mais rápido
+  da matilha (561 px/s), o corpo aterra todo até cerca de 230 px depois da quina numa queda de 96 px,
+  e até cerca de 314 px numa de 240 px; lá em baixo, esse chão tem de estar livre.
 - **Voltar.** O demónio guarda o caminho por onde saiu do seu chão, até 8 passos, e no regresso
   refá-lo do último para o primeiro. Um passo que não consegue desfazer, como uma queda mais funda
   do que o seu salto, deixa-o nesse chão (ver "Posto e regresso"). Ao procurar a personagem, sobe e
