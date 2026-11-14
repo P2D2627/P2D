@@ -213,22 +213,26 @@ func _offers_section() -> String:
 	return "%s   moral stage %d%s" % [answered, _moral.stage(), crucifix]
 
 
-## The run's hidden numbers, which the player never sees: the phase he is in, his deaths there and
-## in the level, the zone of his last death, the time in the phase, and the pressure of his deaths
-## against the threshold of the next shortcut offer, with that offer's state: waiting at a zone, or
-## closed once he took the shortcut.
+## The run's hidden numbers, which the player never sees: the phase he is in, his deaths there, in
+## the level and in the run, the zone of his last death, the time in the phase, and the pressure of
+## his deaths against the threshold of the next shortcut offer, with the offers' state: waiting at
+## their zones, or closed once he took the shortcut.
 func _run_section() -> String:
 	var pacer: DeathOfferPacer = _run_stats.get_death_offer_pacer()
 	var offer: String = "open"
 	if pacer.is_closed():
 		offer = "closed"
 	elif pacer.has_pending():
-		offer = "waits at %s" % pacer.get_pending_zone()
+		var zones: PackedStringArray = []
+		for zone: StringName in pacer.get_pending_zones():
+			zones.append(String(zone))
+		offer = "waits at %s" % ", ".join(zones)
 	var last_zone: StringName = _run_stats.last_zone()
 	var seconds: int = floori(_run_stats.phase_seconds())
-	return ("run phase %d   deaths %d (level %d)   last death %s   time %d:%02d   "
+	return ("run phase %d   deaths %d phase, %d level, %d run   last death %s   time %d:%02d   "
 			+ "death offer %.1f / %.1f %s") % [_run_stats.get_phase(), _run_stats.deaths_in_phase(),
-			_run_stats.deaths_in_level(), last_zone if not last_zone.is_empty() else &"none",
+			_run_stats.deaths_in_level(), _run_stats.total_deaths(),
+			last_zone if not last_zone.is_empty() else &"none",
 			seconds / SECONDS_PER_MINUTE, seconds % SECONDS_PER_MINUTE, pacer.get_pressure(),
 			pacer.get_threshold(), offer]
 

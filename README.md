@@ -2513,13 +2513,19 @@ demónio do nível oferece-o no início das fases 2 e 3 e também quando o homem
 faz-se sempre, por isso as mortes nela não trazem ofertas. O upgrade (o dom do demónio) só é
 oferecido no fim do nível.
 
-Cada morte nas fases 2 e 3 acrescenta "pressão": 1, mais 0,5 por cada morte que ele já teve na
-mesma zona. Morrer sempre no mesmo sítio traz a oferta mais cedo. Quando a pressão chega ao limiar,
-fica uma oferta à espera na zona dessa morte, e a pressão volta a zero. O primeiro limiar é sorteado
-entre 4 e 7, e cada limiar seguinte é 70 % do anterior, nunca abaixo de 1,5, com uma variação
-sorteada de 15 % para cada lado. O jogador nunca consegue contar até à oferta, mas sente que ela
-aperta à medida que falha. Enquanto uma oferta espera, as mortes não somam. Depois de ele aceitar o
-atalho, acabam as ofertas nesse nível.
+Cada morte nas fases 2 e 3 acrescenta "pressão": 1, mais 0,5 por cada morte que ele já teve no
+mesmo sítio (a mesma zona e a mesma fiada de picos, ou o mesmo tipo de cão). Morrer sempre no mesmo
+sítio traz a oferta mais cedo. Quando a pressão chega ao limiar, a zona dessa morte fica marcada, e a
+pressão volta a zero. O primeiro limiar é sorteado entre 4 e 7, e cada limiar seguinte é 70 % do
+anterior, nunca abaixo de 1,5, com uma variação sorteada de 15 % para cada lado. O jogador nunca
+consegue contar até à oferta, mas sente que ela aperta à medida que falha.
+
+As mortes contam sempre, mesmo com uma zona marcada. Podem estar várias zonas marcadas ao mesmo
+tempo, por exemplo uma no início, onde ele morreu muitas vezes, e outra mais à frente, onde está a
+sofrer agora. Cada uma espera por ele: quando volta a estar nessa zona, a Asmodeu aparece e fala
+dessa zona, com as mortes e o tempo que ele lá passou. Uma zona já marcada não volta a ser marcada,
+porque o limiar seguinte fica para outra zona. O jogo mede, por isso, também o tempo passado em cada
+zona. Depois de ele aceitar o atalho, acabam as ofertas nesse nível.
 
 | Valor (`offers/death_offer_stats.tres`) | Referência |
 |---|---|

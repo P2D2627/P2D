@@ -2,10 +2,10 @@
 # phase and by zone, apart for each level, so level 2's phase 1 does not add to level 1's. The
 # same spot is the zone and what killed him last: each strip of spikes on its own, the dogs as one
 # pack, so two strips, or spikes and a demon, in one zone are two; the deadliest zone is the one
-# with most deaths, and on a tie the one named first. Time adds up by phase, and bad times change
-# nothing. Skipped lines add up. A save keeps everything and puts it back, a broken save counts as
-# nothing, and reset() empties it all. Three warnings are printed on purpose: deaths with no level,
-# no zone and phase 0.
+# with most deaths, and on a tie the one named first. Time adds up by phase and by zone, and bad
+# times change nothing. Skipped lines add up. A save keeps everything and puts it back, a broken
+# save counts as nothing, and reset() empties it all. Three warnings are printed on purpose: deaths
+# with no level, no zone and phase 0.
 # Run from the repository root; the exit code is 0 on pass and 1 on fail:
 # godot --headless --fixed-fps 60 --path Projeto --script res://tests/test_run_record.gd
 extends "res://tests/support/player_test.gd"
@@ -25,6 +25,7 @@ func _initialize() -> void:
 	results.append(_each_strip_of_spikes_is_a_spot_and_the_dogs_one())
 	results.append(_the_deadliest_zone_breaks_ties_by_name())
 	results.append(_time_adds_up_by_phase())
+	results.append(_time_adds_up_by_zone())
 	results.append(_skipped_lines_add_up())
 	results.append(_a_save_puts_everything_back())
 	results.append(_a_broken_save_counts_nothing())
@@ -132,6 +133,27 @@ func _the_deadliest_zone_breaks_ties_by_name() -> bool:
 			and record.deadliest_zone(GLUTTONY) == &"alpha",
 			"the deadliest zone wins, ties go to the first name (%s, then %s)"
 			% [tie, record.deadliest_zone(LUST)])
+
+
+## Time adds up by zone, apart for each level, bad times and an empty zone change nothing, and a
+## save keeps it.
+func _time_adds_up_by_zone() -> bool:
+	var record: RunRecord = RunRecord.new()
+	record.add_zone_time(LUST, &"pit", 30.0)
+	record.add_zone_time(LUST, &"pit", 45.5)
+	record.add_zone_time(LUST, &"ledge", 2.0)
+	record.add_zone_time(GLUTTONY, &"pit", 9.0)
+	record.add_zone_time(LUST, &"pit", -5.0)
+	record.add_zone_time(LUST, &"pit", NAN)
+	record.add_zone_time(LUST, &"", 3.0)
+	var copy: RunRecord = RunRecord.new()
+	copy.from_save(str_to_var(var_to_str(record.to_save())))
+	var pit: float = record.zone_seconds(LUST, &"pit")
+	return report(is_equal_approx(pit, 75.5) and is_equal_approx(record.zone_seconds(LUST, &"ledge"), 2.0)
+			and is_equal_approx(record.zone_seconds(GLUTTONY, &"pit"), 9.0)
+			and is_equal_approx(copy.zone_seconds(LUST, &"pit"), 75.5),
+			"time by zone: %.1f s in the pit (expected 75.5), kept by a save %.1f s"
+			% [pit, copy.zone_seconds(LUST, &"pit")])
 
 
 func _time_adds_up_by_phase() -> bool:

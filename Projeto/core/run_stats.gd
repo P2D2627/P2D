@@ -32,6 +32,8 @@ var _level: StringName = &""
 ## The phase of that level he is in, from 1.
 var _phase: int = 1
 var _log_path: String = default_log_path
+## The zone of the offer for his deaths being made, which the lines ask about; empty before one.
+var _offer_zone: StringName = &""
 
 
 func _init() -> void:
@@ -83,19 +85,46 @@ func set_log_path(path: String) -> void:
 	_log_path = path
 
 
-## Whether a shortcut offer waits for him, after his deaths.
+## Whether a shortcut offer waits for him at any zone, after his deaths.
 func has_death_offer() -> bool:
 	return _pacer.has_pending()
 
 
-## The zone the waiting offer is at; empty when none waits.
+## Whether a shortcut offer waits for him at zone.
+func has_death_offer_at(zone: StringName) -> bool:
+	return _pacer.has_pending_at(zone)
+
+
+## The first zone marked that waits for an offer; empty when none waits.
 func get_death_offer_zone() -> StringName:
 	return _pacer.get_pending_zone()
 
 
-## The waiting offer is being made: it no longer waits.
-func take_death_offer() -> StringName:
-	return _pacer.take_pending()
+## The offer is being made at zone: from now on the lines ask about that zone, with
+## offer_zone_deaths() and offer_zone_minutes().
+func begin_death_offer(zone: StringName) -> void:
+	_offer_zone = zone
+
+
+## He answered the offer at zone (empty: the one begun): it no longer waits.
+func take_death_offer(zone: StringName = &"") -> StringName:
+	return _pacer.take_pending(zone if not zone.is_empty() else _offer_zone)
+
+
+## Deaths in the zone of the offer being made, as "you died here 3 times".
+func offer_zone_deaths() -> int:
+	return _record.deaths_in_zone(_level, _offer_zone)
+
+
+## Whole minutes spent in the zone of the offer being made, trying to get past it.
+func offer_zone_minutes() -> int:
+	return floori(_record.zone_seconds(_level, _offer_zone) / 60.0)
+
+
+## How many times his deaths brought him an offer in this level, this one included; more than 1
+## means she asked him before.
+func death_offers_made() -> int:
+	return _pacer.get_offers_made()
 
 
 ## He took the shortcut: no offer comes again in this level.
@@ -108,9 +137,15 @@ func get_death_offer_pacer() -> DeathOfferPacer:
 	return _pacer
 
 
-## He spent seconds more in the phase he is in.
-func add_time(seconds: float) -> void:
+## He spent seconds more in the phase he is in, and in zone when one is given.
+func add_time(seconds: float, zone: StringName = &"") -> void:
 	_record.add_time(_level, _phase, seconds)
+	_record.add_zone_time(_level, zone, seconds)
+
+
+## Seconds he spent in zone of the level he is in.
+func zone_seconds(zone: StringName) -> float:
+	return _record.zone_seconds(_level, zone)
 
 
 ## He skipped count lines by holding the key.
@@ -182,6 +217,7 @@ func reset() -> void:
 	_pacer.reset()
 	_level = &""
 	_phase = 1
+	_offer_zone = &""
 
 
 ## Everything counted, as plain values a save can keep.

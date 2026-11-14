@@ -487,7 +487,8 @@ func _the_run_line_shows_the_hidden_numbers() -> bool:
 	await _wait_process_frames(TEXT_FRAMES)
 	var open: String = _run_line(overlay)
 	var pacer: DeathOfferPacer = stats.get_death_offer_pacer()
-	var expected_open: String = ("run phase 2   deaths 1 (level 1)   last death pit   time 1:05   "
+	var expected_open: String = ("run phase 2   deaths 1 phase, 1 level, 1 run   last death pit   "
+			+ "time 1:05   "
 			+ "death offer %.1f / %.1f open") % [pacer.get_pressure(), pacer.get_threshold()]
 	var deaths: int = 1
 	while not stats.has_death_offer() and deaths < MAX_DEATHS_FOR_AN_OFFER:

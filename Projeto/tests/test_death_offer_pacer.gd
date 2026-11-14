@@ -1,10 +1,11 @@
 # Checks DeathOfferPacer on its own, on stats of its own, so tuning the game's file changes no case.
 # Deaths in phase 1 never bring an offer, however many. With one death in each zone and no jitter,
 # the first offer comes at the first threshold, and each next one after fewer deaths, down to Min
-# Gap and never below. Dying in the same zone brings it sooner. While an offer waits, deaths add
-# nothing, and taking it gives back its zone. Once closed, no offer comes again. A save puts back
-# the pressure, the threshold and the waiting offer; reset() starts over. With jitter, the first
-# threshold is drawn within First Offer Min and Max, differently for different seeds.
+# Gap and never below. Dying in the same zone brings it sooner. Deaths count also while offers wait:
+# the next threshold marks another zone, and each waits until its own is taken; a zone that waits
+# is not marked again. Once closed, no offer comes again. A save puts back the pressure, the
+# threshold and the waiting offers; reset() starts over. With jitter, the first threshold is drawn
+# within First Offer Min and Max, differently for different seeds.
 # Run from the repository root; the exit code is 0 on pass and 1 on fail:
 # godot --headless --fixed-fps 60 --path Projeto --script res://tests/test_death_offer_pacer.gd
 extends "res://tests/support/player_test.gd"
@@ -23,7 +24,8 @@ func _initialize() -> void:
 	results.append(_phase_1_never_brings_an_offer())
 	results.append(_offers_come_ever_sooner_down_to_min_gap())
 	results.append(_the_same_spot_brings_it_sooner())
-	results.append(_one_offer_waits_at_a_time())
+	results.append(_deaths_count_while_offers_wait())
+	results.append(_a_waiting_zone_is_not_marked_again())
 	results.append(_closed_no_offer_comes_again())
 	results.append(_a_save_puts_the_pressure_back())
 	results.append(_the_first_threshold_is_drawn_within_its_range())
@@ -94,18 +96,49 @@ func _the_same_spot_brings_it_sooner() -> bool:
 			pacer.get_pending_zone()])
 
 
-func _one_offer_waits_at_a_time() -> bool:
+## An offer waits at the first zone; deaths elsewhere still count, and reaching the next threshold
+## marks that zone too. Both wait, in the order they were marked, each until its own is taken.
+func _deaths_count_while_offers_wait() -> bool:
+	var pacer: DeathOfferPacer = _pacer()
+	_deaths_to_an_offer(pacer, 0)
+	var first: StringName = pacer.get_pending_zone()
+	var counted: bool = false
+	var deaths: int = 0
+	var marked: bool = false
+	while not marked and deaths < MAX_DEATHS:
+		marked = pacer.record_death(2, &"elsewhere", 0)
+		counted = counted or pacer.get_pressure() > 0.0
+		deaths += 1
+	# The second threshold is 2.8: three deaths at 1 each.
+	var expected: Array[StringName] = [first, &"elsewhere"]
+	var both: bool = pacer.get_pending_zones() == expected
+	var at_elsewhere: bool = pacer.has_pending_at(&"elsewhere")
+	var taken: StringName = pacer.take_pending(&"elsewhere")
+	var first_still: bool = pacer.get_pending_zone() == first and not pacer.has_pending_at(&"elsewhere")
+	var none_taken: StringName = pacer.take_pending(&"nowhere")
+	pacer.take_pending(first)
+	return report(counted and deaths == 3 and both and at_elsewhere and taken == &"elsewhere"
+			and first_still and none_taken.is_empty() and not pacer.has_pending(),
+			("while %s waits, deaths elsewhere count %s and mark it after %d (expected 3); both wait "
+			+ "%s; taking elsewhere leaves %s waiting %s; nothing waits after both are taken %s")
+			% [first, counted, deaths, both, first, first_still, not pacer.has_pending()])
+
+
+## Dying again where an offer waits marks that zone no more, however often, though the pressure
+## grows; the next death elsewhere then reaches the threshold and marks its zone.
+func _a_waiting_zone_is_not_marked_again() -> bool:
 	var pacer: DeathOfferPacer = _pacer()
 	_deaths_to_an_offer(pacer, 0)
 	var zone: StringName = pacer.get_pending_zone()
 	var again: bool = false
 	for death: int in 10:
-		again = pacer.record_death(2, &"elsewhere", death) or again
-	var no_pressure: bool = pacer.get_pressure() == 0.0
-	var taken: StringName = pacer.take_pending()
-	return report(not again and no_pressure and taken == zone and not pacer.has_pending(),
-			"while %s waits, deaths add nothing %s; taking it gives %s and nothing waits after"
-			% [zone, no_pressure and not again, taken])
+		again = pacer.record_death(2, zone, 0) or again
+	var grew: bool = pacer.get_pressure() >= pacer.get_threshold()
+	var once: bool = pacer.get_pending_zones().size() == 1
+	var next: bool = pacer.record_death(2, &"elsewhere", 0) and pacer.has_pending_at(&"elsewhere")
+	return report(not again and grew and once and next,
+			("dying again at %s marks it no more %s, the pressure grows %s; the next death "
+			+ "elsewhere marks it %s") % [zone, not again and once, grew, next])
 
 
 func _closed_no_offer_comes_again() -> bool:
@@ -143,7 +176,7 @@ func _same_after_a_save(pacer: DeathOfferPacer) -> bool:
 	loaded.from_save(str_to_var(var_to_str(pacer.to_save())))
 	return (is_equal_approx(loaded.get_pressure(), pacer.get_pressure())
 			and is_equal_approx(loaded.get_threshold(), pacer.get_threshold())
-			and loaded.get_pending_zone() == pacer.get_pending_zone()
+			and loaded.get_pending_zones() == pacer.get_pending_zones()
 			and loaded.get_offers_made() == pacer.get_offers_made())
 
 

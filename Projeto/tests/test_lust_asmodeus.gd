@@ -11,6 +11,8 @@
 # - Left for the menu before the answer, a talk comes again after Continue, with what he said in it
 #   undone; answered, it is saved at once and does not come again. A death offer left before the
 #   answer still waits for its zone.
+# - Deaths count also while an offer waits: a second zone waits too, and each offer is made where
+#   it waits, asking about that zone.
 # He is put in the middle of a save point's area, which need not be at the node.
 # The tests use a save file of their own.
 # Run from the repository root; the exit code is 0 on pass and 1 on fail:
@@ -45,6 +47,7 @@ func _initialize() -> void:
 	results.append(await _phase_3_has_the_second_offer())
 	results.append(await _a_talk_left_before_the_answer_comes_again())
 	results.append(await _a_death_offer_left_before_the_answer_waits_again())
+	results.append(await _two_zones_wait_and_each_is_made_where_it_waits())
 	_delete_save()
 	_progress().reset()
 	_stats().reset()
@@ -210,6 +213,50 @@ func _a_death_offer_left_before_the_answer_waits_again() -> bool:
 			("A death offer left before the answer: she talks %s; after Continue it still waits "
 			+ "at its zone %s, and walking in she talks again %s; refused %s, it no longer waits %s")
 			% [first, still_waits, again, refused, taken])
+
+
+## His deaths mark the zone of phase 2's start, and deaths elsewhere still count and mark that zone
+## too. Standing in the second, she makes its offer there, asking about its deaths; refused, the
+## first still waits, and she makes it once he stands there.
+func _two_zones_wait_and_each_is_made_where_it_waits() -> bool:
+	_delete_save()
+	var main: Node = await _new_game(main_menu_entries())
+	var level: Level = level_in(main) as Level
+	var start: Vector2 = level.player.global_position
+	var phase_2_save: SavePoint = level.get_node(^"Phase2Save") as SavePoint
+	level.player.global_position = _inside(phase_2_save)
+	await _answer(level, await _talk(level, "asmodeus_offer"), REFUSE)
+	var respawn: Vector2 = (phase_2_save.get_node(^"Respawn") as Node2D).global_position
+	var first: StringName = level.zone_at(respawn)
+	var second: StringName = level.zone_at(start)
+	var deaths: int = 0
+	while not _stats().has_death_offer_at(first) and deaths < MAX_DEATHS:
+		_stats().record_death(first)
+		deaths += 1
+	while not _stats().has_death_offer_at(second) and deaths < MAX_DEATHS * 2:
+		_stats().record_death(second)
+		deaths += 1
+	var both: bool = (first != second and _stats().has_death_offer_at(first)
+			and _stats().has_death_offer_at(second))
+	level.player.global_position = start
+	await wait_until_on_floor(level.player)
+	var balloon: DialogueBalloon = await _talk(level, "asmodeus_deaths")
+	var at_second: bool = (balloon != null
+			and _stats().offer_zone_deaths() == _stats().deaths_in_zone(second))
+	var refused: bool = balloon != null and await _answer(level, balloon, REFUSE)
+	var first_waits: bool = (not _stats().has_death_offer_at(second)
+			and _stats().has_death_offer_at(first))
+	level.player.global_position = respawn
+	balloon = await _talk(level, "asmodeus_deaths")
+	var at_first: bool = balloon != null and _stats().offer_zone_deaths() == _stats().deaths_in_zone(first)
+	var refused_again: bool = balloon != null and await _answer(level, balloon, REFUSE)
+	var none: bool = not _stats().has_death_offer()
+	await remove_main(main)
+	return report(both and at_second and refused and first_waits and at_first and refused_again
+			and none,
+			("Two zones: %s and %s both wait %s; in the second she asks about its deaths %s; refused "
+			+ "%s, the first still waits %s; there she asks about its own %s; refused %s, none waits %s")
+			% [first, second, both, at_second, refused, first_waits, at_first, refused_again, none])
 
 
 ## Main Menu from the pause, then Continue, as the player would; the new level, on the floor.

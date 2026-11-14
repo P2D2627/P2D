@@ -12,7 +12,8 @@ extends Node2D
 ## It also tells RunStats which phase the man is in, and where he died: the phase is First Phase, or
 ## the highest Starts Phase among its save points already reached; the place is the smallest camera
 ## zone around him, or, outside every zone, a cell of Death Cell Size. Each frame it adds to the
-## time of that phase; paused, the level does not run, so the pause does not count.
+## time of that phase, and of the zone he is in, so a line can say how long he has been trying to
+## get past it; paused, the level does not run, so the pause does not count.
 
 ## A new copy of this level should take its place. Main listens, and so does what must outlive the
 ## copy, as the gym's station. Not said when the level is left before the wait is over.
@@ -51,7 +52,7 @@ func _ready() -> void:
 
 
 func _process(delta: float) -> void:
-	_run_stats.add_time(delta)
+	_run_stats.add_time(delta, zone_at(player.global_position))
 
 
 ## What RunStats files this level under: Id, or else the scene's file name, or else the node's name.

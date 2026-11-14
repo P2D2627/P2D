@@ -4,9 +4,10 @@ extends Node
 ## When Asmodeus talks in a level, and from which cue; what she says is all in the .dialogue file.
 ## - The first time the man reaches a save point whose Starts Phase is in Phase Cues, she talks from
 ##   that phase's cue: Lust's shortcut, at the start of phases 2 and 3.
-## - When RunStats holds an offer for his deaths, she talks from Death Cue as soon as he stands in
-##   the zone it is for: at once if he comes back to life inside it, or as he walks in, before he
-##   tries it again. While no offer waits, nothing is checked.
+## - When RunStats holds offers for his deaths, each waits at the zone it is for, and she talks from
+##   Death Cue as soon as he stands in one: at once if he comes back to life inside it, or as he
+##   walks in, before he tries it again. Several zones can wait at once, as one early on and one he
+##   struggles in later; each is made where it waits. While none waits, nothing is checked.
 ## - At the level's Exit, she talks from each of Ending Cues in turn (the gift, then the stairs), and
 ##   only then does the exit lead on, with Done Event marked and Done Arrival as where a Continue
 ##   brings him. Exit must have Walk In Leads On off. With Done Event marked, the level is played on
@@ -81,7 +82,7 @@ func _ready() -> void:
 
 
 ## Only while a phase's cue is due or an offer for his deaths waits: once he stands on the floor,
-## or in the offer's zone, she talks.
+## or in any zone an offer waits at, she talks.
 func _physics_process(_delta: float) -> void:
 	if _due_cue.is_empty() and not _run_stats.has_death_offer():
 		return
@@ -94,8 +95,11 @@ func _physics_process(_delta: float) -> void:
 		var cue: String = _due_cue
 		_due_cue = ""
 		_say(cue)
-	elif level.zone_at(player.global_position) == _run_stats.get_death_offer_zone():
-		_say(death_cue)
+	else:
+		var zone: StringName = level.zone_at(player.global_position)
+		if _run_stats.has_death_offer_at(zone):
+			_run_stats.begin_death_offer(zone)
+			_say(death_cue)
 
 
 ## Whether the offer of cue was answered, in GameState.

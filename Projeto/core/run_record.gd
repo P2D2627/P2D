@@ -18,6 +18,8 @@ var _phase_deaths: Dictionary[String, int] = {}
 var _zone_deaths: Dictionary[String, int] = {}
 ## Seconds spent in each phase, by "level/phase".
 var _phase_seconds: Dictionary[String, float] = {}
+## Seconds spent in each zone, by "level/zone".
+var _zone_seconds: Dictionary[String, float] = {}
 ## Deaths at each spot of each zone, by "level/zone/spot". The spot is what killed him: one strip of
 ## spikes by its name, as Spikes2, since one jump is harder than another; the dogs by their kind, as
 ## a pack, whichever of them it was. Spikes 1 and 2, or the spikes and the dogs, of one zone are two
@@ -64,6 +66,20 @@ func add_time(level: StringName, phase: int, seconds: float) -> void:
 		return
 	var key: String = _key(level, phase)
 	_phase_seconds[key] = _phase_seconds.get(key, 0.0) + seconds
+
+
+## He spent seconds more in zone of level, trying to get past it. Bad seconds, or an empty level or
+## zone, change nothing.
+func add_zone_time(level: StringName, zone: StringName, seconds: float) -> void:
+	if level.is_empty() or zone.is_empty() or not is_finite(seconds) or seconds < 0.0:
+		return
+	var key: String = _key(level, zone)
+	_zone_seconds[key] = _zone_seconds.get(key, 0.0) + seconds
+
+
+## Seconds he spent in zone of level, in all.
+func zone_seconds(level: StringName, zone: StringName) -> float:
+	return _zone_seconds.get(_key(level, zone), 0.0)
 
 
 ## He skipped count lines by holding the key. Zero or less changes nothing.
@@ -157,6 +173,7 @@ func reset() -> void:
 	_phase_deaths.clear()
 	_zone_deaths.clear()
 	_phase_seconds.clear()
+	_zone_seconds.clear()
 	_spot_deaths.clear()
 	_cause_deaths.clear()
 	_last_zone = ""
@@ -171,6 +188,7 @@ func to_save() -> Dictionary:
 		"phase_deaths": _phase_deaths.duplicate(),
 		"zone_deaths": _zone_deaths.duplicate(),
 		"phase_seconds": _phase_seconds.duplicate(),
+		"zone_seconds": _zone_seconds.duplicate(),
 		"spot_deaths": _spot_deaths.duplicate(),
 		"cause_deaths": _cause_deaths.duplicate(),
 		"last_zone": _last_zone,
@@ -192,11 +210,8 @@ func from_save(data: Dictionary) -> void:
 	_last_spot = spot if spot is String else ""
 	var cause: Variant = data.get("last_cause")
 	_last_cause = cause if cause is String else ""
-	var phase_seconds_saved: Variant = data.get("phase_seconds")
-	if phase_seconds_saved is Dictionary:
-		for key: Variant in phase_seconds_saved:
-			if key is String and phase_seconds_saved[key] is float:
-				_phase_seconds[key] = phase_seconds_saved[key]
+	_load_seconds(data.get("phase_seconds"), _phase_seconds)
+	_load_seconds(data.get("zone_seconds"), _zone_seconds)
 	var last: Variant = data.get("last_zone")
 	_last_zone = last if last is String else ""
 	var skipped: Variant = data.get("skipped_lines")
@@ -210,6 +225,15 @@ func _load_counts(saved: Variant, counts: Dictionary[String, int]) -> void:
 	for key: Variant in saved:
 		if key is String and saved[key] is int:
 			counts[key] = saved[key]
+
+
+## Copies each String key with a float of saved into seconds.
+func _load_seconds(saved: Variant, seconds: Dictionary[String, float]) -> void:
+	if not saved is Dictionary:
+		return
+	for key: Variant in saved:
+		if key is String and saved[key] is float:
+			seconds[key] = saved[key]
 
 
 func _key(level: Variant, part: Variant) -> String:

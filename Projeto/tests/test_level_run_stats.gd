@@ -131,8 +131,11 @@ func _time_counts_in_the_phase_but_not_while_paused() -> bool:
 	_stats.reset()
 	var level: Level = await _add_level()
 	var start: float = _stats.phase_seconds()
+	var zone: StringName = level.zone_at(level.player.global_position)
+	var zone_start: float = _stats.zone_seconds(zone)
 	await wait_frames(TIME_FRAMES)
 	var running: float = _stats.phase_seconds() - start
+	var in_zone: float = _stats.zone_seconds(zone) - zone_start
 	paused = true
 	var before_pause: float = _stats.phase_seconds()
 	await wait_frames(TIME_FRAMES)
@@ -144,9 +147,11 @@ func _time_counts_in_the_phase_but_not_while_paused() -> bool:
 	var kept: bool = _stats.phase_seconds() >= before_copy
 	await _remove(level)
 	var second: float = TIME_FRAMES / 60.0
-	return report(absf(running - second) < TIME_TOLERANCE and while_paused == 0.0 and kept,
-			("time in the phase: %.3f s in %d frames (expected %.3f), %.3f s while paused, kept by a "
-			+ "new copy %s") % [running, TIME_FRAMES, second, while_paused, kept])
+	return report(absf(running - second) < TIME_TOLERANCE and absf(in_zone - second) < TIME_TOLERANCE
+			and while_paused == 0.0 and kept,
+			("time in the phase: %.3f s in %d frames (expected %.3f), in its zone %s %.3f s, %.3f s "
+			+ "while paused, kept by a "
+			+ "new copy %s") % [running, TIME_FRAMES, second, zone, in_zone, while_paused, kept])
 
 
 func _add_level() -> Level:
