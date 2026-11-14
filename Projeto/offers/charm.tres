@@ -14,4 +14,4 @@ offerer = "Asmodeus"
 what = "Charm: a demon he looks at stops and stares at him."
 cost = "He will never know again if they want him, or the gift."
 effect = SubResource("Resource_effect")
-moral_weight = 1.0
+moral_weight = 2.0

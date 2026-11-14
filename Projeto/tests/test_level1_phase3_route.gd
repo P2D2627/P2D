@@ -23,3 +23,5 @@ func _initialize() -> void:
 func prepare_level(level: Node) -> void:
 	super(level)
 	level.get_node("Tutorial/BlockerDemon").free()
+	# The route is the map's: Asmodeus does not stop the man to talk, as Velvet does not.
+	level.get_node("AsmodeusDirector").free()

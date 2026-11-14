@@ -543,8 +543,8 @@ func _free_a_bite_that_pierces_grabs_him_only_after_the_invulnerability() -> boo
 	return verdict
 
 
-## With SHORT_TIME_TO_DIE and no presses: died once, never broke free, and still can't move, with
-## the crucifix down.
+## With SHORT_TIME_TO_DIE and no presses: died once, of what held him, never broke free, and still
+## can't move, with the crucifix down.
 func _with_no_presses_he_dies_and_stays_held() -> bool:
 	var man: Player = await _low_sp_man()
 	if man == null:
@@ -554,6 +554,7 @@ func _with_no_presses_he_dies_and_stays_held() -> bool:
 	_use_short_time_to_die(escape)
 	var heard: Array[StringName] = _signals_of(escape)
 	var bite: Hitbox = await _bite_and_wait_for_the_grab(man)
+	bite.cause = &"test_dog"
 	var death_frames: int = roundi(SHORT_TIME_TO_DIE * Engine.physics_ticks_per_second)
 	var died: bool = await wait_until(func() -> bool: return &"died" in heard,
 			death_frames + SETTLE_FRAMES)
@@ -562,11 +563,12 @@ func _with_no_presses_he_dies_and_stays_held() -> bool:
 	await wait_frames(WATCH_FRAMES)
 	var moved: float = man.position.distance_to(start)
 	var blocked: bool = _crucifix_of(man).is_blocked()
-	var passed: bool = (died and moved <= HELD_DRIFT and blocked
+	var cause: StringName = man.get_death_cause()
+	var passed: bool = (died and moved <= HELD_DRIFT and blocked and cause == &"test_dog"
 			and heard == [&"grabbed", &"died"])
 	var verdict: bool = report(passed,
 			("No presses, Time To Die %.1f s: died %s, moved %.2f px after, crucifix blocked %s, "
-			+ "signals %s") % [SHORT_TIME_TO_DIE, died, moved, blocked, heard])
+			+ "signals %s, died of %s") % [SHORT_TIME_TO_DIE, died, moved, blocked, heard, cause])
 	bite.queue_free()
 	await remove_player(man)
 	return verdict

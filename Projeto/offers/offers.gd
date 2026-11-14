@@ -157,20 +157,9 @@ func _listened(id: StringName) -> float:
 
 
 func _log(id: StringName, choice: StringName, listened: float) -> void:
-	if _log_path.is_empty():
-		return
-	var is_new: bool = not FileAccess.file_exists(_log_path)
-	var file: FileAccess = FileAccess.open(_log_path,
-			FileAccess.WRITE if is_new else FileAccess.READ_WRITE)
-	if file == null:
-		push_warning("Offers: the log %s cannot be written (%s)."
-				% [_log_path, error_string(FileAccess.get_open_error())])
-		return
-	if is_new:
-		file.store_line(LOG_HEADER)
-	file.seek_end()
-	file.store_line("%s,%s,%s,%.2f,%.1f" % [Time.get_datetime_string_from_system(), id, choice,
-			listened, clock.call() / MS_PER_SECOND])
+	CsvLog.append(_log_path, LOG_HEADER, "%s,%s,%s,%.2f,%.1f" % [
+			Time.get_datetime_string_from_system(), id, choice, listened,
+			clock.call() / MS_PER_SECOND])
 
 
 func _on_dialogue_started(_resource: DialogueResource) -> void:

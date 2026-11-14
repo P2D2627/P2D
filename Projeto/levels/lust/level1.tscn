@@ -27,6 +27,9 @@
 [ext_resource type="Texture2D" uid="uid://6vp3qh3x2b3f" path="res://assets/sprites/Tiles/extern_angle.png" id="25_4lqct"]
 [ext_resource type="Texture2D" uid="uid://co0sn8v7edgeq" path="res://assets/sprites/backgrounds/level1_cave_map.png" id="ab_map"]
 [ext_resource type="Texture2D" uid="uid://ci7vlgedyp4ys" path="res://assets/sprites/backgrounds/level1_cave_shade.png" id="ab_shade"]
+[ext_resource type="Script" uid="uid://dmr8a3vg0o1qx" path="res://levels/arrival_point.gd" id="as_arrival"]
+[ext_resource type="Script" uid="uid://7ha013uot2kv" path="res://demon/asmodeus_director.gd" id="as_director"]
+[ext_resource type="PackedScene" path="res://demon/asmodeus.tscn" id="as_scene"]
 [ext_resource type="Shader" uid="uid://kx82yygpesyl" path="res://levels/distance_haze.gdshader" id="bd_haze"]
 [ext_resource type="Script" uid="uid://di3lllv0awqg1" path="res://levels/parallax_sprite.gd" id="bd_parallax"]
 [ext_resource type="Texture2D" uid="uid://gp7fwbqdpqxr" path="res://assets/sprites/Tiles/rocha1.png" id="bd_rocha1"]
@@ -13161,13 +13164,11 @@ height_tiles = 5
 position = Vector2(3576, 3360)
 width_tiles = 5
 height_tiles = 1
-slide_way = 1
 
 [node name="P3Gate2" parent="Gates" unique_id=740821796 instance=ExtResource("2_4n2nv")]
 position = Vector2(7896, 3744)
 width_tiles = 5
 height_tiles = 1
-slide_way = 2
 
 [node name="P3Gate3" parent="Gates" unique_id=999937206 instance=ExtResource("2_4n2nv")]
 position = Vector2(4416, 5328)
@@ -13180,7 +13181,7 @@ tile_map_data = PackedByteArray("AAAAAAAAAAAAAAAAAAABAAAAAAAAAAAAAAACAAAAAAAAAAA
 tile_set = ExtResource("3_265vi")
 
 [node name="Player" parent="." unique_id=1108148048 instance=ExtResource("14_my875")]
-position = Vector2(6437, 3950)
+position = Vector2(16749, 12442)
 
 [node name="Dogs" type="Node2D" parent="." unique_id=624563792]
 
@@ -45718,7 +45719,6 @@ position = Vector2(5256, 3984)
 gates = [NodePath("../../Gates/P3Gate1")]
 
 [node name="CameraZones" type="Node2D" parent="." unique_id=1755564391]
-visible = false
 
 [node name="ZoneTutorial" type="Area2D" parent="CameraZones" unique_id=1332126980]
 collision_layer = 512
@@ -47393,7 +47393,7 @@ bottom_margin = 96.0
 zoom = 1.3
 
 [node name="CollisionShape2D" type="CollisionShape2D" parent="CameraZones/ZoneP2StartRoom" unique_id=160740509]
-position = Vector2(16869, 11739)
+position = Vector2(16869, 11668)
 shape = SubResource("RectangleShape2D_xrcbu")
 
 [node name="ZoneP2SEColumn" type="Area2D" parent="CameraZones" unique_id=517844721]
@@ -48100,7 +48100,7 @@ collision_layer = 0
 collision_mask = 2
 monitorable = false
 script = ExtResource("10_236yj")
-next_scene_path = "res://scenes/levels/Lust/LustLevel_Phase3.tscn"
+walk_in_leads_on = false
 
 [node name="CollisionShape2D" type="CollisionShape2D" parent="PhaseExit" unique_id=1944260528]
 position = Vector2(0, -72)
@@ -48248,12 +48248,14 @@ script = ExtResource("17_da51d")
 event = &"lust_phase_2_reached"
 player = NodePath("../Player")
 respawn = NodePath("Respawn")
+starts_phase = 2
 
 [node name="Respawn" type="Marker2D" parent="Phase2Save" unique_id=2109438384]
 top_level = true
 position = Vector2(16872, 11856)
 
 [node name="CollisionShape2D" type="CollisionShape2D" parent="Phase2Save" unique_id=1739978988]
+position = Vector2(-193, -106)
 shape = SubResource("RectangleShape2D_7fcm6")
 
 [node name="Phase3Save" type="Area2D" parent="." unique_id=789457966 node_paths=PackedStringArray("player", "respawn")]
@@ -48265,19 +48267,37 @@ script = ExtResource("17_da51d")
 event = &"lust_phase_3_reached"
 player = NodePath("../Player")
 respawn = NodePath("Respawn")
+starts_phase = 3
 
 [node name="Respawn" type="Marker2D" parent="Phase3Save" unique_id=1129611881]
 top_level = true
 position = Vector2(9096, 864)
 
 [node name="CollisionShape2D" type="CollisionShape2D" parent="Phase3Save" unique_id=1066830620]
+position = Vector2(1990, -9)
 shape = SubResource("RectangleShape2D_4xhy0")
 
 [node name="GameCamera" parent="." unique_id=2018321999 node_paths=PackedStringArray("player", "level_tiles") instance=ExtResource("18_pxqua")]
-position = Vector2(5074, 17519)
+position = Vector2(16749, 12442)
 limit_left = 0
 limit_top = 0
 limit_right = 17808
 limit_bottom = 18192
 player = NodePath("../Player")
 level_tiles = NodePath("../Tiles")
+
+[node name="AsmodeusTent" type="Marker2D" parent="." unique_id=22923013]
+position = Vector2(8664, 7344)
+script = ExtResource("as_arrival")
+id = &"asmodeus_tent"
+
+[node name="Asmodeus" parent="." unique_id=47754643 node_paths=PackedStringArray("player", "stills") instance=ExtResource("as_scene")]
+position = Vector2(8844, 7344)
+player = NodePath("../Player")
+stills = [NodePath("../Dogs")]
+
+[node name="AsmodeusDirector" type="Node" parent="." unique_id=1848365126 node_paths=PackedStringArray("asmodeus", "level", "exit")]
+script = ExtResource("as_director")
+asmodeus = NodePath("../Asmodeus")
+level = NodePath("..")
+exit = NodePath("../PhaseExit")

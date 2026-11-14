@@ -10,7 +10,7 @@ aceita.
 
 > **Estado:** a personagem jogável já anda, salta e tem controlo no ar, desliza nas paredes e salta
 > delas, e o salto tolera pedidos ligeiramente fora de tempo. O jogo abre num menu principal, que dá
-> acesso à sala de teste e ao blockout do nível 1, e tem pausa e opções gravadas. A câmara do jogo
+> acesso à sala de teste e ao nível 1, e tem pausa e opções gravadas. A câmara do jogo
 > está descrita em "Câmara". Na sala de teste, dois demónios perseguem a personagem, mordem-na e,
 > com o SP baixo, agarram-na; o crucifixo afasta-os, e quem morre recomeça a sala. Ainda não há
 > arte, e o som começou pela personagem e pelo crucifixo.
@@ -38,12 +38,13 @@ cada sala) está em `docs/nivel1_desenho.md`, e os artigos que o fundamentam em 
    Durante o jogo, a tecla F3 mostra e esconde o texto de depuração descrito em "Overlay de
    depuração", e a tecla F4 retira 10 SP à personagem, como um golpe, para experimentar a
    regeneração descrita em "SP".
-5. O nível 1 em blockout (Play ▸ Level 1: Lust (blockout)) tem as fases 1, 2 e 3, com tiles
-   provisórios de 48 px, cada uma na sua cena. A fase 1 começa no tutorial, que ensina os controlos
-   e continua sem cortes para a sala inicial. Depois sobe da esquerda para a direita e termina numa
-   sala com uma porta; ao atravessá-la, o ecrã escurece e a fase 2 começa no canto inferior direito.
-   O retângulo verde assinala a porta para a fase seguinte. Cada fase também corre sozinha com F6,
-   sem gravar nada.
+5. O nível 1 (Play ▸ Level 1: Lust) é uma só cena, `levels/lust/level1.tscn`, com o tutorial e as
+   fases 1, 2 e 3, e é ele que inicia uma partida nova. No início das fases 2 e 3, a Asmodeu
+   aparece e oferece o atalho; depois de várias mortes nessas fases, volta a oferecê-lo à entrada
+   da zona onde ele morre (ver "Ofertas por mortes"). Na saída, depois da fase 3 ou pelo atalho,
+   ela oferece o dom e despede-se, e o jogo volta ao menu principal. O blockout antigo, com uma cena
+   por fase, continua na lista como Level 1: Lust (old blockout), sem iniciar partida. Cada cena
+   também corre sozinha com F6, sem gravar nada.
 6. Entrar numa fase grava o jogo, o que é indicado por "Saving..." no canto do ecrã, e o menu
    principal passa a mostrar Continue, descrito em "Gravação do jogo".
 7. A sala de treino (Play ▸ Gym (training room)) põe à prova, uma de cada vez, as mecânicas que já
@@ -890,16 +891,16 @@ Remote; os restantes valores são lidos sempre que são usados.
     ├── project.godot
     ├── main.tscn      cena principal: menus, pausa e o nível em jogo (script main.gd)
     ├── default_bus_layout.tres   buses de áudio
-    ├── core/          serviços globais: as opções do jogador (autoload Settings), o registo moral (autoload Moral), o progresso do jogo (autoload GameState), o ficheiro da gravação e os perfis de controlos
+    ├── core/          serviços globais: as opções do jogador (autoload Settings), o registo moral (autoload Moral), o progresso do jogo (autoload GameState), as estatísticas da partida (autoload RunStats), o ficheiro da gravação e os perfis de controlos
     ├── player/        personagem: cena, scripts, valores do movimento, SP e agarrão
     ├── crucifix/      crucifixo: cena, script e valores
-    ├── demon/         demónios que perseguem: cena, scripts, os estados (states/) e os valores de cada nível
+    ├── demon/         demónios que perseguem: cena, scripts, os estados (states/) e os valores de cada nível; os demónios que falam (Velvet, Asmodeu)
     ├── camera/        câmara do jogo e zonas de câmara
     ├── debug/         overlay de depuração e vista dos demónios da sala de teste
     ├── levels/        salas, níveis, a entrada de cada nível na lista do menu (LevelEntry) e os pontos de chegada (ArrivalPoint)
-    ├── offers/        tentações: o autoload Offers, uma oferta por ficheiro (OfferData), o catálogo e os efeitos
+    ├── offers/        tentações: o autoload Offers, uma oferta por ficheiro (OfferData), o catálogo, os efeitos e o ritmo das ofertas por mortes
     ├── background/    fundo em camadas: as camadas (BackgroundLayer), o modelo e o fundo de cada nível
-    ├── ui/            menus, ecrã das opções e o tema comum (ui_theme.tres)
+    ├── ui/            menus, ecrã das opções, o balão de diálogo e o tema comum (ui_theme.tres)
     ├── components/    componentes usados por mais de um sistema: Repellable, Hitbox, Hurtbox, SinkingDrawing e KnockOff
     ├── tests/         testes e medidas que correm sem janela
     │   └── support/   preparação comum aos testes
@@ -1004,6 +1005,14 @@ godot --headless --fixed-fps 60 --path Projeto --script res://tests/test_crucifi
 godot --headless --fixed-fps 60 --path Projeto --script res://tests/test_sinking_drawing.gd
 godot --headless --fixed-fps 60 --path Projeto --script res://tests/test_level_restart.gd
 godot --headless --fixed-fps 60 --path Projeto --script res://tests/test_moral_record.gd
+godot --headless --fixed-fps 60 --path Projeto --script res://tests/test_run_record.gd
+godot --headless --fixed-fps 60 --path Projeto --script res://tests/test_deaths_log.gd
+godot --headless --fixed-fps 60 --path Projeto --script res://tests/test_level_run_stats.gd
+godot --headless --fixed-fps 60 --path Projeto --script res://tests/test_dialogue_skip.gd
+godot --headless --fixed-fps 60 --path Projeto --script res://tests/test_death_offer_pacer.gd
+godot --headless --fixed-fps 60 --path Projeto --script res://tests/test_asmodeus_deaths.gd
+godot --headless --fixed-fps 60 --path Projeto --script res://tests/test_asmodeus.gd
+godot --headless --fixed-fps 60 --path Projeto --script res://tests/test_lust_asmodeus.gd
 godot --headless --fixed-fps 60 --path Projeto --script res://tests/test_moral_dialogue.gd
 godot --headless --fixed-fps 60 --path Projeto --script res://tests/test_gym_hint.gd
 godot --headless --fixed-fps 60 --path Projeto --script res://tests/test_gym_stations.gd
@@ -1016,7 +1025,8 @@ O `test_input_profiles.gd` escreve seis ERROR, das tentativas de atribuir teclas
 esperados. O `test_soul_points.gd` escreve quatro ERROR, das quantidades de dano e de cura
 inválidas, também esperados. O `test_moral_record.gd` escreve seis WARNING, de uma tentação
 desconhecida (aceite e consultada), de um tom desconhecido e de três tempos de escuta inválidos,
-igualmente esperados.
+igualmente esperados. O `test_run_record.gd` escreve três WARNING, de mortes sem nível, sem zona e
+na fase 0, também esperados.
 
 Todos os scripts de testes e de medidas estendem `tests/support/base_test.gd`, diretamente ou
 através de outro ficheiro de suporte. Antes de o autoload `Settings` estar pronto, esse ficheiro
@@ -2134,6 +2144,17 @@ crucifixo. O overlay mostra a oferta em causa, se já foi aceite, as recusas, o 
 homem ainda tem o crucifixo. As três teclas estão reservadas nos perfis de controlos, pelas mesmas
 razões do F4.
 
+Uma linha `run` mostra os números escondidos da partida, que o jogador nunca vê:
+
+- a fase em curso;
+- as mortes nessa fase e no nível;
+- a zona da última morte;
+- o tempo passado na fase;
+- a pressão das mortes face ao limiar da próxima oferta do atalho;
+- o estado dessa oferta: aberta, à espera numa zona, ou fechada depois de o atalho ser aceite.
+
+Serve para afinar o ritmo das ofertas por mortes a jogar, sem ter de contar as mortes à mão.
+
 O overlay é uma cena própria, `debug/debug_overlay.tscn`, num `CanvasLayer`, pelo que não se
 desloca com a câmara. Recebe a personagem pelo Inspector e lê-a, ou fere-a com o F4, sem que ela
 dependa dele, pelo que a personagem é testada e exportada sem o overlay. Continua ativo com o jogo
@@ -2288,7 +2309,9 @@ seguinte. Quando a personagem entra nessa área, o Main escurece o ecrã em 0,25
 pela outra e volta a clarear. As duas fases do nível 1 levaram, em conjunto, cerca de 0,1 s a
 carregar (medido a 2026-10-19), pelo que o carregamento termina antes de o ecrã ficar preto. Durante
 a passagem, o Esc não pausa. Uma fase aberta com F6 não tem o Main: a porta muda de cena diretamente,
-sem escurecer. O `test_phase_exit.gd` verifica as duas situações.
+sem escurecer. O `test_phase_exit.gd` verifica as duas situações. Uma `PhaseExit` sem fase seguinte é
+o fim do nível: o Main escurece o ecrã e volta ao menu principal (no nível 1, só depois das últimas
+falas da Asmodeu).
 
 A pausa usa `get_tree().paused`. O Main corre sempre (Process Mode Always) e só o `LevelSlot` é
 Pausable: o nível para e o Main continua a receber o Esc. O overlay de depuração continua ativo, e o
@@ -2360,7 +2383,7 @@ julgamento, mas não soma nem retira pontos.
 
 Tudo o que o homem faz soma pontos a um único total. Uma tentação aceite soma o valor indicado para
 ela, contando uma só vez, mesmo que volte a ser aceite. Cada portagem roubada no nível 3 vale menos
-do que um atalho, porque esse nível tem três. Uma resposta arrogante soma pouco. Ouvir uma proposta
+do que um atalho, porque esse nível tem três. Uma resposta arrogante soma meio ponto e uma humilde tira meio ponto. Ouvir uma proposta
 só conta a partir de alguns segundos, e cada proposta tem um máximo; ouvida outra vez, por exemplo
 depois de recomeçar a fase, conta apenas a escuta mais longa. Dois limiares transformam o total no
 estádio 0, 1 ou 2, que escolhe a variante das falas do homem: quanto mais alto, pior ele fala.
@@ -2368,23 +2391,32 @@ Cada resposta conta sempre que é dada. Por isso, uma conversa com respostas nã
 fase recomeça; essa regra pertence ao estado do jogo (`GameState`), que guarda as conversas já
 ouvidas, e não ao registo moral.
 
-Uma resposta humilde fica contada, mas não retira pontos, e o total nunca desce. Se descontasse, o
-jogador poderia aprender por tentativa e erro a "limpar" a fala com respostas humildes, e o registo
-deixaria de medir o que o jogador escolhe. A soma única foi preferida a contar apenas as tentações,
-que ignoraria a soberba nas respostas, e a ter um limiar por categoria, que daria seis valores
-difíceis de afinar e de explicar.
+Uma resposta humilde retira 0,5 pontos, e é a única coisa que retira pontos. O total nunca desce
+abaixo de 0. Assim, a humildade pode compensar a soberba, mas um homem sem nada a pesar não fica com
+pontos negativos. Antes, uma resposta humilde só ficava contada; o grupo decidiu que a humildade
+deve pesar tanto como a soberba. A soma única foi preferida a contar apenas as tentações, que
+ignoraria a soberba nas respostas, e a ter um limiar por categoria, que daria seis valores difíceis
+de afinar e de explicar.
+
+O tom também escolhe falas diretamente. No presente da Asmodeu, o homem fala com soberba se o
+estádio já subiu ou se deu mais respostas arrogantes do que humildes (`Moral.leans_arrogant()`).
+Assim, um homem que respondeu sempre com arrogância fala com arrogância, mesmo antes de os pontos
+chegarem ao estádio 1. Contar as respostas não soma pontos.
 
 | Valor | Referência |
 |---|---|
-| Atalho ou dom de um demónio (Moral Weight, no ficheiro da oferta em `offers/`) | 1 ponto |
+| Atalho de um demónio (Moral Weight, no ficheiro da oferta em `offers/`) | 1 ponto |
+| Dom de um demónio, como o charm (idem) | 2 pontos |
 | Cada portagem roubada (idem) | 0,4 pontos |
 | Tentação sem ficheiro de oferta (`core/moral_stats.tres`, tal como os seguintes) | 1 ponto |
-| Resposta arrogante | 0,15 pontos |
+| Resposta arrogante | +0,5 pontos |
+| Resposta humilde | −0,5 pontos (o total nunca desce abaixo de 0) |
 | Ouvir uma proposta | 0,1 pontos por segundo além de 3 s, até 0,5 por proposta |
 | Estádio 1 / estádio 2 | a partir de 1 / de 3 pontos |
 
-São valores de referência, a afinar em jogo. Com eles, um atalho basta para a fala piorar, e as
-três portagens juntas pesam pouco mais do que um atalho. As regras estão numa classe sem nós
+São valores de referência, a afinar em jogo. Com eles, um atalho basta para a fala piorar, o atalho
+e o dom juntos chegam ao estádio 2, e as três portagens juntas pesam pouco mais do que um atalho.
+As regras estão numa classe sem nós
 (`MoralRecord`), testada isoladamente; o autoload limita-se a disponibilizá-la. O `reset()` limpa o
 registo para um jogo novo, e o registo entra na gravação do jogo.
 
@@ -2403,10 +2435,11 @@ num atalho e o nível retira o crucifixo das mãos do homem.
 
 O efeito de uma oferta aceite só se aplica quando o balão de diálogo fecha. Assim, um atalho nunca
 muda a fase com uma conversa aberta. Há dois tipos de efeito: ir para outra fase, que é o atalho,
-e receber um upgrade, que são os dons. O atalho de Asmodeu leva à fase 3 da luxúria, com a mesma
+e receber um upgrade, que são os dons. O atalho de Asmodeu leva ao fim do nível 1, com a mesma
 passagem a preto das saídas de fase, e põe o homem no ponto de chegada (`ArrivalPoint`) junto à
-tenda, no fim do túnel final. A gravação guarda esse ponto, pelo que uma morte ou o Continue o
-devolvem à tenda, e não ao início da fase. Perder o crucifixo não é o custo de uma oferta em
+tenda, na saída do nível, onde ela lhe oferece logo o dom. A gravação guarda esse ponto, pelo que uma morte ou o Continue o
+devolvem à tenda, e não ao início da fase: um save point já alcançado não o leva para o seu ponto de
+renascimento quando ele chega por um ponto de chegada. Perder o crucifixo não é o custo de uma oferta em
 particular: é uma regra do jogo, guardada no `GameState`. O primeiro upgrade aceite, seja ele qual
 for, tira o crucifixo.
 
@@ -2417,11 +2450,145 @@ uma linha a `user://offers_log.csv`, com a oferta, a escolha, os segundos de esc
 jogo. Serve os playtests: permite verificar se quem aceita o atalho é quem está a ter
 dificuldades.
 
+Para cruzar com esse registo, cada morte acrescenta uma linha a `user://deaths_log.csv`. A linha
+leva a hora, o nível, a fase, a zona, a causa da morte, o sítio (a fiada de picos, ou a causa) e a
+posição, as mortes nesse sítio até então e se a morte trouxe
+uma oferta do atalho. Os dois registos usam o mesmo código (`core/csv_log.gd`). Os testes não
+escrevem em nenhum deles. O `test_deaths_log.gd` verifica o cabeçalho, uma linha por morte, a
+marcação da morte que trouxe a oferta e que um caminho vazio não escreve nada.
+
 O `test_offers.gd` verifica aceitar, recusar, aceitar duas vezes, uma oferta inexistente, o efeito
 adiado até o balão fechar e o crucifixo perdido com o primeiro upgrade. O `test_offer_catalog.gd`
 verifica os dados: ids únicos, todos os ids das falas presentes no catálogo, e um atalho que aponta
 para uma fase e um ponto de chegada que existem. O `test_offer_shortcut.gd` percorre o atalho no
 jogo, e o `test_dialogue_calls.gd` confirma que todas as funções chamadas pelas falas existem.
+
+#### Balão de diálogo: retrato e saltar falas
+
+As falas aparecem no balão do próprio jogo (`ui/dialogue_balloon.tscn`), feito a partir do balão
+de exemplo do Dialogue Manager, como o plugin recomenda. O `addons/` fica como veio. Além do que o
+exemplo já fazia (as falas a escrever-se, as respostas e o toque que mostra a fala inteira), o
+balão mostra o retrato de quem fala. Até a arte chegar (S3), o retrato é provisório: um quadrado
+com a cor da personagem e a inicial do nome. Os retratos finais entram no Inspector (Portraits), um
+por personagem, sem mudar código.
+
+Manter o Espaço premido durante 0,6 s (Skip Hold Time) salta as falas até à próxima com respostas,
+ou até ao fim da conversa. Uma barra fina enche-se enquanto se mantém a tecla. O salto nunca escolhe
+uma resposta pelo jogador e corre na mesma o que as falas saltadas fazem, como apresentar uma
+oferta. Um toque curto continua só a avançar uma fala. O Dialogue Manager não tem esta função: o seu
+autor recomenda acrescentá-la no balão, que é o que se fez. O número de falas saltadas fica nas
+estatísticas da partida, para o julgamento final, e não conta para a moral.
+
+O `test_dialogue_skip.gd` verifica que o salto para nas respostas sem escolher nenhuma, que a oferta
+das falas saltadas é apresentada, que um toque curto não salta, que uma conversa sem respostas
+termina e que o retrato provisório mostra a inicial.
+
+#### Estatísticas da partida: mortes, zonas e tempo
+
+O autoload `RunStats` conta as mortes do homem por fase e por zona de cada nível. Estes números
+servem as falas dos demónios (por exemplo, "morreste tantas vezes no mesmo sítio") e o julgamento
+final, que mostra ao homem o que fez, com números. Não entram no registo moral: só as decisões
+contam para a moral, e morrer não é uma decisão. Nada disto aparece no ecrã durante o jogo.
+
+A fase é dada pelo próprio nível. Cada nível começa na fase indicada em First Phase, que
+normalmente é 1. Os pontos de gravação que abrem uma fase têm o número dela em Starts Phase. No
+nível 1, a fase 2 começa no `Phase2Save` e a fase 3 no `Phase3Save`. Ao arrancar, o nível fica na
+fase do ponto mais avançado já alcançado. A zona de uma morte é a zona de câmara mais pequena que
+contém o homem. Os níveis já estão divididos nestas zonas, com nomes de sítios, por isso não é
+preciso marcar nada à parte. Fora de todas as zonas, a morte conta numa célula de 768 px
+(Death Cell Size). A zona só se procura no momento da morte, e não em cada frame. Os números de cada
+nível guardam-se em separado, para que a fase 1 do nível 2 não some às mortes da fase 1 do nível 1.
+
+Cada morte guarda também a causa. Os picos chamam-se `spikes`. Um agarrão leva o nome da cena do
+cão que agarrou (`demon`, `big_demon`, `biggest_demon`), ou o valor Cause do seu Hitbox, se estiver
+preenchido. Com vários cães a agarrar, conta o primeiro. "O mesmo sítio" é a mesma zona e aquilo
+que o matou. Cada fiada de picos conta por si (`Spikes1`, `Spikes2`...), porque há saltos mais
+difíceis do que outros: quem morre sempre nos picos 2 não deve ouvir falar dos picos 1. Os cães
+contam como uma matilha, pelo tipo, seja qual for o que o agarrou. Os picos e um cão na mesma zona
+são, portanto, sítios diferentes, e as falas não os confundem. O mesmo critério pesa na pressão das
+ofertas por mortes.
+
+O `RunStats` mede também o tempo passado em cada fase, contado a partir do momento em que a fase
+começa. O tempo não volta a zero quando o homem morre e para durante a pausa, porque o nível fica
+parado. Não há relógio no ecrã: o tempo serve as falas (por exemplo, "já cá andas há dez minutos")
+e o julgamento final. Um relógio visível daria ao jogo um ar de corrida contra o tempo, o que não
+condiz com o tom nem com o pilar "julgado sem saber".
+
+O `RunStats` fica fora do `GameState` porque a morte repõe o `GameState` como estava na última
+gravação, e uma morte tem de ficar contada. As regras estão numa classe sem nós (`RunRecord`),
+testada isoladamente no `test_run_record.gd`. O `test_level_run_stats.gd` verifica, no nível 1, a
+fase ao arrancar e ao entrar no `Phase2Save`, a zona de uma morte e o tempo, que para durante a
+pausa e se mantém quando a fase recomeça, e o aviso de uma oferta por mortes.
+
+#### Ofertas por mortes: cada vez mais seguidas
+
+Durante um nível, a única oferta é o atalho: saltar o resto do nível e ir diretamente ao fim. O
+demónio do nível oferece-o no início das fases 2 e 3 e também quando o homem vai morrendo. A fase 1
+faz-se sempre, por isso as mortes nela não trazem ofertas. O upgrade (o dom do demónio) só é
+oferecido no fim do nível.
+
+Cada morte nas fases 2 e 3 acrescenta "pressão": 1, mais 0,5 por cada morte que ele já teve no
+mesmo sítio (a mesma zona e a mesma fiada de picos, ou o mesmo tipo de cão). Morrer sempre no mesmo
+sítio traz a oferta mais cedo. Quando a pressão chega ao limiar, a zona dessa morte fica marcada, e a
+pressão volta a zero. O primeiro limiar é sorteado entre 4 e 7, e cada limiar seguinte é 70 % do
+anterior, nunca abaixo de 1,5, com uma variação sorteada de 15 % para cada lado. O jogador nunca
+consegue contar até à oferta, mas sente que ela aperta à medida que falha.
+
+As mortes contam sempre, mesmo com uma zona marcada. Podem estar várias zonas marcadas ao mesmo
+tempo, por exemplo uma no início, onde ele morreu muitas vezes, e outra mais à frente, onde está a
+sofrer agora. Cada uma espera por ele: quando volta a estar nessa zona, a Asmodeu aparece e fala
+dessa zona, com as mortes e o tempo que ele lá passou. Uma zona já marcada não volta a ser marcada,
+porque o limiar seguinte fica para outra zona. O jogo mede, por isso, também o tempo passado em cada
+zona. Depois de ele aceitar o atalho, acabam as ofertas nesse nível.
+
+| Valor (`offers/death_offer_stats.tres`) | Referência |
+|---|---|
+| Primeira fase com ofertas | 2 |
+| Primeiro limiar | sorteado entre 4 e 7 |
+| Peso de cada morte anterior na mesma zona | +0,5 |
+| Cada limiar seguinte | 70 % do anterior |
+| Limiar mínimo | 1,5 |
+| Variação sorteada | ±15 % |
+
+Com uma morte em cada zona, as ofertas chegam ao fim de 4, 3, 2, 2… mortes. Morrendo sempre no
+mesmo sítio, a primeira chega à terceira morte. A regra vive numa classe sem nós
+(`DeathOfferPacer`), testada no `test_death_offer_pacer.gd` com números fixos, sem sorteio. O
+`RunStats` alimenta-a com cada morte, avisa quando há uma oferta à espera e guarda-a com as
+estatísticas, para que a morte não a apague. Morrer não conta para a moral; só a resposta à oferta
+conta.
+
+A Asmodeu é um nó próprio (`demon/asmodeus.tscn`), provisório até chegar a arte: um polígono
+cor-de-rosa escuro com o nome por cima. Não combate. Quando fala, aparece ao lado do homem, prende-o
+como a Velvet (sem correr, saltar nem erguer o crucifixo), fala no balão do jogo e desaparece.
+Enquanto fala, os cães do nível ficam parados (Asmodeus › Stills), para que nenhum morda o homem
+preso. O que acontece a seguir decidem as falas, através das ofertas.
+
+Quando é que ela fala decide outro nó do nível 1, o `AsmodeusDirector`, que só escolhe o cue:
+
+| Momento | Cue |
+|---|---|
+| Primeira chegada ao início da fase 2 (o save point com Starts Phase 2) | `asmodeus_offer` |
+| Primeira chegada ao início da fase 3 | `asmodeus_second_offer` |
+| Com uma oferta por mortes à espera, ao entrar na zona dela (ou ao renascer lá dentro) | `asmodeus_deaths` |
+| Na saída do nível, aceite ou não o atalho | `asmodeus_gift` e depois `stairs` |
+
+A oferta por mortes só é verificada enquanto há uma à espera; sem ela, o diretor não faz nada a
+cada frame. Uma conversa só conta como tida quando o homem responde à oferta. Nesse momento, o
+diretor marca-a no `GameState` (`answered_` e o nome do cue), e a oferta por mortes deixa de estar à
+espera. Se o jogador sair antes de responder, a conversa do início de uma fase volta assim que ele
+pousa no chão depois do Continue, e a oferta por mortes continua à espera da sua zona. Aceitar o atalho fecha as ofertas por mortes. A saída do nível (`PhaseExit` sem fase
+seguinte e com Walk In Leads On desligado) só termina o nível depois da última fala de `stairs`;
+nessa altura o diretor marca o nível como feito (`lust_done`), com a tenda como ponto de chegada,
+o Main grava, escurece o ecrã e volta ao menu principal. Enquanto não houver nível 2, o Continue
+depois disso leva o homem à tenda e deixa-o jogar no nível já feito, sem falas nem ofertas e com
+os cães parados.
+
+O `test_asmodeus.gd` verifica que o homem fica preso enquanto ela fala e é largado no fim. O
+`test_lust_asmodeus.gd` joga o nível 1 dentro do Main: a oferta do início da fase 2 recusada, uma
+oferta por mortes que espera fora da zona e aparece ao entrar nela, o atalho aceite até à tenda, o
+dom, as escadas e o regresso ao menu, e a oferta do início da fase 3. Os testes de percurso do
+nível 1 retiram o diretor, tal como já não deixavam a Velvet falar, porque verificam o mapa e não as
+conversas.
 
 #### Gravação do jogo
 
@@ -2443,6 +2610,13 @@ as opções.
 | Os acontecimentos únicos, como já ter falado com a Velvet | Não se repetem, nem contam duas vezes. |
 | O nome do homem | As falas usam-no; o ecrã do nome ainda não existe. |
 
+As estatísticas da partida (`RunStats`: mortes e tempo por fase) são a exceção no sentido contrário:
+uma morte tem de ficar contada, por isso a morte nunca as repõe. Guardam-se num ficheiro próprio, ao
+lado da gravação (`user://save_run.cfg`), em cada gravação, em cada morte e ao sair para o menu ou
+fechar o jogo. O Continue repõe-nas e um jogo novo apaga-as. Ficam fora do `save.cfg` para que a
+morte continue a não alterar a gravação: o que lá está volta a ser exatamente o que estava no último
+checkpoint.
+
 Não se guardam os SP, os demónios, a câmara nem as tolerâncias do movimento: cada fase é uma cena
 nova e reconstrói-os. As opções do jogador ficam em ficheiro próprio, porque não pertencem a uma
 partida.
@@ -2451,7 +2625,12 @@ Até à gravação seguinte, o que o homem faz conta como não feito. A morte n�
 e repõe o autoload `GameState` e o registo moral tal como estavam na última gravação, e sair e usar
 o Continue tem o mesmo efeito. As fases são curtas, pelo que não se perde muito. A exceção é um
 upgrade aceite: não se pode desfazer, por isso o jogo grava logo que o homem o recebe, e uma morte
-antes do checkpoint seguinte não o tira nem devolve o crucifixo. Um nível que não
+antes do checkpoint seguinte não o tira nem devolve o crucifixo. Uma resposta a uma oferta também
+grava logo, porque é uma decisão: sair depois dela não faz repetir a conversa. Se a oferta aceite
+tiver efeito (um upgrade, ou o atalho), a gravação fica para quando o efeito se aplica, no fim das
+falas. Gravar o "sim" antes do efeito permitiria sair no intervalo e ficar com a oferta aceite sem o
+que ela dá. Sair antes de responder não guarda nada, nem as respostas de tom dadas antes, e a
+conversa repete-se no Continue. Um nível que não
 inicia o jogo, como o Test room, fica fora disto: não grava nem repõe nada.
 A gravação escreve primeiro uma cópia e só depois a coloca no lugar da anterior, para que um jogo
 fechado a meio não destrua a última gravação. Uma gravação danificada, de outra versão ou de uma

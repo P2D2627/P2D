@@ -8,6 +8,8 @@ extends Area2D
 ## arrives.
 
 const TILE: float = 48.0
+## What a death on spikes is put down to, in the run's numbers.
+const CAUSE: StringName = &"spikes"
 
 ## How wide the strip is, in tiles.
 @export_range(1, 128) var width_tiles: int = 2:
@@ -64,7 +66,8 @@ func _draw() -> void:
 func _on_body_entered(body: Node2D) -> void:
 	var player: Player = body as Player
 	if player != null:
-		player.die()
+		# Each strip counts as its own spot: one jump is harder than another.
+		player.die(CAUSE, name)
 
 
 func _apply_size() -> void:

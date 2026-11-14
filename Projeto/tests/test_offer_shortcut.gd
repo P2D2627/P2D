@@ -1,15 +1,15 @@
-# Checks Lust's shortcut in the main scene. In a new game in phase 1, accepting it through Offers,
-# with no balloon showing, takes the man behind the fade to phase 3, standing at the ArrivalPoint
-# by Asmodeus's tent, not at the phase's start, and saves phase 3 with that point. A death there
-# brings him back to the tent, and so does Continue. The tests use a save file of their own.
+# Checks Lust's shortcut in the main scene. In a new game in the old blockout's phase 1, accepting it
+# through Offers, with no balloon showing, takes the man behind the fade to level 1, standing at the
+# ArrivalPoint by Asmodeus's tent at the level's end, not at its start, and saves level 1 with that
+# point. A death there brings him back to the tent, and so does Continue. The tests use a save file of their own.
 # Run from the repository root; the exit code is 0 on pass and 1 on fail:
 # godot --headless --fixed-fps 60 --path Projeto --script res://tests/test_offer_shortcut.gd
 extends "res://tests/support/menu_test.gd"
 
 const SAVE_PATH: String = "user://test_offer_shortcut.cfg"
 const PHASE_1_PATH: String = "res://scenes/levels/Lust/LustLevel_Phase1_Cave.tscn"
-const PHASE_3_PATH: String = "res://scenes/levels/Lust/LustLevel_Phase3.tscn"
-const PHASE_3_ROOT: StringName = &"LustPhase3"
+const LEVEL_1_PATH: String = "res://levels/lust/level1.tscn"
+const LEVEL_1_ROOT: StringName = &"Level1"
 const SHORTCUT: StringName = &"lust_shortcut"
 const TENT: StringName = &"asmodeus_tent"
 ## Physics frames to wait for a phase change, fade in included.
@@ -37,7 +37,7 @@ func _the_shortcut_goes_to_the_tent_and_comes_back_there() -> bool:
 	await tap(KEY_ENTER)
 	_offers().accept(SHORTCUT)
 	var changed: bool = await wait_until(func() -> bool:
-		return level_in(main) != null and level_in(main).name == PHASE_3_ROOT, CHANGE_FRAMES)
+		return level_in(main) != null and level_in(main).name == LEVEL_1_ROOT, CHANGE_FRAMES)
 	var at_the_tent: bool = changed and await _stands_at_the_tent(main)
 	var saved: Dictionary = SaveFile.new().read()
 	var saved_point: Variant = saved.get("state", {}).get("arrival_point", "")
@@ -59,9 +59,9 @@ func _the_shortcut_goes_to_the_tent_and_comes_back_there() -> bool:
 	await remove_main(main)
 	_progress().reset()
 	_delete_save()
-	return report(changed and at_the_tent and saved.get("scene", "") == PHASE_3_PATH
+	return report(changed and at_the_tent and saved.get("scene", "") == LEVEL_1_PATH
 			and saved_point == String(TENT) and restarted and back_after_death and back_on_continue,
-			("Shortcut: phase 3 %s, at the tent %s, saved %s at %s; a death restarts %s at the tent "
+			("Shortcut: level 1 %s, at the tent %s, saved %s at %s; a death restarts %s at the tent "
 			+ "%s; Continue at the tent %s")
 			% [changed, at_the_tent, saved.get("scene", ""), saved_point, restarted,
 			back_after_death, back_on_continue])
@@ -70,7 +70,7 @@ func _the_shortcut_goes_to_the_tent_and_comes_back_there() -> bool:
 ## Whether the level's player lands near its ArrivalPoint TENT.
 func _stands_at_the_tent(main: Node) -> bool:
 	var level: Level = level_in(main) as Level
-	if level == null or level.name != PHASE_3_ROOT:
+	if level == null or level.name != LEVEL_1_ROOT:
 		return false
 	var point: ArrivalPoint = ArrivalPoint.find_in(level, TENT)
 	if point == null or not await wait_until_on_floor(level.player):
