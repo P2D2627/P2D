@@ -59,15 +59,33 @@ func can_notice(man: Node2D, facing: float, behind_reach: float) -> bool:
 	return behind <= behind_reach and can_see(man)
 
 
-## True while some of the demon's body is on the screen, with the camera's zoom, or no further off
-## it than margin px; with no camera, as in the tests, all of the world counts as on it.
+## True while some of the demon's body is on the screen, or no further off it than margin px. With no
+## camera, as in the tests, all of the world counts as on it.
 func is_on_screen(margin: float = 0.0) -> bool:
 	var viewport: Viewport = get_viewport()
-	if viewport.get_camera_2d() == null:
+	var camera: Camera2D = viewport.get_camera_2d()
+	if camera == null:
 		return true
-	var screen: Rect2 = viewport.get_canvas_transform().affine_inverse() * viewport.get_visible_rect()
-	return screen.grow(margin).intersects(Rect2(body_box.global_position - _body_half_size,
-			2.0 * _body_half_size))
+	return _screen_of(camera, viewport.get_visible_rect().size).grow(margin).intersects(
+			Rect2(body_box.global_position - _body_half_size, 2.0 * _body_half_size))
+
+
+## The screen camera shows, without its offset, so the screen shake (ADR 0061) does not move it: from
+## where the camera stands, its zoom and its limits, which hold it as the camera does: inside them, or
+## centred on them along a side where it is wider than they are. Not from what is drawn: with physics
+## interpolation, that trails the camera by up to two physics frames, offset and all. It counts on a
+## camera with no smoothing and no drag margins of its own, as the game camera, which does its own.
+static func _screen_of(camera: Camera2D, screen_size: Vector2) -> Rect2:
+	var size: Vector2 = screen_size / camera.zoom
+	var corner: Vector2 = camera.global_position
+	if camera.anchor_mode == Camera2D.ANCHOR_MODE_DRAG_CENTER:
+		corner -= size / 2.0
+	if camera.limit_enabled:
+		var low: Vector2 = Vector2(camera.limit_left, camera.limit_top)
+		var high: Vector2 = Vector2(camera.limit_right, camera.limit_bottom) - size
+		corner.x = clampf(corner.x, low.x, high.x) if low.x <= high.x else (low.x + high.x) / 2.0
+		corner.y = clampf(corner.y, low.y, high.y) if low.y <= high.y else (low.y + high.y) / 2.0
+	return Rect2(corner, size)
 
 
 func _is_in_view(spot: Vector2) -> bool:

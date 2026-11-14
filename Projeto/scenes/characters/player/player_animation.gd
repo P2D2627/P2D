@@ -3,13 +3,13 @@ extends Node
 
 ## Plays the man's animation for where he is and how he moves: on the floor idle or walk, in the air
 ## jump going up and fall coming down, on a wall wall_slide, or jump while still going up it, and
-## hurt while a knockback carries him, and, held by a demon (GRABBED), escape while he struggles
-## and idle while he is only pulled, over all the rest. He struggles for Struggle Time after each
-## press of Jump that counts towards breaking free, which struggle() hears from his GrabEscape. Each
-## press shows the next frame of escape and holds it, so every press answers on screen; held, with
-## Hold To Escape, escape plays at its own FPS. It only shows; the player keeps the state. An animation the
-## Sprite has no frames for yet falls back to the nearest one it has (see fallback_for), so new art
-## only has to go into the SpriteFrames under its name.
+## hurt while a knockback carries him, and, held by a demon (GRABBED), escape over all the rest.
+## Escape plays on its own, and each press of Jump that counts towards breaking free, which
+## struggle() hears from his GrabEscape, jumps it at once to the start of its next pose, with the
+## other hand up, so every press answers on screen; held, with Hold To Escape, it just plays. It only
+## shows; the player keeps the state. An animation the Sprite has no frames for yet falls back to the
+## nearest one it has (see fallback_for), so new art only has to go into the SpriteFrames under its
+## name.
 ##
 ## The walk keeps pace with the ground: it plays one step for every Step Length he runs, at any
 ## speed, so the feet never slide. Each time it reaches one of Contact Frames, where a foot is
@@ -43,9 +43,6 @@ const FAST_FALL_FRAME: int = 4
 ## Least speed across on the floor for walk; below it, idle. Above 0, so the last moment of a stop
 ## after the run is let go already shows him standing.
 @export_range(0.0, 200.0, 1.0, "suffix:px/s") var walk_min_speed: float = 20.0
-## Seconds escape shows after each press of Jump that counts, held by a demon: long enough to bridge
-## the gap between presses made quickly, so the struggle reads as one.
-@export_range(0.05, 2.0, 0.05, "suffix:s") var struggle_time: float = 0.35
 
 @export_group("Walk cycle")
 ## How far he runs in one step, from one planted foot to the next. The walk plays faster or slower
@@ -64,6 +61,12 @@ const FAST_FALL_FRAME: int = 4
 ## Falling this fast or faster, he braces for the landing. The fall tops out at 1400 px/s.
 @export_range(0.0, 3000.0, 10.0, "suffix:px/s") var fast_fall_speed: float = 900.0
 
+@export_group("Escape")
+## Where each pose of escape starts, in order, measured on the art: 0 has his left hand up and 2 his
+## right, each for two frames. A press jumps to the start of the pose after the one on screen, so
+## each press swaps hands. New escape art needs its own.
+@export var escape_pose_frames: Array[int] = [0, 2]
+
 ## The walk frame shown on the last frame, NOT_WALKING when it was another animation.
 var _last_walk_frame: int = NOT_WALKING
 ## The animation chosen on the last frame, before falling back for missing art.
@@ -72,27 +75,21 @@ var _last_choice: StringName = IDLE
 var _take_off_left: float = 0.0
 ## True once he has gone up faster than apex_speed since he last stood on the floor.
 var _rose: bool = false
-## Seconds of the struggle left, since the last press that counted.
-var _struggle_left: float = 0.0
-## The frame of escape the last press showed.
-var _escape_frame: int = 0
-## True when presses step escape a frame each; false while holding plays it.
-var _escape_steps: bool = true
 
 
 func _ready() -> void:
 	assert(player != null, "PlayerAnimation: assign the Player to Player.")
 	assert(sprite != null, "PlayerAnimation: assign the AnimatedSprite2D to Sprite.")
 	assert(not contact_frames.is_empty(), "PlayerAnimation: add the walk's planted frames.")
+	assert(not sprite.sprite_frames.has_animation(ESCAPE) or are_valid_pose_frames(
+			escape_pose_frames, sprite.sprite_frames.get_frame_count(ESCAPE)),
+			"PlayerAnimation: escape's poses must start in order, once each, within its frames.")
 	# The signal also gives how late and how buffered the jump was, which the drawing does not need.
 	player.jumped.connect(_on_jumped.unbind(2))
 
 
 func _process(delta: float) -> void:
 	_take_off_left = maxf(_take_off_left - delta, 0.0)
-	_struggle_left = maxf(_struggle_left - delta, 0.0)
-	if player.get_state() != Player.State.GRABBED:
-		_struggle_left = 0.0
 	if player.get_state() == Player.State.ON_FLOOR:
 		_rose = false
 	elif player.velocity.y < -apex_speed:
@@ -102,13 +99,11 @@ func _process(delta: float) -> void:
 	var taking_off: bool = (_take_off_left > 0.0 and not player.is_knocked_back()
 			and player.get_state() != Player.State.GRABBED)
 	var choice: StringName = JUMP if taking_off else animation_for(player.get_state(),
-			player.velocity, player.is_knocked_back(), walk_min_speed, _struggle_left > 0.0)
+			player.velocity, player.is_knocked_back(), walk_min_speed)
 	var animation: StringName = shown_animation(choice, sprite.sprite_frames)
 	if animation == JUMP:
 		_show_still(JUMP, air_frame_for(player.velocity.y, taking_off, _rose, apex_speed,
 				fast_fall_speed))
-	elif animation == ESCAPE and _escape_steps:
-		_show_still(ESCAPE, _escape_frame)
 	elif sprite.animation != animation or not sprite.is_playing():
 		sprite.play(animation)
 		# Off the floor into the walk, the stride starts halfway to the next planted foot, so the
@@ -126,12 +121,12 @@ func _process(delta: float) -> void:
 
 
 ## The animation for a state, a velocity and a knockback, whether the SpriteFrames has it or not. Up
-## is a negative velocity.y, so the top of a jump, at 0, already falls. Grabbed comes first: escape
-## while he struggles, idle while he is only pulled.
+## is a negative velocity.y, so the top of a jump, at 0, already falls. Grabbed comes first, with
+## escape.
 static func animation_for(state: Player.State, velocity: Vector2, knocked_back: bool,
-		walk_min_speed: float, struggling: bool = false) -> StringName:
+		walk_min_speed: float) -> StringName:
 	if state == Player.State.GRABBED:
-		return ESCAPE if struggling else IDLE
+		return ESCAPE
 	if knocked_back:
 		return HURT
 	match state:
@@ -177,6 +172,30 @@ static func air_frame_for(velocity_y: float, taking_off: bool, rose: bool, apex_
 	return FAST_FALL_FRAME
 
 
+## The start of the pose after the one frame is in, for poses that start at pose_frames, in order. A
+## frame before the first start is still in the last pose, and after the last pose comes the first.
+## With no poses, frame stays.
+static func next_pose_frame(frame: int, pose_frames: Array[int]) -> int:
+	if pose_frames.is_empty():
+		return frame
+	var pose: int = pose_frames.size() - 1
+	for index: int in pose_frames.size():
+		if pose_frames[index] <= frame:
+			pose = index
+	return pose_frames[(pose + 1) % pose_frames.size()]
+
+
+## True when pose_frames starts at least one pose and the poses start in order, once each, within an
+## animation of frame_count frames.
+static func are_valid_pose_frames(pose_frames: Array[int], frame_count: int) -> bool:
+	if pose_frames.is_empty() or pose_frames[0] < 0 or pose_frames[-1] >= frame_count:
+		return false
+	for index: int in range(1, pose_frames.size()):
+		if pose_frames[index] <= pose_frames[index - 1]:
+			return false
+	return true
+
+
 ## The Sprite's speed_scale that makes the walk play one step per step_length at speed px/s,
 ## whatever Speed the SpriteFrames gives the walk.
 func walk_speed_scale(speed: float) -> float:
@@ -217,13 +236,12 @@ func _mid_step_frame() -> int:
 	return posmod(contact_frames[0] + half_step, count)
 
 
-## The man struggled: escape shows for Struggle Time from now. A press (pressed true) shows its
-## next frame and holds it; holding (pressed false) plays it.
+## The man struggled. A press (pressed true) jumps escape, if it shows, to the start of the pose after
+## the one on screen, now, on the physics frame of the press: the drawn frame after it shows it, and
+## its time starts over. Holding (pressed false) changes nothing, since escape plays on its own.
 func struggle(pressed: bool = true) -> void:
-	_struggle_left = struggle_time
-	_escape_steps = pressed
-	if pressed and sprite.sprite_frames.has_animation(ESCAPE):
-		_escape_frame = posmod(_escape_frame + 1, sprite.sprite_frames.get_frame_count(ESCAPE))
+	if pressed and sprite.animation == ESCAPE:
+		sprite.frame = next_pose_frame(sprite.frame, escape_pose_frames)
 
 
 func _on_jumped() -> void:

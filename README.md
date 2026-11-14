@@ -10,10 +10,10 @@ aceita.
 
 > **Estado:** a personagem jogável já anda, salta e tem controlo no ar, desliza nas paredes e salta
 > delas, e o salto tolera pedidos ligeiramente fora de tempo. O jogo abre num menu principal, que dá
-> acesso à sala de teste e ao blockout do nível 1, e tem pausa e opções gravadas. A câmara do jogo
-> está descrita em "Câmara". Na sala de teste, dois demónios perseguem a personagem, mordem-na e,
-> com o SP baixo, agarram-na; o crucifixo afasta-os, e quem morre recomeça a sala. Ainda não há
-> arte, e o som começou pela personagem e pelo crucifixo.
+> acesso à sala de teste, ao nível 1 e à sala de treino, e tem pausa e opções gravadas. A câmara do
+> jogo está descrita em "Câmara". Na sala de teste, dois demónios perseguem a personagem, mordem-na
+> e, com o SP baixo, agarram-na; o crucifixo afasta-os, e quem morre recomeça a sala. O nível 1 já
+> tem arte (chão, rochas e fundo em parallax), e o som começou pela personagem e pelo crucifixo.
 
 Este documento tem duas partes. A primeira descreve, para toda a equipa, o que já pode ser
 experimentado e as medidas que servem o desenho de níveis. A segunda, "Para quem programa",
@@ -38,12 +38,10 @@ cada sala) está em `docs/nivel1_desenho.md`, e os artigos que o fundamentam em 
    Durante o jogo, a tecla F3 mostra e esconde o texto de depuração descrito em "Overlay de
    depuração", e a tecla F4 retira 10 SP à personagem, como um golpe, para experimentar a
    regeneração descrita em "SP".
-5. O nível 1 em blockout (Play ▸ Level 1: Lust (blockout)) tem as fases 1, 2 e 3, com tiles
-   provisórios de 48 px, cada uma na sua cena. A fase 1 começa no tutorial, que ensina os controlos
-   e continua sem cortes para a sala inicial. Depois sobe da esquerda para a direita e termina numa
-   sala com uma porta; ao atravessá-la, o ecrã escurece e a fase 2 começa no canto inferior direito.
-   O retângulo verde assinala a porta para a fase seguinte. Cada fase também corre sozinha com F6,
-   sem gravar nada.
+5. O nível 1 (Play ▸ Level 1: Lust) é uma só cena, `scenes/levels/lust/level1.tscn`, com as fases
+   1, 2 e 3 e com arte. Começa no tutorial, que ensina os controlos e continua sem cortes para a sala
+   inicial. O blockout do nível 1, com tiles provisórios de 48 px e uma cena por fase, já não está no
+   menu, mas cada uma das suas cenas ainda corre sozinha com F6, sem gravar nada.
 6. Entrar numa fase grava o jogo, o que é indicado por "Saving..." no canto do ecrã, e o menu
    principal passa a mostrar Continue, descrito em "Gravação do jogo".
 7. A sala de treino (Play ▸ Gym (training room)) põe à prova, uma de cada vez, as mecânicas que já
@@ -410,9 +408,10 @@ demónios do nível 1 acertam na mesma (ADR 0055).
 Com o SP baixo (25 SP ou menos), ou quando a pancada a deixaria a 0, o demónio agarra-a em vez de
 lhe tirar SP. Agarrada, a personagem para logo, não corre nem salta, e o crucifixo baixa; se for
 agarrada no ar, mesmo encostada a uma parede, cai a direito até ao chão. Solta-se premindo o salto
-repetidamente: 8 vezes, com um demónio. Um segundo demónio pode juntar-se a meio, e pede mais
-6. Com dois, o agarrão fica cheio: nenhuma pancada entra, e os outros demónios esperam a cerca de
-130 px. Se o jogador parar de premir, o progresso desce: ao fim de 0,25 s sem premir, perde metade
+repetidamente: 8 vezes, com um demónio. A animação de fuga corre durante todo o agarrão, e cada
+toque troca a mão que a personagem tem levantada, para que cada toque se veja. Um segundo demónio
+pode juntar-se a meio, e pede mais 6. Com dois, o agarrão fica cheio: nenhuma pancada entra, e os
+outros demónios esperam a cerca de 130 px. Se o jogador parar de premir, o progresso desce: ao fim de 0,25 s sem premir, perde metade
 da barra por segundo, pelo que quem prime 4 vezes por segundo não perde nada. Se não se soltar em
 3 s, a personagem morre, aparece "You died" e o nível recomeça 1,5 s depois.
 
@@ -756,6 +755,45 @@ Inspector do Godot, como os do movimento.
 | Lookout Change Sharpness | 3 /s | a rapidez com que a câmara se desloca para a Vista de um miradouro |
 | Lookout Change Speed | 2500 px/s | a velocidade máxima dessa deslocação; com os três valores, ao fim de 2 s a câmara está 96 % afastada e 96 % deslocada, para a entrada se ler como um recuo e não como um salto, e quem passa depressa ainda vê o caminho |
 
+### Tremor do ecrã
+
+Nos momentos em que a personagem corre perigo, o ecrã treme por instantes: um golpe de um demónio ou
+de um perigo (espinhos, uma pedra que lhe cai em cima), um agarrão, cada toque no Salto para se
+soltar e a libertação, a morte, uma aterragem depois de uma queda longa, erguer e perder o
+crucifixo, e uma pedra que se parte perto dela. Os toques para se soltar levam o tremor a um nível
+fixo, sem o somar, para que carregar depressa dê um abanão por toque em vez de o acumular;
+soltar-se mantendo o Salto premido (Hold To Escape, que ainda não chegou às opções) não faz tremer.
+A libertação também leva o tremor a um nível fixo, o mais alto do agarrão, quer a personagem se
+solte com toques quer mantendo o Salto; só a morte treme mais. Os
+movimentos de todos os dias, como um salto ou uma aterragem normais, não fazem tremer o ecrã, nem o
+crucifixo que o nível tira, ao começar, a quem já o perdeu. Cada momento acrescenta um
+trauma entre 0 e 1, que desce sozinho; o tremor é o trauma ao quadrado, pelo que os momentos fracos
+quase não se notam, e momentos seguidos somam-se até ao máximo. Nenhum tremor dura mais de meio
+segundo depois do último impacto. O ecrã desloca-se segundo um ruído contínuo, sem saltos ao acaso,
+e nunca roda, para mexer o ecrã o menos possível. Junto à borda de um nível, um tremor forte mostra
+até 32 px de fora do nível. Nas opções, Screen shake regula a força de 0 a 100 %, e 0 desliga o
+tremor.
+
+Os valores do tremor estão em `camera_shake_stats.tres` (`Projeto/scenes/others/camera/`) e os de
+cada momento em `impact_stats.tres` (`Projeto/scenes/others/feedback/`):
+
+| Campo no Inspector | Valor atual | O que controla |
+|---|---|---|
+| Max Offset | 32 px | o maior desvio do ecrã para cada lado, com trauma 1, em píxeis do ecrã |
+| Decay | 2 /s | o trauma que desaparece por segundo; com 2, o trauma máximo acaba em 0,5 s, e o Inspector não aceita menos |
+| Exponent | 2 | a potência do trauma; com 2, metade do trauma produz um quarto do tremor |
+| Speed | 10 | a rapidez do tremor; cada unidade faz o ecrã passar pelo centro cerca de 1,35 vezes por segundo, ou seja, cerca de 13 com 10 (medido a 60 FPS) |
+| Hit Trauma | 0,5 | um golpe de um demónio ou de um perigo |
+| Grab Trauma | 0,2 | um agarrão, somado ao golpe que o inicia |
+| Struggle Trauma | 0,45 | o nível a que cada toque no Salto para se soltar leva o trauma, sem o somar; abaixo do golpe, para que o golpe pese mais |
+| Break Free Trauma | 0,9 | o nível a que a libertação de um agarrão leva o trauma, sem o somar; acima do golpe e do agarrão juntos (0,7) |
+| Death Trauma | 1 | a morte, o momento mais forte, acima da libertação |
+| Hard Landing Trauma | 0,45 | a aterragem depois de uma queda de 480 px ou mais, a mesma que tem o som forte |
+| Crucifix Raised Trauma | 0,35 | erguer o crucifixo, uma vez, e nada enquanto está erguido |
+| Crucifix Lost Trauma | 0,5 | perder o crucifixo |
+| Rock Trauma | 0,55 | uma pedra que se parte junto à personagem |
+| Rock Reach | 900 px | a distância a partir da qual uma pedra já não faz tremer o ecrã; até lá, o trauma desce em linha reta com a distância |
+
 ## Fundo em camadas
 
 O fundo de cada nível é formado por camadas a distâncias diferentes da câmara. Quanto mais distante a
@@ -894,7 +932,7 @@ Remote; os restantes valores são lidos sempre que são usados.
     │   ├── characters/  a personagem (player/), o crucifixo (crucifix/), os demónios (demon/, com os estados em states/) e os componentes que mais de um sistema usa (components/)
     │   ├── levels/      uma pasta por nível: a sala de teste (test_room/), a sala de treino (gym/) e o nível 1 (lust/, com os construtores e os mapas em texto em builders/); na raiz, as peças e os scripts comuns e o fundo de que os níveis partem (background/)
     │   ├── objects/     peças com comportamento: portões (gates/), plataformas (platforms/) e armadilhas (traps/)
-    │   ├── others/      câmara (camera/), depuração (debug/), todos os shaders (shaders/) e conjuntos de tiles (tilesets/)
+    │   ├── others/      câmara (camera/), depuração (debug/), resposta aos impactos (feedback/), todos os shaders (shaders/) e conjuntos de tiles (tilesets/)
     │   └── screens/     menus, ecrã das opções e indicador de gravação
     ├── tests/         testes automáticos (test_*.gd), que correm sem janela
     │   ├── launchers/ abrem o jogo num ponto escolhido, para ver à mão (por agora, o fim da fase 2)
@@ -994,6 +1032,7 @@ godot --headless --fixed-fps 60 --path Projeto --script res://tests/test_landed_
 godot --headless --fixed-fps 60 --path Projeto --script res://tests/test_camera_zones.gd
 godot --headless --fixed-fps 60 --path Projeto --script res://tests/test_player_input.gd
 godot --headless --fixed-fps 60 --path Projeto --script res://tests/test_camera_keeps_player_on_screen.gd
+godot --headless --fixed-fps 60 --path Projeto --script res://tests/test_camera_shake.gd
 godot --headless --fixed-fps 60 --path Projeto --script res://tests/test_main_flow.gd
 godot --headless --fixed-fps 60 --path Projeto --script res://tests/test_pause.gd
 godot --headless --fixed-fps 60 --path Projeto --script res://tests/test_phase_exit.gd
@@ -1102,6 +1141,14 @@ dados e famílias de personagens".
 
 ```
 godot --headless --fixed-fps 60 --path Projeto --script res://tests/measures/measure_demon.gd
+```
+
+O `measure_camera_shake.gd` também não verifica resultados: mede quanto custa, num frame desenhado,
+o nó que faz tremer o ecrã, sem tremor e com o trauma no máximo, em 100 000 chamadas seguidas. Os
+números estão em "Câmara".
+
+```
+godot --headless --fixed-fps 60 --path Projeto --script res://tests/measures/measure_camera_shake.gd
 ```
 
 ### A personagem por dentro
@@ -2250,6 +2297,33 @@ posição dos pés. Sem janela, o Godot cria uma janela de 64 × 64 px, e o
 modo de proporção Expand transforma-a num ecrã de 1920 × 1920; por isso, os testes da câmara fixam o
 ecrã em 1920 × 1080 antes de começar.
 
+O tremor do ecrã não altera a posição da câmara. Um nó filho, `CameraShake`, desloca o `offset` da
+`Camera2D`, que o seguimento, as zonas e os limites não usam, pelo que nenhum deles o vê. As regras
+estão numa classe sem nó, `ShakeTrauma`, que os testes executam diretamente: cada impacto soma
+trauma, até 1, ou, nos toques para se soltar e na libertação, leva-o a um nível fixo sem o somar, e
+o trauma desce a uma taxa constante; o tremor é o trauma elevado a um expoente, e o desvio
+segue um ruído Simplex contínuo, com cada eixo numa linha diferente do ruído. O desvio é dividido
+pelo zoom, para mover o ecrã os mesmos píxeis com qualquer zoom, e calcula-se em cada frame
+desenhado, porque só altera o que se vê: custa 1,1 µs por frame sem tremor e 1,9 µs com o trauma
+no máximo, 0,011 % de um frame a 60 FPS (`measure_camera_shake.gd`, três execuções, 2026-11-14).
+Com o jogo em pausa, a câmara para e, com a interpolação de física, continuaria a desenhar o último
+desvio; por isso, ao entrar na pausa, o desvio volta a 0 e a câmara redesenha logo. Os demónios
+decidem se estão no ecrã pela posição da câmara, com o zoom e os limites, sem o desvio, pelo que o
+tremor não os faz parar nem arrancar. Não o decidem pelo que está desenhado, porque, com a
+interpolação de física, o desenho segue a câmara com até dois passos de física de atraso, desvio
+incluído: medido com um demónio a 1 px da borda do ecrã, com o tremor no máximo, a leitura pelo
+desenho errava em 58 de 60 passos e a leitura pela posição em nenhum. Os momentos que fazem tremer o ecrã são ligados por outro nó filho da câmara,
+`ImpactFeedback`, que procura entre os filhos da personagem o `Hurtbox`, o `GrabEscape`, o
+`Crucifix` e o `PlayerSounds`, e no nível os `Hazard` e as `FallingRock`, e liga-se aos sinais que
+estes já emitem, sem que nenhum dependa do tremor. Faz a procura no fim do primeiro frame do nível,
+depois de o nível ter tirado o crucifixo a quem já o perdeu, para esse passo não contar como um
+impacto. Ficou de fora um deslocamento aleatório com um `Tween` por impacto: cada impacto teria o seu
+`Tween` a mexer no mesmo `offset`, impactos seguidos disputavam-no e o pior caso não tinha teto; o
+trauma tem um dono só e nunca passa de 1. O `test_camera_shake.gd` verifica as regras (o trauma
+máximo acaba em meio segundo e o Speed tem a rapidez que o Inspector descreve), a opção e o ecrã das
+opções, o trauma de cada momento, o zoom, a pausa, o início de um nível sem crucifixo e os
+demónios, e que a morte da personagem faz tremer o ecrã sem mover a câmara.
+
 #### Fundo em camadas
 
 O fundo é feito de nós `BackgroundLayer` (`scenes/levels/background/background_layer.gd`), uma extensão do
@@ -2329,12 +2403,14 @@ acabada de carregar durante todo esse frame. Por isso o jogo retoma no frame seg
 o retomou. Os testes confirmam que retomar com o Espaço, o A ou o B, também num toque rápido, não faz
 saltar nem interagir; com o jogo a retomar no próprio frame, a personagem saltava.
 
-As opções (volume dos buses Master, Music, SFX, Ambience e UI, ecrã inteiro, V-Sync, limite de FPS
-e controlos)
+As opções (volume dos buses Master, Music, SFX, Ambience e UI, ecrã inteiro, V-Sync, limite de FPS,
+força do tremor do ecrã e controlos)
 estão no autoload `Settings`, porque têm de estar aplicadas antes de qualquer
 cena. Gravam-se em `user://settings.cfg` (no Windows, `%APPDATA%\Godot\app_userdata\P2D\`), um
 ficheiro de texto legível, com número de versão. Um ficheiro em falta ou ilegível, ou com valores de
-tipo errado, fora do intervalo ou que não são números, dá os valores predefinidos. O limite de FPS só
+tipo errado ou que não são números, dá os valores predefinidos; um volume ou uma força do tremor
+fora do intervalo fica no limite mais próximo, e um limite de FPS que não está na lista dá o
+predefinido. O limite de FPS só
 limita o desenho; a física mantém-se nos 60 passos por segundo. Os menus nunca alteram o áudio, a
 janela ou o motor diretamente: pedem a mudança ao `Settings`, que a aplica e grava. Com o jogo
 embutido no editor, o ecrã inteiro não se aplica (só a janela normal é suportada); experimenta-se com

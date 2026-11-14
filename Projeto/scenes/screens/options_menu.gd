@@ -2,10 +2,12 @@ class_name OptionsMenu
 extends VBoxContainer
 
 ## The options screen, the same in the main menu and in the pause: a volume slider for each audio
-## bus, full screen, V-Sync, the frame rate limit, Controls, Reset and Back. Controls swaps this
-## screen for the controls screen, and its Back swaps them again. It shows what the autoload
-## Settings holds and hands every change straight to it; Settings applies and saves. Back, Esc or B
-## close the screen and say so with closed, and the menu it is in shows its own panel again.
+## bus, full screen, V-Sync, the frame rate limit, the screen shake, Controls, Reset and Back. The
+## screen shake has a grid of its own, under the frame rate, for the accessibility options, with its
+## slider in line with the volumes'. Controls swaps this screen for the controls screen, and its Back
+## swaps them again. It shows what the autoload Settings holds and hands every change straight to it;
+## Settings applies and saves. Back, Esc or B close the screen and say so with closed, and the menu
+## it is in shows its own panel again.
 
 signal closed
 
@@ -27,15 +29,23 @@ const VOLUME_STEP: float = 0.05
 const SLIDER_WIDTH: float = 480.0
 ## What the frame rate list shows for no cap.
 const NO_CAP_TEXT: String = "No limit"
+const SCREEN_SHAKE_TITLE: String = "Screen shake"
+## How much one press of the left or right arrow moves the screen shake.
+const SCREEN_SHAKE_STEP: float = 0.1
 
 var _sliders: Dictionary[StringName, HSlider] = {}
 var _volume_texts: Dictionary[StringName, Label] = {}
+var _screen_shake_slider: HSlider
+var _screen_shake_text: Label
+## The titles of the volumes and of the accessibility options, so they can take the same width.
+var _titles: Array[Label] = []
 
 @onready var _settings: GameSettings = get_node(SETTINGS_PATH) as GameSettings
 @onready var _volumes: GridContainer = %Volumes
 @onready var _fullscreen_check: CheckButton = %FullscreenCheck
 @onready var _vsync_check: CheckButton = %VSyncCheck
 @onready var _fps_cap_option: OptionButton = %FpsCapOption
+@onready var _accessibility: GridContainer = %Accessibility
 @onready var _reset_button: Button = %ResetButton
 @onready var _back_button: Button = %BackButton
 @onready var _general: Control = %General
@@ -49,6 +59,8 @@ func _ready() -> void:
 	for fps_cap: int in GameSettings.FPS_CAPS:
 		_fps_cap_option.add_item(
 				NO_CAP_TEXT if fps_cap == GameSettings.NO_FPS_CAP else "%d FPS" % fps_cap)
+	_add_screen_shake_row()
+	_line_up_titles()
 	_fullscreen_check.toggled.connect(_settings.set_fullscreen)
 	_vsync_check.toggled.connect(_settings.set_vsync)
 	_fps_cap_option.item_selected.connect(_on_fps_cap_selected)
@@ -95,11 +107,7 @@ func _on_controls_closed() -> void:
 func _add_volume_row(bus: StringName) -> void:
 	var title: Label = Label.new()
 	title.text = BUS_TITLES.get(bus, String(bus))
-	var slider: HSlider = HSlider.new()
-	slider.max_value = 1.0
-	slider.step = VOLUME_STEP
-	slider.custom_minimum_size.x = SLIDER_WIDTH
-	slider.size_flags_vertical = Control.SIZE_SHRINK_CENTER
+	var slider: HSlider = _new_slider(VOLUME_STEP)
 	slider.value_changed.connect(_on_volume_changed.bind(bus))
 	var volume_text: Label = Label.new()
 	_volumes.add_child(title)
@@ -107,6 +115,40 @@ func _add_volume_row(bus: StringName) -> void:
 	_volumes.add_child(volume_text)
 	_sliders[bus] = slider
 	_volume_texts[bus] = volume_text
+	_titles.append(title)
+
+
+## The screen shake's row: its name, its slider and its strength in %.
+func _add_screen_shake_row() -> void:
+	var title: Label = Label.new()
+	title.text = SCREEN_SHAKE_TITLE
+	_screen_shake_slider = _new_slider(SCREEN_SHAKE_STEP)
+	_screen_shake_slider.value_changed.connect(_on_screen_shake_changed)
+	_screen_shake_text = Label.new()
+	_accessibility.add_child(title)
+	_accessibility.add_child(_screen_shake_slider)
+	_accessibility.add_child(_screen_shake_text)
+	_titles.append(title)
+
+
+## Each grid sizes its own columns, so the titles all take the widest one's width, and the sliders of
+## the volumes and of the accessibility options line up.
+func _line_up_titles() -> void:
+	var widest: float = 0.0
+	for title: Label in _titles:
+		widest = maxf(widest, title.get_minimum_size().x)
+	for title: Label in _titles:
+		title.custom_minimum_size.x = widest
+
+
+## A slider from 0 to 1, as wide as the others.
+func _new_slider(step: float) -> HSlider:
+	var slider: HSlider = HSlider.new()
+	slider.max_value = 1.0
+	slider.step = step
+	slider.custom_minimum_size.x = SLIDER_WIDTH
+	slider.size_flags_vertical = Control.SIZE_SHRINK_CENTER
+	return slider
 
 
 ## Sets every control to what Settings holds, without the controls handing it back as a change.
@@ -117,15 +159,26 @@ func _show_settings() -> void:
 	_fullscreen_check.set_pressed_no_signal(_settings.is_fullscreen())
 	_vsync_check.set_pressed_no_signal(_settings.is_vsync_on())
 	_fps_cap_option.select(GameSettings.FPS_CAPS.find(_settings.get_fps_cap()))
+	_screen_shake_slider.set_value_no_signal(_settings.get_screen_shake())
+	_show_screen_shake()
 
 
 func _show_volume(bus: StringName) -> void:
 	_volume_texts[bus].text = "%d %%" % roundi(_settings.get_volume(bus) * 100.0)
 
 
+func _show_screen_shake() -> void:
+	_screen_shake_text.text = "%d %%" % roundi(_settings.get_screen_shake() * 100.0)
+
+
 func _on_volume_changed(volume: float, bus: StringName) -> void:
 	_settings.set_volume(bus, volume)
 	_show_volume(bus)
+
+
+func _on_screen_shake_changed(strength: float) -> void:
+	_settings.set_screen_shake(strength)
+	_show_screen_shake()
 
 
 func _on_fps_cap_selected(index: int) -> void:
