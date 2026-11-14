@@ -2437,7 +2437,8 @@ jogo. Serve os playtests: permite verificar se quem aceita o atalho é quem est�
 dificuldades.
 
 Para cruzar com esse registo, cada morte acrescenta uma linha a `user://deaths_log.csv`. A linha
-leva a hora, o nível, a fase, a zona e a posição, as mortes nessa zona até então e se a morte trouxe
+leva a hora, o nível, a fase, a zona, a causa da morte, o sítio (a fiada de picos, ou a causa) e a
+posição, as mortes nesse sítio até então e se a morte trouxe
 uma oferta do atalho. Os dois registos usam o mesmo código (`core/csv_log.gd`). Os testes não
 escrevem em nenhum deles. O `test_deaths_log.gd` verifica o cabeçalho, uma linha por morte, a
 marcação da morte que trouxe a oferta e que um caminho vazio não escreve nada.
@@ -2483,6 +2484,15 @@ contém o homem. Os níveis já estão divididos nestas zonas, com nomes de sít
 preciso marcar nada à parte. Fora de todas as zonas, a morte conta numa célula de 768 px
 (Death Cell Size). A zona só se procura no momento da morte, e não em cada frame. Os números de cada
 nível guardam-se em separado, para que a fase 1 do nível 2 não some às mortes da fase 1 do nível 1.
+
+Cada morte guarda também a causa. Os picos chamam-se `spikes`. Um agarrão leva o nome da cena do
+cão que agarrou (`demon`, `big_demon`, `biggest_demon`), ou o valor Cause do seu Hitbox, se estiver
+preenchido. Com vários cães a agarrar, conta o primeiro. "O mesmo sítio" é a mesma zona e aquilo
+que o matou. Cada fiada de picos conta por si (`Spikes1`, `Spikes2`...), porque há saltos mais
+difíceis do que outros: quem morre sempre nos picos 2 não deve ouvir falar dos picos 1. Os cães
+contam como uma matilha, pelo tipo, seja qual for o que o agarrou. Os picos e um cão na mesma zona
+são, portanto, sítios diferentes, e as falas não os confundem. O mesmo critério pesa na pressão das
+ofertas por mortes.
 
 O `RunStats` mede também o tempo passado em cada fase, contado a partir do momento em que a fase
 começa. O tempo não volta a zero quando o homem morre e para durante a pausa, porque o nível fica

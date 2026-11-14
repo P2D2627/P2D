@@ -3,7 +3,8 @@ extends RefCounted
 
 ## The rules of the run's numbers, with no nodes, so they can be tested on their own; the autoload
 ## RunStats only puts them where the levels and the .dialogue lines can reach them. It counts the
-## man's deaths in each phase of each level and in each zone, the time spent in each phase and the
+## man's deaths in each phase of each level, in each zone and of each cause (spikes, the demon that
+## held him), the time spent in each phase and the
 ## lines he skipped. None of it is moral: the moral record counts only what he decides. A death
 ## does not undo it, as it undoes GameState, so a death is never forgotten; only reset() starts
 ## over. Nothing here is shown while he plays: the numbers wait for the judgment.
@@ -17,23 +18,44 @@ var _phase_deaths: Dictionary[String, int] = {}
 var _zone_deaths: Dictionary[String, int] = {}
 ## Seconds spent in each phase, by "level/phase".
 var _phase_seconds: Dictionary[String, float] = {}
+## Deaths at each spot of each zone, by "level/zone/spot". The spot is what killed him: one strip of
+## spikes by its name, as Spikes2, since one jump is harder than another; the dogs by their kind, as
+## a pack, whichever of them it was. Spikes 1 and 2, or the spikes and the dogs, of one zone are two
+## spots.
+var _spot_deaths: Dictionary[String, int] = {}
+## Deaths of each cause, by "level/cause".
+var _cause_deaths: Dictionary[String, int] = {}
 ## The "level/zone" of the last death; empty before the first.
 var _last_zone: String = ""
+## The "level/zone/spot" of the last death; empty before the first.
+var _last_spot: String = ""
+## What killed him last, as spikes or demon; empty before the first death.
+var _last_cause: String = ""
 ## Lines skipped by holding the key, in all.
 var _skipped_lines: int = 0
 
 
-## He died in phase of level, inside zone. An empty level or zone, or a phase below 1, changes
-## nothing, with a warning.
-func record_death(level: StringName, phase: int, zone: StringName) -> void:
+## He died in phase of level, inside zone, of cause (as spikes, or the demon that held him), on
+## source, the one thing that killed him when which one matters (the strip of spikes, as Spikes2);
+## an empty source makes the spot the cause, as for the dogs, a pack. An empty level or zone, or a
+## phase below 1, changes nothing, with a warning; an empty cause counts as unknown.
+func record_death(level: StringName, phase: int, zone: StringName,
+		cause: StringName = Player.UNKNOWN_CAUSE, source: StringName = &"") -> void:
 	if level.is_empty() or zone.is_empty() or phase < 1:
 		push_warning("RunRecord: a death in level %s, phase %d, zone %s was left out."
 				% [level, phase, zone])
 		return
+	if cause.is_empty():
+		cause = Player.UNKNOWN_CAUSE
 	var phase_key: String = _key(level, phase)
 	_phase_deaths[phase_key] = _phase_deaths.get(phase_key, 0) + 1
 	_last_zone = _key(level, zone)
 	_zone_deaths[_last_zone] = _zone_deaths.get(_last_zone, 0) + 1
+	_last_cause = cause
+	_last_spot = _key(_last_zone, spot_of(cause, source))
+	_spot_deaths[_last_spot] = _spot_deaths.get(_last_spot, 0) + 1
+	var cause_key: String = _key(level, cause)
+	_cause_deaths[cause_key] = _cause_deaths.get(cause_key, 0) + 1
 
 
 ## He spent seconds more in phase of level. Negative, infinite or nan seconds change nothing.
@@ -75,9 +97,30 @@ func total_deaths() -> int:
 	return deaths
 
 
-## How many times he died in the zone of his last death, that one included; 0 before the first.
+## How many times he died where and of what he died last, that one included; 0 before the first.
+## Another strip of spikes, or another cause, in the same zone is another spot.
 func same_spot_deaths() -> int:
-	return _zone_deaths.get(_last_zone, 0)
+	return _spot_deaths.get(_last_spot, 0)
+
+
+## Deaths at spot inside zone of level; spot as spot_of() makes it.
+func deaths_in_spot(level: StringName, zone: StringName, spot: StringName) -> int:
+	return _spot_deaths.get(_key(_key(level, zone), spot), 0)
+
+
+## The spot a death of cause on source is at: source, when one is given, or else cause.
+static func spot_of(cause: StringName, source: StringName) -> StringName:
+	return source if not source.is_empty() else cause
+
+
+## Deaths of cause in level, in all its zones.
+func deaths_of_cause(level: StringName, cause: StringName) -> int:
+	return _cause_deaths.get(_key(level, cause), 0)
+
+
+## What killed him last, as spikes or demon; empty before the first death.
+func last_cause() -> StringName:
+	return StringName(_last_cause)
 
 
 ## The zone of his last death, without the level; empty before the first.
@@ -114,7 +157,11 @@ func reset() -> void:
 	_phase_deaths.clear()
 	_zone_deaths.clear()
 	_phase_seconds.clear()
+	_spot_deaths.clear()
+	_cause_deaths.clear()
 	_last_zone = ""
+	_last_spot = ""
+	_last_cause = ""
 	_skipped_lines = 0
 
 
@@ -124,7 +171,11 @@ func to_save() -> Dictionary:
 		"phase_deaths": _phase_deaths.duplicate(),
 		"zone_deaths": _zone_deaths.duplicate(),
 		"phase_seconds": _phase_seconds.duplicate(),
+		"spot_deaths": _spot_deaths.duplicate(),
+		"cause_deaths": _cause_deaths.duplicate(),
 		"last_zone": _last_zone,
+		"last_spot": _last_spot,
+		"last_cause": _last_cause,
 		"skipped_lines": _skipped_lines,
 	}
 
@@ -133,16 +184,14 @@ func to_save() -> Dictionary:
 ## type counts as nothing.
 func from_save(data: Dictionary) -> void:
 	reset()
-	var phase_deaths: Variant = data.get("phase_deaths")
-	if phase_deaths is Dictionary:
-		for key: Variant in phase_deaths:
-			if key is String and phase_deaths[key] is int:
-				_phase_deaths[key] = phase_deaths[key]
-	var zone_deaths: Variant = data.get("zone_deaths")
-	if zone_deaths is Dictionary:
-		for key: Variant in zone_deaths:
-			if key is String and zone_deaths[key] is int:
-				_zone_deaths[key] = zone_deaths[key]
+	_load_counts(data.get("phase_deaths"), _phase_deaths)
+	_load_counts(data.get("zone_deaths"), _zone_deaths)
+	_load_counts(data.get("spot_deaths"), _spot_deaths)
+	_load_counts(data.get("cause_deaths"), _cause_deaths)
+	var spot: Variant = data.get("last_spot")
+	_last_spot = spot if spot is String else ""
+	var cause: Variant = data.get("last_cause")
+	_last_cause = cause if cause is String else ""
 	var phase_seconds_saved: Variant = data.get("phase_seconds")
 	if phase_seconds_saved is Dictionary:
 		for key: Variant in phase_seconds_saved:
@@ -154,5 +203,14 @@ func from_save(data: Dictionary) -> void:
 	_skipped_lines = skipped if skipped is int else 0
 
 
-func _key(level: StringName, part: Variant) -> String:
+## Copies each String key with an int count of saved into counts.
+func _load_counts(saved: Variant, counts: Dictionary[String, int]) -> void:
+	if not saved is Dictionary:
+		return
+	for key: Variant in saved:
+		if key is String and saved[key] is int:
+			counts[key] = saved[key]
+
+
+func _key(level: Variant, part: Variant) -> String:
 	return KEY_FORMAT % [level, part]

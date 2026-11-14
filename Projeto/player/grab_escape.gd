@@ -97,6 +97,15 @@ func get_escape_progress() -> float:
 	return _rules.get_escape_progress() if is_held() else 0.0
 
 
+## What holds him, as Hitbox.get_cause() names it: the first that grabbed him while several do;
+## Player's unknown cause while nothing does.
+func get_hold_cause() -> StringName:
+	for holder: Hitbox in _holders:
+		if is_instance_valid(holder):
+			return holder.get_cause()
+	return Player.UNKNOWN_CAUSE
+
+
 func _on_grab_hit(hitbox: Hitbox) -> void:
 	if is_held():
 		_join(hitbox)

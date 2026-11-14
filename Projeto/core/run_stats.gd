@@ -18,7 +18,7 @@ signal phase_changed(phase: int)
 signal death_offer_due(zone: StringName)
 
 const DEATH_OFFER_STATS: DeathOfferStats = preload("res://offers/death_offer_stats.tres")
-const LOG_HEADER: String = "time,level,phase,zone,x,y,zone_deaths,offer_due"
+const LOG_HEADER: String = "time,level,phase,zone,cause,spot,x,y,spot_deaths,offer_due"
 
 ## The log every new RunStats writes the deaths to, for playtests; empty keeps none.
 ## tests/support/base_test.gd empties it, so the tests never write to the playtests' log.
@@ -58,16 +58,22 @@ func get_phase() -> int:
 	return _phase
 
 
-## He died at point, inside zone of the level and phase he is in. Each death adds a line to a log
+## He died at point, inside zone of the level and phase he is in, of cause, on source when which
+## one matters (a strip of spikes; empty for the dogs, a pack). Each death adds a line to a log
 ## on disk, for playtests, with whether it brought a shortcut offer.
-func record_death(zone: StringName, point: Vector2 = Vector2.ZERO) -> void:
-	var deaths_before: int = _record.deaths_in_zone(_level, zone)
-	_record.record_death(_level, _phase, zone)
+func record_death(zone: StringName, point: Vector2 = Vector2.ZERO,
+		cause: StringName = Player.UNKNOWN_CAUSE, source: StringName = &"") -> void:
+	if cause.is_empty():
+		cause = Player.UNKNOWN_CAUSE
+	# The same spot (the same zone, and the same strip of spikes or kind of dog) weighs more.
+	var spot: StringName = RunRecord.spot_of(cause, source)
+	var deaths_before: int = _record.deaths_in_spot(_level, zone, spot)
+	_record.record_death(_level, _phase, zone, cause, source)
 	death_recorded.emit(_phase, zone)
 	var offer_due: bool = _pacer.record_death(_phase, zone, deaths_before)
-	CsvLog.append(_log_path, LOG_HEADER, "%s,%s,%d,%s,%.0f,%.0f,%d,%s" % [
-			Time.get_datetime_string_from_system(), _level, _phase, zone, point.x, point.y,
-			_record.deaths_in_zone(_level, zone), offer_due])
+	CsvLog.append(_log_path, LOG_HEADER, "%s,%s,%d,%s,%s,%s,%.0f,%.0f,%d,%s" % [
+			Time.get_datetime_string_from_system(), _level, _phase, zone, cause, spot, point.x,
+			point.y, _record.deaths_in_spot(_level, zone, spot), offer_due])
 	if offer_due:
 		death_offer_due.emit(zone)
 
@@ -126,9 +132,21 @@ func total_deaths() -> int:
 	return _record.total_deaths()
 
 
-## How many times he died where he died last.
+## How many times he died at the spot of his last death, that one included: the same zone, and the
+## same strip of spikes or the same kind of dog. Spikes 1 and 2 of one zone are two spots.
 func same_spot_deaths() -> int:
 	return _record.same_spot_deaths()
+
+
+## What killed him last, as spikes, or the demon that held him (demon, big_demon...); empty before
+## the first death.
+func last_cause() -> StringName:
+	return _record.last_cause()
+
+
+## Deaths of cause in the level he is in.
+func deaths_of_cause(cause: StringName) -> int:
+	return _record.deaths_of_cause(_level, cause)
 
 
 func last_zone() -> StringName:
