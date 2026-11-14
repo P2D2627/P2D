@@ -13180,7 +13180,7 @@ tile_map_data = PackedByteArray("AAAAAAAAAAAAAAAAAAABAAAAAAAAAAAAAAACAAAAAAAAAAA
 tile_set = ExtResource("3_265vi")
 
 [node name="Player" parent="." unique_id=1108148048 instance=ExtResource("14_my875")]
-position = Vector2(6437, 3950)
+position = Vector2(216, 17568)
 
 [node name="Dogs" type="Node2D" parent="." unique_id=624563792]
 
