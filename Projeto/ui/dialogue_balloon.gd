@@ -20,8 +20,12 @@ const DEFAULT_PORTRAIT_COLOR: Color = Color(0.35, 0.35, 0.4)
 ## Where the lines start when it starts on its own, with Auto Start.
 @export var start_from_cue: String = ""
 @export var auto_start: bool = false
-## Whether nothing else gets the input while the balloon shows.
+## Whether nothing else gets the input while the balloon shows, but for Lets Through.
 @export var will_block_other_input: bool = true
+## The actions that still reach the rest of the game while the balloon shows: the pause, so a talk
+## can be paused, and the debug keys.
+@export var lets_through: Array[StringName] = [&"pause", &"toggle_debug_overlay", &"debug_damage",
+		&"debug_accept_offer", &"debug_refuse_offer", &"debug_reset_run"]
 ## Advances the lines; held, skips them.
 @export var next_action: StringName = &"ui_accept"
 ## Shows a line whole at once while it is still being typed.
@@ -105,9 +109,13 @@ func _process(delta: float) -> void:
 	_follow_the_hold(delta)
 
 
-func _unhandled_input(_event: InputEvent) -> void:
-	if will_block_other_input:
-		get_viewport().set_input_as_handled()
+func _unhandled_input(event: InputEvent) -> void:
+	if not will_block_other_input:
+		return
+	for action: StringName in lets_through:
+		if InputMap.has_action(action) and event.is_action(action):
+			return
+	get_viewport().set_input_as_handled()
 
 
 func _notification(what: int) -> void:
