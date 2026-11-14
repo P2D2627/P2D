@@ -2,11 +2,15 @@
 # - Reaching phase 2's save, she talks from asmodeus_offer; while she talks the dogs stand still.
 #   Refusing, he stays in the level and moves again, with the dogs.
 # - An offer his deaths brought waits while he stands outside its zone, and she makes it from
-#   asmodeus_deaths once he walks into it. Accepting takes him to the tent at the level's end: he
+#   asmodeus_deaths once he walks into it; it waits until he answers. Accepting takes him to the tent at the level's end: he
 #   stands there, not at phase 2's start, though he reached it. No more offers come for his deaths.
 # - At the tent she gives the gift, then the stairs, and only then the level ends: the main menu
 #   shows, no level in the slot, and the save keeps level 1 at the tent.
 # - Reaching phase 3's save, she talks from asmodeus_second_offer.
+# - Left for the menu before the answer, a talk comes again after Continue, with what he said in it
+#   undone; answered, it is saved at once and does not come again. A death offer left before the
+#   answer still waits for its zone.
+# He is put in the middle of a save point's area, which need not be at the node.
 # The tests use a save file of their own.
 # Run from the repository root; the exit code is 0 on pass and 1 on fail:
 # godot --headless --fixed-fps 60 --path Projeto --script res://tests/test_lust_asmodeus.gd
@@ -38,6 +42,8 @@ func _initialize() -> void:
 	var results: Array[bool] = []
 	results.append_array(await _phase_2_then_deaths_then_the_shortcut_and_the_ending())
 	results.append(await _phase_3_has_the_second_offer())
+	results.append(await _a_talk_left_before_the_answer_comes_again())
+	results.append(await _a_death_offer_left_before_the_answer_waits_again())
 	_delete_save()
 	_progress().reset()
 	_stats().reset()
@@ -55,7 +61,7 @@ func _phase_2_then_deaths_then_the_shortcut_and_the_ending() -> Array[bool]:
 	var dogs: Node = level.get_node(^"Dogs")
 
 	# Phase 2's save: the first offer; refused.
-	level.player.global_position = phase_2_save.global_position
+	level.player.global_position = _inside(phase_2_save)
 	var balloon: DialogueBalloon = await _talk(level, "asmodeus_offer")
 	var talked: bool = balloon != null
 	var dogs_still: bool = not dogs.can_process()
@@ -82,13 +88,14 @@ func _phase_2_then_deaths_then_the_shortcut_and_the_ending() -> Array[bool]:
 	level.player.global_position = respawn
 	balloon = await _talk(level, "asmodeus_deaths")
 	var death_talk: bool = balloon != null
-	var taken: bool = not _stats().has_death_offer()
+	# Taken only once he answers: until then, a quit brings it back.
+	var still_waits: bool = _stats().has_death_offer()
 	var asmodeus: Asmodeus = level.get_node(^"Asmodeus") as Asmodeus
 	var beside: bool = asmodeus.global_position.distance_to(level.player.global_position) < 400.0
-	results.append(report(outside and waits and not_yet and death_talk and taken and beside,
+	results.append(report(outside and waits and not_yet and death_talk and still_waits and beside,
 			("Deaths: outside the zone %s, an offer waits %s after %d deaths, none made outside %s; "
-			+ "walking in, she talks %s beside him %s, the offer taken %s")
-			% [outside, waits, deaths, not_yet, death_talk, beside, taken]))
+			+ "walking in, she talks %s beside him %s, the offer still waits while she talks %s")
+			% [outside, waits, deaths, not_yet, death_talk, beside, still_waits]))
 
 	# Accepted: to the tent, the gift, the stairs, and the end.
 	var old_id: int = level.get_instance_id()
@@ -120,7 +127,7 @@ func _phase_3_has_the_second_offer() -> bool:
 	_delete_save()
 	var main: Node = await _new_game(main_menu_entries())
 	var level: Level = level_in(main) as Level
-	level.player.global_position = (level.get_node(^"Phase3Save") as Node2D).global_position
+	level.player.global_position = _inside(level.get_node(^"Phase3Save") as SavePoint)
 	var balloon: DialogueBalloon = await _talk(level, "asmodeus_second_offer")
 	var talked: bool = balloon != null
 	var refused: bool = talked and await _answer(level, balloon, REFUSE)
@@ -128,6 +135,75 @@ func _phase_3_has_the_second_offer() -> bool:
 	return report(talked and refused,
 			"Phase 3: she talks from asmodeus_second_offer %s, and a refusal ends it %s"
 			% [talked, refused])
+
+
+## At phase 2's save she talks; he goes to the menu before answering, and Continue brings the talk
+## back at once, with the arrogant answer he gave before it undone. Refused, it is saved at once:
+## the menu and Continue again, and she does not talk.
+func _a_talk_left_before_the_answer_comes_again() -> bool:
+	_delete_save()
+	var main: Node = await _new_game(main_menu_entries())
+	var level: Level = level_in(main) as Level
+	level.player.global_position = _inside(level.get_node(^"Phase2Save") as SavePoint)
+	var first: bool = await _talk(level, "asmodeus_offer") != null
+	(root.get_node(^"Moral") as GameMoral).record_tone(&"arrogant")
+	level = await _to_the_menu_and_back(main)
+	var balloon: DialogueBalloon = await _talk(level, "asmodeus_offer")
+	var again: bool = balloon != null
+	var undone: bool = not (root.get_node(^"Moral") as GameMoral).leans_arrogant()
+	var refused: bool = again and await _answer(level, balloon, REFUSE)
+	var saved_answer: bool = (SaveFile.new().read().get("state", {}).get("events", [])
+			as PackedStringArray).has("answered_asmodeus_offer")
+	level = await _to_the_menu_and_back(main)
+	await wait_frames(OUTSIDE_FRAMES)
+	var not_again: bool = not (level.get_node(^"Asmodeus") as Asmodeus).is_talking()
+	await remove_main(main)
+	return report(first and again and undone and refused and saved_answer and not_again,
+			("Left before the answer: she talks %s; after Continue, again %s, the tone undone %s; "
+			+ "refused %s, saved at once %s; after Continue, she does not talk again %s")
+			% [first, again, undone, refused, saved_answer, not_again])
+
+
+## An offer his deaths brought, and she starts it; he goes to the menu before answering. After
+## Continue, it still waits for its zone, and walking in brings it back.
+func _a_death_offer_left_before_the_answer_waits_again() -> bool:
+	_delete_save()
+	var main: Node = await _new_game(main_menu_entries())
+	var level: Level = level_in(main) as Level
+	var phase_2_save: SavePoint = level.get_node(^"Phase2Save") as SavePoint
+	level.player.global_position = _inside(phase_2_save)
+	await _answer(level, await _talk(level, "asmodeus_offer"), REFUSE)
+	var respawn: Vector2 = (phase_2_save.get_node(^"Respawn") as Node2D).global_position
+	var zone: StringName = level.zone_at(respawn)
+	var deaths: int = 0
+	while not _stats().has_death_offer() and deaths < MAX_DEATHS:
+		_stats().record_death(zone)
+		deaths += 1
+	level.player.global_position = respawn
+	var first: bool = await _talk(level, "asmodeus_deaths") != null
+	level = await _to_the_menu_and_back(main)
+	var still_waits: bool = _stats().has_death_offer() and _stats().get_death_offer_zone() == zone
+	level.player.global_position = respawn
+	var balloon: DialogueBalloon = await _talk(level, "asmodeus_deaths")
+	var again: bool = balloon != null
+	var refused: bool = again and await _answer(level, balloon, REFUSE)
+	var taken: bool = not _stats().has_death_offer()
+	await remove_main(main)
+	return report(first and still_waits and again and refused and taken,
+			("A death offer left before the answer: she talks %s; after Continue it still waits "
+			+ "at its zone %s, and walking in she talks again %s; refused %s, it no longer waits %s")
+			% [first, still_waits, again, refused, taken])
+
+
+## Main Menu from the pause, then Continue, as the player would; the new level, on the floor.
+func _to_the_menu_and_back(main: Node) -> Level:
+	(main.get_node(^"%PauseMenu") as PauseMenu).main_menu_requested.emit()
+	await wait_frames(2)
+	(main.get_node(^"%MainMenu") as MainMenu).continue_requested.emit()
+	await wait_until(func() -> bool: return level_in(main) != null, TALK_FRAMES)
+	var level: Level = level_in(main) as Level
+	await wait_until_on_floor(level.player)
+	return level
 
 
 ## Main with only level 1, in a new game.
@@ -211,3 +287,8 @@ func _delete_save() -> void:
 	DirAccess.remove_absolute(SAVE_PATH)
 	DirAccess.remove_absolute(SAVE_PATH + SaveFile.COPY_SUFFIX)
 	DirAccess.remove_absolute(SaveFile.new().get_run_path())
+
+
+## The middle of save_point's area, where the man walks into it: the area need not be at the node.
+func _inside(save_point: SavePoint) -> Vector2:
+	return (save_point.get_node(^"CollisionShape2D") as Node2D).global_position

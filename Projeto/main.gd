@@ -64,6 +64,9 @@ func _ready() -> void:
 	_progress.upgrade_granted.connect(_on_upgrade_granted)
 	if _offers != null:
 		_offers.scene_requested.connect(_on_offer_scene_requested)
+		# Deferred, so whoever marks the talk as had on the same answer does it before the save.
+		_offers.accepted.connect(_on_offer_answered.bind(true), CONNECT_DEFERRED)
+		_offers.refused.connect(_on_offer_answered.bind(false), CONNECT_DEFERRED)
 	else:
 		push_warning("Main: no autoload Offers, so no offer can change the phase.")
 	_main_menu.set_can_continue(_save_file.exists())
@@ -148,6 +151,17 @@ func _on_save_point_reached() -> void:
 ## An upgrade can never be taken back, so the save keeps it at once: a death before the next
 ## checkpoint does not undo it. In a phase change, the next phase's save keeps it.
 func _on_upgrade_granted(_id: StringName) -> void:
+	if not _changing_phase:
+		_save_the_current_phase()
+
+
+## An answer to an offer is a decision, and a decision is kept at once: quitting after it does not
+## bring the talk back. An accepted offer with an effect is kept when the effect comes, after the
+## lines, by the upgrade's save or the next phase's: kept before, a quit in between would keep the
+## yes without what it gives. In a phase change, the next phase's save keeps it.
+func _on_offer_answered(offer: OfferData, accepted: bool) -> void:
+	if accepted and offer.effect != null:
+		return
 	if not _changing_phase:
 		_save_the_current_phase()
 

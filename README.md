@@ -2543,7 +2543,10 @@ Quando é que ela fala decide outro nó do nível 1, o `AsmodeusDirector`, que s
 | Na saída do nível, aceite ou não o atalho | `asmodeus_gift` e depois `stairs` |
 
 A oferta por mortes só é verificada enquanto há uma à espera; sem ela, o diretor não faz nada a
-cada frame. Aceitar o atalho fecha as ofertas por mortes. A saída do nível (`PhaseExit` sem fase
+cada frame. Uma conversa só conta como tida quando o homem responde à oferta. Nesse momento, o
+diretor marca-a no `GameState` (`answered_` e o nome do cue), e a oferta por mortes deixa de estar à
+espera. Se o jogador sair antes de responder, a conversa do início de uma fase volta assim que ele
+pousa no chão depois do Continue, e a oferta por mortes continua à espera da sua zona. Aceitar o atalho fecha as ofertas por mortes. A saída do nível (`PhaseExit` sem fase
 seguinte e com Walk In Leads On desligado) só termina o nível depois da última fala de `stairs`;
 nessa altura o Main escurece o ecrã e volta ao menu principal.
 
@@ -2589,7 +2592,12 @@ Até à gravação seguinte, o que o homem faz conta como não feito. A morte n�
 e repõe o autoload `GameState` e o registo moral tal como estavam na última gravação, e sair e usar
 o Continue tem o mesmo efeito. As fases são curtas, pelo que não se perde muito. A exceção é um
 upgrade aceite: não se pode desfazer, por isso o jogo grava logo que o homem o recebe, e uma morte
-antes do checkpoint seguinte não o tira nem devolve o crucifixo. Um nível que não
+antes do checkpoint seguinte não o tira nem devolve o crucifixo. Uma resposta a uma oferta também
+grava logo, porque é uma decisão: sair depois dela não faz repetir a conversa. Se a oferta aceite
+tiver efeito (um upgrade, ou o atalho), a gravação fica para quando o efeito se aplica, no fim das
+falas. Gravar o "sim" antes do efeito permitiria sair no intervalo e ficar com a oferta aceite sem o
+que ela dá. Sair antes de responder não guarda nada, nem as respostas de tom dadas antes, e a
+conversa repete-se no Continue. Um nível que não
 inicia o jogo, como o Test room, fica fora disto: não grava nem repõe nada.
 A gravação escreve primeiro uma cópia e só depois a coloca no lugar da anterior, para que um jogo
 fechado a meio não destrua a última gravação. Uma gravação danificada, de outra versão ou de uma

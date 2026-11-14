@@ -92,7 +92,8 @@ func _walking_into_phase_2s_save_moves_him_on() -> bool:
 	_stats.reset()
 	var level: Level = await _add_level()
 	var save: SavePoint = level.get_node(^"Phase2Save") as SavePoint
-	level.player.global_position = save.global_position
+	# The middle of its area, which need not be at the node.
+	level.player.global_position = (save.get_node(^"CollisionShape2D") as Node2D).global_position
 	await wait_frames(SETTLE_FRAMES)
 	var phase: int = _stats.get_phase()
 	await _remove(level)
