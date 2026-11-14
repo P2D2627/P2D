@@ -151,12 +151,14 @@ Asmodeus: My offer stands. One night. Then the stairs.
 => END
 
 ~ asmodeus_deaths
-if RunStats.same_spot_deaths() >= 3
-	Asmodeus: {{RunStats.same_spot_deaths()}} times, darling. Same spot. Even I get bored of the same spot.
-elif RunStats.phase_minutes() >= 10
-	Asmodeus: {{RunStats.phase_minutes()}} minutes on this stretch. My bed is right here, you know.
+if RunStats.offer_zone_minutes() >= 5
+	Asmodeus: {{RunStats.offer_zone_minutes()}} minutes on this one stretch, darling. I watched every one.
+elif RunStats.offer_zone_deaths() >= 3
+	Asmodeus: {{RunStats.offer_zone_deaths()}} times, right here. I counted. Try not to give me another.
 else
-	Asmodeus: Down again? You fall so prettily.
+	Asmodeus: This part was hard, wasn't it? Try not to die here again.
+if RunStats.death_offers_made() > 1
+	Asmodeus: I did ask you before. The offer still stands.
 $> Offers.present(&"lust_shortcut")
 Asmodeus: Say yes, and you never climb this again.
 - I have earned a rest.
