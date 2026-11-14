@@ -34,13 +34,20 @@ extends Resource
 @export_group("Falling rock")
 ## A rock that breaks right where he is.
 @export_range(0.0, 1.0, 0.05) var rock_trauma: float = 0.55
-## How far from him a breaking rock still shakes the screen, less the farther it is, in px.
+## How far from him a breaking rock still shakes the screen and the controller, less the farther it
+## is, in px.
 @export_range(0.0, 4000.0, 10.0, "suffix:px") var rock_reach: float = 900.0
+
+
+## How much of a rock that breaks distance px from the man still reaches him: 1 where he is, less the
+## farther it is, and 0 from Rock Reach on. The shake and the controller's vibration both take it.
+func rock_closeness(distance: float) -> float:
+	if rock_reach <= 0.0:
+		return 0.0
+	return clampf(1.0 - distance / rock_reach, 0.0, 1.0)
 
 
 ## The trauma of a rock that breaks distance px from the man: all of Rock Trauma where he is, less
 ## the farther it is, and none from Rock Reach on.
 func rock_trauma_at(distance: float) -> float:
-	if rock_reach <= 0.0:
-		return 0.0
-	return rock_trauma * clampf(1.0 - distance / rock_reach, 0.0, 1.0)
+	return rock_trauma * rock_closeness(distance)

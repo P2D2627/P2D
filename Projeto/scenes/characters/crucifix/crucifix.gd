@@ -8,8 +8,10 @@ extends Node2D
 ## again. Letting go, leaving the floor or running out of time lowers it, and every use, long or
 ## short, is followed by the same Cooldown Time. Something else, such as the grab, can keep it down
 ## with block(), without the crucifix knowing what it is. While up, it slows the player down, stops
-## it from jumping, pushes every Repellable inside its radius out of it, heals and lights up its
-## radius.
+## it from jumping, pushes every Repellable inside its radius out of it, saying struck as something
+## it pushes comes in, heals and lights up its radius. For the last Warning Time of a use, the light
+## pulses, deeper as the end comes, to warn that it is about to come down; the vibration and the
+## sound read the same warning. _process() only runs while it is up.
 ## Lost for good, it leaves the game. It goes as a child of the player and reads the player's own
 ## PlayerInput, so an AI, a cutscene or a test drives it too. The player does not know it exists:
 ## the crucifix changes it through a MovementModifier.
@@ -36,12 +38,19 @@ signal lost
 ## SP the crucifix gives back on this physics frame. The player's scene connects it to the man's
 ## SoulPoints.
 signal healed(amount: float)
+## Something it pushes, such as a demon or a lost soul, came into its radius while it is up: once a
+## physics frame, however many come in on it, and not on every frame they are pushed. What is inside
+## as it goes up says so then, just after raised. A Repellable it reaches but does not move, with no
+## Target, such as a gate's unlocker, says nothing.
+signal struck
 
 ## What the crucifix is doing. Only _physics_process() changes it.
 enum Phase { READY, RAISED, COOLDOWN }
 
 ## Name of the crucifix's modifier on the player.
 const MODIFIER_SOURCE: StringName = &"crucifix"
+## No physics frame yet.
+const NO_FRAME: int = -1
 
 ## Movement, timing, repel and heal values. Every crucifix that uses the same file shares them. A
 ## change to the radius or the slowdown takes effect at once, also while the game runs.
@@ -71,6 +80,10 @@ var _blockers: Array[StringName] = []
 ## one for the crucifix's whole life, so a new Speed Multiplier reaches the player at once, even
 ## while the crucifix is up.
 var _modifier: MovementModifier = MovementModifier.new(1.0, 1.0, true)
+## The light's brightness in the scene, which the warning dips from and goes back to.
+var _light_energy: float = 1.0
+## The physics frame struck was last said on, so it is said once a frame.
+var _struck_frame: int = NO_FRAME
 
 @onready var _repel_area: Area2D = %RepelArea
 @onready var _repel_shape: CollisionShape2D = %RepelShape
@@ -81,8 +94,16 @@ var _modifier: MovementModifier = MovementModifier.new(1.0, 1.0, true)
 func _ready() -> void:
 	assert(stats != null, "Crucifix: assign a CrucifixStats resource to Stats.")
 	assert(player != null, "Crucifix: assign the player that holds it to Player.")
+	_light_energy = _light.energy
+	_repel_area.area_entered.connect(_on_repel_area_entered)
 	_apply_stats()
 	_show(false)
+	set_process(false)
+
+
+## While it is up, the light follows the warning: all of its brightness until the warning begins.
+func _process(_delta: float) -> void:
+	_light.energy = _light_energy * get_warning_pulse()
 
 
 ## Runs after the player's own physics, as its child, so it reads the state of this frame. The
@@ -146,6 +167,27 @@ func is_blocked() -> bool:
 ## Seconds left in the current use; 0 unless the crucifix is up. For the HUD.
 func get_use_time_left() -> float:
 	return float(_use_frames_left) / Engine.physics_ticks_per_second
+
+
+## How far the warning that it is about to come down has gone, from 0 to 1: 0 while it is down, as it
+## comes down, or while more than Warning Time of its use is left, then up in a straight line to 1 as
+## the use runs out. For the light and the vibration.
+func get_warning_progress() -> float:
+	if _phase != Phase.RAISED or _use_frames_left <= 0 or stats.warning_time <= 0.0:
+		return 0.0
+	return clampf(1.0 - get_use_time_left() / stats.warning_time, 0.0, 1.0)
+
+
+## The share of its brightness the light has now: all of it unless it warns; while it warns, it dips
+## Warning Pulse Rate times a second along a cosine, by Warning Dim Depth at most, deeper as the
+## warning goes on, timed from the end of the use, so the deepest dip comes as the use runs out. The
+## light and the hold sound (CrucifixSounds) follow it.
+func get_warning_pulse() -> float:
+	var progress: float = get_warning_progress()
+	if progress <= 0.0:
+		return 1.0
+	var dip: float = 0.5 + 0.5 * cos(TAU * stats.warning_pulse_rate * get_use_time_left())
+	return 1.0 - stats.warning_dim_depth * progress * dip
 
 
 ## Seconds left in the cooldown; 0 unless it is cooling down. For the HUD.
@@ -229,13 +271,18 @@ func _raise() -> void:
 	_use_frames_left = stats.get_max_use_frames()
 	player.add_movement_modifier(MODIFIER_SOURCE, _modifier)
 	_show(true)
+	set_process(true)
 	raised.emit()
+	if _repel_area.get_overlapping_areas().any(_is_pushed):
+		_strike()
 
 
 func _lower() -> void:
 	_use_frames_left = 0
 	player.remove_movement_modifier(MODIFIER_SOURCE)
 	_show(false)
+	set_process(false)
+	_light.energy = _light_energy
 	lowered.emit()
 
 
@@ -258,6 +305,28 @@ func _repel(delta: float) -> void:
 		var repellable: Repellable = area as Repellable
 		if repellable != null:
 			repellable.push_away_from(global_position, distance)
+
+
+## The repel area senses all the time, and the physics engine says when something comes in, so
+## telling what comes in costs nothing on the frames it does not. What comes in while the crucifix
+## is down says nothing.
+func _on_repel_area_entered(area: Area2D) -> void:
+	if _phase == Phase.RAISED and _is_pushed(area):
+		_strike()
+
+
+## True for a Repellable with a Target, which the crucifix moves; false for one it only reaches.
+func _is_pushed(area: Area2D) -> bool:
+	var repellable: Repellable = area as Repellable
+	return repellable != null and repellable.target != null
+
+
+## Says struck, once a physics frame however many come in on it.
+func _strike() -> void:
+	var frame: int = Engine.get_physics_frames()
+	if frame != _struck_frame:
+		_struck_frame = frame
+		struck.emit()
 
 
 ## Gives back heal_per_second SP for every second the crucifix is up. The crucifix only says how

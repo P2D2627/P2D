@@ -12,6 +12,7 @@ signal footstep_played(sound_index: int)
 ## A jump, off the floor or off a wall, was heard.
 signal jump_played
 ## A landing was heard: hard after a fall of hard_land_height or more, soft after a shorter one.
+## get_last_landing_share() says how hard, from 0 to 1.
 signal land_played(hard: bool)
 
 ## The player whose sounds these are.
@@ -57,6 +58,8 @@ var _last_footstep_index: int = -1
 var _fall_top_y: float = 0.0
 ## True while the current fall came off a wall: the player was on one and has not touched the floor.
 var _fall_from_wall: bool = false
+## How hard the last landing heard was, from 0 to 1 (get_last_landing_share()).
+var _last_landing_share: float = 0.0
 
 
 func _ready() -> void:
@@ -141,6 +144,13 @@ func _play(sound: AudioStreamPlayer2D) -> void:
 	sound.play()
 
 
+## How hard the last landing heard was: 1 for a hard one, and for a soft one its fall's share of the
+## way from min_land_height, 0, to hard_land_height, in a straight line. A landing off a wall shorter
+## than min_land_height counts as 0. 0 before the first landing heard.
+func get_last_landing_share() -> float:
+	return _last_landing_share
+
+
 ## On a wall and going down it. Going up along a wall after a jump is not a slide.
 func _is_sliding_down_a_wall() -> bool:
 	return player.get_state() == Player.State.ON_WALL and player.velocity.y > 0.0
@@ -166,6 +176,8 @@ func _on_landed() -> void:
 	if fall_height < min_land_height and not from_wall:
 		return
 	var hard: bool = fall_height >= hard_land_height
+	_last_landing_share = (1.0 if hard else clampf(inverse_lerp(min_land_height, hard_land_height,
+			fall_height), 0.0, 1.0))
 	var sound: AudioStream = soft_land_sound
 	if hard:
 		sound = hard_land_sounds.pick_random() as AudioStream
