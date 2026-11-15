@@ -2492,7 +2492,7 @@ O efeito de uma oferta aceite só se aplica quando o balão de diálogo fecha. A
 muda a fase com uma conversa aberta. Há dois tipos de efeito: ir para outra fase, que é o atalho,
 e receber um upgrade, que são os dons. O atalho de Asmodeu leva ao fim do nível 1, com a mesma
 passagem a preto das saídas de fase, e põe o homem no ponto de chegada (`ArrivalPoint`) junto à
-tenda, na saída do nível, onde ela lhe oferece logo o dom. A gravação guarda esse ponto, pelo que uma morte ou o Continue o
+tenda, na sala da Asmodeu, onde ela lhe oferece logo o dom. A gravação guarda esse ponto, pelo que uma morte ou o Continue o
 devolvem à tenda, e não ao início da fase: um save point já alcançado não o leva para o seu ponto de
 renascimento quando ele chega por um ponto de chegada. Perder o crucifixo não é o custo de uma oferta em
 particular: é uma regra do jogo, guardada no `GameState`. O primeiro upgrade aceite, seja ele qual
@@ -2625,7 +2625,7 @@ Quando é que ela fala decide outro nó do nível 1, o `AsmodeusDirector`, que s
 | Primeira chegada ao início da fase 2 (o save point com Starts Phase 2) | `asmodeus_offer` |
 | Primeira chegada ao início da fase 3 | `asmodeus_second_offer` |
 | Com uma oferta por mortes à espera, ao entrar na zona dela (ou ao renascer lá dentro) | `asmodeus_deaths` |
-| Na saída do nível, aceite ou não o atalho | `asmodeus_gift` e depois `stairs` |
+| Ao entrar na sala dela, no fim do nível, aceite ou não o atalho | `asmodeus_gift` e depois `stairs` |
 
 A oferta por mortes só é verificada enquanto há uma à espera; sem ela, o diretor não faz nada a
 cada frame. Uma conversa só conta como tida quando o homem responde à oferta. Nesse momento, o
@@ -2638,8 +2638,16 @@ o Main grava, escurece o ecrã e volta ao menu principal. Enquanto não houver n
 depois disso leva o homem à tenda e deixa-o jogar no nível já feito, sem falas nem ofertas e com
 os cães parados.
 
+O nível 1 acaba numa sala da Asmodeu, depois do corredor de baixo da fase 3, com cerca de 27 × 19
+tiles. Entre conversas, ela está lá de pé, à vista, num ponto próprio (`AsmodeusHome`, que o diretor
+recebe em Home). As falas finais dizem-se desse ponto, e não ao lado do homem. As outras conversas
+trazem-na para junto dele e, no fim, devolvem-na à sala. A saída do nível cobre o chão da sala
+inteira (1296 px), para que o fim comece tanto ao entrar como ao chegar à tenda pelo atalho, que
+fica dentro da sala. A sala tem zona de câmara própria (`ZoneP3AsmodeusRoom`, zoom 1,1), que mostra
+o túnel de entrada e a sala do chão ao teto, sem mostrar o corredor de onde ele vem.
+
 O `test_asmodeus.gd` verifica que o homem fica preso enquanto ela fala e é largado no fim. O
-`test_lust_asmodeus.gd` joga o nível 1 dentro do Main: a oferta do início da fase 2 recusada, uma
+`test_lust_asmodeus.gd` joga o nível 1 dentro do Main: a Asmodeu à vista na sua sala desde o início e o dom dito de lá, a oferta do início da fase 2 recusada, uma
 oferta por mortes que espera fora da zona e aparece ao entrar nela, o atalho aceite até à tenda, o
 dom, as escadas e o regresso ao menu, e a oferta do início da fase 3. Os testes de percurso do
 nível 1 retiram o diretor, tal como já não deixavam a Velvet falar, porque verificam o mapa e não as
@@ -2770,8 +2778,8 @@ iniciado por nada no jogo. A estação de cada uma acrescenta-se quando a mecân
 - `level1_cave_map.png` e `level1_cave_shade.png`, em `Projeto/assets/sprites/backgrounds/`:
   imagens provisórias geradas com IA (Claude) a partir do mapa do nível 1, sem material de
   terceiros. A primeira dá a cor de cada área do fundo e a segunda escurece o fundo junto à rocha.
-  Na zona da fase 3, foram repintadas com IA (Claude), por um script fora do repositório que
-  ajusta um modelo às imagens das fases 1 e 2 e só altera os píxeis por onde a fase 3 passa.
+  Na zona da fase 3 e na sala da Asmodeu, foram repintadas com IA (Claude), por scripts fora do repositório que
+  ajustam um modelo às imagens das fases 1 e 2 e só alteram os píxeis por onde essas zonas passam.
   Saem ou refazem-se quando o mapa ou as áreas mudarem.
 
 ## Licença

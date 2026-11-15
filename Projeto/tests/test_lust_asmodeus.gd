@@ -7,6 +7,9 @@
 # - At the tent she gives the gift, then the stairs, and only then the level ends: the main menu
 #   shows, no level in the slot, and the save keeps level 1 at the tent, marked as done. Continue
 #   brings him back to the tent, in the level, with no talk and the dogs still.
+# - In a new game she already stands in her room at the level's end, in sight; walking in at its
+#   entrance, she gives the gift from there, not from beside him. A talk elsewhere brings her
+#   beside him, and back to her room after it.
 # - Reaching phase 3's save, she talks from asmodeus_second_offer.
 # - Left for the menu before the answer, a talk comes again after Continue, with what he said in it
 #   undone; answered, it is saved at once and does not come again. A death offer left before the
@@ -45,6 +48,7 @@ func _initialize() -> void:
 	var results: Array[bool] = []
 	results.append_array(await _phase_2_then_deaths_then_the_shortcut_and_the_ending())
 	results.append(await _phase_3_has_the_second_offer())
+	results.append(await _the_ending_is_said_in_her_room())
 	results.append(await _a_talk_left_before_the_answer_comes_again())
 	results.append(await _a_death_offer_left_before_the_answer_waits_again())
 	results.append(await _two_zones_wait_and_each_is_made_where_it_waits())
@@ -155,6 +159,40 @@ func _phase_3_has_the_second_offer() -> bool:
 	return report(talked and refused,
 			"Phase 3: she talks from asmodeus_second_offer %s, and a refusal ends it %s"
 			% [talked, refused])
+
+
+## She stands in her room from the start, in sight. Phase 2's talk brings her beside him and, once
+## refused, back to her room. Walking in at the room's entrance, the gift comes from her room.
+func _the_ending_is_said_in_her_room() -> bool:
+	_delete_save()
+	var main: Node = await _new_game(main_menu_entries())
+	var level: Level = level_in(main) as Level
+	var asmodeus: Asmodeus = level.get_node(^"Asmodeus") as Asmodeus
+	var home: Node2D = level.get_node(^"AsmodeusHome") as Node2D
+	var at_home_first: bool = asmodeus.visible and _at(asmodeus, home)
+	level.player.global_position = _inside(level.get_node(^"Phase2Save") as SavePoint)
+	var balloon: DialogueBalloon = await _talk(level, "asmodeus_offer")
+	var beside: bool = (balloon != null
+			and asmodeus.global_position.distance_to(level.player.global_position) < 400.0)
+	var refused: bool = balloon != null and await _answer(level, balloon, REFUSE)
+	var back_home: bool = refused and asmodeus.visible and _at(asmodeus, home)
+	var exit: Node2D = level.get_node(^"PhaseExit") as Node2D
+	var shape: CollisionShape2D = exit.get_node(^"CollisionShape2D") as CollisionShape2D
+	var left_edge: float = shape.global_position.x - (shape.shape as RectangleShape2D).size.x / 2.0
+	level.player.global_position = Vector2(left_edge + 24.0, exit.global_position.y - 2.0)
+	var gift: DialogueBalloon = await _talk(level, "asmodeus_gift")
+	var from_home: bool = gift != null and asmodeus.visible and _at(asmodeus, home)
+	var far: float = asmodeus.global_position.distance_to(level.player.global_position)
+	await remove_main(main)
+	return report(at_home_first and beside and back_home and from_home and far > 400.0,
+			("Her room: there at the start %s; phase 2's talk beside him %s, back in her room after %s; "
+			+ "at the entrance, the gift from her room %s, %.0f px from him") % [at_home_first, beside,
+			back_home, from_home, far])
+
+
+## Whether asmodeus stands on point.
+func _at(asmodeus: Asmodeus, point: Node2D) -> bool:
+	return point != null and asmodeus.global_position.distance_to(point.global_position) < 1.0
 
 
 ## At phase 2's save she talks; he goes to the menu before answering, and Continue brings the talk

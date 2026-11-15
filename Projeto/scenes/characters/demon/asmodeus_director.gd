@@ -12,6 +12,9 @@ extends Node
 ##   only then does the exit lead on, with Done Event marked and Done Arrival as where a Continue
 ##   brings him. Exit must have Walk In Leads On off. With Done Event marked, the level is played on
 ##   with no talks and the dogs still, until there is a next level to go to.
+## - With Home, her room at the level's end, she stands there in sight between talks and says the
+##   Ending Cues from there; any other talk brings her beside the man, and back home after it. The
+##   Exit then spans the room's floor, so walking in and arriving at Done Arrival both start the end.
 ## A talk counts as had once he answers its offer, not when it starts: the answer marks it in
 ## GameState, as ANSWERED_PREFIX and the cue, and Main saves at once. Left before the answer, as by
 ## quitting, nothing of it is kept, and the talk comes again: a phase's cue as soon as he stands in
@@ -38,6 +41,9 @@ const ANSWERED_PREFIX: String = "answered_"
 @export var done_event: StringName = &"lust_done"
 ## The ArrivalPoint a Continue brings him to once the level is done.
 @export var done_arrival: StringName = &"asmodeus_tent"
+## Where she stands between talks, in sight, and says the Ending Cues from: her room. Empty: she
+## comes beside the man for every talk and goes after it.
+@export var home: Node2D
 
 ## True once the ending started, so walking in again does nothing.
 var _ending: bool = false
@@ -52,6 +58,9 @@ func _ready() -> void:
 	assert(level != null, "AsmodeusDirector: assign the Level.")
 	_run_stats = get_node(^"/root/RunStats") as GameRunStats
 	_progress = get_node(^"/root/GameState") as GameProgress
+	if home != null:
+		asmodeus.talk_ended.connect(_go_home.unbind(1))
+		_go_home()
 	if _progress.has_event(done_event):
 		_stay_done()
 		return
@@ -107,10 +116,19 @@ func is_answered(cue: String) -> bool:
 	return _progress.has_event(StringName(ANSWERED_PREFIX + cue))
 
 
-## She comes next to the man and talks from cue.
-func _say(cue: String) -> void:
-	asmodeus.appear_at(level.player.global_position)
+## She talks from cue: from Home with at_home and a Home set, otherwise next to the man.
+func _say(cue: String, at_home: bool = false) -> void:
+	if at_home and home != null:
+		asmodeus.global_position = home.global_position
+	else:
+		asmodeus.appear_at(level.player.global_position)
 	asmodeus.talk(cue)
+
+
+## Back at Home, in sight, between talks.
+func _go_home() -> void:
+	asmodeus.global_position = home.global_position
+	asmodeus.show()
 
 
 func _on_exit_entered(_body: Node2D) -> void:
@@ -124,7 +142,7 @@ func _on_exit_entered(_body: Node2D) -> void:
 			await asmodeus.talk_ended
 		if not is_inside_tree():
 			return
-		_say(cue)
+		_say(cue, true)
 		await asmodeus.talk_ended
 		if not is_inside_tree():
 			return
