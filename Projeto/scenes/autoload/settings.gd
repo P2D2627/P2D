@@ -1,9 +1,11 @@
 class_name GameSettings
 extends Node
 
-## The player's options: the volume of each audio bus, full screen, V-Sync, the frame rate cap and
-## the controls, a profile from InputProfiles and the bindings of the custom one. Each option
-## applies as soon as it changes and is saved at once to a file, read again when the game starts.
+## The player's options: the volume of each audio bus, full screen, V-Sync, the frame rate cap, how
+## strong the screen shake and the controller's vibration are, whether the controller also vibrates
+## while a state lasts, and the controls, a profile from
+## InputProfiles and the bindings of the custom one. Each option applies as soon as it changes and is
+## saved at once to a file, read again when the game starts.
 ## The project loads this script as the autoload Settings, before any scene, so the options apply
 ## even to a level run on its own with F6. The menus read and change the options here, and never
 ## touch the audio, the window, the Input Map or the engine themselves.
@@ -24,6 +26,14 @@ const DEFAULT_VOLUME: float = 1.0
 const DEFAULT_FULLSCREEN: bool = false
 const DEFAULT_VSYNC: bool = true
 const DEFAULT_FPS_CAP: int = NO_FPS_CAP
+## How strong the screen shake is: 0 turns it off and 1 is the full shake (CameraShake).
+const DEFAULT_SCREEN_SHAKE: float = 1.0
+## How strong the controller's vibration is: 0 turns it off and 1 is the full vibration
+## (ControllerRumble).
+const DEFAULT_VIBRATION: float = 1.0
+## Whether the controller also vibrates while a state lasts, such as a grab or the crucifix held up,
+## besides the moments' pulses.
+const DEFAULT_CONSTANT_VIBRATION: bool = true
 
 ## True only in the tests, set by tests/support/base_test.gd before the autoload is ready: then a
 ## settings node on the player's file keeps its options in memory, from the defaults, and neither
@@ -39,6 +49,9 @@ var _volumes: Dictionary[StringName, float] = {}
 var _fullscreen: bool = DEFAULT_FULLSCREEN
 var _vsync: bool = DEFAULT_VSYNC
 var _fps_cap: int = DEFAULT_FPS_CAP
+var _screen_shake: float = DEFAULT_SCREEN_SHAKE
+var _vibration: float = DEFAULT_VIBRATION
+var _constant_vibration: bool = DEFAULT_CONSTANT_VIBRATION
 ## The id of the controls profile that is on, one of InputProfiles.PROFILES.
 var _input_profile: StringName = InputProfiles.DEFAULT_PROFILE
 ## The custom profile's bindings, by action; every action in InputProfiles.ACTIONS has at least one.
@@ -91,6 +104,36 @@ func get_fps_cap() -> int:
 func set_fps_cap(fps_cap: int) -> void:
 	_fps_cap = _offered_fps_cap(fps_cap)
 	_apply_fps_cap()
+	save_to_file()
+
+
+func get_screen_shake() -> float:
+	return _screen_shake
+
+
+## Nothing to apply: the camera's shake reads the option each frame.
+func set_screen_shake(strength: float) -> void:
+	_screen_shake = _valid_strength(strength, DEFAULT_SCREEN_SHAKE)
+	save_to_file()
+
+
+func get_vibration() -> float:
+	return _vibration
+
+
+## Nothing to apply: the controller's vibration reads the option on each frame it vibrates.
+func set_vibration(strength: float) -> void:
+	_vibration = _valid_strength(strength, DEFAULT_VIBRATION)
+	save_to_file()
+
+
+func is_constant_vibration_on() -> bool:
+	return _constant_vibration
+
+
+## Nothing to apply: the controller's vibration reads the option each time it asks the controller.
+func set_constant_vibration(on: bool) -> void:
+	_constant_vibration = on
 	save_to_file()
 
 
@@ -173,6 +216,9 @@ func save_to_file() -> void:
 	file.set_value("display", "fullscreen", _fullscreen)
 	file.set_value("display", "vsync", _vsync)
 	file.set_value("display", "fps_cap", _fps_cap)
+	file.set_value("accessibility", "screen_shake", _screen_shake)
+	file.set_value("accessibility", "vibration", _vibration)
+	file.set_value("accessibility", "constant_vibration", _constant_vibration)
 	file.set_value("input", "profile", String(_input_profile))
 	for action: StringName in InputProfiles.ACTIONS:
 		file.set_value("input_custom", action, _custom_bindings[action])
@@ -182,13 +228,18 @@ func save_to_file() -> void:
 
 
 ## Takes every option from the file, or its default where the file has none or one of the wrong
-## type, puts volumes into 0 to 1 and a cap not on offer to no cap, and applies them all.
+## type, puts volumes, the screen shake and the vibration into 0 to 1 and a cap not on offer to no
+## cap, and applies them all.
 func _take_options_from(file: ConfigFile) -> void:
 	for bus: StringName in BUSES:
 		_volumes[bus] = _valid_volume(_read_number(file, "audio", bus, DEFAULT_VOLUME))
 	_fullscreen = _read_bool(file, "display", "fullscreen", DEFAULT_FULLSCREEN)
 	_vsync = _read_bool(file, "display", "vsync", DEFAULT_VSYNC)
 	_fps_cap = _offered_fps_cap(int(_read_number(file, "display", "fps_cap", DEFAULT_FPS_CAP)))
+	_screen_shake = _read_strength(file, "screen_shake", DEFAULT_SCREEN_SHAKE)
+	_vibration = _read_strength(file, "vibration", DEFAULT_VIBRATION)
+	_constant_vibration = _read_bool(file, "accessibility", "constant_vibration",
+			DEFAULT_CONSTANT_VIBRATION)
 	for bus: StringName in BUSES:
 		_apply_volume(bus)
 	_apply_fullscreen()
@@ -227,10 +278,22 @@ func _read_bool(file: ConfigFile, section: String, key: String, default: bool) -
 	return value as bool if value is bool else default
 
 
+## A strength from the file's accessibility options, kept in 0 to 1: default where the file has
+## none, one of the wrong type or one that is not a number.
+func _read_strength(file: ConfigFile, key: String, default: float) -> float:
+	return _valid_strength(_read_number(file, "accessibility", key, default), default)
+
+
 ## A volume in 0 to 1. One that is not a number (nan), or is infinite, gives the default: clamping
 ## would leave nan as it is.
 func _valid_volume(volume: float) -> float:
 	return clampf(volume, 0.0, 1.0) if is_finite(volume) else DEFAULT_VOLUME
+
+
+## A strength in 0 to 1, of the screen shake or the vibration. One that is not a number, or is
+## infinite, gives default, as a volume does.
+func _valid_strength(strength: float, default: float) -> float:
+	return clampf(strength, 0.0, 1.0) if is_finite(strength) else default
 
 
 func _offered_fps_cap(fps_cap: int) -> int:

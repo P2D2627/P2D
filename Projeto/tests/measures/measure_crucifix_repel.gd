@@ -3,9 +3,13 @@
 # the area builds it anew each time. Measured with 10, 50 and 200 stand-in demons inside the radius,
 # the crucifix down so it pushes none of them out, in two ways: many calls in a row, with the
 # processor's cache warm, and one call per physics step after writing over more memory than the
-# cache holds, the worst case. Both include building and freeing the list. It checks nothing: the
-# exit code is 1 only if the player never lands or the radius does not find every demon. The README
-# quotes the result in the crucifix's section, "Crucifixo: componentes e modificadores de movimento".
+# cache holds, the worst case. Both include building and freeing the list. With each count, it also
+# prints what comparing that list with the last frame's adds to a frame, the way the crucifix's
+# struck signal was first told, left out for the area's area_entered (ADR 0062). Then, with the
+# crucifix up, it prints what its _process(), the light following the warning, costs a frame before
+# the warning and during it. It checks nothing: the exit code is 1 only if the player never lands,
+# the radius does not find every demon or the crucifix never goes up. The README quotes the results
+# in the crucifix's section, "Crucifixo: componentes e modificadores de movimento".
 # Run from the repository root:
 # godot --headless --fixed-fps 60 --path Projeto --script res://tests/measures/measure_crucifix_repel.gd
 extends "res://tests/support/player_test.gd"
@@ -39,6 +43,8 @@ const LIST_CHANGED: float = -1.0
 const FLOOR_HALF_WIDTH: float = 2000.0
 ## A little above the floor, so the player lands on its own.
 const FLOOR_START: Vector2 = Vector2(0.0, -2.0)
+## How far into its warning the crucifix's _process() is measured the second time.
+const WARNING_SHARE: float = 0.3
 
 var _cache_sweep: PackedByteArray = PackedByteArray()
 
@@ -62,16 +68,31 @@ func _initialize() -> void:
 		await wait_frames(SETTLE_FRAMES)
 		var warm_ms: float = _warm_cost_ms(repel_area, count)
 		var cold_ms: float = await _cold_cost_ms(repel_area, count)
-		if warm_ms == LIST_CHANGED or cold_ms == LIST_CHANGED:
+		var compared_ms: float = _comparison_cost_ms(repel_area, count)
+		if warm_ms == LIST_CHANGED or cold_ms == LIST_CHANGED or compared_ms == LIST_CHANGED:
 			printerr("%d demons in the radius, but a list did not hold them all." % count)
 			quit(1)
 			return
 		print("%d demons in the radius: %.1f us in a row, %.1f us once per step with a cold cache; budget %.0f us, %s"
 				% [count, warm_ms * USEC_PER_MS, cold_ms * USEC_PER_MS, BUDGET_MS * USEC_PER_MS,
 				"within" if maxf(warm_ms, cold_ms) < BUDGET_MS else "OVER"])
+		print("  comparing it with the last frame's list, as struck was first told: %.1f us more a frame"
+				% (compared_ms * USEC_PER_MS))
 		for demon: CharacterBody2D in demons:
 			demon.queue_free()
 		await wait_frames(SETTLE_FRAMES)
+	var input: StandInInput = put_a_stand_in(player)
+	await physics_frame
+	input.crucifix_held = true
+	if not await wait_until(crucifix.is_raised):
+		printerr("The crucifix never went up.")
+		quit(1)
+		return
+	var before_ms: float = _process_cost_ms(crucifix)
+	await wait_until(func() -> bool: return crucifix.get_warning_progress() > WARNING_SHARE)
+	var during_ms: float = _process_cost_ms(crucifix)
+	print("The crucifix's _process(): %.2f us a frame before its warning, %.2f us during it"
+			% [before_ms * USEC_PER_MS, during_ms * USEC_PER_MS])
 	await remove_player(player)
 	quit(0)
 
@@ -105,6 +126,51 @@ func _cold_cost_ms(repel_area: Area2D, count: int) -> float:
 		if found != count:
 			return LIST_CHANGED
 	return elapsed_usec / USEC_PER_MS / COLD_STEPS
+
+
+## What comparing the list with the last frame's adds to a frame, in ms, over WARM_CALLS frames in a
+## row: each frame takes the list and casts each area to Repellable, as _repel() does, then keeps them
+## and looks each up in the last frame's. The same frames without keeping and looking up are taken
+## off. LIST_CHANGED if a list did not hold count areas, or they did not all come in once.
+func _comparison_cost_ms(repel_area: Area2D, count: int) -> float:
+	var seen: int = 0
+	var start: int = Time.get_ticks_usec()
+	for _call: int in WARM_CALLS:
+		for area: Area2D in repel_area.get_overlapping_areas():
+			if area as Repellable != null:
+				seen += 1
+	var alone_usec: int = Time.get_ticks_usec() - start
+	var pushed: Array[Repellable] = []
+	var pushing: Array[Repellable] = []
+	var came_in: int = 0
+	start = Time.get_ticks_usec()
+	for _call: int in WARM_CALLS:
+		pushing.clear()
+		for area: Area2D in repel_area.get_overlapping_areas():
+			var repellable: Repellable = area as Repellable
+			if repellable != null:
+				pushing.append(repellable)
+				if repellable not in pushed:
+					came_in += 1
+		var last_frame: Array[Repellable] = pushed
+		pushed = pushing
+		pushing = last_frame
+	var compared_usec: int = Time.get_ticks_usec() - start
+	if seen != count * WARM_CALLS or came_in != count:
+		return LIST_CHANGED
+	return (compared_usec - alone_usec) / USEC_PER_MS / WARM_CALLS
+
+
+## Average time of the crucifix's _process(), in ms, over WARM_CALLS calls in a row, after
+## WARM_UP_CALLS: the light following the warning, on every frame the crucifix is up.
+func _process_cost_ms(crucifix: Crucifix) -> float:
+	var delta: float = 1.0 / Engine.physics_ticks_per_second
+	for _call: int in WARM_UP_CALLS:
+		crucifix._process(delta)
+	var start: int = Time.get_ticks_usec()
+	for _call: int in WARM_CALLS:
+		crucifix._process(delta)
+	return (Time.get_ticks_usec() - start) / USEC_PER_MS / WARM_CALLS
 
 
 ## A demon stand-in at the given spot: a body with a Repellable, as the crucifix tests use.
