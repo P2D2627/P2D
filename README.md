@@ -49,22 +49,24 @@ cada sala) está em `docs/nivel1_desenho.md`, e os artigos que o fundamentam em 
    crucifixo, SP e morte. Cada estação ocupa um ecrã e tem uma placa que explica o que experimentar.
    As teclas 1 a 9 levam ao início da estação com esse número, e o 0 à décima. Quem morre recomeça
    no início da estação onde estava. Ver "Sala de treino".
-Os controlos de teclado e rato escolhem-se em Options ▸ Controls, entre três perfis. O comando é
-igual em todos.
+Os controlos de teclado escolhem-se em Options ▸ Controls, entre três perfis. O comando é igual em
+todos. Todas as ações do jogo têm uma tecla e um botão do comando, pelo que se joga só com o
+teclado ou só com o comando; nenhum perfil predefinido usa o rato. As teclas desenhadas no tutorial
+ainda só mostram o teclado (ver "Input: ações nomeadas com teclas físicas").
 
-| Ação | Teclado e rato (predefinido) | Setas e QWEASD | Comando |
+| Ação | WASD (predefinido) | Setas e QWEASD | Comando |
 |---|---|---|---|
-| Andar | A / D ou setas | setas | stick esquerdo |
+| Andar | A / D ou setas | setas | stick esquerdo ou D-pad |
 | Saltar | Espaço | Espaço | A / Cross |
-| Deslizar numa parede | no ar, A / D ou setas contra a parede | no ar, setas contra a parede | stick esquerdo contra a parede |
+| Deslizar numa parede | no ar, A / D ou setas contra a parede | no ar, setas contra a parede | stick esquerdo ou D-pad contra a parede |
 | Saltar de uma parede | no ar, Espaço encostado à parede | no ar, Espaço encostado à parede | A / Cross encostado à parede |
-| Erguer o crucifixo | premir o botão esquerdo do rato no chão; fica erguido enquanto premido | premir Q no chão; fica erguido enquanto premido | premir RT / R2 no chão; fica erguido enquanto premido |
+| Erguer o crucifixo | premir Shift no chão; fica erguido enquanto premido | premir Q no chão; fica erguido enquanto premido | premir RT / R2 no chão; fica erguido enquanto premido |
 | Soltar-se de um demónio | premir Espaço repetidamente | premir Espaço repetidamente | premir A / Cross repetidamente |
-| Interagir | E | Ctrl | B / Circle |
+| Interagir | E | Ctrl | X / Square |
 
 O terceiro perfil, Custom, começa igual ao predefinido, e cada ação pode receber outra tecla ou
-botão do rato. O Esc, o F3 e o F4 estão reservados. As teclas W, E, A, S e D do perfil das setas
-ficam livres para os upgrades.
+botão do rato. O Esc e as teclas de depuração (F3, F4, F7, F8 e F9) estão reservados. As teclas W,
+E, A, S e D do perfil das setas ficam livres para os upgrades.
 
 | Ação | Teclado | Comando |
 |---|---|---|
@@ -177,17 +179,18 @@ provisórios e serão afinados com a câmara e nos níveis.
 ### Crucifixo
 
 Enquanto o jogador recusar os upgrades, o crucifixo é a sua única defesa. Ergue-se ao premir o
-botão esquerdo do rato ou o gatilho direito do comando (RT / R2) com a personagem no chão e fica
-erguido enquanto o botão estiver premido, durante no máximo 5 s. Um toque dado até 0,1 s antes de
-aterrar ainda o ergue na aterragem, se o botão continuar premido, à semelhança da tolerância do
-salto. Baixa quando o botão é largado, quando a personagem sai do chão ou quando os 5 s terminam.
+Shift ou o gatilho direito do comando (RT / R2) com a personagem no chão e fica erguido enquanto o
+botão estiver premido, durante no máximo 5 s. Um toque dado até 0,1 s antes de aterrar ainda o
+ergue na aterragem, se o botão continuar premido, à semelhança da tolerância do salto. Baixa
+quando o botão é largado, quando a personagem sai do chão ou quando os 5 s terminam.
 Depois de cada uso, curto ou longo, há uma espera de 15 s até poder ser erguido de novo; um toque
 dado até 0,1 s antes do fim da espera também conta.
 
 Só um toque dado durante o jogo ergue o crucifixo. Um botão que já vinha premido, da espera, do
 menu principal ou da pausa, não o ergue até ser largado e premido outra vez. Assim, o jogador
-decide sempre o momento, e o clique do rato nos menus, que é o mesmo botão, nunca o ergue por
-engano. Durante a pausa, o tempo de uso para.
+decide sempre o momento e, se puser o crucifixo no botão esquerdo do rato no perfil Custom, o clique
+nos menus, que passa a ser o mesmo botão, nunca o ergue por engano. Durante a pausa, o tempo de uso
+para.
 
 Erguido, o crucifixo:
 
@@ -1165,6 +1168,7 @@ godot --headless --fixed-fps 60 --path Projeto --script res://tests/test_crucifi
 godot --headless --fixed-fps 60 --path Projeto --script res://tests/test_crucifix_menus.gd
 godot --headless --fixed-fps 60 --path Projeto --script res://tests/test_input_profiles.gd
 godot --headless --fixed-fps 60 --path Projeto --script res://tests/test_controls.gd
+godot --headless --fixed-fps 60 --path Projeto --script res://tests/test_input_map.gd
 godot --headless --fixed-fps 60 --path Projeto --script res://tests/test_background_layer.gd
 godot --headless --fixed-fps 60 --path Projeto --script res://tests/test_soul_points.gd
 godot --headless --fixed-fps 60 --path Projeto --script res://tests/test_demon.gd
@@ -1273,6 +1277,15 @@ parado. Cada medida faz 100 000 chamadas seguidas. Os números estão em "Câmar
 
 ```
 godot --headless --fixed-fps 60 --path Projeto --script res://tests/measures/measure_controller_rumble.gd
+```
+
+O `measure_joypads.gd` precisa de um comando ligado e é o único que corre sem `--headless`, porque
+sem janela o Godot não lê comandos. Lista os comandos que o motor vê, faz vibrar cada motor e, durante
+20 s, escreve cada ação e cada botão premidos, com a janela em foco. Sai com o código 1 se não houver
+comando.
+
+```
+godot --path Projeto --script res://tests/measures/measure_joypads.gd
 ```
 
 ### A personagem por dentro
@@ -1444,13 +1457,14 @@ teclado, e não pela letra impressa, pelo que o WASD se mantém num teclado AZER
 
 | Ação | Teclado | Comando |
 |---|---|---|
-| `move_left` / `move_right` | A / D, setas | stick esquerdo (eixo 0) |
-| `move_up` / `move_down` | W / S, setas | stick esquerdo (eixo 1) |
+| `move_left` / `move_right` | A / D, setas | stick esquerdo (eixo 0), D-pad |
+| `move_up` / `move_down` | W / S, setas | stick esquerdo (eixo 1), D-pad |
 | `jump` | Espaço | A / Cross |
-| `interact` | R | carregar no stick direito (R3) |
-| `crucifix` | botão esquerdo do rato | RT / R2 (eixo 5) |
+| `interact` | E | X / Square |
+| `crucifix` | Shift | RT / R2 (eixo 5) |
 | `pause` | Escape | Start |
 | `toggle_debug_overlay` | F3 | — |
+| `debug_damage` | F4 | — |
 | `debug_accept_offer` / `debug_refuse_offer` | F7 / F8 | — |
 | `debug_reset_run` | F9 | — |
 | `ui_accept` | Enter, Espaço | A / Cross |
@@ -1458,6 +1472,34 @@ teclado, e não pela letra impressa, pelo que o WASD se mantém num teclado AZER
 
 O `ui_accept` e o `ui_cancel` são ações que o Godot já traz para os menus; acrescentou-se-lhes o A e o
 B do comando, que não tinham.
+
+O teclado e o comando foram revistos em conjunto (ADR 0063). O grupo experimentou o crucifixo no
+botão esquerdo do rato e ninguém se adaptou, pelo que o perfil predefinido passou a usar só o
+teclado: o Shift, premido com o dedo mínimo, ergue o crucifixo sem tirar os outros dedos do WASD e do
+Espaço, e o E, ao lado, interage. O perfil mantém as setas para andar, pelo que também se joga com
+as duas mãos. No comando, o interagir passou do clique do stick direito, um stick que o jogo não usa,
+para o X, ao lado do A, e o B serve, por agora, só para voltar nos menus. O D-pad também anda, para
+quem prefere o movimento digital ao stick. No perfil predefinido, nenhuma tecla, botão ou direção
+serve duas ações de jogo; o Espaço e o A também confirmam nos menus, de propósito.
+
+Os poderes dos upgrades vão usar o botão do crucifixo: o crucifixo perde-se no primeiro upgrade
+aceite, pelo que os dois nunca coexistem, e o Shift e o RT (o Q, no perfil das setas) passam a usar
+o poder ativo. Trocar de poder fica no LB e no RB e, no perfil WASD, no Q e no R; o Y, o B e o LT
+ficam livres para a espada do nível 5. Estas ações entram no Input Map quando o primeiro upgrade
+for implementado.
+
+Limitações conhecidas. No Windows, cinco toques seguidos no Shift abrem o aviso das Teclas Fixas
+(Sticky Keys); quem se incomodar pode mudar o crucifixo para outra tecla no perfil Custom. As teclas
+desenhadas no tutorial ainda só mostram o teclado, pelo que quem joga com o comando não vê nelas o
+botão de cada ação. O comando ainda não se remapeia (issue #249), e o crucifixo só se ergue
+mantendo o botão premido, sem opção de alternar (issue #250).
+
+O `test_input_map.gd` verifica que cada ação de jogo do perfil predefinido tem exatamente as teclas,
+os botões e as direções desta tabela, nem mais nem menos, que não usa o rato, que nenhuma entrada
+serve duas ações de jogo e que os menus navegam com o D-pad e com o stick. Verifica também que,
+com o Shift premido, o A continua a andar e o Espaço continua a chegar ao salto. O
+`tests/measures/measure_joypads.gd` (ver "Testes e medidas") escreve cada ação e cada botão
+premidos num comando ligado, para confirmar a tabela num comando real.
 
 As teclas desta tabela são as do perfil de controlos predefinido. O jogador pode escolher outro
 perfil nas opções, e o `Settings` substitui, durante o jogo, as teclas e os botões do rato das ações
@@ -1617,10 +1659,11 @@ bloqueio do salto, a tolerância antes de aterrar e antes do fim da espera, o to
 cedo, a parede, a saída do chão, a duração máxima, a espera fixa, a pausa, a perda, a cura, o
 afastamento, a camada da cena `Repellable` e a afinação com o jogo a correr. Usa um demónio de
 substituição, que flutua à altura do crucifixo; o afastamento de um demónio no chão verifica-se no
-`test_demon.gd`, com o crucifixo da personagem. O `test_crucifix_menus.gd` usa a cena principal
-e o rato: com o botão premido durante a pausa e mantido ao retomar com Esc, com um clique no Resume
-e com o botão premido desde o menu principal, o crucifixo não se ergue até o botão ser largado e
-premido de novo no jogo. O `test_crucifix_warning.gd` verifica o aviso: a luz com o brilho todo antes
+`test_demon.gd`, com o crucifixo da personagem. O `test_crucifix_menus.gd` usa a cena principal,
+com o crucifixo no botão esquerdo do rato pelo perfil Custom: com o botão premido durante a pausa
+e mantido ao retomar com Esc, com um clique no Resume e com o botão premido desde o menu principal,
+o crucifixo não se ergue até o botão ser largado e premido de novo no jogo. O
+`test_crucifix_warning.gd` verifica o aviso: a luz com o brilho todo antes
 dele e a pulsar entre os limites durante ele, mais funda no fim, a mais funda no último instante, e
 sem passar a frequência; de volta ao brilho todo ao baixar, também quando o botão é largado a meio
 do aviso; o volume do som a seguir a luz e de volta ao normal ao baixar; o aviso a 0 no instante
@@ -2602,7 +2645,7 @@ mesmo acontece a qualquer nó de um nível com Process Mode Always. Perder o foc
 (Main › Pause On Focus Loss), opção que convém desligar quando se afinam valores pelo separador
 Remote do editor.
 
-O Espaço e o A servem para saltar e para confirmar nos menus, e o B para interagir e para voltar. Os
+O Espaço e o A servem para saltar e para confirmar nos menus, e o B para voltar. Os
 botões do Godot disparam quando a tecla é largada, e o B fecha a pausa também ao ser largado. Isso
 não chega: num toque rápido, carregar e largar chegam no mesmo frame, e o Godot considera a ação
 acabada de carregar durante todo esse frame. Por isso o jogo retoma no frame seguinte ao da tecla que
@@ -2627,6 +2670,7 @@ o jogo numa janela à parte ou numa exportação.
 Os controlos seguem o modelo habitual nos jogos de PC: perfis predefinidos, um perfil personalizado
 e remapeamento por captura da tecla seguinte.
 
+- Nenhum perfil predefinido usa o rato; no Custom, qualquer ação pode receber um botão do rato.
 - Os perfis só mudam o teclado e o rato das ações de jogo (andar, saltar, crucifixo, interagir). O
   comando, a pausa, o overlay de depuração e as ações dos menus ficam como o `project.godot` os
   define.

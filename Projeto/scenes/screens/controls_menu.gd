@@ -14,7 +14,7 @@ signal closed
 ## screen does: a script that names an autoload only compiles once the autoload exists.
 const SETTINGS_PATH: NodePath = ^"/root/Settings"
 ## What an action's button shows while it waits for a key.
-const WAITING_TEXT: String = "Press a key or mouse button... (Esc to cancel)"
+const WAITING_TEXT: String = "Press a key or mouse button (Esc or B cancels)"
 ## The width of an action's button, in px, so the rows do not jump as the texts change.
 const BINDING_WIDTH: float = 640.0
 

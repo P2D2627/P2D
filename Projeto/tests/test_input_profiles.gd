@@ -36,6 +36,7 @@ func _initialize() -> void:
 	results.append(await _reserved_keys_and_remaps_outside_custom_change_nothing())
 	results.append(await _the_file_keeps_ids_and_readable_bindings_that_read_back())
 	results.append(await _wrong_values_in_the_file_give_the_defaults())
+	results.append(await _a_file_with_the_old_default_id_gives_wasd_with_shift())
 	results.append(_every_key_and_mouse_button_reads_back_from_its_name())
 	results.append(await _reset_brings_custom_back_and_the_options_reset_leaves_it())
 	await _back_to_the_default_controls()
@@ -62,7 +63,7 @@ func _the_default_profile_is_project_godots_input_map() -> bool:
 		if _sorted(saved) != _sorted(_map_bindings(action)):
 			wrong.append("%s %s" % [action, _map_bindings(action)])
 	settings.queue_free()
-	return report(profile == InputProfiles.KEYBOARD_AND_MOUSE and bindings_found > 0
+	return report(profile == InputProfiles.WASD and bindings_found > 0
 			and wrong.is_empty(),
 			"The default profile: %s, %d bindings in project.godot, Input Map differs in %s"
 			% [profile, bindings_found, wrong])
@@ -95,7 +96,7 @@ func _every_profile_keeps_the_gamepad() -> bool:
 	var before: Dictionary = _gamepad_events()
 	var same: Array[bool] = []
 	for profile: StringName in [InputProfiles.ARROWS_AND_QWEASD, InputProfiles.CUSTOM,
-			InputProfiles.KEYBOARD_AND_MOUSE]:
+			InputProfiles.WASD]:
 		settings.set_input_profile(profile)
 		same.append(_gamepad_events() == before)
 	settings.queue_free()
@@ -121,16 +122,16 @@ func _custom_starts_as_the_default_and_remaps_one_action() -> bool:
 			% [starts_as_default, wrong])
 
 
-## Jump to R, which Interact had alone: Interact takes Space, Jump's old key. Move left to D, which
+## Jump to E, which Interact had alone: Interact takes Space, Jump's old key. Move left to D, which
 ## Move right shared with the right arrow: Move right keeps the right arrow only.
 func _a_binding_another_action_had_swaps_over() -> bool:
 	_delete_test_file()
 	var settings: GameSettings = await _new_settings()
 	settings.set_input_profile(InputProfiles.CUSTOM)
-	settings.set_custom_binding(&"jump", InputProfiles.key(KEY_R))
+	settings.set_custom_binding(&"jump", InputProfiles.key(KEY_E))
 	settings.set_custom_binding(&"move_left", InputProfiles.key(KEY_D))
 	var wrong: PackedStringArray = _differences({
-		&"jump": [KEY_R], &"interact": [KEY_SPACE],
+		&"jump": [KEY_E], &"interact": [KEY_SPACE],
 		&"move_left": [KEY_D], &"move_right": [KEY_RIGHT],
 	})
 	settings.queue_free()
@@ -209,6 +210,29 @@ func _wrong_values_in_the_file_give_the_defaults() -> bool:
 		outcomes.append("%s gives %s, custom the default %s" % [profile_value, profile,
 				custom_is_default])
 	return report(all_right, "Wrong values in the file: %s" % ", ".join(outcomes))
+
+
+## A file saved before ADR 0063, with the old id of the default profile and, as every saved file has,
+## the custom profile's bindings, then a copy of the old default (the crucifix on the left mouse
+## button, Interact on R), gives the WASD profile, with the crucifix on Shift and Interact on E.
+func _a_file_with_the_old_default_id_gives_wasd_with_shift() -> bool:
+	_delete_test_file()
+	var file: ConfigFile = ConfigFile.new()
+	file.set_value("input", "profile", "keyboard_and_mouse")
+	file.set_value("input_custom", "crucifix",
+			PackedStringArray([InputProfiles.mouse(MOUSE_BUTTON_LEFT)]))
+	file.set_value("input_custom", "interact", PackedStringArray([InputProfiles.key(KEY_R)]))
+	file.save(TEST_PATH)
+	var settings: GameSettings = await _new_settings()
+	var profile: StringName = settings.get_input_profile()
+	var crucifix: PackedStringArray = settings.get_bindings(&"crucifix")
+	var interact: PackedStringArray = settings.get_bindings(&"interact")
+	settings.queue_free()
+	return report(profile == InputProfiles.WASD
+			and crucifix == PackedStringArray([InputProfiles.key(KEY_SHIFT)])
+			and interact == PackedStringArray([InputProfiles.key(KEY_E)]),
+			"The old default id in the file gives %s, Crucifix %s, Interact %s"
+			% [profile, crucifix, interact])
 
 
 ## Each key in KEYS_TO_READ_BACK and each mouse button on offer makes a binding whose name reads back
