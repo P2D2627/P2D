@@ -2,7 +2,10 @@
 # between Play and Quit, and Options opens the screen with the first volume selected, writing
 # nothing. The screen
 # shows what Settings holds. Each control changes Settings: the arrows move a volume, Enter turns
-# full screen and V-Sync on and off, and the frame rate list picks a cap. Reset brings back the
+# full screen and V-Sync on and off, and the frame rate list picks a cap. Hold To Escape is the
+# accessibility grid's last row, the down arrow and the D-pad reach it and go on, and Enter, the
+# controller's A and the mouse each switch it. Reset
+# brings back the
 # defaults, on the screen and in Settings. Back, Esc and B close the screen onto the Options button,
 # and that Esc goes no further. In the pause, the same screen opens; Esc and B go back to the pause,
 # still paused, and Esc there resumes. A pause left from the options opens again on its own panel.
@@ -21,6 +24,8 @@ func _initialize() -> void:
 	results.append(await _options_opens_the_screen_on_the_first_volume())
 	results.append(await _the_screen_shows_what_settings_holds())
 	results.append(await _each_control_changes_settings())
+	results.append(await _hold_to_escape_switches_with_keys_controller_and_mouse())
+	results.append(await _the_down_arrow_and_the_d_pad_reach_hold_to_escape_and_go_on())
 	results.append(await _reset_brings_back_the_defaults())
 	results.append(await _back_esc_and_b_close_the_screen_onto_options())
 	results.append(await _in_the_pause_esc_and_b_go_back_to_the_pause())
@@ -117,6 +122,64 @@ func _each_control_changes_settings() -> bool:
 			("Each control changes Settings: Left on Master %s, Enter on full screen %s, on V-Sync "
 			+ "%s, the second cap from the list %s")
 			% [volume_changed, fullscreen_changed, vsync_changed, cap_changed])
+
+
+## Hold To Escape's switch is the accessibility grid's last row, after its title, and shows the
+## option off, as Settings holds it. With the focus on it, Enter turns the option on, the
+## controller's A off again and a click of the mouse on again; each time the switch shows what
+## Settings holds. Reset, with the option on, turns both off.
+func _hold_to_escape_switches_with_keys_controller_and_mouse() -> bool:
+	var main: Node = await _new_main_with_defaults()
+	await _open_options_in_the_main_menu(main)
+	var options: Control = _options_in_the_main_menu(main)
+	var switch: CheckButton = _accessibility_switch_titled(options, OptionsMenu.HOLD_TO_ESCAPE_TITLE)
+	# Noted now: once the main scene is freed, the switch compares equal to null.
+	var found: bool = switch != null
+	var last_row: bool = false
+	var steps: Array = []
+	if found:
+		last_row = switch.get_index() == switch.get_parent().get_child_count() - 2
+		steps.append(_hold_to_escape_shown_and_held(switch))
+		switch.grab_focus()
+		await tap(KEY_ENTER)
+		steps.append(_hold_to_escape_shown_and_held(switch))
+		await tap_joypad(JOY_BUTTON_A)
+		steps.append(_hold_to_escape_shown_and_held(switch))
+		await _click_on(switch)
+		steps.append(_hold_to_escape_shown_and_held(switch))
+		await press_on(options, ^"%ResetButton", KEY_ENTER)
+		steps.append(_hold_to_escape_shown_and_held(switch))
+	await remove_main(main)
+	var expected: Array = [[false, false], [true, true], [false, false], [true, true], [false, false]]
+	return report(found and last_row and steps == expected,
+			("Hold To Escape: a switch titled %s %s, in the last row %s; shown and in Settings at the "
+			+ "start, after Enter, A, a click and Reset: %s (%s)") % [OptionsMenu.HOLD_TO_ESCAPE_TITLE,
+			found, last_row, steps, expected])
+
+
+## Without the mouse: from Constant Vibration's switch, the down arrow selects Hold To Escape's, the
+## row under it, and the controller's D-pad down goes on to Controls.
+func _the_down_arrow_and_the_d_pad_reach_hold_to_escape_and_go_on() -> bool:
+	var main: Node = await _new_main_with_defaults()
+	await _open_options_in_the_main_menu(main)
+	var options: Control = _options_in_the_main_menu(main)
+	var constant: CheckButton = _accessibility_switch_titled(options,
+			OptionsMenu.CONSTANT_VIBRATION_TITLE)
+	var switch: CheckButton = _accessibility_switch_titled(options, OptionsMenu.HOLD_TO_ESCAPE_TITLE)
+	var found: bool = constant != null and switch != null
+	var reached: bool = false
+	var went_on: bool = false
+	if found:
+		constant.grab_focus()
+		await tap(KEY_DOWN)
+		reached = has_focus(switch)
+		await tap_joypad(JOY_BUTTON_DPAD_DOWN)
+		went_on = has_focus(options.get_node_or_null(^"%ControlsButton"))
+	await remove_main(main)
+	return report(found and reached and went_on,
+			("Without the mouse: both switches found %s; the down arrow from Constant vibration "
+			+ "selects Hold to escape %s; the D-pad down from it selects Controls %s")
+			% [found, reached, went_on])
 
 
 func _reset_brings_back_the_defaults() -> bool:
@@ -290,6 +353,34 @@ func _value_label(slider: HSlider) -> String:
 		return ""
 	var after: Node = slider.get_parent().get_child(slider.get_index() + 1)
 	return (after as Label).text if after is Label else ""
+
+
+## The switch after the label titled title in the accessibility grid; null if there is none.
+func _accessibility_switch_titled(options: Control, title: String) -> CheckButton:
+	var grid: Node = options.get_node_or_null(^"%Accessibility") if options != null else null
+	if grid == null:
+		return null
+	for child: Node in grid.get_children():
+		var titled: bool = child is Label and (child as Label).text == title
+		if titled and child.get_index() + 1 < grid.get_child_count():
+			return grid.get_child(child.get_index() + 1) as CheckButton
+	return null
+
+
+## Whether the switch shows the option on, and whether Settings holds it on. Untyped, as the case's
+## expected steps are.
+func _hold_to_escape_shown_and_held(switch: CheckButton) -> Array:
+	return [switch.button_pressed, settings.is_hold_to_escape_on()]
+
+
+## A click of the left mouse button in the middle of control, handed to the screen where the control
+## is drawn, as a real click lands.
+func _click_on(control: Control) -> void:
+	var at: Vector2 = control.get_global_rect().get_center()
+	for pressed: bool in [true, false]:
+		var event: InputEventMouseButton = mouse_event(MOUSE_BUTTON_LEFT, pressed, at)
+		root.push_input(event, true)
+		await process_frame
 
 
 func _fps_cap_shown(options: Control) -> int:

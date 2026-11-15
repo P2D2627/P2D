@@ -2,7 +2,9 @@ class_name GrabPrompt
 extends VBoxContainer
 
 ## A stand-in prompt for the grab, until its art comes: while a demon holds the man, it says what
-## breaks him free and shows in a bar how near he is. A bar, not a count, so a second demon joining
+## breaks him free, pressing or holding Jump as the Hold To Escape option says on each frame drawn,
+## so a change made in the pause shows as the game goes on, and shows in a bar how near he is. A
+## bar, not a count, so a second demon joining
 ## only lowers it. If the time runs out, it says he died and stays, with no bar, so a man who can't
 ## move never looks free until the room starts over. It only shows: it listens to GrabEscape, reads
 ## its progress and never changes the game. It goes as a child of the man's body, not of his
@@ -28,11 +30,12 @@ func _ready() -> void:
 
 
 func _process(_delta: float) -> void:
+	_show_what_frees_him()
 	_bar.value = grab_escape.get_escape_progress()
 
 
 func _on_grabbed() -> void:
-	_label.text = HOLD_TEXT if grab_escape.hold_to_escape else PRESS_TEXT
+	_show_what_frees_him()
 	_bar.value = 0.0
 	_bar.show()
 	show()
@@ -48,3 +51,10 @@ func _on_died() -> void:
 func _on_grab_ended() -> void:
 	hide()
 	set_process(false)
+
+
+## The label only takes a new text when the option changed, so it is not laid out again each frame.
+func _show_what_frees_him() -> void:
+	var text: String = HOLD_TEXT if grab_escape.is_hold_to_escape() else PRESS_TEXT
+	if _label.text != text:
+		_label.text = text
