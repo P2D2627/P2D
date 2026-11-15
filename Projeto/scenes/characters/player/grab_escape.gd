@@ -5,7 +5,9 @@ extends Node
 ## GRABBED state with Player.grab(), which holds him where he is, with no run and no jump: he stops
 ## at once, and in the air he falls straight down. Player.release() ends it as he breaks free. Jump fills
 ## GrabRules until he breaks free or dies. Each press counts; with Hold To Escape on, holding counts
-## instead, from a press made in the grab on, so a jump held from before gives nothing. Free, he
+## instead, from a press made in the grab on, so a jump held from before gives nothing. Hold To
+## Escape is the player's option in Settings, read on each frame he is held, so turning it on or off
+## in the pause changes the grab under way. Free, he
 ## stays invulnerable for a moment, so the demon does not grab him again at once. It tells the
 ## HitReaction he is held, and every hit then grabs, whatever his SP: another demon's joins the
 ## grab, up to GrabRules.MAX_DEMONS, and asks for more presses; the same demon's again changes
@@ -37,6 +39,9 @@ signal died
 
 ## Name of the grab when it keeps the crucifix down.
 const SOURCE: StringName = &"grab"
+## Where the project loads the autoload Settings, looked up there so this script compiles before it
+## exists.
+const SETTINGS_PATH: NodePath = ^"/root/Settings"
 
 @export var player: Player
 @export var hit_reaction: HitReaction
@@ -44,9 +49,6 @@ const SOURCE: StringName = &"grab"
 ## Time to die and what breaks the man free. Read each time it is used, so it can be tuned in the
 ## Remote tab while the game runs.
 @export var stats: GrabStats
-## On, holding Jump breaks the man free instead of pressing it again and again. The Options are to
-## set it.
-@export var hold_to_escape: bool = false
 ## Seconds after breaking free in which no hit lands, so the demon does not grab the man again at
 ## once.
 @export_range(0.0, 3.0, 0.05, "suffix:s") var invulnerable_time: float = 1.0
@@ -57,6 +59,8 @@ var _rules: GrabRules = null
 var _pressed_in_grab: bool = false
 ## The Hitboxes holding the man in this grab, GrabRules.MAX_DEMONS at most.
 var _holders: Array[Hitbox] = []
+## Where Hold To Escape is read; null without the autoload, and then the grab asks for presses.
+var _settings: GameSettings
 
 
 func _ready() -> void:
@@ -64,6 +68,10 @@ func _ready() -> void:
 	assert(hit_reaction != null, "GrabEscape: assign the player's HitReaction to Hit Reaction.")
 	assert(hurtbox != null, "GrabEscape: assign the player's Hurtbox to Hurtbox.")
 	assert(stats != null, "GrabEscape: assign a GrabStats resource to Stats.")
+	_settings = get_node_or_null(SETTINGS_PATH) as GameSettings
+	if _settings == null:
+		push_warning(("GrabEscape: no Settings at %s, so the grab asks for presses, whatever the "
+				+ "Hold To Escape option.") % SETTINGS_PATH)
 	hit_reaction.grab_hit.connect(_on_grab_hit)
 	player.died.connect(_on_player_died)
 
@@ -75,10 +83,11 @@ func _physics_process(delta: float) -> void:
 		return
 	var pressed: bool = player.input.is_jump_just_pressed()
 	_pressed_in_grab = _pressed_in_grab or pressed
-	var holding: bool = hold_to_escape and _pressed_in_grab and player.input.is_jump_held()
-	_rules.advance(delta, pressed and not hold_to_escape, holding)
-	if (pressed and not hold_to_escape) or holding:
-		struggled.emit(not hold_to_escape)
+	var hold: bool = is_hold_to_escape()
+	var holding: bool = hold and _pressed_in_grab and player.input.is_jump_held()
+	_rules.advance(delta, pressed and not hold, holding)
+	if (pressed and not hold) or holding:
+		struggled.emit(not hold)
 	match _rules.get_state():
 		GrabRules.State.HELD:
 			_sink(_rules.get_sink())
@@ -93,6 +102,14 @@ func _physics_process(delta: float) -> void:
 ## True while a demon holds the man and he is alive: a dead man's grab is over.
 func is_held() -> bool:
 	return _rules != null and _rules.get_state() == GrabRules.State.HELD and not player.is_dead()
+
+
+## True if holding Jump breaks the man free, as the player chose in the options; false, the presses,
+## also without Settings. For the prompt, which says which.
+func is_hold_to_escape() -> bool:
+	if _settings == null:
+		return GameSettings.DEFAULT_HOLD_TO_ESCAPE
+	return _settings.is_hold_to_escape_on()
 
 
 ## How near the man is to breaking free, from 0 to 1; 0 while he is not held. For the prompt.

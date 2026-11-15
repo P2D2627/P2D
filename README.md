@@ -64,7 +64,7 @@ RT, LS ← para o stick esquerdo); mudam no momento em que o comando se liga ou 
 | Deslizar numa parede | no ar, A / D ou setas contra a parede | no ar, setas contra a parede | stick esquerdo ou D-pad contra a parede |
 | Saltar de uma parede | no ar, Espaço encostado à parede | no ar, Espaço encostado à parede | A / Cross encostado à parede |
 | Erguer o crucifixo | premir Shift no chão; fica erguido enquanto premido | premir Q no chão; fica erguido enquanto premido | premir RT / R2 no chão; fica erguido enquanto premido |
-| Soltar-se de um demónio | premir Espaço repetidamente | premir Espaço repetidamente | premir A / Cross repetidamente |
+| Soltar-se de um demónio | premir Espaço repetidamente; com Hold to escape, mantê-lo premido | premir Espaço repetidamente; com Hold to escape, mantê-lo premido | premir A / Cross repetidamente; com Hold to escape, mantê-lo premido |
 | Interagir | E | Ctrl | X / Square |
 
 O terceiro perfil, Custom, começa igual ao predefinido, e cada ação pode receber outra tecla ou
@@ -448,9 +448,19 @@ dois lados, como num buraco da largura de um corpo, atravessam-se ao fim de 0,1 
 separarem; enquanto se sobrepõem, o demónio não ataca.
 
 Os valores estão em `scenes/characters/player/grab_stats.tres` (o agarrão), no ficheiro de dados dos demónios (o dano
-e os arremessos) e na cena da personagem (a invulnerabilidade), e são provisórios. Soltar-se
-mantendo o salto premido, em vez de o premir repetidamente, já existe no código e chega às opções
-numa tarefa seguinte, para quem não consegue premir depressa.
+e os arremessos) e na cena da personagem (a invulnerabilidade), e são provisórios.
+
+Para quem não consegue premir depressa, a opção Hold to escape (ecrã Options, por baixo de Constant
+vibration) troca os toques por manter o salto premido: 1,2 s com um demónio, mais 0,9 s com o
+segundo, o que cabe nos 3 s do agarrão. Só conta a partir de um toque dado já durante o agarrão,
+para que um salto que vinha premido de antes não solte a personagem sozinho, e o texto passa de
+"Press Jump!" a "Hold Jump!". Largar o salto esvazia a barra como parar de premir: ao fim de 0,25 s,
+metade da barra por segundo. Com a opção ligada, os toques deixam de contar; aceitar as duas formas
+faria da opção um atalho para todos, porque cada toque somaria também o tempo premido. A opção vem
+desligada, porque os toques são o agarrão tal como foi desenhado, e guarda-se com as outras. O
+agarrão lê-a em cada frame: ligada ou desligada na pausa a meio de um agarrão, vale assim que o jogo
+continua, e o texto muda com ela, como acontece com as opções do tremor e da vibração. Mudar de modo
+a meio não perde o progresso, porque os toques e o tempo premido enchem a mesma barra.
 
 ### Portões, picos letais e plataformas que desabam
 
@@ -804,7 +814,7 @@ de um perigo (espinhos, uma pedra que lhe cai em cima), um agarrão, cada toque 
 soltar e a libertação, a morte, uma aterragem depois de uma queda longa, erguer e perder o
 crucifixo, e uma pedra que se parte perto dela. Os toques para se soltar levam o tremor a um nível
 fixo, sem o somar, para que carregar depressa dê um abanão por toque em vez de o acumular;
-soltar-se mantendo o Salto premido (Hold To Escape, que ainda não chegou às opções) não faz tremer.
+soltar-se mantendo o Salto premido (a opção Hold to escape) não faz tremer.
 A libertação também leva o tremor a um nível fixo, o mais alto do agarrão, quer a personagem se
 solte com toques quer mantendo o Salto; só a morte treme mais. Os
 movimentos de todos os dias, como um salto ou uma aterragem normais, não fazem tremer o ecrã, nem o
@@ -2707,13 +2717,17 @@ o retomou. Os testes confirmam que retomar com o Espaço, o A ou o B, também nu
 saltar nem interagir; com o jogo a retomar no próprio frame, a personagem saltava.
 
 As opções (volume dos buses Master, Music, SFX, Ambience e UI, ecrã inteiro, V-Sync, limite de FPS,
-força do tremor do ecrã, força da vibração do comando, vibração contínua e controlos)
+força do tremor do ecrã, força da vibração do comando, vibração contínua, manter o salto para se
+soltar do agarrão e controlos)
 estão no autoload `Settings`, porque têm de estar aplicadas antes de qualquer
 cena. Gravam-se em `user://settings.cfg` (no Windows, `%APPDATA%\Godot\app_userdata\P2D\`), um
 ficheiro de texto legível, com número de versão. Um ficheiro em falta ou ilegível, ou com valores de
 tipo errado ou que não são números, dá os valores predefinidos; um volume, ou uma força do tremor
 ou da vibração, fora do intervalo fica no limite mais próximo, e um limite de FPS que não está na lista dá o
-predefinido. O limite de FPS só
+predefinido. Uma opção nova entra como chave nova: um ficheiro antigo, que não a tem, dá o valor
+predefinido e mantém as outras. Por isso, as quatro opções de acessibilidade entraram sem mudar o
+número de versão, que só terá de subir quando uma chave mudar de sentido, de tipo ou de secção. O
+limite de FPS só
 limita o desenho; a física mantém-se nos 60 passos por segundo. Os menus nunca alteram o áudio, a
 janela ou o motor diretamente: pedem a mudança ao `Settings`, que a aplica e grava. Com o jogo
 embutido no editor, o ecrã inteiro não se aplica (só a janela normal é suportada); experimenta-se com

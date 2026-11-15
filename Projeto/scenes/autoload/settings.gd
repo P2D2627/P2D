@@ -3,7 +3,8 @@ extends Node
 
 ## The player's options: the volume of each audio bus, full screen, V-Sync, the frame rate cap, how
 ## strong the screen shake and the controller's vibration are, whether the controller also vibrates
-## while a state lasts, and the controls, a profile from
+## while a state lasts, whether holding Jump breaks the man free of a grab, and the controls, a
+## profile from
 ## InputProfiles and the bindings of the custom one. Each option applies as soon as it changes and is
 ## saved at once to a file, read again when the game starts.
 ## The project loads this script as the autoload Settings, before any scene, so the options apply
@@ -34,6 +35,9 @@ const DEFAULT_VIBRATION: float = 1.0
 ## Whether the controller also vibrates while a state lasts, such as a grab or the crucifix held up,
 ## besides the moments' pulses.
 const DEFAULT_CONSTANT_VIBRATION: bool = true
+## Whether holding Jump breaks the man free of a grab, instead of pressing it again and again
+## (GrabEscape). Off, since the presses are the grab as designed; on, for those who can't press fast.
+const DEFAULT_HOLD_TO_ESCAPE: bool = false
 
 ## True only in the tests, set by tests/support/base_test.gd before the autoload is ready: then a
 ## settings node on the player's file keeps its options in memory, from the defaults, and neither
@@ -52,6 +56,7 @@ var _fps_cap: int = DEFAULT_FPS_CAP
 var _screen_shake: float = DEFAULT_SCREEN_SHAKE
 var _vibration: float = DEFAULT_VIBRATION
 var _constant_vibration: bool = DEFAULT_CONSTANT_VIBRATION
+var _hold_to_escape: bool = DEFAULT_HOLD_TO_ESCAPE
 ## The id of the controls profile that is on, one of InputProfiles.PROFILES.
 var _input_profile: StringName = InputProfiles.DEFAULT_PROFILE
 ## The custom profile's bindings, by action; every action in InputProfiles.ACTIONS has at least one.
@@ -137,6 +142,16 @@ func set_constant_vibration(on: bool) -> void:
 	save_to_file()
 
 
+func is_hold_to_escape_on() -> bool:
+	return _hold_to_escape
+
+
+## Nothing to apply: the grab reads the option on each frame it holds the man.
+func set_hold_to_escape(on: bool) -> void:
+	_hold_to_escape = on
+	save_to_file()
+
+
 func get_input_profile() -> StringName:
 	return _input_profile
 
@@ -219,6 +234,7 @@ func save_to_file() -> void:
 	file.set_value("accessibility", "screen_shake", _screen_shake)
 	file.set_value("accessibility", "vibration", _vibration)
 	file.set_value("accessibility", "constant_vibration", _constant_vibration)
+	file.set_value("accessibility", "hold_to_escape", _hold_to_escape)
 	file.set_value("input", "profile", String(_input_profile))
 	for action: StringName in InputProfiles.ACTIONS:
 		file.set_value("input_custom", action, _custom_bindings[action])
@@ -240,6 +256,7 @@ func _take_options_from(file: ConfigFile) -> void:
 	_vibration = _read_strength(file, "vibration", DEFAULT_VIBRATION)
 	_constant_vibration = _read_bool(file, "accessibility", "constant_vibration",
 			DEFAULT_CONSTANT_VIBRATION)
+	_hold_to_escape = _read_bool(file, "accessibility", "hold_to_escape", DEFAULT_HOLD_TO_ESCAPE)
 	for bus: StringName in BUSES:
 		_apply_volume(bus)
 	_apply_fullscreen()
