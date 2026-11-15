@@ -6,6 +6,8 @@
 extends "res://tests/support/player_test.gd"
 
 const SPIKES_SCENE: PackedScene = preload("res://scenes/objects/traps/lethal_spikes.tscn")
+## The strip's name, which a death on it is put down to, as each strip is a spot of its own.
+const SPIKES_NAME: StringName = &"Spikes2"
 const TILE: float = 48.0
 const FLOOR_LEFT: float = -2000.0
 const FLOOR_RIGHT: float = 2000.0
@@ -27,6 +29,7 @@ func _initialize() -> void:
 	make_platform(FLOOR_LEFT, FLOOR_RIGHT)
 	var spikes: LethalSpikes = SPIKES_SCENE.instantiate() as LethalSpikes
 	spikes.width_tiles = WIDTH_TILES
+	spikes.name = SPIKES_NAME
 	root.add_child(spikes)
 	await physics_frame
 	var results: Array[bool] = []
@@ -52,11 +55,13 @@ func _a_touch_kills_at_once_with_full_sp() -> bool:
 	var moved: float = absf(player.position.x - stopped_at)
 	var closed: bool = not (player.get_node(^"Hurtbox") as Hurtbox).takes_hits()
 	var inside_strip: bool = stopped_at < WIDTH_TILES * TILE / 2.0
+	var cause: StringName = player.get_death_cause()
+	var source: StringName = player.get_death_source()
 	await remove_player(player)
 	return report(died and deaths[0] == 1 and is_equal_approx(sp_before, player_full_sp()) and moved <= STOPPED_TOLERANCE
-			and closed and inside_strip,
-			"Touch: died %s, %d death(s), SP was %.0f, moved %.1f px after, hits closed %s, stopped at x %.1f"
-			% [died, deaths[0], sp_before, moved, closed, stopped_at])
+			and closed and inside_strip and cause == LethalSpikes.CAUSE and source == SPIKES_NAME,
+			"Touch: died %s, %d death(s), SP was %.0f, moved %.1f px after, hits closed %s, stopped at x %.1f, died of %s on %s"
+			% [died, deaths[0], sp_before, moved, closed, stopped_at, cause, source])
 
 
 func _a_jump_over_them_does_nothing() -> bool:

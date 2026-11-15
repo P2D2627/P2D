@@ -85,7 +85,7 @@ func _talk(cue: String) -> void:
 	player.add_movement_modifier(SOURCE, _modifier)
 	player.hold_still()
 	crucifix.block(SOURCE)
-	var balloon: DialogueManagerExampleBalloon = balloon_scene.instantiate()
+	var balloon: DialogueBalloon = balloon_scene.instantiate()
 	balloon.next_action = next_action
 	balloon.skip_action = next_action
 	balloon.tree_exited.connect(_on_balloon_tree_exited)

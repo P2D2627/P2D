@@ -194,6 +194,8 @@ func _add_phase_3(level: Node2D) -> void:
 	var save: PackedStringArray = _value_of("save").split(" ", false)
 	var point: Area2D = _save_point(PHASE_3_SAVE, PHASE_3_REACHED_EVENT, Vector2i(save[0].to_int(), save[1].to_int()),
 			Vector2i(save[2].to_int(), save[3].to_int()), _find("P")[0] + _offset, player)
+	# RunStats counts deaths and time in phase 3 from here.
+	point.set("starts_phase", 3)
 	level.add_child(point)
 	# Before the camera, as the other save points, so the camera starts where the man does.
 	level.move_child(point, level.get_node(^"GameCamera").get_index())

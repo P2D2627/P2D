@@ -100,6 +100,15 @@ func get_escape_progress() -> float:
 	return _rules.get_escape_progress() if is_held() else 0.0
 
 
+## What holds him, as Hitbox.get_cause() names it: the first that grabbed him while several do;
+## Player's unknown cause while nothing does.
+func get_hold_cause() -> StringName:
+	for holder: Hitbox in _holders:
+		if is_instance_valid(holder):
+			return holder.get_cause()
+	return Player.UNKNOWN_CAUSE
+
+
 ## Dead from something else while held, as on spikes: the grab ends as when its own time runs out,
 ## with the Hurtbox closed and died, but where he is. When its own time ran out, it already did.
 func _on_player_died() -> void:

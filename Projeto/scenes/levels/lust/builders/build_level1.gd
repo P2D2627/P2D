@@ -76,8 +76,11 @@ func _add_level_parts(root: Node2D, player: Player) -> void:
 	root.move_child(tutorial, player.get_index())
 	root.add_child(_save_point("TutorialSave", TUTORIAL_DONE_EVENT, TUTORIAL_SAVE_CELL, TUTORIAL_SAVE_TILES,
 			PHASE_1_START_CELL, player))
-	root.add_child(_save_point("Phase2Save", PHASE_2_REACHED_EVENT, PHASE_2_SAVE_CELL, PHASE_2_SAVE_TILES,
-			PHASE_2_START_CELL, player))
+	var phase_2_save: Area2D = _save_point("Phase2Save", PHASE_2_REACHED_EVENT, PHASE_2_SAVE_CELL,
+			PHASE_2_SAVE_TILES, PHASE_2_START_CELL, player)
+	# RunStats counts deaths and time in phase 2 from here.
+	phase_2_save.set("starts_phase", 2)
+	root.add_child(phase_2_save)
 	# The debug text starts hidden in level 1; F3 (Toggle Debug Overlay) still shows it.
 	(root.get_node(^"DebugOverlay") as DebugOverlay).start_visible = false
 

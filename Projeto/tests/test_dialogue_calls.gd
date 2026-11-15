@@ -12,6 +12,7 @@ const AUTOLOADS: Dictionary[String, String] = {
 	"GameState": "res://scenes/autoload/game_state.gd",
 	"Moral": "res://scenes/autoload/moral.gd",
 	"Offers": "res://scenes/autoload/offers/offers.gd",
+	"RunStats": "res://scenes/autoload/run_stats.gd",
 }
 ## A call to an autoload: its name, then the function's.
 const CALL_PATTERN: String = "\\b(\\w+)\\.(\\w+)\\("
