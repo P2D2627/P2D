@@ -43,6 +43,7 @@ func _initialize() -> void:
 	results.append(await _the_way_out_leads_into_the_hall())
 	results.append(await _each_key_shows_its_action_s_key())
 	results.append(await _a_key_changed_in_the_pause_shows_once_it_ends())
+	results.append(await _with_a_gamepad_the_keys_show_its_buttons())
 	results.append(await _velvet_talks_once_on_her_own_and_holds_the_man())
 	results.append(await _after_the_first_talk_interact_talks_again())
 	results.append(await _the_x_button_and_e_talk_to_her_again())
@@ -133,6 +134,33 @@ func _a_key_changed_in_the_pause_shows_once_it_ends() -> bool:
 	await _remove_room(room)
 	return report(during_pause == "Space" and after_pause == "J",
 			"Jump moved to J in the pause: %s in it, %s after" % [during_pause, after_pause])
+
+
+## A gamepad connected while the tutorial shows turns every key into the pad's button for its action,
+## as the Input Map has it: the left stick to walk, A to jump, RT for the crucifix. Disconnected, the
+## keys come back.
+func _with_a_gamepad_the_keys_show_its_buttons() -> bool:
+	var room: Node2D = await _new_room()
+	var paths: Array[NodePath] = [^"Tutorial/Move/MoveLeftKey", ^"Tutorial/Move/MoveRightKey",
+			^"Tutorial/Jump/JumpKey", ^"Tutorial/Crucifix/CrucifixKey"]
+	Input.joy_connection_changed.emit(0, true)
+	await process_frame
+	var with_pad: Array[String] = []
+	for path: NodePath in paths:
+		with_pad.append((room.get_node(path) as KeyPrompt).get_text())
+	Input.joy_connection_changed.emit(0, false)
+	await process_frame
+	var without: Array[String] = []
+	for path: NodePath in paths:
+		without.append((room.get_node(path) as KeyPrompt).get_text())
+	await _remove_room(room)
+	var expected_pad: Array[String] = ["LS ←", "LS →", "A", "RT"]
+	var expected_keys: Array[String] = [KeyPrompt.key_text(&"move_left"),
+			KeyPrompt.key_text(&"move_right"), KeyPrompt.key_text(&"jump"),
+			KeyPrompt.key_text(&"crucifix")]
+	return report(with_pad == expected_pad and without == expected_keys,
+			"Gamepad connected: %s (expected %s); disconnected: %s (expected %s)"
+			% [with_pad, expected_pad, without, expected_keys])
 
 
 func _velvet_talks_once_on_her_own_and_holds_the_man() -> bool:
