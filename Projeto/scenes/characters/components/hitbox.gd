@@ -19,6 +19,10 @@ signal hold_sink_changed(sink: float)
 ## Hurtbox is no longer held.
 signal hold_ended(hurtbox: Hurtbox)
 
+## What a death in its hold is put down to, in the run's numbers; empty takes the file name of the
+## scene it is part of, as demon or big_demon.
+@export var cause: StringName = &""
+
 ## What the hit does, which the owner sets from its attack before activate(), so they are not in
 ## the Inspector: SP it takes, and how far, in px along the floor, and how high it throws what it
 ## lands on; and whether it pierces a Hurtbox's invulnerability, landing through one started as
@@ -51,6 +55,16 @@ func activate() -> void:
 
 func deactivate() -> void:
 	_active = false
+
+
+## What a death in its hold is put down to: Cause, or else the file name of the scene it is part of,
+## or else unknown.
+func get_cause() -> StringName:
+	if not cause.is_empty():
+		return cause
+	if owner != null and not owner.scene_file_path.is_empty():
+		return StringName(owner.scene_file_path.get_file().get_basename())
+	return Player.UNKNOWN_CAUSE
 
 
 func is_active() -> bool:

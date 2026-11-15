@@ -11,7 +11,9 @@
 # the overlay following it. With Start Visible off, the overlay starts hidden. In the test room the
 # overlay is linked to the camera too, and a camera line shows the zone the player is in and the
 # camera's look ahead and look down. With a player, a line also shows the offer the debug keys
-# answer, the moral stage and whether he holds the crucifix. That it frees itself outside debug
+# answer, the moral stage and whether he holds the crucifix, and another the run's hidden numbers:
+# phase, deaths, last death, time, and the pressure of his deaths against the next offer's threshold,
+# with that offer waiting at its zone, or closed. That it frees itself outside debug
 # builds can only be checked on a release export.
 # Run from the repository root; the exit code is 0 on pass and 1 on fail:
 # godot --headless --fixed-fps 60 --path Projeto --script res://tests/test_debug_overlay.gd
@@ -50,9 +52,11 @@ const SPEED_TOLERANCE: float = 1.0
 const FULL_JUMP_FRAMES: int = 60
 ## Physics frames the jump line must stay unchanged after the last jump.
 const LATCH_FRAMES: int = 30
-## Lines in the text with a player and no jump yet: the frame rate's, the player's, the SP's and
-## the offers'.
-const LINES_BEFORE_ANY_JUMP: int = 4
+## Lines in the text with a player and no jump yet: the frame rate's, the player's, the SP's, the
+## offers' and the run's.
+const LINES_BEFORE_ANY_JUMP: int = 5
+## Deaths in one zone at most for the run line's case to bring a shortcut offer.
+const MAX_DEATHS_FOR_AN_OFFER: int = 40
 ## Repeats the keyboard sends while F3 is held down, in the held-key case.
 const KEY_REPEATS: int = 3
 ## The SP values of the SP line case, set on its own copy of the stats so the .tres can change.
@@ -93,6 +97,7 @@ func _initialize() -> void:
 	results.append(await _the_jump_line_says_what_each_jump_was_and_keeps_it())
 	results.append(await _a_player_freed_mid_jump_stops_the_following())
 	results.append(await _the_camera_line_follows_the_room_s_camera())
+	results.append(await _the_run_line_shows_the_hidden_numbers())
 	finish(results)
 
 
@@ -461,6 +466,54 @@ func _the_camera_line_follows_the_room_s_camera() -> bool:
 	return report(linked and start_right and moved_right,
 			"Camera line: linked %s; at the start \"%s\"; after the move \"%s\""
 			% [linked, at_start.text, after_the_move.text])
+
+
+## With a player, the run's line: the phase, the deaths in it and in the level, the zone of the last
+## death, the time, and the death offer's pressure against its threshold, with the offer's state:
+## open, waiting at the zone of the death that brought it, then closed.
+func _the_run_line_shows_the_hidden_numbers() -> bool:
+	var stats: GameRunStats = root.get_node(^"RunStats") as GameRunStats
+	stats.reset()
+	stats.enter(&"debug_level", 2)
+	stats.add_time(65.0)
+	stats.record_death(&"pit")
+	var platform: StaticBody2D = make_platform(-FLOOR_HALF_WIDTH, FLOOR_HALF_WIDTH)
+	var player: Player = await spawn_on_floor(Vector2(0.0, FLOOR_SPAWN_HEIGHT))
+	if player == null:
+		await _remove(platform)
+		stats.reset()
+		return report(false, "Run line: the player never landed")
+	var overlay: DebugOverlay = await _spawn_overlay(true, player)
+	await _wait_process_frames(TEXT_FRAMES)
+	var open: String = _run_line(overlay)
+	var pacer: DeathOfferPacer = stats.get_death_offer_pacer()
+	var expected_open: String = ("run phase 2   deaths 1 phase, 1 level, 1 run   last death pit   "
+			+ "time 1:05   "
+			+ "death offer %.1f / %.1f open") % [pacer.get_pressure(), pacer.get_threshold()]
+	var deaths: int = 1
+	while not stats.has_death_offer() and deaths < MAX_DEATHS_FOR_AN_OFFER:
+		stats.record_death(&"pit")
+		deaths += 1
+	await _wait_process_frames(TEXT_FRAMES)
+	var waits: bool = _run_line(overlay).ends_with("waits at pit")
+	stats.close_death_offers()
+	await _wait_process_frames(TEXT_FRAMES)
+	var closed: bool = _run_line(overlay).ends_with(" closed")
+	await _remove(overlay)
+	await _remove(player)
+	await _remove(platform)
+	stats.reset()
+	return report(open == expected_open and waits and closed,
+			"Run line: \"%s\"; the offer waits at its zone %s, then closed %s"
+			% [open, waits, closed])
+
+
+## The run's line of the text, or "" if there is none.
+func _run_line(overlay: DebugOverlay) -> String:
+	for line: String in _text(overlay).split("\n"):
+		if line.begins_with("run "):
+			return line
+	return ""
 
 
 ## An overlay on its own, linked to linked_player if one is given, in the scene, after a frame. The

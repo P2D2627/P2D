@@ -27,6 +27,8 @@ enum State { ON_FLOOR, IN_AIR, ON_WALL, GRABBED }
 
 ## Name of death's modifier on the player.
 const DEATH_SOURCE: StringName = &"death"
+## What a death is put down to when whatever killed him does not say.
+const UNKNOWN_CAUSE: StringName = &"unknown"
 ## Radians a surface may lean past Floor Max Angle and still count as a floor or a ceiling, as in
 ## CharacterBody2D, so a wall to _is_a_level_wall() is a wall to is_on_wall().
 const FLOOR_ANGLE_THRESHOLD: float = 0.01
@@ -82,6 +84,11 @@ var _grabbed: bool = false
 var _was_on_floor: bool = false
 ## True once he has died, so he dies once.
 var _is_dead: bool = false
+## What he died of, as die() was told; empty while alive.
+var _death_cause: StringName = &""
+## Which one killed him, when that matters, as the strip of spikes; empty while alive or when it
+## does not, as for the dogs, a pack.
+var _death_source: StringName = &""
 ## What the next step would hit, for _assist_onto_a_ledge(): one, kept, so no frame makes a new one.
 var _ledge_hit: KinematicCollision2D = KinematicCollision2D.new()
 
@@ -226,11 +233,15 @@ func let_go() -> void:
 
 
 ## The man dies at once, as on spikes, whatever his SP: he stops where he is, with no run and no jump,
-## and says so with died, once. The level listens and starts over.
-func die() -> void:
+## and says so with died, once. The level listens and starts over, and reads get_death_cause() to
+## count the death: cause names what killed him, as spikes or the demon that held him, and source
+## which one, when that matters, as the strip of spikes he fell on.
+func die(cause: StringName = UNKNOWN_CAUSE, source: StringName = &"") -> void:
 	if _is_dead:
 		return
 	_is_dead = true
+	_death_cause = cause if not cause.is_empty() else UNKNOWN_CAUSE
+	_death_source = source
 	add_movement_modifier(DEATH_SOURCE, MovementModifier.new(0.0, 1.0, true))
 	hold_still()
 	died.emit()
@@ -240,8 +251,20 @@ func is_dead() -> bool:
 	return _is_dead
 
 
+## What he died of, as die() was told; empty while alive.
+func get_death_cause() -> StringName:
+	return _death_cause
+
+
+## Which one killed him, as die() was told: the strip of spikes; empty when it does not matter.
+func get_death_source() -> StringName:
+	return _death_source
+
+
+## The grab ran out of time: he dies of what held him.
 func _on_grab_escape_died() -> void:
-	die()
+	var grab_escape: GrabEscape = get_node_or_null(^"GrabEscape") as GrabEscape
+	die(grab_escape.get_hold_cause() if grab_escape != null else UNKNOWN_CAUSE)
 
 
 ## Changes the state from what the last move_and_slide() found, so the take-off frame still runs

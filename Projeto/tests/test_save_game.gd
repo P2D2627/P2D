@@ -6,6 +6,9 @@
 # the run, as in the test room, it leaves the state alone. Leaving the tutorial saves, and a death
 # after it starts in the hall. Walking into an exit saves the next phase, and Continue comes back to
 # it, with the state of that moment, whatever happened after it. A new game over a save asks first.
+# The run's numbers (RunStats) read back from a file of their own beside the save, and writing them
+# leaves the save as it was. A new game empties them; a death counts, is written at once, and is not
+# put back with the rest; Continue puts the numbers back as they were written.
 # The tests use a file of their own, never the player's save.
 # Run from the repository root; the exit code is 0 on pass and 1 on fail:
 # godot --headless --fixed-fps 60 --path Projeto --script res://tests/test_save_game.gd
@@ -37,8 +40,11 @@ func _initialize() -> void:
 	results.append(await _past_the_tutorial_a_death_starts_in_the_hall())
 	results.append(await _a_new_game_over_a_save_asks_first())
 	results.append(await _an_exit_saves_and_continue_comes_back_to_that_moment())
+	results.append(await _the_run_reads_back_beside_the_save())
+	results.append(await _a_death_counts_and_continue_puts_the_numbers_back())
 	_delete_save()
 	_progress().reset()
+	_run_stats().reset()
 	SaveFile.default_path = ""
 	finish(results)
 
@@ -51,9 +57,16 @@ func _moral() -> GameMoral:
 	return root.get_node(^"Moral") as GameMoral
 
 
+func _run_stats() -> GameRunStats:
+	return root.get_node(^"RunStats") as GameRunStats
+
+
 func _delete_save() -> void:
 	DirAccess.remove_absolute(SAVE_PATH)
 	DirAccess.remove_absolute(SAVE_PATH + SaveFile.COPY_SUFFIX)
+	var run_path: String = SaveFile.new().get_run_path()
+	DirAccess.remove_absolute(run_path)
+	DirAccess.remove_absolute(run_path + SaveFile.COPY_SUFFIX)
 
 
 func _write_text(text: String) -> void:
@@ -341,3 +354,57 @@ func _an_exit_saves_and_continue_comes_back_to_that_moment() -> bool:
 			("Exit: phase 2 %s, the word shows %s, phase 2 saved %s; the menu offers Continue %s, it "
 			+ "goes back to phase 2 %s, with the state of the exit %s")
 			% [changed, says_so, saved.get("scene", "") == PHASE_2_PATH, offered, back, same_state])
+
+
+func _the_run_reads_back_beside_the_save() -> bool:
+	_delete_save()
+	var file: SaveFile = SaveFile.new()
+	var missing: bool = file.read_run().is_empty()
+	file.write(PHASE_1_PATH, _progress().to_save())
+	var save_text: String = FileAccess.get_file_as_string(SAVE_PATH)
+	var record: RunRecord = RunRecord.new()
+	record.record_death(&"lust", 2, &"pit")
+	record.add_time(&"lust", 2, 7.5)
+	var wrote: bool = file.write_run(record.to_save())
+	var read: RunRecord = RunRecord.new()
+	read.from_save(SaveFile.new().read_run())
+	var same: bool = (read.deaths_in_phase(&"lust", 2) == 1
+			and is_equal_approx(read.phase_seconds(&"lust", 2), 7.5))
+	var beside: bool = file.get_run_path() != SAVE_PATH and FileAccess.file_exists(file.get_run_path())
+	var save_kept: bool = FileAccess.get_file_as_string(SAVE_PATH) == save_text
+	var no_copy: bool = not FileAccess.file_exists(file.get_run_path() + SaveFile.COPY_SUFFIX)
+	_delete_save()
+	return report(missing and wrote and same and beside and save_kept and no_copy,
+			("Run file: none at first %s, wrote %s, reads back %s, beside the save %s, the save as it "
+			+ "was %s, no copy left %s") % [missing, wrote, same, beside, save_kept, no_copy])
+
+
+## Numbers from before a new game go; a death counts, reaches the disk, and leaves the save alone;
+## after the menu, Continue puts back the numbers as written, though they were emptied meanwhile.
+func _a_death_counts_and_continue_puts_the_numbers_back() -> bool:
+	_delete_save()
+	_run_stats().enter(&"elsewhere", 1)
+	_run_stats().record_death(&"old")
+	var main: Node = await _main_in_a_new_game()
+	var emptied: bool = _run_stats().total_deaths() == 0
+	var save_text: String = FileAccess.get_file_as_string(SAVE_PATH)
+	var restarted: bool = await _die_and_wait_for_the_new_copy(main)
+	var counted: bool = _run_stats().total_deaths() == 1
+	var on_disk: RunRecord = RunRecord.new()
+	on_disk.from_save(SaveFile.new().read_run())
+	var written: bool = on_disk.total_deaths() == 1
+	var save_kept: bool = FileAccess.get_file_as_string(SAVE_PATH) == save_text
+	main.call(&"_on_main_menu_requested")
+	await process_frame
+	_run_stats().reset()
+	await tap(KEY_ENTER)
+	await wait_frames(3)
+	var back: bool = level_in(main) != null and _run_stats().total_deaths() == 1
+	await remove_main(main)
+	_progress().reset()
+	_run_stats().reset()
+	_delete_save()
+	return report(emptied and restarted and counted and written and save_kept and back,
+			("Run numbers: emptied by a new game %s; a death restarts %s, counts %s, is on disk %s, "
+			+ "leaves the save %s; Continue puts it back %s")
+			% [emptied, restarted, counted, written, save_kept, back])

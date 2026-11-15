@@ -11,7 +11,7 @@ const EXPECTED_CUES: Dictionary = {
 	"lust.dialogue": [
 		"waking", "name_empty", "named", "velvet", "velvet_questions", "velvet_argument",
 		"velvet_again", "velvet_advance", "velvet_burned", "asmodeus_offer", "asmodeus_second_offer",
-		"asmodeus_gift", "stairs",
+		"asmodeus_deaths", "asmodeus_gift", "stairs",
 	],
 	"gluttony.dialogue": [
 		"arrival", "crumb", "crumb_wedding", "crumb_bite", "crumb_repelled", "beelzebub_offer",
