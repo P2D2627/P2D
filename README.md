@@ -709,6 +709,25 @@ erro médio de 7 em 255 níveis de cinzento. Nas fases 1 e 2, 99 das 113 zonas d
 fundo; na fase 3, as zonas foram agrupadas em blocos do tamanho das áreas de cor da fase 2, e cada bloco recebeu uma
 dessas cores, diferente da dos blocos vizinhos.
 
+Os dois poços por onde se desce do início da fase 3 foram depois alongados para o dobro: o poço ao lado do bloco
+passou de 8 para 16 tiles de altura, e o poço com picos que se lhe segue, de 22 para 44. Em cada um, o troço entre as
+duas paredes foi copiado por baixo de si mesmo, com as mesmas faixas de picos, que passaram de 2 para 4 e de 4 para 8.
+Para que cada poço continue a acabar na mesma sala, a sala inicial, o bloco e o corredor para a fase 2 ficaram onde
+estavam, e todo o resto da fase 3 desceu 30 tiles (1440 px) sem mudar de forma; por baixo da fase havia mais de 90
+linhas de rocha livre. O texto da fase 3 tem agora 154 × 188 tiles, 178 tiles de picos e 30 faixas nas paredes. A cena
+foi alterada por um script fora do repositório, que move cada peça com a parte do mapa a que pertence (tiles, cães,
+picos, plataformas, portões, desbloqueadores, pedras do contorno, rochas do fundo, zonas de câmara e saída), estica as
+quatro faixas de pedra das paredes dos poços e copia as seis faixas de picos; as imagens do fundo foram deslocadas da
+mesma forma, píxel a píxel, com uma transição de 24 px onde começa cada troço copiado, para a luz não mudar de golpe.
+Na verificação em papel, com o movimento atual da personagem, o poço grande mantém a margem que tinha: 9 fotogramas
+para sair vivo para o fosso, contra 8. O poço do bloco ficou mais exigente: passam 16% das combinações testadas de
+largar e voltar a carregar na direção, contra 67% antes, porque a última faixa de picos fica na parede onde se
+aterra. A verificação passou também a contar como dúvida um toque numa parede a 19 px ou menos do seu topo, porque o
+jogo levanta a personagem para cima de uma saliência que falha por até 16 px. O caminho do
+`test_level1_phase3_route.gd` até aos dois desbloqueadores foi encontrado de novo, e a personagem real percorre-o. O
+último troço, até à saída, é ainda o que foi gravado antes de o salto ficar mais pesado, e falha, como já falhava antes
+desta alteração; a verificação em papel também não sobe, com o movimento atual, a chaminé da esquerda que leva ao F.
+
 | Medida em headless, sem o custo de desenhar | Fase 2 sozinha (33 cães) | Nível 1 antes da fase 3 (88 cães) |
 |---|---|---|
 | Recomeçar depois de uma morte (instanciar e entrar na árvore) | cerca de 25 ms | cerca de 90 ms |

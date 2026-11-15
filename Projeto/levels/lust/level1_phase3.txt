@@ -25,39 +25,39 @@ zone: P3Corridor 193 13 216 18 limit_horizontally=true horizontal_anchor=1.0 ver
 zone: P3SCorridor 173 13 194 18 limit_horizontally=true horizontal_anchor=0.0 vertical_anchor=1.0 bottom_margin=48 zoom=1.3 auto_zoom=false
 zone: P3SPocket 165 13 181 25 limit_horizontally=true horizontal_anchor=1.0 vertical_anchor=1.0 bottom_margin=96 zoom=2.0 auto_zoom=false
 zone: P3SOverPillar 152 10 174 16 limit_horizontally=true horizontal_anchor=1.0 vertical_anchor=1.0 bottom_margin=96 zoom=1.3 auto_zoom=false
-zone: P3SLeft 152 15 161 31 limit_horizontally=true horizontal_anchor=0.5 vertical_anchor=1.0 bottom_margin=96 zoom=1.3 auto_zoom=false
-zone: P3UnderBlock 134 23 153 28 limit_horizontally=true horizontal_anchor=0.5 vertical_anchor=1.0 bottom_margin=96 zoom=1.3 auto_zoom=false
-zone: P3DropShaft 134 23 141 50 limit_horizontally=true horizontal_anchor=0.0 vertical_anchor=1.0 bottom_margin=96 zoom=1.45 auto_zoom=false
-zone: P3UnlockerPocket 181 26 194 33 limit_horizontally=true horizontal_anchor=0.0 vertical_anchor=1.0 bottom_margin=96 zoom=1.6 auto_zoom=false
-zone: P3UnlockerChimney 184 32 188 50 limit_horizontally=true horizontal_anchor=0.0 vertical_anchor=1.0 bottom_margin=200 zoom=2.0 auto_zoom=false
-zone: P3Cave 162 34 175 50 limit_horizontally=true horizontal_anchor=0.5 vertical_anchor=1.0 bottom_margin=96 zoom=1.3 auto_zoom=false
-zone: P3Hall 134 49 192 64 limit_horizontally=true horizontal_anchor=0.0 vertical_anchor=1.0 bottom_margin=48 zoom=1.3 auto_zoom=false
-zone: P3HallLeft 134 63 142 68 limit_horizontally=true horizontal_anchor=0.5 vertical_anchor=1.0 bottom_margin=96 zoom=1.6 auto_zoom=false
-zone: P3DogPit 148 63 167 77 limit_horizontally=true horizontal_anchor=0.0 vertical_anchor=1.0 bottom_margin=96 zoom=1.3 auto_zoom=false
-zone: P3Gate2Door 161 76 167 83 limit_horizontally=true horizontal_anchor=0.0 vertical_anchor=1.0 bottom_margin=200 zoom=2.0 auto_zoom=false
-zone: P3LowCorridor 148 82 167 88 limit_horizontally=true horizontal_anchor=0.0 vertical_anchor=1.0 bottom_margin=96 zoom=1.3 auto_zoom=false
-zone: P3UnderShelf 134 76 149 94 limit_horizontally=true horizontal_anchor=0.0 vertical_anchor=1.0 bottom_margin=96 zoom=1.3 auto_zoom=false
-zone: P3Notch 138 93 146 97 limit_horizontally=true horizontal_anchor=0.0 vertical_anchor=1.0 bottom_margin=96 zoom=1.3 auto_zoom=false
-zone: P3UnderGreen 92 88 135 94 limit_horizontally=true horizontal_anchor=0.0 vertical_anchor=1.0 bottom_margin=96 zoom=1.3 auto_zoom=false
-zone: P3GreenRoom 106 73 135 83 limit_horizontally=true horizontal_anchor=0.5 vertical_anchor=1.0 bottom_margin=96 zoom=1.3 auto_zoom=false
-zone: P3Hole 113 67 118 74 limit_horizontally=true horizontal_anchor=1.0 vertical_anchor=1.0 bottom_margin=200 zoom=2.0 auto_zoom=false
-zone: P3BesideGreen 85 52 98 89 limit_horizontally=true horizontal_anchor=0.0 vertical_anchor=1.0 bottom_margin=96 zoom=1.3 auto_zoom=false
-zone: P3UnderT 85 44 126 68 limit_horizontally=true horizontal_anchor=0.0 vertical_anchor=1.0 bottom_margin=96 zoom=1.3 auto_zoom=false
-zone: P3OverT 74 12 126 20 limit_horizontally=true horizontal_anchor=0.0 vertical_anchor=1.0 bottom_margin=0 zoom=1.3 auto_zoom=false
-zone: P3TLeft 71 19 94 36 limit_horizontally=true horizontal_anchor=0.5 vertical_anchor=1.0 bottom_margin=96 zoom=1.3 auto_zoom=false
-zone: P3TMiddle 93 19 119 33 limit_horizontally=true horizontal_anchor=1.0 vertical_anchor=1.0 bottom_margin=96 zoom=1.3 auto_zoom=false
-zone: P3TRight 119 19 126 28 limit_horizontally=true horizontal_anchor=0.5 vertical_anchor=1.0 bottom_margin=96 zoom=1.8 auto_zoom=false
-zone: P3BesideT 118 27 126 45 limit_horizontally=true horizontal_anchor=0.5 vertical_anchor=1.0 bottom_margin=96 zoom=1.6 auto_zoom=false
-zone: P3LeftColumn 59 27 72 61 limit_horizontally=true horizontal_anchor=1.0 vertical_anchor=1.0 bottom_margin=96 zoom=1.3 auto_zoom=false
-zone: P3Gate1Shaft 71 56 77 70 limit_horizontally=true horizontal_anchor=0.5 vertical_anchor=1.0 bottom_margin=200 zoom=2.0 auto_zoom=false
-zone: P3BigColumnTop 65 69 84 95 limit_horizontally=true horizontal_anchor=1.0 vertical_anchor=1.0 bottom_margin=96 zoom=1.3 auto_zoom=false
-zone: P3BigColumn 65 94 93 134 limit_horizontally=true horizontal_anchor=0.0 vertical_anchor=1.0 bottom_margin=96 zoom=1.45 auto_zoom=false
-zone: P3BehindGate3 92 104 112 114 limit_horizontally=true horizontal_anchor=0.0 vertical_anchor=1.0 bottom_margin=96 zoom=1.3 auto_zoom=false
-zone: P3Gate3Step 111 109 118 122 limit_horizontally=true horizontal_anchor=0.0 vertical_anchor=1.0 bottom_margin=96 zoom=1.3 auto_zoom=false
-zone: P3Gate3Corridor 117 116 145 122 limit_horizontally=true horizontal_anchor=0.0 vertical_anchor=1.0 bottom_margin=96 zoom=1.3 auto_zoom=false
-zone: P3Gate3Shaft 144 116 148 134 limit_horizontally=true horizontal_anchor=0.0 vertical_anchor=1.0 bottom_margin=200 zoom=2.0 auto_zoom=false
-zone: P3BottomLeft 65 133 97 145 limit_horizontally=true horizontal_anchor=0.0 vertical_anchor=1.0 bottom_margin=96 zoom=1.3 auto_zoom=false
-zone: P3BottomHall 96 133 189 153 limit_horizontally=true horizontal_anchor=0.0 vertical_anchor=1.0 bottom_margin=96 zoom=1.3 auto_zoom=false
+zone: P3SLeft 152 15 161 39 limit_horizontally=true horizontal_anchor=0.5 vertical_anchor=1.0 bottom_margin=96 zoom=1.3 auto_zoom=false
+zone: P3UnderBlock 134 31 153 36 limit_horizontally=true horizontal_anchor=0.5 vertical_anchor=1.0 bottom_margin=96 zoom=1.3 auto_zoom=false
+zone: P3DropShaft 134 31 141 80 limit_horizontally=true horizontal_anchor=0.0 vertical_anchor=1.0 bottom_margin=96 zoom=1.45 auto_zoom=false
+zone: P3UnlockerPocket 181 56 194 63 limit_horizontally=true horizontal_anchor=0.0 vertical_anchor=1.0 bottom_margin=96 zoom=1.6 auto_zoom=false
+zone: P3UnlockerChimney 184 62 188 80 limit_horizontally=true horizontal_anchor=0.0 vertical_anchor=1.0 bottom_margin=200 zoom=2.0 auto_zoom=false
+zone: P3Cave 162 64 175 80 limit_horizontally=true horizontal_anchor=0.5 vertical_anchor=1.0 bottom_margin=96 zoom=1.3 auto_zoom=false
+zone: P3Hall 134 79 192 94 limit_horizontally=true horizontal_anchor=0.0 vertical_anchor=1.0 bottom_margin=48 zoom=1.3 auto_zoom=false
+zone: P3HallLeft 134 93 142 98 limit_horizontally=true horizontal_anchor=0.5 vertical_anchor=1.0 bottom_margin=96 zoom=1.6 auto_zoom=false
+zone: P3DogPit 148 93 167 107 limit_horizontally=true horizontal_anchor=0.0 vertical_anchor=1.0 bottom_margin=96 zoom=1.3 auto_zoom=false
+zone: P3Gate2Door 161 106 167 113 limit_horizontally=true horizontal_anchor=0.0 vertical_anchor=1.0 bottom_margin=200 zoom=2.0 auto_zoom=false
+zone: P3LowCorridor 148 112 167 118 limit_horizontally=true horizontal_anchor=0.0 vertical_anchor=1.0 bottom_margin=96 zoom=1.3 auto_zoom=false
+zone: P3UnderShelf 134 106 149 124 limit_horizontally=true horizontal_anchor=0.0 vertical_anchor=1.0 bottom_margin=96 zoom=1.3 auto_zoom=false
+zone: P3Notch 138 123 146 127 limit_horizontally=true horizontal_anchor=0.0 vertical_anchor=1.0 bottom_margin=96 zoom=1.3 auto_zoom=false
+zone: P3UnderGreen 92 118 135 124 limit_horizontally=true horizontal_anchor=0.0 vertical_anchor=1.0 bottom_margin=96 zoom=1.3 auto_zoom=false
+zone: P3GreenRoom 106 103 135 113 limit_horizontally=true horizontal_anchor=0.5 vertical_anchor=1.0 bottom_margin=96 zoom=1.3 auto_zoom=false
+zone: P3Hole 113 97 118 104 limit_horizontally=true horizontal_anchor=1.0 vertical_anchor=1.0 bottom_margin=200 zoom=2.0 auto_zoom=false
+zone: P3BesideGreen 85 82 98 119 limit_horizontally=true horizontal_anchor=0.0 vertical_anchor=1.0 bottom_margin=96 zoom=1.3 auto_zoom=false
+zone: P3UnderT 85 74 126 98 limit_horizontally=true horizontal_anchor=0.0 vertical_anchor=1.0 bottom_margin=96 zoom=1.3 auto_zoom=false
+zone: P3OverT 74 42 126 50 limit_horizontally=true horizontal_anchor=0.0 vertical_anchor=1.0 bottom_margin=0 zoom=1.3 auto_zoom=false
+zone: P3TLeft 71 49 94 66 limit_horizontally=true horizontal_anchor=0.5 vertical_anchor=1.0 bottom_margin=96 zoom=1.3 auto_zoom=false
+zone: P3TMiddle 93 49 119 63 limit_horizontally=true horizontal_anchor=1.0 vertical_anchor=1.0 bottom_margin=96 zoom=1.3 auto_zoom=false
+zone: P3TRight 119 49 126 58 limit_horizontally=true horizontal_anchor=0.5 vertical_anchor=1.0 bottom_margin=96 zoom=1.8 auto_zoom=false
+zone: P3BesideT 118 57 126 75 limit_horizontally=true horizontal_anchor=0.5 vertical_anchor=1.0 bottom_margin=96 zoom=1.6 auto_zoom=false
+zone: P3LeftColumn 59 57 72 91 limit_horizontally=true horizontal_anchor=1.0 vertical_anchor=1.0 bottom_margin=96 zoom=1.3 auto_zoom=false
+zone: P3Gate1Shaft 71 86 77 100 limit_horizontally=true horizontal_anchor=0.5 vertical_anchor=1.0 bottom_margin=200 zoom=2.0 auto_zoom=false
+zone: P3BigColumnTop 65 99 84 125 limit_horizontally=true horizontal_anchor=1.0 vertical_anchor=1.0 bottom_margin=96 zoom=1.3 auto_zoom=false
+zone: P3BigColumn 65 124 93 164 limit_horizontally=true horizontal_anchor=0.0 vertical_anchor=1.0 bottom_margin=96 zoom=1.45 auto_zoom=false
+zone: P3BehindGate3 92 134 112 144 limit_horizontally=true horizontal_anchor=0.0 vertical_anchor=1.0 bottom_margin=96 zoom=1.3 auto_zoom=false
+zone: P3Gate3Step 111 139 118 152 limit_horizontally=true horizontal_anchor=0.0 vertical_anchor=1.0 bottom_margin=96 zoom=1.3 auto_zoom=false
+zone: P3Gate3Corridor 117 146 145 152 limit_horizontally=true horizontal_anchor=0.0 vertical_anchor=1.0 bottom_margin=96 zoom=1.3 auto_zoom=false
+zone: P3Gate3Shaft 144 146 148 164 limit_horizontally=true horizontal_anchor=0.0 vertical_anchor=1.0 bottom_margin=200 zoom=2.0 auto_zoom=false
+zone: P3BottomLeft 65 163 97 175 limit_horizontally=true horizontal_anchor=0.0 vertical_anchor=1.0 bottom_margin=96 zoom=1.3 auto_zoom=false
+zone: P3BottomHall 96 163 189 183 limit_horizontally=true horizontal_anchor=0.0 vertical_anchor=1.0 bottom_margin=96 zoom=1.3 auto_zoom=false
 ---
 ##########################################################################################################################################################
 ##########################################################################################################################################################
@@ -69,24 +69,54 @@ zone: P3BottomHall 96 133 189 153 limit_horizontally=true horizontal_anchor=0.0 
 ##########################################################################################################################################################
 #######################################################################################################.....................##############################
 #######################################################################################################.....................##############################
-#########################...................................................###########################.....................##############################
-#########################...................................................###########################.........................................##########
-#########################...................................................###########################............====.........................##########
-#########################...................................................###########################........#####............................##########
-#########################...................................................###########################........#####.......................P....##########
-#########################...................................................###########################.......]#####....===........#######################
-#########################...........................................d.......###########################.......]#####........---....#######################
-######################...................................#############.---..###########################........#####...............#######################
-######################...................................#############......###########################[.......#####.....---.......#######################
-######################...........................----....#############......###########################[.......#####...............#######################
-######################...........###########.............#############......###########################........#####.---...........#######################
-######################...........###########.............#############......#########..........................#####....d...d......#######################
-######################...........###########.............#############......#########..........................###########################################
-######################...........###########.............#############......#########..........................###########################################
-######################...........###########.............#############......#########..........................#####################............##########
-##########.......................###########................................#########[.....##############......#####################............##########
-##########.......................###########................................#########[.....##############......#####################............##########
-##########.......................###########................................#########......##############^^^^^^#####################............##########
+#######################################################################################################.....................##############################
+#######################################################################################################.........................................##########
+#######################################################################################################............====.........................##########
+#######################################################################################################........#####............................##########
+#######################################################################################################........#####.......................P....##########
+#######################################################################################################.......]#####....===........#######################
+#######################################################################################################.......]#####........---....#######################
+#######################################################################################################........#####...............#######################
+#######################################################################################################[.......#####.....---.......#######################
+#######################################################################################################[.......#####...............#######################
+#######################################################################################################........#####.---...........#######################
+#######################################################################################################........#####....d...d......#######################
+#######################################################################################################........###########################################
+#######################################################################################################.......]###########################################
+#######################################################################################################.......]###########################################
+#######################################################################################################........###########################################
+#######################################################################################################[.......###########################################
+#######################################################################################################[.......###########################################
+#######################################################################################################........###########################################
+#####################################################################################..........................###########################################
+#####################################################################################..........................###########################################
+#####################################################################################..........................###########################################
+#####################################################################################..........................###########################################
+#####################################################################################[.....##############......###########################################
+#####################################################################################[.....##############......###########################################
+#####################################################################################......##############^^^^^^###########################################
+#####################################################################################......###############################################################
+#####################################################################################......###############################################################
+#####################################################################################......###############################################################
+#####################################################################################......###############################################################
+#########################...................................................#########.....]###############################################################
+#########################...................................................#########.....]###############################################################
+#########################...................................................#########......###############################################################
+#########################...................................................#########......###############################################################
+#########################...................................................#########......###############################################################
+#########################...................................................#########......###############################################################
+#########################...........................................d.......#########[.....###############################################################
+######################...................................#############.---..#########[.....###############################################################
+######################...................................#############......#########......###############################################################
+######################...........................----....#############......#########......###############################################################
+######################...........###########.............#############......#########......###############################################################
+######################...........###########.............#############......#########......###############################################################
+######################...........###########.............#############......#########.....]###############################################################
+######################...........###########.............#############......#########.....]###############################################################
+######################...........###########.............#############......#########.....]#########################################............##########
+##########.......................###########................................#########[.....#########################################............##########
+##########.......................###########................................#########[.....#########################################............##########
+##########.......................###########................................#########......#########################################............##########
 ##########.......................###########[...............................#########......#########################################............##########
 ##########.......................###########[.......^^^^^^....^^^...........#########......#########################################........u...##########
 ##########.......................####################################.......#########......############################################...################
