@@ -1,0 +1,7 @@
+[gd_resource type="SystemFont" format=3]
+
+[ext_resource type="FontFile" path="res://assets/fonts/Tinos-Regular.ttf" id="1_tinos"]
+
+[resource]
+font_names = PackedStringArray("Times New Roman", "serif")
+fallbacks = Array[Font]([ExtResource("1_tinos")])

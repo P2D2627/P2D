@@ -3,6 +3,8 @@
 [ext_resource type="Script" path="res://scenes/screens/pause_menu.gd" id="1_script"]
 [ext_resource type="Theme" path="res://themes/ui_theme.tres" id="2_theme"]
 [ext_resource type="PackedScene" path="res://scenes/screens/options_menu.tscn" id="3_options_menu"]
+[ext_resource type="PackedScene" path="res://scenes/screens/menu_backdrop.tscn" id="4_backdrop"]
+[ext_resource type="Script" path="res://scenes/screens/menu_crosses.gd" id="5_crosses"]
 
 [node name="PauseMenu" type="CanvasLayer"]
 process_mode = 3
@@ -10,19 +12,13 @@ layer = 10
 visible = false
 script = ExtResource("1_script")
 
-[node name="Dim" type="ColorRect" parent="."]
-layout_mode = 3
-anchors_preset = 15
-anchor_right = 1.0
-anchor_bottom = 1.0
-grow_horizontal = 2
-grow_vertical = 2
-color = Color(0, 0, 0, 0.5)
+[node name="MenuBackdrop" parent="." instance=ExtResource("4_backdrop")]
+background_alpha = 0.6
 
 [node name="Center" type="CenterContainer" parent="."]
 layout_mode = 3
-anchors_preset = 15
-anchor_right = 1.0
+anchor_left = 0.48
+anchor_right = 0.98
 anchor_bottom = 1.0
 grow_horizontal = 2
 grow_vertical = 2
@@ -34,6 +30,7 @@ custom_minimum_size = Vector2(600, 0)
 layout_mode = 2
 
 [node name="Heading" type="Label" parent="Center/Panel"]
+visible = false
 layout_mode = 2
 text = "Paused"
 horizontal_alignment = 1
@@ -41,18 +38,32 @@ horizontal_alignment = 1
 [node name="ResumeButton" type="Button" parent="Center/Panel"]
 unique_name_in_owner = true
 layout_mode = 2
-text = "Resume"
+theme_type_variation = &"MenuFirstOption"
+text = "RESUME"
 
 [node name="OptionsButton" type="Button" parent="Center/Panel"]
 unique_name_in_owner = true
 layout_mode = 2
-text = "Options"
+theme_type_variation = &"MenuOption"
+text = "SETTINGS"
 
 [node name="MainMenuButton" type="Button" parent="Center/Panel"]
 unique_name_in_owner = true
 layout_mode = 2
-text = "Main Menu"
+theme_type_variation = &"MenuOption"
+text = "MAIN MENU"
 
 [node name="OptionsMenu" parent="Center" instance=ExtResource("3_options_menu")]
 unique_name_in_owner = true
 layout_mode = 2
+
+[node name="Crosses" type="Control" parent="." node_paths=PackedStringArray("menu")]
+layout_mode = 3
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 2
+script = ExtResource("5_crosses")
+menu = NodePath("../Center")

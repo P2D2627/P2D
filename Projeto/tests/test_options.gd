@@ -1,12 +1,14 @@
-# Checks the options screen, through the main scene. With no save, the main menu shows Options
-# between Play and Quit, and Options opens the screen with the first volume selected, writing
+# Checks the options screen, through the main scene. With no save, the main menu shows Settings
+# (OptionsButton) between New Game (PlayButton) and Quit, and it opens the screen with the first
+# volume selected, writing
 # nothing. The screen
 # shows what Settings holds. Each control changes Settings: the arrows move a volume, Enter turns
 # full screen and V-Sync on and off, and the frame rate list picks a cap. Reset brings back the
 # defaults, on the screen and in Settings. Back, Esc and B close the screen onto the Options button,
 # and that Esc goes no further. In the pause, the same screen opens; Esc and B go back to the pause,
 # still paused, and Esc there resumes. A pause left from the options opens again on its own panel.
-# All the text takes its size from the UI theme. The autoload Settings saves to a test file (see
+# All the text takes its size from the UI theme (its own, or a variation the theme sizes), with none
+# set on a node. The autoload Settings saves to a test file (see
 # tests/support/menu_test.gd), so the player's file is never touched.
 # The cases give a button the focus straight away, unless the arrows are what they check: from the
 # Options button, the down arrow and Enter would press Quit.
@@ -40,7 +42,7 @@ func _the_main_menu_has_options_between_play_and_quit() -> bool:
 	await tap(KEY_DOWN)
 	var selected: bool = has_focus(main_menu_node(main, ^"%OptionsButton"))
 	await remove_main(main)
-	return report(order == PackedStringArray(["Play", "Options", "Quit"]) and selected,
+	return report(order == PackedStringArray(["NEW GAME", "SETTINGS", "QUIT"]) and selected,
 			"The main menu's buttons %s, Options selected one below Play %s" % [order, selected])
 
 

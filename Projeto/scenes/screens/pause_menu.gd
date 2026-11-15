@@ -1,7 +1,9 @@
 class_name PauseMenu
 extends CanvasLayer
 
-## The pause screen, over the game darkened by Dim: Resume, Options and Main Menu, and the options
+## The pause screen, over the game seen through the MenuBackdrop (the character in the light, on a
+## black that lets the game show), with the crosses on the selected option: Resume, the biggest,
+## Settings (OptionsButton) and Main Menu, and the options
 ## screen, the same one as in the main menu. Its scene starts it hidden and runs it while the game
 ## is paused (process mode Always). It only says which button was pressed, through its signals; Main
 ## pauses and resumes the game and decides what each button does.
