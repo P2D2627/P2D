@@ -37,6 +37,10 @@ window/stretch/aspect="expand"
 
 enabled=PackedStringArray("res://addons/dialogue_manager/plugin.cfg")
 
+[gui]
+
+theme/custom_font="res://themes/main_font.tres"
+
 [input]
 
 ui_accept={
