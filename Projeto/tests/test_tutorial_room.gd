@@ -1,9 +1,10 @@
 # Checks the tutorial, the start of Lust phase 1. The man wakes at its Wake Point, and its way out
-# leads into the phase's start hall with no cut. Each key drawn on the background shows the key the Input Map has for its action, Interact's R included, and reads it
+# leads into the phase's start hall with no cut. Each key drawn on the background shows the key the Input Map has for its action, Interact's E included, and reads it
 # again when the game comes back from the pause, where the controls are changed. Velvet, the
 # tutorial's demon, talks on her own the first time the man walks in, and only that once: he stands
 # still, with no jump and no crucifix, until the balloon goes. Then her key shows, and Interact talks
-# again; a state that says they met keeps her from starting over. The demon in the corridor attacks as a demon does but takes no SP: its lunge only throws
+# again, also from the gamepad's X and the keyboard's E as the devices send them; a state that says
+# they met keeps her from starting over. The demon in the corridor attacks as a demon does but takes no SP: its lunge only throws
 # the man back, and the crucifix throws it into the pit at the corridor's end.
 # Run from the repository root; the exit code is 0 on pass and 1 on fail:
 # godot --headless --fixed-fps 60 --path Projeto --script res://tests/test_tutorial_room.gd
@@ -44,6 +45,7 @@ func _initialize() -> void:
 	results.append(await _a_key_changed_in_the_pause_shows_once_it_ends())
 	results.append(await _velvet_talks_once_on_her_own_and_holds_the_man())
 	results.append(await _after_the_first_talk_interact_talks_again())
+	results.append(await _the_x_button_and_e_talk_to_her_again())
 	results.append(await _with_the_talk_in_the_state_she_does_not_start_over())
 	results.append(await _a_jump_clears_the_jump_wall())
 	results.append(await _the_chimney_climbs_with_jump_on_each_wall())
@@ -108,7 +110,7 @@ func _each_key_shows_its_action_s_key() -> bool:
 			&"interact"]:
 		expected.append(KeyPrompt.key_text(action))
 	await _remove_room(room)
-	return report(texts == expected and texts[2] == "Space" and texts[5] == "R"
+	return report(texts == expected and texts[2] == "Space" and texts[5] == "E"
 			and not texts.has(KeyPrompt.NO_KEY_TEXT),
 			"Keys on the background: %s, from the Input Map %s" % [texts, expected])
 
@@ -182,6 +184,49 @@ func _after_the_first_talk_interact_talks_again() -> bool:
 	return report(key_shows and talks_again and from_again_cue,
 			"Talking again: key shows %s, Interact talks %s, from %s %s"
 			% [key_shows, talks_again, again_cue, from_again_cue])
+
+
+## The gamepad's X and the keyboard's E, sent as the devices send them, each start her again: the
+## real buttons reach Interact, and not only the action pressed by name.
+func _the_x_button_and_e_talk_to_her_again() -> bool:
+	var room: Node2D = await _new_room()
+	var velvet: TutorialDemon = room.get_node(^"Tutorial/TutorialDemon") as TutorialDemon
+	var player: Player = room.get_node(^"Player") as Player
+	player.global_position = AT_VELVET
+	await wait_until(func() -> bool: return velvet.get_state() == TutorialDemon.State.TALKING)
+	var by_x: bool = await _talks_again_after(velvet, _x_button)
+	var by_e: bool = await _talks_again_after(velvet, _e_key)
+	await _remove_room(room)
+	return report(by_x and by_e, "Talking again by the devices: X talks %s, E talks %s"
+			% [by_x, by_e])
+
+
+## Closes her balloon, waits for her to stand idle, and presses and lets go the input that make
+## gives; whether she talks again within a few frames of the press.
+func _talks_again_after(velvet: TutorialDemon, make: Callable) -> bool:
+	_balloon(velvet).queue_free()
+	await wait_until(func() -> bool: return velvet.get_state() == TutorialDemon.State.IDLE)
+	Input.parse_input_event(make.call(true))
+	var talks: bool = await wait_until(
+			func() -> bool: return velvet.get_state() == TutorialDemon.State.TALKING, 5)
+	Input.parse_input_event(make.call(false))
+	await process_frame
+	return talks
+
+
+func _x_button(pressed: bool) -> InputEventJoypadButton:
+	var event: InputEventJoypadButton = InputEventJoypadButton.new()
+	event.button_index = JOY_BUTTON_X
+	event.pressed = pressed
+	return event
+
+
+func _e_key(pressed: bool) -> InputEventKey:
+	var event: InputEventKey = InputEventKey.new()
+	event.keycode = KEY_E
+	event.physical_keycode = KEY_E
+	event.pressed = pressed
+	return event
 
 
 func _a_jump_clears_the_jump_wall() -> bool:

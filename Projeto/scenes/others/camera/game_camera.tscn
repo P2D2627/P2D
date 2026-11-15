@@ -2,6 +2,12 @@
 
 [ext_resource type="Script" path="res://scenes/others/camera/game_camera.gd" id="1_script"]
 [ext_resource type="Resource" path="res://scenes/others/camera/camera_stats.tres" id="2_stats"]
+[ext_resource type="Script" path="res://scenes/others/camera/camera_shake.gd" id="3_shake"]
+[ext_resource type="Resource" path="res://scenes/others/camera/camera_shake_stats.tres" id="4_shake_stats"]
+[ext_resource type="Script" path="res://scenes/others/feedback/impact_feedback.gd" id="5_feedback"]
+[ext_resource type="Resource" path="res://scenes/others/feedback/impact_stats.tres" id="6_impact_stats"]
+[ext_resource type="Script" path="res://scenes/others/feedback/controller_rumble.gd" id="7_rumble"]
+[ext_resource type="Resource" path="res://scenes/others/feedback/rumble_stats.tres" id="8_rumble_stats"]
 
 [node name="GameCamera" type="Camera2D"]
 process_physics_priority = 1
@@ -9,3 +15,19 @@ process_callback = 0
 editor_draw_limits = true
 script = ExtResource("1_script")
 stats = ExtResource("2_stats")
+
+[node name="CameraShake" type="Node" parent="." node_paths=PackedStringArray("camera")]
+script = ExtResource("3_shake")
+stats = ExtResource("4_shake_stats")
+camera = NodePath("..")
+
+[node name="ControllerRumble" type="Node" parent="."]
+script = ExtResource("7_rumble")
+
+[node name="ImpactFeedback" type="Node" parent="." node_paths=PackedStringArray("camera", "shake", "rumble")]
+script = ExtResource("5_feedback")
+stats = ExtResource("6_impact_stats")
+rumble_stats = ExtResource("8_rumble_stats")
+camera = NodePath("..")
+shake = NodePath("../CameraShake")
+rumble = NodePath("../ControllerRumble")

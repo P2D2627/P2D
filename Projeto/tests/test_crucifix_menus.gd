@@ -1,8 +1,9 @@
-# Checks that the left mouse button, which is both Crucifix and the menus' click, only raises the
-# crucifix when it is pressed in the game. Held down through the pause and still held as Esc resumes
-# the game, it leaves the crucifix down; a click on Resume, slow or quick, leaves it down; held down
-# from the main menu into the level, it leaves it down. In each case, letting go and pressing again
-# in the game raises it.
+# Checks that the left mouse button, when the player puts Crucifix on it in the Custom profile, and
+# so makes it both Crucifix and the menus' click, only raises the crucifix when it is pressed in
+# the game (the default controls need no mouse, ADR 0063). Held down through the pause and still
+# held as Esc resumes the game, it leaves the crucifix down; a click on Resume, slow or quick,
+# leaves it down; held down from the main menu into the level, it leaves it down. In each case,
+# letting go and pressing again in the game raises it.
 # Run from the repository root; the exit code is 0 on pass and 1 on fail:
 # godot --headless --fixed-fps 60 --path Projeto --script res://tests/test_crucifix_menus.gd
 extends "res://tests/support/menu_test.gd"
@@ -19,10 +20,19 @@ func _initialize() -> void:
 	root.size = Vector2i(int(ProjectSettings.get_setting("display/window/size/viewport_width")),
 			int(ProjectSettings.get_setting("display/window/size/viewport_height")))
 	await process_frame
+	# Settings is only found, and pointed at the test file, by main_scene(); it is only changed once it
+	# is ready, as test_controls does.
+	await main_scene()
+	if not settings.is_node_ready():
+		await settings.ready
+	settings.set_input_profile(InputProfiles.CUSTOM)
+	settings.set_custom_binding(&"crucifix", InputProfiles.mouse(MOUSE_BUTTON_LEFT))
 	var results: Array[bool] = []
 	results.append(await _held_through_the_pause_and_esc_to_resume_it_stays_down())
 	results.append(await _a_click_on_resume_leaves_it_down())
 	results.append(await _held_from_the_main_menu_into_the_level_it_stays_down())
+	settings.set_input_profile(InputProfiles.DEFAULT_PROFILE)
+	settings.reset_custom_bindings()
 	finish(results)
 
 

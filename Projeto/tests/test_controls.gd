@@ -5,8 +5,8 @@
 # the screen and in Settings. A key another action had swaps over, on the screen too, and Reset
 # brings the custom profile back to the default one. While waiting, a reserved key is ignored, and
 # Esc or B stop waiting, change nothing and keep the screen open; in the pause, Esc also keeps the
-# game paused. In a level with Arrows and QWEASD, Q raises the crucifix, the left mouse button does
-# not, and Ctrl is Interact. The autoload Settings saves to a test file (see
+# game paused. In a level with Arrows and QWEASD, Q raises the crucifix, Shift (the default
+# profile's key) does not, and Ctrl is Interact. The autoload Settings saves to a test file (see
 # tests/support/menu_test.gd), so the player's file is never touched, and every case starts and
 # ends on the default controls.
 # Run from the repository root; the exit code is 0 on pass and 1 on fail:
@@ -58,7 +58,7 @@ func _a_fixed_profile_shows_its_bindings_on_buttons_that_do_not_press() -> bool:
 	await tap(KEY_ENTER)
 	var waiting: bool = (controls as ControlsMenu).is_waiting_for_a_key()
 	await remove_main(main)
-	return report(texts == ["Space", "Left mouse button"] and disabled and not waiting,
+	return report(texts == ["Space", "Shift"] and disabled and not waiting,
 			"A fixed profile: Jump and Crucifix show %s, buttons disabled %s, Enter made it wait %s"
 			% [texts, disabled, waiting])
 
@@ -94,18 +94,18 @@ func _in_custom_a_key_or_mouse_button_remaps_an_action() -> bool:
 			% [custom, enabled, waiting, jump_text, crucifix_text, bindings, still_open])
 
 
-## In Custom, Jump goes to R, Interact's key: the screen then shows R on Jump and Space, Jump's old
+## In Custom, Jump goes to E, Interact's key: the screen then shows E on Jump and Space, Jump's old
 ## key, on Interact.
 func _a_key_another_action_had_swaps_over_on_the_screen() -> bool:
 	var main: Node = await _new_main_with_default_controls()
 	var controls: Control = _controls(await _open_controls_in_the_main_menu(main))
 	await _pick_profile(controls, InputProfiles.CUSTOM)
-	await _remap(controls, &"jump", KEY_R)
+	await _remap(controls, &"jump", KEY_E)
 	var texts: Array[String] = [_binding_button(controls, &"jump").text,
 			_binding_button(controls, &"interact").text]
 	await _back_to_default_controls()
 	await remove_main(main)
-	return report(texts == ["R", "Space"],
+	return report(texts == ["E", "Space"],
 			"A swap on the screen: Jump and Interact show %s" % [texts])
 
 
@@ -188,8 +188,8 @@ func _in_the_pause_esc_while_waiting_keeps_the_game_paused() -> bool:
 			% [still_paused, still_open])
 
 
-## Arrows and QWEASD picked on the controls screen in the pause; back in the game, the left mouse
-## button leaves the crucifix down, Q raises it, and Ctrl is Interact.
+## Arrows and QWEASD picked on the controls screen in the pause; back in the game, Shift, the default
+## profile's crucifix key, leaves the crucifix down, Q raises it, and Ctrl is Interact.
 func _with_arrows_and_qweasd_q_raises_the_crucifix_and_ctrl_interacts() -> bool:
 	var main: Node = await _new_main_with_default_controls(true)
 	var crucifix: Crucifix = await crucifix_on_the_floor(main)
@@ -201,9 +201,9 @@ func _with_arrows_and_qweasd_q_raises_the_crucifix_and_ctrl_interacts() -> bool:
 	await tap(KEY_ESCAPE)
 	await tap(KEY_ESCAPE)
 	var resumed: bool = not paused
-	await press_mouse(MOUSE_BUTTON_LEFT, true)
-	var up_by_mouse: bool = await crucifix_goes_up_within(crucifix, WATCH_FRAMES)
-	await press_mouse(MOUSE_BUTTON_LEFT, false)
+	await press_key(KEY_SHIFT, true)
+	var up_by_shift: bool = await crucifix_goes_up_within(crucifix, WATCH_FRAMES)
+	await press_key(KEY_SHIFT, false)
 	await press_key(KEY_Q, true)
 	var up_by_q: bool = await crucifix_goes_up_within(crucifix, WATCH_FRAMES)
 	await press_key(KEY_Q, false)
@@ -212,9 +212,9 @@ func _with_arrows_and_qweasd_q_raises_the_crucifix_and_ctrl_interacts() -> bool:
 	await press_key(KEY_CTRL, false)
 	await _back_to_default_controls()
 	await remove_main(main)
-	return report(found and resumed and not up_by_mouse and up_by_q and interact,
-			"Arrows and QWEASD in a level: resumed %s, up by the left mouse button %s, up by Q %s, Ctrl is Interact %s"
-			% [resumed, up_by_mouse, up_by_q, interact])
+	return report(found and resumed and not up_by_shift and up_by_q and interact,
+			"Arrows and QWEASD in a level: resumed %s, up by Shift %s, up by Q %s, Ctrl is Interact %s"
+			% [resumed, up_by_shift, up_by_q, interact])
 
 
 ## A main scene on the default controls; with in_a_level, with the first level started. Settings is
