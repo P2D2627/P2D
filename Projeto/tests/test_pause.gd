@@ -4,7 +4,8 @@
 # takes the level out at once and shows the main menu on Play, and a new choice leaves one level in
 # the slot. Start on the gamepad pauses and resumes like Esc. In the main menu, Esc and Start do not
 # pause. Losing the window's focus pauses, only in a level and only with Pause On Focus Loss on, and
-# while paused it changes nothing. All the pause's text takes its size from the UI theme, with no
+# while paused it changes nothing. All the pause's text takes its size from the UI theme (its own,
+# or a variation the theme sizes, as Resume's), with no
 # size set on a single node. Leaving the pause never makes the player jump: not with Space or A on
 # Resume, both also Jump, nor with Space held through the pause and Esc to resume. In the game, B
 # reaches the game. A B pressed in the pause closes it and stops there, one that went down in the

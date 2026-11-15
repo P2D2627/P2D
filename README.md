@@ -27,7 +27,7 @@ cada sala) está em `docs/nivel1_desenho.md`, e os artigos que o fundamentam em 
 1. Instalar o Godot 4.7.x, versão standard (não a versão .NET).
 2. No Project Manager, importar `Projeto/project.godot`. O projeto Godot encontra-se na subpasta
    `Projeto/`, e não na raiz do repositório.
-3. Premir F5. O jogo abre no menu principal: Play mostra a lista de níveis, Options abre as opções
+3. Premir F5. O jogo abre no menu principal: New Game mostra a lista de níveis, Settings abre as opções
    e Quit fecha o jogo. Uma cena aberta com F6 corre sozinha, sem menus nem pausa.
 4. A sala de teste tem um bloco elevado, com duas bordas, para experimentar os saltos a partir de
    uma borda, e uma chaminé de 120 px entre a parede esquerda e um pilar suspenso, por baixo do qual
@@ -38,7 +38,7 @@ cada sala) está em `docs/nivel1_desenho.md`, e os artigos que o fundamentam em 
    Durante o jogo, a tecla F3 mostra e esconde o texto de depuração descrito em "Overlay de
    depuração", e a tecla F4 retira 10 SP à personagem, como um golpe, para experimentar a
    regeneração descrita em "SP".
-5. O nível 1 (Play ▸ Level 1: Lust) é uma só cena, `scenes/levels/lust/level1.tscn`, com o tutorial e as
+5. O nível 1 (New Game ▸ Level 1: Lust) é uma só cena, `scenes/levels/lust/level1.tscn`, com o tutorial e as
    fases 1, 2 e 3, e é ele que inicia uma partida nova. No início das fases 2 e 3, a Asmodeu
    aparece e oferece o atalho; depois de várias mortes nessas fases, volta a oferecê-lo à entrada
    da zona onde ele morre (ver "Ofertas por mortes"). Na saída, depois da fase 3 ou pelo atalho,
@@ -47,13 +47,15 @@ cada sala) está em `docs/nivel1_desenho.md`, e os artigos que o fundamentam em 
    também corre sozinha com F6, sem gravar nada.
 6. Entrar numa fase grava o jogo, o que é indicado por "Saving..." no canto do ecrã, e o menu
    principal passa a mostrar Continue, descrito em "Gravação do jogo".
-7. A sala de treino (Play ▸ Gym (training room)) põe à prova, uma de cada vez, as mecânicas que já
+7. A sala de treino (New Game ▸ Gym (training room)) põe à prova, uma de cada vez, as mecânicas que já
    existem: movimento, paredes e chaminés, câmara, zona fixa da câmara, cães, matilha e agarrão,
    crucifixo, SP e morte. Cada estação ocupa um ecrã e tem uma placa que explica o que experimentar.
    As teclas 1 a 9 levam ao início da estação com esse número, e o 0 à décima. Quem morre recomeça
    no início da estação onde estava. Ver "Sala de treino".
-Os controlos de teclado e rato escolhem-se em Options ▸ Controls, entre três perfis. O comando é
-igual em todos.
+Os controlos de teclado e rato escolhem-se em Settings ▸ Controls, entre três perfis. O comando é
+igual em todos. As teclas desenhadas no tutorial (`scenes/levels/key_prompt.gd`) mostram a tecla do
+perfil escolhido e, com um comando ligado, o botão do comando, com os nomes de um comando Xbox (A, B,
+RT, LS ← para o stick esquerdo); mudam no momento em que o comando se liga ou desliga.
 
 | Ação | Teclado e rato (predefinido) | Setas e QWEASD | Comando |
 |---|---|---|---|
@@ -914,8 +916,8 @@ Remote; os restantes valores são lidos sempre que são usados.
     ├── addons/        plugins de terceiros: o Dialogue Manager, que dá as falas
     ├── assets/        arte e som
     │   ├── audio/       som, por tipo: os efeitos sonoros em sfx/
-    │   ├── fonts/       tipos de letra (por enquanto vazia)
-    │   └── sprites/     uma pasta por grupo: player/, demon_lust/, environment/, backgrounds/ e ramps/
+    │   ├── fonts/       tipos de letra: a Tinos, de reserva para a Times New Roman dos menus
+    │   └── sprites/     uma pasta por grupo: player/, demon_lust/, environment/, backgrounds/, ramps/ e menu/ (a arte dos menus)
     ├── dialogue/      as falas, um ficheiro .dialogue por nível
     ├── scenes/        cenas, scripts e ficheiros de dados, por tipo e, dentro de cada tipo, por sistema
     │   ├── autoload/    serviços globais: as opções do jogador (Settings), o registo moral (Moral), o progresso do jogo (GameState), as estatísticas da partida (RunStats), as tentações (Offers, em offers/, com o ritmo das ofertas por mortes), a gravação e os perfis de controlos
@@ -984,7 +986,7 @@ ficheiros para outra pasta, deu nome novo a um e atualizou 60 referências. Os t
 teste a teste, nenhuma cena ou recurso ficou a apontar para um caminho antigo, e o projeto importa
 sem erros num clone novo.
 
-Para um nível aparecer no Play, acrescenta-se à lista Levels do Main, no Inspector do `main.tscn`
+Para um nível aparecer no New Game, acrescenta-se à lista Levels do Main, no Inspector do `main.tscn`
 (Add Element › New LevelEntry, com o título e a cena). A ordem da lista é a dos botões. Um elemento
 deixado vazio, ou sem cena, fica fora do menu, com um aviso no Output.
 
@@ -2392,6 +2394,32 @@ janela ou o motor diretamente: pedem a mudança ao `Settings`, que a aplica e gr
 embutido no editor, o ecrã inteiro não se aplica (só a janela normal é suportada); experimenta-se com
 o jogo numa janela à parte ou numa exportação.
 
+#### Aspeto dos menus
+
+O menu principal e a pausa seguem a maqueta do grupo: fundo preto, a personagem principal à
+esquerda, iluminada por uma luz que entra pelo canto superior direito, e as opções à direita, em
+maiúsculas, com uma cruz de cada lado da opção selecionada. A pausa tem a mesma composição, mas o
+preto fica a 60 % de opacidade, para se continuar a ver o jogo por trás. As opções e os controlos
+abrem na mesma coluna, com o mesmo estilo.
+
+- **Fundo partilhado** (`scenes/screens/menu_backdrop.tscn`): o preto (Background Alpha), os raios
+  de luz e a personagem. Os raios são um shader (`scenes/others/shaders/god_rays.gdshader`), somado
+  ao que está por trás, que ondula lentamente; a cor, a intensidade, a direção, o alcance e o brilho
+  junto à origem afinam-se no material do nó Rays.
+- **Personagem:** desenhada pelo grupo já com a luz e as sombras pintadas
+  (`assets/sprites/menu/menu_character.png`), e mostrada tal como está. O
+  `scenes/screens/builders/build_menu_art.gd` traz a personagem e a cruz para o projeto, recortadas.
+- **Cruzes** (`scenes/screens/menu_crosses.gd`): seguem o foco, de teclado, comando ou rato, e
+  deslizam para a opção selecionada; o rato por cima de um botão dá-lhe o foco. Ficam só nos botões:
+  um slider mostra a sua própria seleção.
+- **Letra:** Times New Roman em todo o jogo (menus, tutorial, falas, indicador de gravação e overlay),
+  como fonte por omissão do projeto (`gui/theme/custom_font`, `themes/main_font.tres`), pedida ao
+  sistema (no Windows existe sempre). A sua licença não
+  permite incluí-la no jogo, por isso, onde não existir, entra a Tinos, com as mesmas medidas.
+- **Tamanhos:** a primeira opção visível é sempre a maior (110 px, a variação MenuFirstOption do
+  tema): Continue quando há gravação, New Game quando não há, Resume na pausa. As outras têm 64 px
+  (MenuOption). Os tamanhos vêm todos do tema, nunca de um nó, e os testes dos menus confirmam-no.
+
 #### Controlos: perfis e remapeamento
 
 Os controlos seguem o modelo habitual nos jogos de PC: perfis predefinidos, um perfil personalizado
@@ -2781,6 +2809,9 @@ iniciado por nada no jogo. A estação de cada uma acrescenta-se quando a mecân
   Na zona da fase 3 e na sala da Asmodeu, foram repintadas com IA (Claude), por scripts fora do repositório que
   ajustam um modelo às imagens das fases 1 e 2 e só alteram os píxeis por onde essas zonas passam.
   Saem ou refazem-se quando o mapa ou as áreas mudarem.
+- Tinos, de The Tinos Project Authors. SIL Open Font License 1.1. Letra de reserva dos menus, com as
+  medidas da Times New Roman, em `Projeto/assets/fonts/` (com a licença em `Tinos-OFL.txt`).
+  https://github.com/googlefonts/tinos
 
 ## Licença
 

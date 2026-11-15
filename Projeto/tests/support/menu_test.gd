@@ -155,13 +155,19 @@ func texts_in(node: Node) -> Array[Control]:
 	return texts
 
 
-## Of the controls, those whose text is not font_size px or has a size set on the control itself,
-## each as its name and size.
+## Of the controls, those whose text is not the UI theme's size for it, or has a size set on the
+## control itself, each as its name and size. The theme's size is font_size, or, for a control with
+## a type variation the theme sizes (as the menus' biggest first option), that variation's size.
 func off_size(controls: Array[Control], font_size: int) -> Array[String]:
 	var others: Array[String] = []
+	var theme: Theme = load(UI_THEME_PATH) as Theme if ResourceLoader.exists(UI_THEME_PATH) else null
 	for control: Control in controls:
+		var expected: int = font_size
+		var variation: StringName = control.theme_type_variation
+		if theme != null and not variation.is_empty() and theme.has_font_size(&"font_size", variation):
+			expected = theme.get_font_size(&"font_size", variation)
 		var size_now: int = control.get_theme_font_size(&"font_size")
-		if size_now != font_size or control.has_theme_font_size_override(&"font_size"):
+		if size_now != expected or control.has_theme_font_size_override(&"font_size"):
 			others.append("%s %d px" % [control.name, size_now])
 	return others
 

@@ -5,7 +5,8 @@
 # Each level's button starts that level's scene and hides the menu. A level left empty, or with no
 # scene, is left out of the list, and the others still work. Inside the level, Esc goes past
 # the hidden menu and pauses, and Space then presses Resume: the menu stays hidden, with nothing of
-# it selected, and one level in the slot. All the menu's text takes its size from the UI theme, with
+# it selected, and one level in the slot. All the menu's text takes its size from the UI theme (its
+# own, or a variation the theme sizes, as the biggest first option's), with
 # no size set on a single node.
 # Quit closes the game, which would also end this test with exit code 0, so it is checked by hand.
 # Run from the repository root; the exit code is 0 on pass and 1 on fail:
