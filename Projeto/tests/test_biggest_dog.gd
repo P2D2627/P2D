@@ -6,10 +6,10 @@
 # godot --headless --fixed-fps 60 --path Projeto --script res://tests/test_biggest_dog.gd
 extends "res://tests/support/player_test.gd"
 
-const RING_SCENE: PackedScene = preload("res://gates/proximity_unlocker.tscn")
-const GATE_SCENE: PackedScene = preload("res://gates/gate.tscn")
-const DOG_SCENE: PackedScene = preload("res://demon/demon.tscn")
-const BIGGEST_SCENE: PackedScene = preload("res://demon/biggest_demon.tscn")
+const RING_SCENE: PackedScene = preload("res://scenes/objects/gates/proximity_unlocker.tscn")
+const GATE_SCENE: PackedScene = preload("res://scenes/objects/gates/gate.tscn")
+const DOG_SCENE: PackedScene = preload("res://scenes/characters/demon/demon.tscn")
+const BIGGEST_SCENE: PackedScene = preload("res://scenes/characters/demon/biggest_demon.tscn")
 ## How many times the regular dog's size the biggest is.
 const SIZE: float = 8.0
 const FLOOR_LEFT: float = -3000.0

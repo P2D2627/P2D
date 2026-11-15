@@ -9,7 +9,7 @@
 # godot --headless --fixed-fps 60 --path Projeto --script res://tests/test_tutorial_room.gd
 extends "res://tests/support/player_test.gd"
 
-const ROOM_SCENE: PackedScene = preload("res://scenes/levels/Lust/LustLevel_Phase1_Cave.tscn")
+const ROOM_SCENE: PackedScene = preload("res://scenes/levels/lust/LustLevel_Phase1_Cave.tscn")
 ## Where the Tutorial node sits in the phase: the positions below are its own.
 const OFFSET: Vector2 = Vector2(-4560.0, 3984.0)
 ## Just left of Velvet's Talk Area.

@@ -32,7 +32,7 @@ const TILE_FACE: float = 1700.0
 ## The face of a body on the demons' layer that is freed while the player touches it, on the
 ## player's right, between the wall and the demon's side; it only exists in its own case.
 const GONE_FACE: float = 800.0
-const TILE_SET: TileSet = preload("res://scenes/levels/Lust/cave_placeholder_tiles.tres")
+const TILE_SET: TileSet = preload("res://scenes/others/tilesets/cave_placeholder_tiles.tres")
 ## The levels' solid block: a full cell on the physics layer of the levels' walls.
 const SOLID_SOURCE: int = 0
 const SOLID_ATLAS: Vector2i = Vector2i(0, 0)

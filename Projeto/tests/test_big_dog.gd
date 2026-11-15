@@ -9,8 +9,8 @@
 # godot --headless --fixed-fps 60 --path Projeto --script res://tests/test_big_dog.gd
 extends "res://tests/support/player_test.gd"
 
-const DOG_SCENE: PackedScene = preload("res://demon/demon.tscn")
-const BIG_SCENE: PackedScene = preload("res://demon/big_demon.tscn")
+const DOG_SCENE: PackedScene = preload("res://scenes/characters/demon/demon.tscn")
+const BIG_SCENE: PackedScene = preload("res://scenes/characters/demon/big_demon.tscn")
 ## How many times the regular dog's size the big dog is.
 const SIZE: float = 1.25
 ## SP the big dog's bite and lunge take: the regular dog's 10 and 20, a quarter more.

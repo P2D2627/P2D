@@ -5,7 +5,7 @@
 # godot --headless --fixed-fps 60 --path Projeto --script res://tests/test_lethal_spikes.gd
 extends "res://tests/support/player_test.gd"
 
-const SPIKES_SCENE: PackedScene = preload("res://traps/lethal_spikes.tscn")
+const SPIKES_SCENE: PackedScene = preload("res://scenes/objects/traps/lethal_spikes.tscn")
 ## The strip's name, which a death on it is put down to, as each strip is a spot of its own.
 const SPIKES_NAME: StringName = &"Spikes2"
 const TILE: float = 48.0

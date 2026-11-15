@@ -4,7 +4,7 @@
 # godot --headless --fixed-fps 60 --path Projeto --script res://tests/test_lust_phase_2_route.gd
 extends "res://tests/support/route_test.gd"
 
-const SCENE_PATH: String = "res://levels/lust/lust_phase_2.tscn"
+const SCENE_PATH: String = "res://scenes/levels/lust/lust_phase_2.tscn"
 const ROUTE_PATH: String = "res://tests/support/lust_phase_2_route.json"
 
 

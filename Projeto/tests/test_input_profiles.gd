@@ -15,7 +15,7 @@
 # godot --headless --fixed-fps 60 --path Projeto --script res://tests/test_input_profiles.gd
 extends "res://tests/support/player_test.gd"
 
-const SETTINGS_SCRIPT: GDScript = preload("res://core/settings.gd")
+const SETTINGS_SCRIPT: GDScript = preload("res://scenes/autoload/settings.gd")
 const TEST_PATH: String = "user://test_input_profiles.cfg"
 ## Keys whose names are checked to read back as the same key: letters, arrows, modifiers, function
 ## keys, the keypad and punctuation.

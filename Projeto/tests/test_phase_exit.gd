@@ -7,7 +7,7 @@
 # godot --headless --fixed-fps 60 --path Projeto --script res://tests/test_phase_exit.gd
 extends "res://tests/support/menu_test.gd"
 
-const PHASE_1_PATH: String = "res://scenes/levels/Lust/LustLevel_Phase1_Cave.tscn"
+const PHASE_1_PATH: String = "res://scenes/levels/lust/LustLevel_Phase1_Cave.tscn"
 ## The names of the phases' root nodes.
 const PHASE_1_ROOT: StringName = &"LustPhase1Cave"
 const PHASE_2_ROOT: StringName = &"LustPhase2"

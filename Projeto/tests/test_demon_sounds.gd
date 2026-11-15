@@ -10,7 +10,7 @@
 # godot --headless --fixed-fps 60 --path Projeto --script res://tests/test_demon_sounds.gd
 extends "res://tests/support/player_test.gd"
 
-const DEMON_SCENE: PackedScene = preload("res://demon/demon.tscn")
+const DEMON_SCENE: PackedScene = preload("res://scenes/characters/demon/demon.tscn")
 ## Demons made to compare their voices.
 const VOICE_DEMONS: int = 10
 ## Demons barking, more than Max Barks Per Step, and demons alerted on the same step, no more than

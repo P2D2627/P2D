@@ -10,7 +10,7 @@
 # godot --headless --fixed-fps 60 --path Projeto --script res://tests/test_level_run_stats.gd
 extends "res://tests/support/player_test.gd"
 
-const LEVEL_1: PackedScene = preload("res://levels/lust/level1.tscn")
+const LEVEL_1: PackedScene = preload("res://scenes/levels/lust/level1.tscn")
 const PHASE_2_EVENT: StringName = &"lust_phase_2_reached"
 const PHASE_3_EVENT: StringName = &"lust_phase_3_reached"
 ## Frames for the level to settle after it is added.

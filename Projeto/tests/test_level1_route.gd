@@ -5,7 +5,7 @@
 # godot --headless --fixed-fps 60 --path Projeto --script res://tests/test_level1_route.gd
 extends "res://tests/support/route_test.gd"
 
-const SCENE_PATH: String = "res://levels/lust/level1.tscn"
+const SCENE_PATH: String = "res://scenes/levels/lust/level1.tscn"
 const ROUTE_PATH: String = "res://tests/support/level1_route.json"
 ## With this event, Velvet does not stop the man to talk as he walks past.
 const VELVET_MET: StringName = &"velvet_met"

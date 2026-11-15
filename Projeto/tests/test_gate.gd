@@ -8,8 +8,8 @@
 # godot --headless --fixed-fps 60 --path Projeto --script res://tests/test_gate.gd
 extends "res://tests/support/player_test.gd"
 
-const GATE_SCENE: PackedScene = preload("res://gates/gate.tscn")
-const UNLOCKER_SCENE: PackedScene = preload("res://gates/gate_unlocker.tscn")
+const GATE_SCENE: PackedScene = preload("res://scenes/objects/gates/gate.tscn")
+const UNLOCKER_SCENE: PackedScene = preload("res://scenes/objects/gates/gate_unlocker.tscn")
 const TILE: float = 48.0
 const FLOOR_LEFT: float = -4000.0
 const FLOOR_RIGHT: float = 4000.0

@@ -1,4 +1,4 @@
-# Test of the background layers (BackgroundLayer, background/background_layer.gd) and of the level
+# Test of the background layers (BackgroundLayer, scenes/levels/background/background_layer.gd) and of the level
 # background template. A FIT picture covers the whole screen with the camera at each corner of its
 # limits and at their centre, on the game's 16:9 screen and on a 21:9 one, the widest the game is
 # made for, and grows only as much as that needs. FIT waits for a camera that arrives after the
@@ -13,8 +13,8 @@
 # godot --headless --fixed-fps 60 --path Projeto --script res://tests/test_background_layer.gd
 extends "res://tests/support/base_test.gd"
 
-const TEMPLATE_SCENE: PackedScene = preload("res://background/level_background.tscn")
-const RAMP_SHADER: Shader = preload("res://components/color_ramp.gdshader")
+const TEMPLATE_SCENE: PackedScene = preload("res://scenes/levels/background/level_background.tscn")
+const RAMP_SHADER: Shader = preload("res://scenes/others/shaders/color_ramp.gdshader")
 ## Camera limits as wide and as tall as the test room's, in px.
 const LIMITS: Rect2 = Rect2(0.0, -1164.0, 5824.0, 2244.0)
 ## The game's screen, 16:9, and the widest the game is made for, 21:9, in px.

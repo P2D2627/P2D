@@ -1,0 +1,264 @@
+[gd_scene format=3 uid="uid://7xjklfuak1yt"]
+
+[ext_resource type="PackedScene" uid="uid://b1g88pca2y1w4" path="res://scenes/characters/player/player.tscn" id="1_player"]
+[ext_resource type="PackedScene" path="res://scenes/others/debug/debug_overlay.tscn" id="2_debug_overlay"]
+[ext_resource type="PackedScene" path="res://scenes/others/camera/game_camera.tscn" id="3_game_camera"]
+[ext_resource type="Script" uid="uid://jatmkn5rjuk2" path="res://scenes/others/camera/camera_zone.gd" id="4_camera_zone"]
+[ext_resource type="PackedScene" path="res://scenes/levels/test_room/test_room_background.tscn" id="5_test_room_background"]
+[ext_resource type="PackedScene" path="res://scenes/characters/demon/demon.tscn" id="5_demon"]
+[ext_resource type="Script" path="res://scenes/levels/level.gd" id="6_level"]
+[ext_resource type="Script" path="res://scenes/others/debug/demon_debug_view.gd" id="7_demon_debug_view"]
+[ext_resource type="Resource" path="res://scenes/characters/demon/jumping_demon_stats.tres" id="8_demon_stats"]
+
+[sub_resource type="RectangleShape2D" id="RectangleShape2D_floor"]
+size = Vector2(5824, 80)
+
+[sub_resource type="RectangleShape2D" id="RectangleShape2D_wall"]
+size = Vector2(64, 2244)
+
+[sub_resource type="RectangleShape2D" id="RectangleShape2D_ceiling"]
+size = Vector2(5824, 64)
+
+[sub_resource type="RectangleShape2D" id="RectangleShape2D_platform"]
+size = Vector2(480, 120)
+
+[sub_resource type="RectangleShape2D" id="RectangleShape2D_pillar"]
+size = Vector2(64, 560)
+
+[sub_resource type="RectangleShape2D" id="RectangleShape2D_step1"]
+size = Vector2(480, 200)
+
+[sub_resource type="RectangleShape2D" id="RectangleShape2D_step2"]
+size = Vector2(480, 400)
+
+[sub_resource type="RectangleShape2D" id="RectangleShape2D_step3"]
+size = Vector2(480, 600)
+
+[sub_resource type="RectangleShape2D" id="RectangleShape2D_step4"]
+size = Vector2(480, 800)
+
+[sub_resource type="RectangleShape2D" id="RectangleShape2D_high_pillar"]
+size = Vector2(64, 490)
+
+[sub_resource type="RectangleShape2D" id="RectangleShape2D_walkway"]
+size = Vector2(3240, 80)
+
+[sub_resource type="RectangleShape2D" id="RectangleShape2D_open_zone"]
+size = Vector2(5824, 2244)
+
+[sub_resource type="RectangleShape2D" id="RectangleShape2D_one_way"]
+size = Vector2(240, 24)
+
+[sub_resource type="RectangleShape2D" id="RectangleShape2D_hiding_wall"]
+size = Vector2(48, 144)
+
+[node name="TestRoom" type="Node2D" node_paths=PackedStringArray("player") unique_id=1111842025]
+script = ExtResource("6_level")
+player = NodePath("Player")
+
+[node name="Background" parent="." unique_id=830455306 instance=ExtResource("5_test_room_background")]
+
+[node name="Floor" type="StaticBody2D" parent="." unique_id=725780737]
+position = Vector2(2912, 1040)
+collision_mask = 0
+
+[node name="CollisionShape2D" type="CollisionShape2D" parent="Floor" unique_id=185338299]
+shape = SubResource("RectangleShape2D_floor")
+
+[node name="Placeholder" type="Polygon2D" parent="Floor" unique_id=688366742]
+color = Color(0.15, 0.13, 0.18, 1)
+polygon = PackedVector2Array(-2912, -40, 2912, -40, 2912, 40, -2912, 40)
+
+[node name="WallLeft" type="StaticBody2D" parent="." unique_id=1500601384]
+position = Vector2(32, -42)
+collision_mask = 0
+
+[node name="CollisionShape2D" type="CollisionShape2D" parent="WallLeft" unique_id=1864905752]
+shape = SubResource("RectangleShape2D_wall")
+
+[node name="Placeholder" type="Polygon2D" parent="WallLeft" unique_id=1233916452]
+color = Color(0.15, 0.13, 0.18, 1)
+polygon = PackedVector2Array(-32, -1122, 32, -1122, 32, 1122, -32, 1122)
+
+[node name="WallRight" type="StaticBody2D" parent="." unique_id=823529815]
+position = Vector2(5792, -42)
+collision_mask = 0
+
+[node name="CollisionShape2D" type="CollisionShape2D" parent="WallRight" unique_id=1014735015]
+shape = SubResource("RectangleShape2D_wall")
+
+[node name="Placeholder" type="Polygon2D" parent="WallRight" unique_id=575566776]
+color = Color(0.15, 0.13, 0.18, 1)
+polygon = PackedVector2Array(-32, -1122, 32, -1122, 32, 1122, -32, 1122)
+
+[node name="Ceiling" type="StaticBody2D" parent="." unique_id=2027181078]
+position = Vector2(2912, -1132)
+collision_mask = 0
+
+[node name="CollisionShape2D" type="CollisionShape2D" parent="Ceiling" unique_id=1813826886]
+shape = SubResource("RectangleShape2D_ceiling")
+
+[node name="Placeholder" type="Polygon2D" parent="Ceiling" unique_id=1399388665]
+color = Color(0.15, 0.13, 0.18, 1)
+polygon = PackedVector2Array(-2912, -32, 2912, -32, 2912, 32, -2912, 32)
+
+[node name="Platform" type="StaticBody2D" parent="." unique_id=449670702]
+position = Vector2(960, 940)
+collision_mask = 0
+
+[node name="CollisionShape2D" type="CollisionShape2D" parent="Platform" unique_id=569479083]
+shape = SubResource("RectangleShape2D_platform")
+
+[node name="Placeholder" type="Polygon2D" parent="Platform" unique_id=713841260]
+color = Color(0.15, 0.13, 0.18, 1)
+polygon = PackedVector2Array(-240, -60, 240, -60, 240, 60, -240, 60)
+
+[node name="ChimneyPillar" type="StaticBody2D" parent="." unique_id=1719681218]
+position = Vector2(216, 590)
+collision_mask = 0
+
+[node name="CollisionShape2D" type="CollisionShape2D" parent="ChimneyPillar" unique_id=903547524]
+shape = SubResource("RectangleShape2D_pillar")
+
+[node name="Placeholder" type="Polygon2D" parent="ChimneyPillar" unique_id=109229191]
+color = Color(0.15, 0.13, 0.18, 1)
+polygon = PackedVector2Array(-32, -280, 32, -280, 32, 280, -32, 280)
+
+[node name="Step1" type="StaticBody2D" parent="." unique_id=552543245]
+position = Vector2(4080, 900)
+collision_mask = 0
+
+[node name="CollisionShape2D" type="CollisionShape2D" parent="Step1" unique_id=43240162]
+shape = SubResource("RectangleShape2D_step1")
+
+[node name="Placeholder" type="Polygon2D" parent="Step1" unique_id=1925526024]
+color = Color(0.15, 0.13, 0.18, 1)
+polygon = PackedVector2Array(-240, -100, 240, -100, 240, 100, -240, 100)
+
+[node name="Step2" type="StaticBody2D" parent="." unique_id=1351535433]
+position = Vector2(4560, 800)
+collision_mask = 0
+
+[node name="CollisionShape2D" type="CollisionShape2D" parent="Step2" unique_id=887879948]
+shape = SubResource("RectangleShape2D_step2")
+
+[node name="Placeholder" type="Polygon2D" parent="Step2" unique_id=81855423]
+color = Color(0.15, 0.13, 0.18, 1)
+polygon = PackedVector2Array(-240, -200, 240, -200, 240, 200, -240, 200)
+
+[node name="Step3" type="StaticBody2D" parent="." unique_id=711764687]
+position = Vector2(5040, 700)
+collision_mask = 0
+
+[node name="CollisionShape2D" type="CollisionShape2D" parent="Step3" unique_id=2016164581]
+shape = SubResource("RectangleShape2D_step3")
+
+[node name="Placeholder" type="Polygon2D" parent="Step3" unique_id=1915437189]
+color = Color(0.15, 0.13, 0.18, 1)
+polygon = PackedVector2Array(-240, -300, 240, -300, 240, 300, -240, 300)
+
+[node name="Step4" type="StaticBody2D" parent="." unique_id=2135875288]
+position = Vector2(5520, 600)
+collision_mask = 0
+
+[node name="CollisionShape2D" type="CollisionShape2D" parent="Step4" unique_id=626321863]
+shape = SubResource("RectangleShape2D_step4")
+
+[node name="Placeholder" type="Polygon2D" parent="Step4" unique_id=864804915]
+color = Color(0.15, 0.13, 0.18, 1)
+polygon = PackedVector2Array(-240, -400, 240, -400, 240, 400, -240, 400)
+
+[node name="HighPillar" type="StaticBody2D" parent="." unique_id=2049475116]
+position = Vector2(5608, -175)
+collision_mask = 0
+
+[node name="CollisionShape2D" type="CollisionShape2D" parent="HighPillar" unique_id=1374277666]
+shape = SubResource("RectangleShape2D_high_pillar")
+
+[node name="Placeholder" type="Polygon2D" parent="HighPillar" unique_id=1114486400]
+color = Color(0.15, 0.13, 0.18, 1)
+polygon = PackedVector2Array(-32, -245, 32, -245, 32, 245, -32, 245)
+
+[node name="Walkway" type="StaticBody2D" parent="." unique_id=2056375555]
+position = Vector2(4020, -460)
+collision_mask = 0
+
+[node name="CollisionShape2D" type="CollisionShape2D" parent="Walkway" unique_id=1511353162]
+shape = SubResource("RectangleShape2D_walkway")
+
+[node name="Placeholder" type="Polygon2D" parent="Walkway" unique_id=357530626]
+color = Color(0.15, 0.13, 0.18, 1)
+polygon = PackedVector2Array(-1620, -40, 1620, -40, 1620, 40, -1620, 40)
+
+[node name="OpenZone" type="Area2D" parent="." unique_id=1342640164]
+collision_layer = 512
+collision_mask = 0
+monitoring = false
+monitorable = false
+script = ExtResource("4_camera_zone")
+
+[node name="CollisionShape2D" type="CollisionShape2D" parent="OpenZone" unique_id=425954065]
+position = Vector2(2912, -42)
+shape = SubResource("RectangleShape2D_open_zone")
+
+[node name="FloorDemon" parent="." instance=ExtResource("5_demon")]
+position = Vector2(2400, 1000)
+stats = ExtResource("8_demon_stats")
+
+[node name="WalkwayDemon" parent="." instance=ExtResource("5_demon")]
+position = Vector2(3600, -500)
+stats = ExtResource("8_demon_stats")
+
+[node name="FloorDemon2" parent="." instance=ExtResource("5_demon")]
+position = Vector2(2800, 1000)
+stats = ExtResource("8_demon_stats")
+
+[node name="LeftFloorDemon" parent="." instance=ExtResource("5_demon")]
+position = Vector2(480, 1000)
+stats = ExtResource("8_demon_stats")
+
+[node name="OneWayPlatform" type="StaticBody2D" parent="." unique_id=325517482]
+position = Vector2(2400, 832)
+collision_layer = 256
+collision_mask = 0
+
+[node name="CollisionShape2D" type="CollisionShape2D" parent="OneWayPlatform" unique_id=195262063]
+shape = SubResource("RectangleShape2D_one_way")
+one_way_collision = true
+
+[node name="Placeholder" type="Polygon2D" parent="OneWayPlatform" unique_id=899347390]
+color = Color(0.36, 0.3, 0.42, 1)
+polygon = PackedVector2Array(-120, -12, 120, -12, 120, 12, -120, 12)
+
+[node name="HidingWall" type="StaticBody2D" parent="."]
+position = Vector2(1700, 928)
+collision_mask = 0
+
+[node name="CollisionShape2D" type="CollisionShape2D" parent="HidingWall"]
+shape = SubResource("RectangleShape2D_hiding_wall")
+
+[node name="Placeholder" type="Polygon2D" parent="HidingWall"]
+color = Color(0.15, 0.13, 0.18, 1)
+polygon = PackedVector2Array(-24, -72, 24, -72, 24, 72, -24, 72)
+
+[node name="Player" parent="." unique_id=1512336293 instance=ExtResource("1_player")]
+position = Vector2(960, 600)
+
+[node name="DebugOverlay" parent="." unique_id=1963797770 node_paths=PackedStringArray("player", "camera") instance=ExtResource("2_debug_overlay")]
+player = NodePath("../Player")
+camera = NodePath("../GameCamera")
+
+[node name="DemonDebugView" type="Node2D" parent="." node_paths=PackedStringArray("overlay", "demons", "player")]
+process_mode = 3
+script = ExtResource("7_demon_debug_view")
+overlay = NodePath("../DebugOverlay")
+demons = [NodePath("../FloorDemon"), NodePath("../WalkwayDemon"), NodePath("../FloorDemon2"), NodePath("../LeftFloorDemon")]
+player = NodePath("../Player")
+
+[node name="GameCamera" parent="." unique_id=1105774144 node_paths=PackedStringArray("player") instance=ExtResource("3_game_camera")]
+position = Vector2(960, 600)
+limit_left = 0
+limit_top = -1164
+limit_right = 5824
+limit_bottom = 1080
+player = NodePath("../Player")

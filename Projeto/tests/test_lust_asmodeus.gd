@@ -20,7 +20,7 @@
 extends "res://tests/support/menu_test.gd"
 
 const SAVE_PATH: String = "user://test_lust_asmodeus.cfg"
-const LEVEL_PATH: String = "res://levels/lust/level1.tscn"
+const LEVEL_PATH: String = "res://scenes/levels/lust/level1.tscn"
 const SHORTCUT: StringName = &"lust_shortcut"
 const TENT: StringName = &"asmodeus_tent"
 ## The answers of Lust's shortcut cues: the first two accept it, the last two refuse it.

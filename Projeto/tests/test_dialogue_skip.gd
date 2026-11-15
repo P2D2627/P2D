@@ -8,7 +8,7 @@
 # godot --headless --fixed-fps 60 --path Projeto --script res://tests/test_dialogue_skip.gd
 extends "res://tests/support/player_test.gd"
 
-const BALLOON_SCENE: PackedScene = preload("res://ui/dialogue_balloon.tscn")
+const BALLOON_SCENE: PackedScene = preload("res://scenes/screens/dialogue_balloon.tscn")
 const LUST: DialogueResource = preload("res://dialogue/lust.dialogue")
 const SHORTCUT: StringName = &"lust_shortcut"
 const ANSWERS: int = 4

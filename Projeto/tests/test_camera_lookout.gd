@@ -9,7 +9,7 @@
 # godot --headless --fixed-fps 60 --path Projeto --script res://tests/test_camera_lookout.gd
 extends "res://tests/support/player_test.gd"
 
-const CAMERA_SCENE: PackedScene = preload("res://camera/game_camera.tscn")
+const CAMERA_SCENE: PackedScene = preload("res://scenes/others/camera/game_camera.tscn")
 const INSTANT_SHARPNESS: float = 1.0e6
 ## Steps for the camera to settle when called by hand: 10 s, so the zoom settles too.
 const SETTLE_STEPS: int = 600

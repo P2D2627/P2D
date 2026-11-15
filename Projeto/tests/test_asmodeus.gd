@@ -7,7 +7,7 @@
 # godot --headless --fixed-fps 60 --path Projeto --script res://tests/test_asmodeus.gd
 extends "res://tests/support/player_test.gd"
 
-const ASMODEUS_SCENE: PackedScene = preload("res://demon/asmodeus.tscn")
+const ASMODEUS_SCENE: PackedScene = preload("res://scenes/characters/demon/asmodeus.tscn")
 ## A cue with no answers, so a skip runs it to the end.
 const CUE: String = "stairs"
 ## Frames to wait for a line to come, or for the talk to end.

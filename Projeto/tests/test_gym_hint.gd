@@ -6,7 +6,7 @@
 # godot --headless --fixed-fps 60 --path Projeto --script res://tests/test_gym_hint.gd
 extends "res://tests/support/player_test.gd"
 
-const HINT_SCENE: PackedScene = preload("res://levels/gym/gym_hint.tscn")
+const HINT_SCENE: PackedScene = preload("res://scenes/levels/gym/gym_hint.tscn")
 ## WCAG 2 AA, for normal text.
 const MIN_CONTRAST: float = 4.5
 ## Long enough to need more than one line at the sign's width.
