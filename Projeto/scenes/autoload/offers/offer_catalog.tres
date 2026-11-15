@@ -1,0 +1,16 @@
+[gd_resource type="Resource" script_class="OfferCatalog" format=3]
+
+[ext_resource type="Script" path="res://scenes/autoload/offers/offer_catalog.gd" id="1_catalog"]
+[ext_resource type="Script" path="res://scenes/autoload/offers/offer_data.gd" id="2_data"]
+[ext_resource type="Resource" path="res://scenes/autoload/offers/lust_shortcut.tres" id="3_lust_shortcut"]
+[ext_resource type="Resource" path="res://scenes/autoload/offers/charm.tres" id="4_charm"]
+[ext_resource type="Resource" path="res://scenes/autoload/offers/gluttony_shortcut.tres" id="5_gluttony_shortcut"]
+[ext_resource type="Resource" path="res://scenes/autoload/offers/stomach.tres" id="6_stomach"]
+[ext_resource type="Resource" path="res://scenes/autoload/offers/greed_toll_1.tres" id="7_greed_toll_1"]
+[ext_resource type="Resource" path="res://scenes/autoload/offers/greed_toll_2.tres" id="8_greed_toll_2"]
+[ext_resource type="Resource" path="res://scenes/autoload/offers/greed_toll_3.tres" id="9_greed_toll_3"]
+[ext_resource type="Resource" path="res://scenes/autoload/offers/claim.tres" id="10_claim"]
+
+[resource]
+script = ExtResource("1_catalog")
+offers = Array[ExtResource("2_data")]([ExtResource("3_lust_shortcut"), ExtResource("4_charm"), ExtResource("5_gluttony_shortcut"), ExtResource("6_stomach"), ExtResource("7_greed_toll_1"), ExtResource("8_greed_toll_2"), ExtResource("9_greed_toll_3"), ExtResource("10_claim")])

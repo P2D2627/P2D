@@ -6,7 +6,7 @@
 # godot --headless --fixed-fps 60 --path Projeto --script res://tests/test_gym.gd
 extends "res://tests/support/player_test.gd"
 
-const GYM_SCENE: PackedScene = preload("res://levels/gym/gym.tscn")
+const GYM_SCENE: PackedScene = preload("res://scenes/levels/gym/gym.tscn")
 ## How wide each station is, in px: one screen.
 const STATION_WIDTH: float = 1920.0
 ## The top of every station's floor, in its own coordinates.
@@ -17,7 +17,7 @@ const RUN_START_X: float = 640.0
 ## The far edge of the movement station's hole, in its coordinates.
 const HOLE_RIGHT: float = 1260.0
 ## Physics frames between the feet leaving the edge and the press of Jump. With the press delay it
-## counts 3 frames later, inside the 4 frames of the 0.07 s coyote time at 60 Hz.
+## counts 3 frames later, inside the 6 frames of the 0.1 s coyote time at 60 Hz.
 const LATE_FRAMES: int = 1
 ## Physics frames the camera gets to settle on a man put at a station's start: past the idle delay
 ## and the whole of the idle zoom, which shows the least of the station, as for someone reading.

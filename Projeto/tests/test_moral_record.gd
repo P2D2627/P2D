@@ -3,9 +3,10 @@
 # offer, each toll weighs less than a shortcut, and one shortcut is enough for stage 1. A
 # temptation adds its offer's Moral Weight once, however often it is taken; one missing from the
 # catalog counts Unknown Temptation Points. A refusal only counts, adds no points, and is kept and
-# put back by a save. An arrogant answer adds points and a humble one only counts;
-# any other tone changes nothing. Listening adds nothing within the grace, then points per second,
-# up to the most an offer can add; the same offer heard again keeps only its longest time, and
+# put back by a save. An arrogant answer adds points and a humble one takes some off, and the total
+# is never below 0; any other tone changes nothing. With the game's values, the shortcut and the
+# gift together reach stage 2. Listening adds nothing within the grace, then points per second, up
+# to the most an offer can add; the same offer heard again keeps only its longest time, and
 # negative, infinite and nan seconds change nothing. stage_changed says each new stage once, in
 # order, and nothing when the stage stays. A total that lands on a threshold reaches it, though
 # sums like 0.7 + 0.1 come out a hair short; with Stage 2 Points below Stage 1 Points, stage 2
@@ -17,7 +18,7 @@
 # godot --headless --fixed-fps 60 --path Projeto --script res://tests/test_moral_record.gd
 extends "res://tests/support/player_test.gd"
 
-const STATS: MoralStats = preload("res://core/moral_stats.tres")
+const STATS: MoralStats = preload("res://scenes/autoload/moral_stats.tres")
 ## The game's catalog. Loaded, not preloaded, as Offers explains.
 var _game_catalog: OfferCatalog = GameOffers.get_catalog()
 const DIALOGUE_FOLDER: String = "res://dialogue/"
@@ -32,6 +33,7 @@ const SHORTCUT_POINTS: float = 1.0
 const TOLL_POINTS: float = 0.25
 const UNKNOWN_POINTS: float = 0.5
 const ARROGANT_POINTS: float = 0.2
+const HUMBLE_POINTS: float = 0.1
 const GRACE: float = 2.0
 const POINTS_PER_SECOND: float = 0.5
 const MOST_LISTENING_POINTS: float = 1.0
@@ -48,7 +50,8 @@ func _initialize() -> void:
 	results.append(_a_temptation_counts_once())
 	results.append(_an_unknown_temptation_counts_unknown_points())
 	results.append(_a_refusal_only_counts_and_is_saved())
-	results.append(_arrogant_adds_humble_only_counts_and_others_change_nothing())
+	results.append(_arrogant_adds_humble_takes_off_never_below_0())
+	results.append(_the_game_s_values_put_shortcut_and_gift_at_stage_2())
 	results.append(_listening_has_a_grace_a_rate_and_a_cap())
 	results.append(_the_same_offer_keeps_its_longest_time())
 	results.append(_bad_listening_times_change_nothing())
@@ -127,22 +130,49 @@ func _a_refusal_only_counts_and_is_saved() -> bool:
 			record.get_refusal_count(SHORTCUT)])
 
 
-func _arrogant_adds_humble_only_counts_and_others_change_nothing() -> bool:
+func _arrogant_adds_humble_takes_off_never_below_0() -> bool:
 	print("A warning about the tone test_proud follows, on purpose.")
 	var record: MoralRecord = MoralRecord.new(_test_stats(), _test_catalog())
+	for answer: int in 3:
+		record.record_tone(MoralRecord.ARROGANT)
+	var after_arrogant: float = record.get_points()
 	record.record_tone(MoralRecord.HUMBLE)
-	record.record_tone(MoralRecord.HUMBLE)
-	var after_humble: float = record.get_points()
-	record.record_tone(MoralRecord.ARROGANT)
+	var after_one_humble: float = record.get_points()
+	for answer: int in 10:
+		record.record_tone(MoralRecord.HUMBLE)
+	var after_many_humble: float = record.get_points()
 	record.record_tone(&"test_proud")
-	return report(is_zero_approx(after_humble)
-			and is_equal_approx(record.get_points(), ARROGANT_POINTS)
-			and record.get_tone_count(MoralRecord.HUMBLE) == 2
-			and record.get_tone_count(MoralRecord.ARROGANT) == 1
+	var expected_one: float = 3 * ARROGANT_POINTS - HUMBLE_POINTS
+	return report(is_equal_approx(after_arrogant, 3 * ARROGANT_POINTS)
+			and is_equal_approx(after_one_humble, expected_one) and after_many_humble == 0.0
+			and record.get_points() == 0.0
+			and record.get_tone_count(MoralRecord.HUMBLE) == 11
+			and record.get_tone_count(MoralRecord.ARROGANT) == 3
 			and record.get_tone_count(&"test_proud") == 0,
-			"Two humble: %s points; one arrogant, one unknown: %s, expected %s; %d humble, %d arrogant"
-			% [after_humble, record.get_points(), ARROGANT_POINTS,
+			("Three arrogant: %s points; one humble: %s, expected %s; ten more humble: %s, never "
+			+ "below 0; an unknown tone changes nothing; %d humble, %d arrogant")
+			% [after_arrogant, after_one_humble, expected_one, after_many_humble,
 			record.get_tone_count(MoralRecord.HUMBLE), record.get_tone_count(MoralRecord.ARROGANT)])
+
+
+## With the game's file and catalog: the shortcut and the gift together reach stage 2, an arrogant
+## answer adds 0.5 and a humble one takes 0.5 off.
+func _the_game_s_values_put_shortcut_and_gift_at_stage_2() -> bool:
+	var record: MoralRecord = MoralRecord.new(STATS, _game_catalog)
+	record.take_temptation(&"lust_shortcut")
+	var after_shortcut: int = record.stage()
+	record.take_temptation(&"charm")
+	var after_gift: int = record.stage()
+	var points: float = record.get_points()
+	record.record_tone(MoralRecord.ARROGANT)
+	var arrogant: float = record.get_points() - points
+	record.record_tone(MoralRecord.HUMBLE)
+	var humble: float = record.get_points() - points - arrogant
+	return report(after_shortcut == 1 and after_gift == 2 and is_equal_approx(points, 3.0)
+			and is_equal_approx(arrogant, 0.5) and is_equal_approx(humble, -0.5),
+			("the game's values: the shortcut, stage %d; with the gift, %s points, stage %d; an "
+			+ "arrogant answer %+.2f, a humble one %+.2f") % [after_shortcut, points, after_gift,
+			arrogant, humble])
 
 
 func _listening_has_a_grace_a_rate_and_a_cap() -> bool:
@@ -311,6 +341,7 @@ func _test_stats() -> MoralStats:
 	var stats: MoralStats = MoralStats.new()
 	stats.unknown_temptation_points = UNKNOWN_POINTS
 	stats.arrogant_answer_points = ARROGANT_POINTS
+	stats.humble_answer_points = HUMBLE_POINTS
 	stats.listening_grace = GRACE
 	stats.listening_points_per_second = POINTS_PER_SECOND
 	stats.most_listening_points = MOST_LISTENING_POINTS

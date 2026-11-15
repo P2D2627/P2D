@@ -1,0 +1,6 @@
+[gd_resource type="Resource" script_class="CrucifixStats" format=3 uid="uid://bwvvnrtdfrco3"]
+
+[ext_resource type="Script" uid="uid://070t2scb3vhm" path="res://scenes/characters/crucifix/crucifix_stats.gd" id="1_script"]
+
+[resource]
+script = ExtResource("1_script")

@@ -9,7 +9,7 @@
 extends "res://tests/support/player_test.gd"
 
 ## Only read, for the heights the cases expect; each player changes its own copy.
-const STATS: PlayerMovementStats = preload("res://player/player_movement_stats.tres")
+const STATS: PlayerMovementStats = preload("res://scenes/characters/player/player_movement_stats.tres")
 ## Jump Buffer for the cases, set in memory only: 0.07 s is 4.2 physics frames at 60 per second,
 ## which rounds to 4.
 const BUFFER_TIME: float = 0.07
@@ -21,7 +21,7 @@ const BUFFER_TIME_ROUNDING_UP: float = 0.08
 const BUFFER_FRAMES_ROUNDED_UP: int = 5
 ## The floor runs from x = -FLOOR_HALF_WIDTH to x = FLOOR_HALF_WIDTH, with its top at y = 0.
 const FLOOR_HALF_WIDTH: float = 1000.0
-## The player drops from here, high enough to reach top falling speed (143 px) before landing.
+## The player drops from here, high enough to reach top falling speed (166 px) before landing.
 const DROP_POSITION: Vector2 = Vector2(0.0, -400.0)
 ## Frames before the landing count from 0, the first frame on the floor; 1 is the last in the air.
 const FIRST_FLOOR_FRAME: int = 0

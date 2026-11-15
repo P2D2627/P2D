@@ -11,7 +11,7 @@
 extends "res://tests/support/player_test.gd"
 
 const MAIN_SCENE_PATH: String = "res://main.tscn"
-const UI_THEME_PATH: String = "res://ui/ui_theme.tres"
+const UI_THEME_PATH: String = "res://themes/ui_theme.tres"
 ## The file the autoload Settings saves to during the menu tests, deleted when they finish.
 const SETTINGS_TEST_PATH: String = "user://test_menus.cfg"
 ## Process frames after a key or button goes down, and again after it comes up.

@@ -12,7 +12,7 @@
 # godot --headless --fixed-fps 60 --path Projeto --script res://tests/test_knockback.gd
 extends "res://tests/support/player_test.gd"
 
-const HITBOX_SCENE: PackedScene = preload("res://components/hitbox.tscn")
+const HITBOX_SCENE: PackedScene = preload("res://scenes/characters/components/hitbox.tscn")
 ## A little above the floor, so the man lands on his own before a case starts.
 const SPAWN_Y: float = -2.0
 ## Far above the floor, so the man is still in the air when a case ends.

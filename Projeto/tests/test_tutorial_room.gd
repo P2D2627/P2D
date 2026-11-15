@@ -9,7 +9,7 @@
 # godot --headless --fixed-fps 60 --path Projeto --script res://tests/test_tutorial_room.gd
 extends "res://tests/support/player_test.gd"
 
-const ROOM_SCENE: PackedScene = preload("res://scenes/levels/Lust/LustLevel_Phase1_Cave.tscn")
+const ROOM_SCENE: PackedScene = preload("res://scenes/levels/lust/LustLevel_Phase1_Cave.tscn")
 ## Where the Tutorial node sits in the phase: the positions below are its own.
 const OFFSET: Vector2 = Vector2(-4560.0, 3984.0)
 ## Just left of Velvet's Talk Area.
@@ -175,7 +175,7 @@ func _after_the_first_talk_interact_talks_again() -> bool:
 	var talks_again: bool = await wait_until(
 			func() -> bool: return velvet.get_state() == TutorialDemon.State.TALKING, 5)
 	Input.action_release(&"interact")
-	var balloon: DialogueManagerExampleBalloon = _balloon(velvet)
+	var balloon: DialogueBalloon = _balloon(velvet)
 	var again_cue: String = velvet.again_cue
 	var from_again_cue: bool = balloon != null and balloon.start_from_cue == again_cue
 	await _remove_room(room)
@@ -296,8 +296,8 @@ func _the_crucifix_throws_the_corridor_demon_into_the_pit() -> bool:
 			% [in_the_pit, start_sp, end_sp])
 
 
-func _balloon(velvet: TutorialDemon) -> DialogueManagerExampleBalloon:
+func _balloon(velvet: TutorialDemon) -> DialogueBalloon:
 	for child: Node in velvet.get_children():
-		if child is DialogueManagerExampleBalloon and not child.is_queued_for_deletion():
-			return child as DialogueManagerExampleBalloon
+		if child is DialogueBalloon and not child.is_queued_for_deletion():
+			return child as DialogueBalloon
 	return null

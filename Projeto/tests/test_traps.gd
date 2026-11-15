@@ -7,9 +7,9 @@
 # godot --headless --fixed-fps 60 --path Projeto --script res://tests/test_traps.gd
 extends "res://tests/support/player_test.gd"
 
-const SPIKES_SCENE: PackedScene = preload("res://traps/spikes.tscn")
-const HALF_LIFE_SCENE: PackedScene = preload("res://traps/half_life_trap.tscn")
-const ROCK_SCENE: PackedScene = preload("res://traps/falling_rock.tscn")
+const SPIKES_SCENE: PackedScene = preload("res://scenes/objects/traps/spikes.tscn")
+const HALF_LIFE_SCENE: PackedScene = preload("res://scenes/objects/traps/half_life_trap.tscn")
+const ROCK_SCENE: PackedScene = preload("res://scenes/objects/traps/falling_rock.tscn")
 
 ## The floor runs along y = 0; the ceiling's underside is CEILING_Y.
 const FLOOR_LEFT: float = -3000.0

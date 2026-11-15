@@ -102,19 +102,19 @@ afinação indicados, e são provisórios até serem afinados em jogo.
 | Medida | Valor | Tiles | Origem |
 |---|---|---|---|
 | dimensão do homem e do cão | 48 × 96 px | 1 × 2 | `player.tscn`, `demon.tscn` |
-| corrida do homem | 720 px/s | | README |
-| perseguição do cão | 560 px/s | | `demon_stats.gd`: em terreno plano, o homem consegue sempre fugir |
+| corrida do homem | 600 px/s | | README |
+| perseguição do cão | 510 px/s, até 561 com a variação da matilha | | `demon_stats.gd`: em terreno plano, o homem foge sempre, mesmo aos mais rápidos da matilha |
 
 **Saltos do homem**
 
 | Medida | Valor | Tiles | Origem |
 |---|---|---|---|
 | salto completo | 240 px | 5 | README |
-| salto mínimo (botão largado logo) / com 0,1 s de botão | 88 / 153 px | 1,8 / 3,2 | README |
-| vão sempre transponível / nunca transponível | até 431 / 579 px ou mais | até 8 / 13 ou mais | README |
-| plataforma sempre alcançável / inalcançável com uma parede ao alcance | até 379 / 571 px ou mais | até 7 / 12 ou mais | README |
-| distância de um salto da parede até à altura de partida | 444 px | 9 | README |
-| chaminé sempre subida / nunca subida | até 174 / 528 px ou mais | até 3 / 11 ou mais | README; entre os dois valores, a subida depende da perícia e fica fora do caminho obrigatório |
+| salto mínimo (botão largado logo) / com 0,1 s de botão | 86 / 139 px | 1,8 / 2,9 | README |
+| vão sempre transponível / nunca transponível | até 440 / 595 px ou mais | até 9 / 13 ou mais | README |
+| plataforma sempre alcançável / inalcançável com uma parede ao alcance | até 381 / 573 px ou mais | até 7 / 12 ou mais | README |
+| distância de um salto da parede até à altura de partida | 440 px | 9 | README |
+| chaminé sempre subida / nunca subida | até 163 / 526 px ou mais | até 3 / 11 ou mais | README; entre os dois valores, a subida depende da perícia e fica fora do caminho obrigatório |
 | degrau que trava um cão | 48 px | 1 | `demon_attack.gd`: nenhum salto do cão passa dos 32 px |
 
 **Cão** (valores de `lust_demon_stats.tres`, salvo indicação em contrário)
@@ -523,10 +523,10 @@ regras o pode confirmar a partir da cena, e "à mão" que exige leitura do desen
 | 12 | Não há picos, rochas, rampas nem plataformas móveis | | teste |
 | 13 | Uma pista da investida tem chão plano e sem vãos | 10 tiles ou mais | teste |
 | | **Alcance do homem** | | |
-| 14 | Os vãos do caminho obrigatório são sempre transponíveis; os que devem travar o homem são intransponíveis | até 431 px (8 tiles); 579 px (13 tiles) ou mais | teste |
-| 15 | As chaminés do caminho obrigatório sobem-se sempre | até 174 px (3 tiles) de largura | teste |
-| 16 | As plataformas do caminho obrigatório alcançam-se com margem | até 192 px (4 tiles) sem parede; até 379 px com uma parede ao alcance | teste |
-| 17 | Vãos entre 431 e 579 px e chaminés entre 174 e 528 px existem só em caminhos opcionais | | à mão |
+| 14 | Os vãos do caminho obrigatório são sempre transponíveis; os que devem travar o homem são intransponíveis | até 440 px (9 tiles); 595 px (13 tiles) ou mais | teste |
+| 15 | As chaminés do caminho obrigatório sobem-se sempre | até 163 px (3 tiles) de largura | teste |
+| 16 | As plataformas do caminho obrigatório alcançam-se com margem | até 192 px (4 tiles) sem parede; até 381 px com uma parede ao alcance | teste |
+| 17 | Vãos entre 440 e 595 px e chaminés entre 163 e 526 px existem só em caminhos opcionais | | à mão |
 | | **Crucifixo** | | |
 | 18 | Onde a sala exige o crucifixo, há chão plano e livre à volta | 9 tiles ou mais | teste |
 | 19 | Um corredor do crucifixo atravessa-se dentro da duração do crucifixo, com margem | até 15 tiles (4 s a 180 px/s; a duração é 5 s) | teste |
@@ -554,7 +554,7 @@ regras o pode confirmar a partir da cena, e "à mão" que exige leitura do desen
 | 37 | Cada sítio alto onde o homem possa esperar tem uma saída para fora da vista dos cães | rocha que corte a linha de vista, ou subida até os cães saírem do ecrã | à mão |
 | | **Cães que saltam (só com Jump Height ou Max Drop acima de 0)** | | |
 | 38 | Um refúgio fica acima do que o cão sobe mais o alcance dos ataques | mais de Jump Height + 24 px acima do chão de cada cão (com 96 px, 3 tiles ou mais) | teste |
-| 39 | Uma descida mais funda do que Jump Height existe só onde se aceita que o cão fique lá em baixo, porque não tem volta; lá em baixo há chão livre até onde ele aterra | até Max Drop; à velocidade da perseguição (até 616 px/s), chão livre até 5 tiles depois da quina numa queda de 96 px e até 7 tiles numa de 240 px | teste |
+| 39 | Uma descida mais funda do que Jump Height existe só onde se aceita que o cão fique lá em baixo, porque não tem volta; lá em baixo há chão livre até onde ele aterra | até Max Drop; à velocidade da perseguição (até 561 px/s), chão livre até 5 tiles depois da quina numa queda de 96 px (medidos 230 px) e até 7 tiles numa de 240 px (medidos 314 px) | teste |
 | 40 | No caminho de um cão, nenhum chão fica à mesma altura do chão do seu posto sem ser o próprio | os chãos distinguem-se só pela altura: o cão ficaria preso ao voltar | teste |
 
 ## 12. Ordem do trabalho

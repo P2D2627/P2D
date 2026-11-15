@@ -1,0 +1,26 @@
+[gd_scene format=3]
+
+[ext_resource type="Script" path="res://scenes/objects/platforms/collapsing_platform.gd" id="1_script"]
+[ext_resource type="TileSet" path="res://scenes/others/tilesets/cave_placeholder_tiles.tres" id="2_tiles"]
+
+[sub_resource type="RectangleShape2D" id="RectangleShape2D_rider"]
+resource_local_to_scene = true
+size = Vector2(144, 8)
+
+[node name="CollapsingPlatform" type="Node2D"]
+script = ExtResource("1_script")
+
+[node name="Tiles" type="TileMapLayer" parent="."]
+unique_name_in_owner = true
+tile_set = ExtResource("2_tiles")
+
+[node name="RiderSensor" type="Area2D" parent="."]
+unique_name_in_owner = true
+collision_layer = 0
+collision_mask = 2
+monitorable = false
+
+[node name="RiderShape" type="CollisionShape2D" parent="RiderSensor"]
+unique_name_in_owner = true
+position = Vector2(72, -3)
+shape = SubResource("RectangleShape2D_rider")

@@ -13,7 +13,7 @@
 # godot --headless --fixed-fps 60 --path Projeto --script res://tests/test_settings.gd
 extends "res://tests/support/player_test.gd"
 
-const SETTINGS_SCRIPT: GDScript = preload("res://core/settings.gd")
+const SETTINGS_SCRIPT: GDScript = preload("res://scenes/autoload/settings.gd")
 const TEST_PATH: String = "user://test_settings.cfg"
 ## How far a bus volume read back from the AudioServer may be from the one set: it goes through dB.
 const VOLUME_TOLERANCE: float = 0.0001

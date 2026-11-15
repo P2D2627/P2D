@@ -5,7 +5,7 @@
 # godot --headless --fixed-fps 60 --path Projeto --script res://tests/test_one_way_platform.gd
 extends "res://tests/support/player_test.gd"
 
-const TILE_SET: TileSet = preload("res://scenes/levels/Lust/cave_placeholder_tiles.tres")
+const TILE_SET: TileSet = preload("res://scenes/others/tilesets/cave_placeholder_tiles.tres")
 ## The One Way tile: an alternative of the solid block, with its polygon on its own physics layer.
 const ONE_WAY_SOURCE: int = 0
 const ONE_WAY_ATLAS: Vector2i = Vector2i(0, 0)

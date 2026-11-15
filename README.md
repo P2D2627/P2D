@@ -10,7 +10,7 @@ aceita.
 
 > **Estado:** a personagem jogável já anda, salta e tem controlo no ar, desliza nas paredes e salta
 > delas, e o salto tolera pedidos ligeiramente fora de tempo. O jogo abre num menu principal, que dá
-> acesso à sala de teste e ao blockout do nível 1, e tem pausa e opções gravadas. A câmara do jogo
+> acesso à sala de teste e ao nível 1, e tem pausa e opções gravadas. A câmara do jogo
 > está descrita em "Câmara". Na sala de teste, dois demónios perseguem a personagem, mordem-na e,
 > com o SP baixo, agarram-na; o crucifixo afasta-os, e quem morre recomeça a sala. Ainda não há
 > arte, e o som começou pela personagem e pelo crucifixo.
@@ -38,12 +38,13 @@ cada sala) está em `docs/nivel1_desenho.md`, e os artigos que o fundamentam em 
    Durante o jogo, a tecla F3 mostra e esconde o texto de depuração descrito em "Overlay de
    depuração", e a tecla F4 retira 10 SP à personagem, como um golpe, para experimentar a
    regeneração descrita em "SP".
-5. O nível 1 em blockout (Play ▸ Level 1: Lust (blockout)) tem as fases 1, 2 e 3, com tiles
-   provisórios de 48 px, cada uma na sua cena. A fase 1 começa no tutorial, que ensina os controlos
-   e continua sem cortes para a sala inicial. Depois sobe da esquerda para a direita e termina numa
-   sala com uma porta; ao atravessá-la, o ecrã escurece e a fase 2 começa no canto inferior direito.
-   O retângulo verde assinala a porta para a fase seguinte. Cada fase também corre sozinha com F6,
-   sem gravar nada.
+5. O nível 1 (Play ▸ Level 1: Lust) é uma só cena, `scenes/levels/lust/level1.tscn`, com o tutorial e as
+   fases 1, 2 e 3, e é ele que inicia uma partida nova. No início das fases 2 e 3, a Asmodeu
+   aparece e oferece o atalho; depois de várias mortes nessas fases, volta a oferecê-lo à entrada
+   da zona onde ele morre (ver "Ofertas por mortes"). Na saída, depois da fase 3 ou pelo atalho,
+   ela oferece o dom e despede-se, e o jogo volta ao menu principal. O blockout antigo, com uma cena
+   por fase, continua na lista como Level 1: Lust (old blockout), sem iniciar partida. Cada cena
+   também corre sozinha com F6, sem gravar nada.
 6. Entrar numa fase grava o jogo, o que é indicado por "Saving..." no canto do ecrã, e o menu
    principal passa a mostrar Continue, descrito em "Gravação do jogo".
 7. A sala de treino (Play ▸ Gym (training room)) põe à prova, uma de cada vez, as mecânicas que já
@@ -84,24 +85,27 @@ segundo, seja qual for o monitor.
 
 ### Deslocação horizontal
 
-A personagem tem uma única velocidade, 720 px/s, sem botão de corrida, e percorre a largura de um
-ecrã Full HD (1920 px) em menos de 3 segundos. Atinge essa velocidade em 0,1 s e, quando a tecla é libertada, desliza 48 px (uma
-largura) até parar. A sensação de peso fica a cargo da apresentação (animação de aterragem, som e
-câmara), para que os controlos se mantenham rápidos. As reduções de velocidade resultam de
-elementos do jogo, como o crucifixo e o nível da preguiça.
+A personagem tem uma única velocidade, 600 px/s, sem botão de corrida, e percorre a largura de um
+ecrã Full HD (1920 px) em pouco mais de 3 segundos. Atinge essa velocidade em 0,18 s, ao fim de
+61 px, e, quando a tecla é libertada, desliza 40 px (pouco menos de uma largura) até parar. O
+arranque demorado dá peso à personagem, e a travagem curta mantém a resposta quando o jogador quer
+parar. Os valores foram revistos depois dos testes com o grupo e com os professores, em que a
+personagem parecia rápida e leve demais. A corrida abrandou, o arranque ficou mais pesado e a
+subida do salto mais calma, com a mesma altura e o mesmo alcance. As reduções de velocidade
+resultam de elementos do jogo, como o crucifixo e o nível da preguiça.
 
 ### Queda
 
-A velocidade de queda aumenta até um máximo de 1400 px/s, atingido após uma queda de 143 px, cerca
-de uma altura e meia. Como a velocidade de queda é limitada, o dano de queda, quando for
+A velocidade de queda aumenta até um máximo de 1400 px/s, atingido após uma queda de 166 px, cerca
+de uma altura e três quartos. Como a velocidade de queda é limitada, o dano de queda, quando for
 implementado, será calculado a partir da altura de onde a personagem cai.
 
 ### Salto de altura variável
 
 Com o botão premido até ao ponto mais alto, o salto atinge 240 px, duas vezes e meia a altura da
-personagem. Com o botão largado logo, o salto mínimo sobe 88 px; com o botão premido durante 0,1 s,
-sobe 153 px. Entre estes valores, a altura depende do tempo durante o qual o botão é mantido. A subida demora 0,35 s e a descida cerca de
-0,25 s, o que evita que o salto pareça flutuar.
+personagem. Com o botão largado logo, o salto mínimo sobe 86 px; com o botão premido durante 0,1 s,
+sobe 139 px. Entre estes valores, a altura depende do tempo durante o qual o botão é mantido. A
+subida demora 0,45 s e a descida 0,27 s, o que evita que o salto pareça flutuar.
 
 O salto é definido pela altura e pelo tempo até ao ponto mais alto, a partir dos quais se calculam
 a gravidade e a velocidade inicial (Pittman, 2016). Assim, o salto completo atinge exatamente a
@@ -112,7 +116,7 @@ altura definida. Libertar o botão durante a subida aumenta a gravidade, o que e
 Durante o salto ou a queda, a personagem pode mudar de direção com 70 % da aceleração que tem no
 chão. Acelerar, travar e inverter o sentido demoram, por isso, cerca de uma vez e meia o tempo
 correspondente no chão. Ao largar a direção a meio de um salto em corrida, a personagem desliza
-71 px até parar, contra 48 px no chão.
+59 px até parar, contra 40 px no chão.
 
 O controlo aéreo permite corrigir um salto mal calculado. O jogo avalia o jogador pelas escolhas
 que faz, e mortes causadas pelos controlos levariam a aceitar atalhos por frustração. O valor de
@@ -120,48 +124,56 @@ que faz, e mortes causadas pelos controlos levariam a aceitar atalhos por frustr
 
 ### Tolerâncias do salto
 
-Um salto pedido uma fração de segundo fora de tempo é aceite. O objetivo é que um salto que o
-jogador sente como dado a tempo não falhe sem razão aparente, o que se confundiria com falta de
-resposta dos controlos; o efeito será confirmado em playtest. As tolerâncias beneficiam também quem
-reage mais devagar.
+Um salto pedido uma fração de segundo fora de tempo é aceite, e um salto que fica poucos píxeis
+abaixo de um degrau também chega a ele. O objetivo é que um salto que o jogador sente como certo
+não falhe sem razão aparente, o que se confundiria com falta de resposta dos controlos; o efeito
+será confirmado em playtest. As tolerâncias beneficiam também quem reage mais devagar.
 
-- Tolerância de borda (*coyote time*): durante 0,07 s (4 passos de física) depois de sair de uma
+- Tolerância de borda (*coyote time*): durante 0,1 s (6 passos de física) depois de sair de uma
   plataforma sem saltar, a personagem ainda pode saltar. A correr, o último salto aceite parte com a
-  parte de trás do corpo 37 a 48 px para lá da borda, conforme o ponto de onde a corrida começa.
-- Tolerância de aterragem (*jump buffer*): um salto pedido até 0,07 s antes de aterrar fica guardado
+  parte de trás do corpo 51 a 60 px para lá da borda, conforme o ponto de onde a corrida começa.
+- Tolerância de aterragem (*jump buffer*): um salto pedido até 0,1 s antes de aterrar fica guardado
   e é executado no primeiro instante em contacto com o chão. A altura continua a depender do tempo
   durante o qual o botão é mantido: um toque dado antes da aterragem produz o salto mínimo.
+- Ajuda nos degraus: se a personagem cai contra a parede de um degrau com os pés até 16 px abaixo
+  do topo, um sexto da sua altura, a andar para ele ou só encostada, sobe o que falta e pousa.
+  Como o deslize, não obriga a empurrar. Não atua durante a subida do salto, que já a leva por
+  cima, nem quando o jogador empurra para o lado oposto, nem nos demónios, para que os encontros
+  com eles não mudem. Nas plataformas de sentido único também não atua, porque não têm um lado
+  contra o qual a personagem bata.
 
 Durante a tolerância de borda, a gravidade continua a atuar, para que a personagem não pareça
-caminhar no ar. Por isso, o último salto aceite parte 13 px abaixo da borda e sobe 227 px acima
-dela, menos 13 px do que um salto dado na borda. Os dois tempos são provisórios e serão afinados
-com a câmara e nos níveis.
+caminhar no ar. Por isso, o último salto aceite parte 27,5 px abaixo da borda e sobe 212,5 px acima
+dela, menos 27,5 px do que um salto dado na borda. Os dois tempos passaram de 0,07 s para 0,1 s
+depois dos testes com o grupo e com os professores, e podem ainda ser afinados nos níveis.
 
 ### Paredes
 
 No ar, encostada a uma parede, a personagem pode deslizar e saltar da parede.
 
-O deslize começa quando o jogador empurra a personagem contra a parede e mantém-se sem que a
-direção continue premida. Termina quando o jogador empurra para o lado oposto, salta, chega ao chão
-ou a parede acaba. Na descida, a velocidade fica limitada a 350 px/s, um quarto da velocidade
-máxima de queda: se a personagem cair mais depressa, trava de imediato para esse valor; se cair
-mais devagar, como no topo de um salto, continua a acelerar até ele. A 350 px/s, desce uma altura
-do corpo em 0,28 s. Na subida, não há travão. Dispensar a direção premida durante o deslize segue
-as Game Accessibility Guidelines (s.d.-a), que recomendam não obrigar o jogador a manter teclas
-premidas.
+O deslize começa quando a personagem toca numa parede no ar, sem ser preciso empurrar, e mantém-se
+sem nenhuma direção premida. Termina quando o jogador empurra para o lado oposto, salta, chega ao
+chão ou a parede acaba. No lado de um demónio continua a ser preciso empurrar, para que encostar-se
+a um demónio no ar não trave a queda. Na descida, a velocidade fica limitada a 350 px/s, um quarto
+da velocidade máxima de queda: se a personagem cair mais depressa, trava de imediato para esse
+valor; se cair mais devagar, como no topo de um salto, continua a acelerar até ele. A 350 px/s,
+desce uma altura do corpo em 0,28 s. Na subida, não há travão. Dispensar a direção premida, para
+entrar no deslize e para o manter, segue as Game Accessibility Guidelines (s.d.-a), que recomendam
+não obrigar o jogador a manter teclas premidas. Antes, só se entrava no deslize a empurrar contra a
+parede, e nos testes com o grupo e com os professores o deslize quase não aparecia.
 
 O salto da parede é dado com a tecla de saltar sempre que a personagem toca numa parede no ar,
 empurrando-a ou não. A personagem sai para o lado oposto à parede, à velocidade máxima da corrida e
 com a altura de um salto completo (240 px). Como a direção do salto é sempre a de afastamento da
 parede, numa chaminé basta premir a tecla de saltar, o que mantém os controlos simples (Game
 Accessibility Guidelines, s.d.-b). Durante 0,2 s após o salto, a corrida não responde, e a
-personagem afasta-se 144 px da parede. É este bloqueio que impede a subida de uma parede isolada:
-mesmo com a melhor combinação de teclas, cada salto devolve a personagem à mesma parede 96 px mais
+personagem afasta-se 120 px da parede. É este bloqueio que impede a subida de uma parede isolada:
+mesmo com a melhor combinação de teclas, cada salto devolve a personagem à mesma parede 234 px mais
 abaixo. Entre duas paredes próximas, numa chaminé, a subida não tem limite; na chaminé da sala de
-teste, com 120 px de largura, cada salto sobe 90 px premindo apenas a tecla de saltar. A regra de
+teste, com 120 px de largura, cada salto sobe 87 px premindo apenas a tecla de saltar. A regra de
 que uma parede isolada não se sobe por saltos da parede aguarda a confirmação do grupo.
 
-Tal como na borda de uma plataforma, existe uma tolerância: durante 0,07 s depois de largar uma
+Tal como na borda de uma plataforma, existe uma tolerância: durante 0,1 s depois de largar uma
 parede, a tecla de saltar ainda produz o salto da parede. Os valores do deslize e do bloqueio são
 provisórios e serão afinados com a câmara e nos níveis.
 
@@ -182,7 +194,7 @@ engano. Durante a pausa, o tempo de uso para.
 
 Erguido, o crucifixo:
 
-- abranda a personagem: a velocidade máxima desce de 720 px/s para 180 px/s (25 %);
+- abranda a personagem: a velocidade máxima desce de 600 px/s para 150 px/s (25 %);
 - impede o salto. Um salto pedido com o crucifixo erguido é descartado, e não acontece quando o
   crucifixo baixa;
 - afasta os demónios e as almas perdidas que estiverem a menos de 200 px; o que estiver mais longe
@@ -370,10 +382,9 @@ demónios usam-na com 96 px e 240 px:
   por cima dele ou a borda do seu chão deixam-no fora de alcance, como antes.
 - **Descer.** Com a personagem abaixo do seu alcance, desce a borda aos saltos, com o mesmo salto.
   Antes de descolar, joga o arco passo a passo e só salta se aterrar num chão até Max Drop mais
-  abaixo; uma parede, um teto ou o vazio deixam-no fora de alcance. À velocidade da perseguição
-  (560 px/s, até 616 px/s com a variação da matilha), o corpo aterra todo até cerca de 220 px
-  depois da quina numa queda de 96 px, e até cerca de 315 px numa de 240 px; lá em baixo, esse chão
-  tem de estar livre.
+  abaixo; uma parede, um teto ou o vazio deixam-no fora de alcance. À velocidade do cão mais rápido
+  da matilha (561 px/s), o corpo aterra todo até cerca de 230 px depois da quina numa queda de 96 px,
+  e até cerca de 314 px numa de 240 px; lá em baixo, esse chão tem de estar livre.
 - **Voltar.** O demónio guarda o caminho por onde saiu do seu chão, até 8 passos, e no regresso
   refá-lo do último para o primeiro. Um passo que não consegue desfazer, como uma queda mais funda
   do que o seu salto, deixa-o nesse chão (ver "Posto e regresso"). Ao procurar a personagem, sobe e
@@ -382,7 +393,7 @@ demónios usam-na com 96 px e 240 px:
 Ao descolar, o retângulo provisório estica (0,8 × 1,25) e, ao aterrar, encolhe (1,25 × 0,75),
 voltando ao tamanho em 0,2 s; cada um tem um bip provisório.
 
-Os valores são os do demónio da luxúria, num ficheiro de dados (`demon/lust_demon_stats.tres`);
+Os valores são os do demónio da luxúria, num ficheiro de dados (`scenes/characters/demon/lust_demon_stats.tres`);
 mudam sem alterar código e são provisórios. O aviso é, por agora, um retângulo que muda de forma e
 de cor, com uma forma para cada ataque, à espera da arte e do som; a mordida precisa de uma animação
 e de um som próprios. O demónio do tutorial, que fala e não persegue, terá uma cena própria
@@ -423,75 +434,108 @@ empurrado para o lado a 600 px/s. Se os dois ficarem presos, porque o empurrão 
 dois lados, como num buraco da largura de um corpo, atravessam-se ao fim de 0,1 s até se
 separarem; enquanto se sobrepõem, o demónio não ataca.
 
-Os valores estão em `player/grab_stats.tres` (o agarrão), no ficheiro de dados dos demónios (o dano
+Os valores estão em `scenes/characters/player/grab_stats.tres` (o agarrão), no ficheiro de dados dos demónios (o dano
 e os arremessos) e na cena da personagem (a invulnerabilidade), e são provisórios. Soltar-se
 mantendo o salto premido, em vez de o premir repetidamente, já existe no código e chega às opções
 numa tarefa seguinte, para quem não consegue premir depressa.
+
+### Portões, picos letais e plataformas que desabam
+
+Cinco elementos para qualquer nível, cada um numa cena própria, que se coloca na cena do nível e se
+ajusta no Inspector. Por agora são formas provisórias, até chegar a arte.
+
+| Elemento | Cena | Comportamento | Medida |
+|---|---|---|---|
+| Portão | `scenes/objects/gates/gate.tscn` | barra uma passagem à personagem, aos demónios e à visão destes; desbloqueado, sobe a sua própria altura, por trás da rocha; com Slide Way em Left ou Right, é um alçapão e desliza para esse lado a sua própria largura | desliza em 0,8 s (48 passos de física) |
+| Desbloqueador | `scenes/objects/gates/gate_unlocker.tscn` | ativa-se uma vez, com o crucifixo erguido ao pé dele, e abre os portões da lista Gates; o crucifixo não sabe que ele existe, porque o reconhece como mais um elemento repelível (`scenes/characters/components/crucifix_sensor.gd`), que não se move | alcance de 200 px, o raio do crucifixo |
+| Anel de proximidade | `scenes/objects/gates/proximity_unlocker.tscn` | ativa-se uma vez, na primeira vez que a personagem entra no círculo, sem crucifixo, e abre os portões da lista Gates | alcance (Reach) de 288 px por omissão |
+| Picos letais | `scenes/objects/traps/lethal_spikes.tscn` | um toque mata a personagem de imediato, com qualquer valor de SP; os demónios passam por cima sem efeito | parte que mata com 24 px de altura e 4 px de folga em cada ponta, para um salto que passe à vista passar mesmo |
+| Plataforma que desaba | `scenes/objects/platforms/collapsing_platform.tscn` | usa o mesmo tile das plataformas de sentido único; pousar nela faz com que pisque e desapareça; saltar através dela, de baixo, não a ativa; volta ao fim de Come Back Time, com 0 fica desaparecida até o nível recomeçar | desaparece em 0,6 s (36 passos) e volta ao fim de 3 s |
+
+A largura e a altura destes elementos definem-se em tiles, no Inspector. A morte imediata é o método
+`die()` da personagem, que a imobiliza e fecha a sua caixa de dano, enquanto o nível recomeça. O cão
+grande (`scenes/characters/demon/big_demon.tscn`), na fase 2 do nível 1, é o demónio normal 1,25 vezes maior: o corpo
+(140 × 70 px), a caixa de ataque, a arte e as verificações aos pés. No ecrã, distingue-se do cão
+normal pelo tamanho e pela arte, escurecida a 60 % do brilho, para que a diferença se leia de
+relance e não dependa só do tamanho; os avisos de ataque clareiam-na na mesma proporção que no cão
+normal. Tem valores próprios (`scenes/characters/demon/big_demon_stats.tres`), iguais aos do cão normal
+exceto no dano: 25 SP no salto e 12,5 SP na mordida, contra 20 e 10. A fase 2 fica assim mais
+exigente: com 100 SP e sem tempo para regenerar, o quarto salto do cão grande já agarra a personagem,
+em vez do quinto. O `test_big_dog.gd` falha se os valores dos dois cães diferirem em algo além do
+dano, para que nenhuma afinação do cão normal fique por passar para o grande. Falha também se a arte
+do cão grande deixar de ser mais escura, parado, a avisar ou atordoado. O maior cão
+(`scenes/characters/demon/biggest_demon.tscn`), no fim da fase 3 do nível 1, é o demónio normal oito
+vezes maior (corpo de 896 × 448 px, caixa de ataque, arte e verificações aos pés) com um anel de
+proximidade de 736 px de alcance à volta do meio do corpo: chegar perto dele abre os portões da sua
+lista Opens. Por agora não faz mais nada de diferente de um cão normal.
 
 ## Medidas para o desenho de níveis
 
 | Medida | Valor | Em dimensões da personagem |
 |---|---|---|
 | Altura do salto completo (altura máxima dos pés) | 240 px | 2,5 alturas |
-| Altura do salto com o botão premido durante 0,1 s | 153 px | 1,6 alturas |
-| Altura do salto mínimo, com o botão largado logo | 88 px | menos de 1 altura |
-| Vão mais largo que um salto em corrida atravessa, de borda a borda | 479 a 490 px | 10 larguras |
-| Vão mais largo, com o salto dado no último instante da tolerância de borda | 520 a 531 px | 11 larguras |
-| Altura máxima, acima da borda, do salto dado no último instante da tolerância de borda | 227 px | 2,4 alturas |
-| Tempo no ar num salto completo | 0,6 s | |
-| Distância de travagem no chão | 48 px | 1 largura |
-| Distância de travagem no ar | 71 px | 1,5 larguras |
-| Queda até à velocidade máxima | 143 px | 1,5 alturas |
-| Altura máxima de um salto completo junto a uma parede seguido de um salto da parede | 475 px | 4,9 alturas |
-| Distância à parede no ponto mais alto desse salto, com a direção para fora | 252 px | 5,3 larguras |
-| Distância de um salto da parede, com a direção para fora, até voltar à altura de partida | 444 px | 9,3 larguras |
-| Chaminé mais larga que se sobe premindo apenas a tecla de saltar ao tocar na parede | 222 px | 4,6 larguras |
-| Chaminé mais larga que se sobe premindo a tecla 0,07 s depois de tocar na parede | 178 px | 3,7 larguras |
-| Chaminé mais larga que se sobe com a melhor combinação de teclas | 480 px | 10 larguras |
-| Subida por salto numa chaminé de 120 px, premindo apenas a tecla de saltar | 90 px | quase 1 altura |
-| Descida por salto numa parede isolada, com a melhor combinação de teclas | 96 px | 1 altura |
+| Altura do salto com o botão premido durante 0,1 s | 139 px | 1,4 alturas |
+| Altura do salto mínimo, com o botão largado logo | 86 px | menos de 1 altura |
+| Vão mais largo que um salto em corrida atravessa, de borda a borda | 488 a 497 px | 10 larguras |
+| Vão mais largo, com o salto dado no último instante da tolerância de borda | 538 a 547 px | 11 larguras |
+| Altura máxima, acima da borda, do salto dado no último instante da tolerância de borda | 212,5 px | 2,2 alturas |
+| Tempo no ar num salto completo | 0,72 s | |
+| Distância de travagem no chão | 40 px | 0,8 larguras |
+| Distância de travagem no ar | 59 px | 1,2 larguras |
+| Queda até à velocidade máxima | 166 px | 1,7 alturas |
+| Altura máxima de um salto completo junto a uma parede seguido de um salto da parede | 477 px | 5 alturas |
+| Distância à parede no ponto mais alto desse salto, com a direção para fora | 270 px | 5,6 larguras |
+| Distância de um salto da parede, com a direção para fora, até voltar à altura de partida | 440 px | 9,2 larguras |
+| Chaminé mais larga que se sobe premindo apenas a tecla de saltar ao tocar na parede | 211 px | 4,4 larguras |
+| Chaminé mais larga que se sobe premindo a tecla 0,1 s depois de tocar na parede | 200 px | 4,2 larguras |
+| Chaminé mais larga que se sobe com a melhor combinação de teclas | 478 px | 10 larguras |
+| Subida por salto numa chaminé de 120 px, premindo apenas a tecla de saltar | 87 px | quase 1 altura |
+| Descida por salto numa parede isolada, com a melhor combinação de teclas | 234 px | 2,4 alturas |
 | Tempo de deslize por cada altura do corpo | 0,28 s | |
+| Subida máxima da ajuda nos degraus | 16 px | um sexto de altura |
 
 - Os vãos máximos variam alguns píxeis com o ponto de onde a corrida começa, porque a física avança
-  em passos de 1/60 s; foram medidos a partir de 12 pontos de partida, e a tabela dá o menor e o
-  maior valor.
-- Longe de paredes, uma plataforma a 240 px só é alcançável com um salto completo. Os níveis devem
-  deixar margem.
+  em passos de 1/60 s; foram medidos a partir de 10 pontos de partida, e a tabela dá o menor e o
+  maior valor. Já contam com a ajuda nos degraus, que apanha os saltos que chegam à borda oposta um
+  pouco abaixo do topo.
+- Longe de paredes, uma plataforma a 240 px só é alcançável com um salto completo. A ajuda nos
+  degraus estende esse alcance em até 16 px, se o salto acabar contra a parede da plataforma. Os
+  níveis devem deixar margem.
 - A personagem ainda consegue saltar com parte do corpo fora da plataforma, e os vãos medidos já
   contam com isso.
 - A tolerância de borda é uma margem para o jogador, e não alcance para o nível. Um vão que deva ser
-  sempre transponível não deve passar de 431 px: o menor vão máximo medido (479 px) menos uma
+  sempre transponível não deve passar de 440 px: o menor vão máximo medido (488 px) menos uma
   largura do corpo, para que o salto ainda passe se for dado até uma largura antes da borda. Um vão
-  que deva ser intransponível deve medir pelo menos 579 px: o maior vão medido com a tolerância
-  (531 px) mais uma largura do corpo.
+  que deva ser intransponível deve medir pelo menos 595 px: o maior vão medido com a tolerância
+  (547 px) mais uma largura do corpo.
 - Se uma opção de acessibilidade vier a alargar a tolerância de borda, o limite dos vãos
-  intransponíveis terá de subir: com 0,2 s, o máximo permitido no Inspector, o vão chega aos 559 px.
+  intransponíveis terá de subir, e o vão volta a ser medido com o novo tempo.
 - As medidas das paredes não dependem do ponto de partida, porque cada salto da parede define as
   duas velocidades da personagem.
 - Uma parede que a personagem consiga tocar durante um salto aumenta a altura alcançável. Uma
   plataforma que deva ser sempre alcançável com a ajuda de uma parede não deve ficar a mais de
-  379 px acima do ponto de partida: a altura medida (475 px) menos uma altura do corpo. Uma
+  381 px acima do ponto de partida: a altura medida (477 px) menos uma altura do corpo. Uma
   plataforma que deva ser inalcançável, havendo uma parede ao alcance de um salto, deve ficar a pelo
-  menos 571 px: a altura medida mais uma altura do corpo.
+  menos 573 px: a altura medida mais uma altura do corpo.
 - A altura medida junto a uma parede supõe que o jogador larga a tecla de saltar durante um só passo
   de física (1/60 s) antes de a premir para o salto da parede. Nesse passo, a personagem ainda sobe
   sem o botão premido e fica sujeita à gravidade do salto curto, razão pela qual a altura não chega
-  ao dobro de um salto completo (480 px). Largando a tecla durante 4 passos (0,07 s), a altura
-  máxima desce para 458 px e, durante 6 passos (0,1 s), para 446 px. Com o salto da parede dado até
-  0,07 s fora do melhor momento, e a tecla largada durante um só passo, a personagem chega aos
-  462 px. Todos estes valores ficam entre os dois limites anteriores (379 e 571 px).
-- Uma chaminé que deva ser sempre subida não deve passar de 174 px de largura: a maior largura
-  medida premindo apenas a tecla de saltar (222 px) menos uma largura do corpo. Premir a tecla
-  0,07 s depois de tocar na parede reduz essa largura para 178 px, valor que a margem cobre. Uma
-  chaminé que não deva ser subida deve medir pelo menos 528 px: a maior largura medida com a melhor
-  combinação de teclas (480 px) mais uma largura do corpo. Entre 174 e 528 px, a subida depende da
+  ao dobro de um salto completo (480 px). Largar a tecla durante mais passos baixa a altura máxima.
+  Com o salto da parede dado até 0,1 s fora do melhor momento, e a tecla largada durante um só
+  passo, a personagem chega aos 461 px. Os dois valores medidos ficam entre os dois limites
+  anteriores (381 e 573 px).
+- Uma chaminé que deva ser sempre subida não deve passar de 163 px de largura: a maior largura
+  medida premindo apenas a tecla de saltar (211 px) menos uma largura do corpo. Premir a tecla
+  0,1 s depois de tocar na parede reduz essa largura para 200 px, valor que a margem cobre. Uma
+  chaminé que não deva ser subida deve medir pelo menos 526 px: a maior largura medida com a melhor
+  combinação de teclas (478 px) mais uma largura do corpo. Entre 163 e 526 px, a subida depende da
   perícia do jogador, pelo que estas larguras devem ficar fora do caminho obrigatório, reservadas a
   desafios opcionais.
 - Uma parede isolada não se sobe por saltos da parede, qualquer que seja a sua altura: cada
-  salto devolve a personagem à parede 96 px mais abaixo. O topo dessa parede alcança-se como o de
+  salto devolve a personagem à parede 234 px mais abaixo. O topo dessa parede alcança-se como o de
   uma plataforma, com um salto normal; uma parede de 200 px, por exemplo, sobe-se assim.
-- Os valores ainda serão afinados, com a câmara e depois nos níveis. Após cada afinação, as medidas
-  voltam a ser obtidas com o `measure_movement.gd` (ver "Testes e medidas").
+- Os valores podem ainda ser afinados nos níveis. Após cada afinação, as medidas voltam a ser
+  obtidas com o `measure_movement.gd` (ver "Testes e medidas").
 - Os níveis podem vir a ser construídos com tiles ou com cenário pintado. Quando o tamanho do tile
   for definido, estas medidas serão convertidas em tiles.
 
@@ -505,7 +549,7 @@ deste jogo: a corrida, as chaminés, as subidas e as quedas. As medidas foram ob
 |---|---|---|
 | Janela | a câmara só se desloca quando a personagem sai de um retângulo à volta do ponto que segue: 64 px para cada lado, 250 px acima e nenhum abaixo | um salto completo (240 px) e o balanço numa chaminé de 120 px (72 px) não movem a câmara |
 | Suavização | em cada passo, a câmara percorre uma fração da distância que falta, independente da frequência de imagem | 95 % da distância em 0,5 s |
-| Antecipação | a câmara mostra 300 px a mais do lado para onde a personagem corre e só troca de lado depois de a personagem recuar 180 px a partir do ponto mais afastado | em corrida, 1,5 s de percurso visível à frente; a troca de lado conclui-se em cerca de 1,2 s, sem ultrapassar a posição final |
+| Antecipação | a câmara mostra 300 px a mais do lado para onde a personagem corre e só troca de lado depois de a personagem recuar 180 px a partir do ponto mais afastado | em corrida, 1,67 s de percurso visível à frente; a troca de lado conclui-se em cerca de 1,2 s, sem ultrapassar a posição final |
 | Reenquadramento | ao pousar num chão mais alto, a câmara centra-se nesse chão | numa escada de degraus de 200 px, a câmara sobe um degrau de cada vez |
 | Olhar para baixo | numa queda superior a um salto completo, a câmara mostra 400 px a mais abaixo da personagem | à velocidade máxima de queda, 0,51 s de queda visível abaixo dos pés |
 | Zonas | enquanto a personagem está numa zona de câmara, o ecrã não mostra nada acima nem abaixo dela e, com o limite horizontal ligado, nada para os lados | a correr para uma borda de uma zona com o limite horizontal ligado ou a cair para o fundo de uma zona, o ecrã para na borda; junto a uma parede, depois de uma inversão de sentido, o ecrã só se desloca quando a personagem se afasta o suficiente para precisar da antecipação (a partir de 200 px da parede, 0,9 s depois da inversão) |
@@ -579,6 +623,117 @@ para os dois lados, nem o nível de baixo através do chão, que nenhuma zona co
 ligado mostra mais ar para lá dos seus lados do que mostraria com a âncora trocada, e que a
 personagem começa numa zona ancorada em baixo.
 
+A nova fase 2 do nível 1 (`scenes/levels/lust/lust_phase_2.tscn`, 142 × 257 tiles) é construída a partir do
+texto `scenes/levels/lust/builders/lust_phase_2.txt` por `scenes/levels/lust/builders/build_lust_phase_2.gd`, que também coloca as 77
+zonas de câmara. Todas têm o limite horizontal ligado, para que o ecrã só mostre outra passagem através
+da rocha, que tem pelo menos 9 tiles entre passagens lado a lado e 6 entre passagens sobrepostas. O
+`test_lust_phase_2.gd` aplica as mesmas verificações de câmara e confirma que cada portão só se alcança
+depois do seu desbloqueador. O `test_lust_phase_2_route.gd` joga o nível do início ao fim, sem os cães,
+com a personagem real: 107 movimentos, os dois desbloqueadores e a saída.
+
+O nível 1 completo (`scenes/levels/lust/level1.tscn`, 371 × 379 tiles) junta numa só cena o tutorial, a nova fase 1 e a
+fase 2, sem carregamentos entre elas. A primeira versão foi construída a partir do texto `scenes/levels/lust/builders/level1.txt`
+por `scenes/levels/lust/builders/build_level1.gd`, que acrescenta as 124 zonas de câmara e copia os avisos, a Velvet e o demónio do
+corredor da cena onde o tutorial foi feito, que fica como estava. Desde então, a cena é o nível: os tiles, os cães,
+os espigões, as plataformas e as zonas editam-se à mão no editor do Godot, tile a tile e peça a peça. O construtor
+recusa-se a escrever por cima de uma cena que já existe; só o faz com a opção `-- --force`, que descarta as
+edições feitas à mão (a arte e o fundo são preservados mesmo nesse caso). O contorno de pedras segue o mesmo
+princípio: `scenes/levels/lust/builders/build_stone_rim.gd` gera-o uma vez a partir dos tiles (uma faixa por cada troço reto de
+chão, teto ou parede e uma peça por cada canto, 2628 peças) e grava as peças na cena, onde passam a editar-se pedra
+a pedra. O script também se recusa a escrever por cima das peças já gravadas, salvo com `-- --force`. Depois de uma
+mudança grande nos tiles, volta a gerar-se o contorno com essa opção, o que descarta os retoques feitos às pedras. O tutorial liga à fase 1 por um corredor de 12
+tiles, e a fase 1 liga à fase 2 por uma chaminé de 8 tiles de altura e 3 de largura. Dois pontos de gravação
+definem onde a morte recomeça: depois do tutorial, no início da fase 1; dentro da fase 2, no início da fase 2. A
+cópia da fase 2 tem três plataformas deslocadas um tile, porque deixavam exatamente a altura da personagem por
+baixo da rocha e a podiam prender. O `test_level1.gd` aplica as verificações de câmara às 151 zonas (38 da fase 3), confirma as
+ligações e os pontos de gravação e deixa os 99 cães (13 da fase 3) a patrulhar durante 5 s, sem que nenhum caia do seu chão. O
+`test_level1_route.gd` joga, sem os cães, o caminho curto do início ao fim e depois o caminho longo da fase 1: 184
+movimentos com a personagem real.
+
+A fase 3 do nível 1 foi acrescentada à mesma cena, a partir do desenho do grupo no Miro, por
+`scenes/levels/lust/builders/add_level1_phase3.gd`, que lê o texto `scenes/levels/lust/builders/level1_phase3.txt` (154 × 158 tiles) e o junta ao
+nível tal como está, sem o reconstruir, para não perder as edições feitas à mão. Escava o ar e coloca 12 cães, o maior
+cão, 181 tiles de picos (25 faixas nas paredes, rodadas 90°), 52 tiles de plataformas que desabam, três portões, dois
+desbloqueadores, 38 zonas de câmara e um ponto de gravação no início da fase. Recusa-se a correr duas vezes e a
+escavar um tile que não seja rocha. No fim da fase 2, uma porta leva a uma sala pequena e a um corredor até ao início
+da fase 3; a saída do nível passou para o F da fase 3, com espaço de rocha guardado para a sala do chefe. Os portões 1
+e 2 são alçapões, que deslizam para o lado; o desbloqueador 1 abre o portão 2, o desbloqueador 2 abre o portão 1, e o
+maior cão abre o portão 3 quando a personagem se aproxima. O `test_level1_phase3.gd` confirma o conteúdo, quem abre
+cada portão, que nenhum portão se salta, que cada alçapão desliza para dentro da rocha e que a saída está no F. O
+`test_level1_phase3_route.gd` joga a fase sem os cães, com a personagem real: 84 movimentos, os dois desbloqueadores,
+os dois alçapões e a saída.
+
+Numa revisão contra o desenho, a sala do bloco suspenso, por cima da subida ao lado da sala verde, estava diferente.
+O traçado do desenho tinha ligado o bloco ao degrau da esquerda, o que fechava a passagem desenhada por baixo do canto
+do bloco, e tinha perdido a parede fina que desce do bloco até ao chão dos cães: o traçado só regista retângulos de
+ar, e uma parede desenhada com um só traço não deixa nenhum. A subida dava assim diretamente para os cães, e o poço com
+picos à esquerda do bloco não levava a lado nenhum. A correção muda 20 tiles: 12 de rocha passam a ar, abrindo a
+passagem, e 8 de ar passam a rocha, formando a parede. O caminho passa a ser o desenhado: sobe-se, passa-se por baixo
+do bloco para a esquerda, sobe-se o poço, com 3 tiles de largura, e desce-se do outro lado do bloco. Os picos no fundo
+do poço ficaram com 1 tile em vez dos 2 desenhados: com 2, sobravam menos de 3 px entre os picos e a esquina do bloco
+para saltar, e a verificação em papel não encontrava caminho. A zona de câmara da subida foi também corrigida: por um
+erro de coordenadas, estendia-se 50 tiles para a esquerda, por cima da coluna da esquerda. A cena foi alterada com a
+opção `-- --reshape`, que compara o texto da fase 3 de antes e de depois e só muda o que difere entre os dois (tiles,
+picos de chão e zonas de câmara), e só onde a cena ainda está como o texto antigo a deixou, para não desfazer edições
+feitas à mão. O contorno de pedras (10 pedras trocadas por 14), as rochas soltas (5 trocadas por 7) e as imagens do
+fundo (12 123 píxeis) foram refeitos só em volta dos tiles alterados.
+
+A fase 3 foi depois afinada à mão, no editor: 10 plataformas novas (38 tiles), uma das quais substitui uma que já
+existia, 16 faixas de picos deslocadas, cinco delas encurtadas, uma faixa retirada e uma plataforma que desaba descida
+um tile. A fase tem agora 165 tiles de picos, 24 faixas nas paredes. O texto da fase 3 passou a acompanhar a cena,
+com estas alterações incluídas, para que o `test_level1_phase3.gd` compare a cena com ele; 13 faixas de picos ficaram
+deslocadas por parte de um tile, e o texto põe-nas nos tiles mais próximos. O caminho do teste foi encontrado de novo
+pela verificação em papel, que, para essas faixas, conta como pico cada tile em que tocam, e a personagem real
+percorre-o. Duas zonas de câmara passaram a mostrar menos por baixo, para não deixarem ver o nível de baixo entre as
+plataformas novas: a do salão desce 48 px em vez de 96, e a de cima do T não desce.
+
+O caminho que este teste repete foi encontrado por uma verificação em papel, fora do repositório, que simula o
+movimento da personagem fotograma a fotograma. A primeira versão divergia do jogo: aplicava a gravidade no fotograma
+do salto, pelo que a personagem subia 218 px no papel e 240 px no jogo, e aceitava movimentos decididos por menos de
+um pixel. A versão corrigida reproduz o jogo fotograma a fotograma e recusa uma aterragem com menos de 4 px do corpo
+sobre o chão, a passagem a menos de 3 px de um pico, de 1 px de um teto ou de 0,1 px da esquina de uma rocha, e
+admite que a personagem escorregue até 144 px por uma parede antes de saltar dela, como um jogador faz para acertar o
+ritmo.
+
+A arte da fase 3 segue a das fases 1 e 2 e entra só onde a fase 3 abriu a rocha, para não tocar nos retoques feitos à
+mão no resto do nível. O mesmo script gera o contorno de pedras a partir dos tiles de antes e de depois da fase 3 e
+acrescenta só as peças que diferem: 311 pedras novas; das antigas sai apenas uma faixa de chão, que agora continua
+pela porta. Coloca também 334 rochas soltas nas três camadas do fundo, nos chãos e tetos que a fase 3 abriu, com as
+regras medidas nas 850 rochas das fases 1 e 2: o tamanho das rochas de cada camada, uma rocha por cada 7 a 18 tiles
+de chão ou de teto, consoante a camada, o quanto cada rocha se enterra no chão ou no teto e, para as mais distantes,
+uma sala com pelo menos 7 tiles de altura. Uma semente fixa dá sempre as mesmas rochas. Numa cena que já tem a fase
+3, como a atual, só a arte se acrescenta, com a opção `-- --art`; as duas formas dão as mesmas 645 peças. As duas
+imagens do fundo foram repintadas na zona da fase 3 e mantêm todos os outros píxeis (ver Créditos). A luz de cada
+ponto segue a quantidade de ar à sua volta, por uma curva ajustada à imagem da fase 2, que essa curva reproduz com um
+erro médio de 7 em 255 níveis de cinzento. Nas fases 1 e 2, 99 das 113 zonas de câmara têm uma só das três cores do
+fundo; na fase 3, as zonas foram agrupadas em blocos do tamanho das áreas de cor da fase 2, e cada bloco recebeu uma
+dessas cores, diferente da dos blocos vizinhos.
+
+Os dois poços por onde se desce do início da fase 3 foram depois alongados para o dobro: o poço ao lado do bloco
+passou de 8 para 16 tiles de altura, e o poço com picos que se lhe segue, de 22 para 44. Em cada um, o troço entre as
+duas paredes foi copiado por baixo de si mesmo, com as mesmas faixas de picos, que passaram de 2 para 4 e de 4 para 8.
+Para que cada poço continue a acabar na mesma sala, a sala inicial, o bloco e o corredor para a fase 2 ficaram onde
+estavam, e todo o resto da fase 3 desceu 30 tiles (1440 px) sem mudar de forma; por baixo da fase havia mais de 90
+linhas de rocha livre. O texto da fase 3 tem agora 154 × 188 tiles, 178 tiles de picos e 30 faixas nas paredes. A cena
+foi alterada por um script fora do repositório, que move cada peça com a parte do mapa a que pertence (tiles, cães,
+picos, plataformas, portões, desbloqueadores, pedras do contorno, rochas do fundo, zonas de câmara e saída), estica as
+quatro faixas de pedra das paredes dos poços e copia as seis faixas de picos; as imagens do fundo foram deslocadas da
+mesma forma, píxel a píxel, com uma transição de 24 px onde começa cada troço copiado, para a luz não mudar de golpe.
+Na verificação em papel, com o movimento atual da personagem, o poço grande mantém a margem que tinha: 9 fotogramas
+para sair vivo para o fosso, contra 8. O poço do bloco ficou mais exigente: passam 16% das combinações testadas de
+largar e voltar a carregar na direção, contra 67% antes, porque a última faixa de picos fica na parede onde se
+aterra. A verificação passou também a contar como dúvida um toque numa parede a 19 px ou menos do seu topo, porque o
+jogo levanta a personagem para cima de uma saliência que falha por até 16 px. O caminho do
+`test_level1_phase3_route.gd` até aos dois desbloqueadores foi encontrado de novo, e a personagem real percorre-o. O
+último troço, até à saída, é ainda o que foi gravado antes de o salto ficar mais pesado, e falha, como já falhava antes
+desta alteração; a verificação em papel também não sobe, com o movimento atual, a chaminé da esquerda que leva ao F.
+
+| Medida em headless, sem o custo de desenhar | Fase 2 sozinha (33 cães) | Nível 1 antes da fase 3 (88 cães) |
+|---|---|---|
+| Recomeçar depois de uma morte (instanciar e entrar na árvore) | cerca de 25 ms | cerca de 90 ms |
+| Física por fotograma, de 16,7 ms disponíveis | 2,6 ms | 4,8 ms |
+| Restante processamento por fotograma | 2,0 ms | 3,3 ms |
+
 Para afinar uma zona não é preciso mexer em código: no editor, selecionar a zona (ou um dos seus
 retângulos) mostra a azul o que o ecrã pode mostrar nela e a branco um ecrã ao zoom dessa zona,
 calculados pela câmara do nível. O desenho atualiza-se ao mudar os valores no Inspector ou ao
@@ -601,7 +756,7 @@ O desenho dos níveis deve ter em conta quatro consequências deste comportament
   com os pés logo abaixo da fronteira e a zona de baixo do tamanho do ecrã, a cabeça fica fora do
   ecrã, até 86 px.
 
-Os valores da câmara estão no ficheiro `camera_stats.tres`, em `Projeto/camera/`, e editam-se no
+Os valores da câmara estão no ficheiro `camera_stats.tres`, em `Projeto/scenes/others/camera/`, e editam-se no
 Inspector do Godot, como os do movimento.
 
 | Campo no Inspector | Valor atual | O que controla |
@@ -612,7 +767,7 @@ Inspector do Godot, como os do movimento.
 | Window Down | 0 px | a altura da janela abaixo do ponto seguido; com 0, a câmara acompanha logo qualquer descida |
 | Follow Sharpness | 6 /s | a rapidez da suavização |
 | Look Ahead Distance | 300 px | a distância da antecipação |
-| Turn Threshold | 180 px | o recuo necessário para a antecipação trocar de lado; acima dos 174 px de balanço na chaminé mais larga que se sobe apenas com o salto |
+| Turn Threshold | 180 px | o recuo necessário para a antecipação trocar de lado; acima dos 163 px de balanço na chaminé mais larga que se sobe apenas com o salto |
 | Look Ahead Sharpness | 4 /s | a rapidez da troca de lado |
 | Look Down Threshold | 250 px | a queda, abaixo do último chão, a partir da qual a câmara olha para baixo |
 | Look Down Distance | 400 px | a distância do olhar para baixo |
@@ -636,7 +791,7 @@ camada, mais devagar se desloca no ecrã (efeito de parallax), o que dá profund
 desenhos adicionais. Na sala de teste, a camada distante desloca-se 0,25 px por cada pixel que a
 câmara percorre e cobre o ecrã em qualquer ponto da sala, tanto nos ecrãs 16:9 como nos 21:9.
 
-O fundo de cada nível parte do modelo `background/level_background.tscn`, que já contém as quatro
+O fundo de cada nível parte do modelo `scenes/levels/background/level_background.tscn`, que já contém as quatro
 camadas previstas, da mais distante para a mais próxima:
 
 | Camada | Scroll Scale | Conteúdo | Cobertura do ecrã (Cover) |
@@ -664,9 +819,10 @@ camada respeita.
 Para acrescentar arte nova ao fundo:
 
 1. Exportar o PNG em cinzentos, com fundo transparente, para `Projeto/assets/sprites/backgrounds/`.
-2. Abrir o fundo do nível, em `Projeto/background/`. Um nível novo cria o seu com Scene › New
-   Inherited Scene a partir de `level_background.tscn` e coloca-o como primeiro nó da cena do nível,
-   para ficar atrás de tudo; a sala de teste usa `test_room_background.tscn`.
+2. Abrir o fundo do nível, na pasta do nível. Um nível novo cria o seu com Scene › New Inherited
+   Scene a partir de `Projeto/scenes/levels/background/level_background.tscn`, guarda-o na sua pasta
+   e coloca-o como primeiro nó da cena do nível, para ficar atrás de tudo; a sala de teste usa
+   `test_room/test_room_background.tscn`.
 3. Arrastar o PNG para a camada da sua distância, onde passa a ser um Sprite2D.
 4. Escolher a rampa da camada no campo Ramp.
 5. Correr a cena do nível com F6 e confirmar a posição e as cores.
@@ -680,26 +836,27 @@ editor mostra as camadas sem este deslocamento, pelo que a posição final se co
 ## Afinação do movimento
 
 Os valores do movimento estão reunidos no ficheiro `player_movement_stats.tres`, na pasta
-`player/` do projeto Godot (`Projeto/player/` no repositório). Abre-se no painel FileSystem
+`scenes/characters/player/` do projeto Godot (`Projeto/scenes/characters/player/` no repositório). Abre-se no painel FileSystem
 do Godot e edita-se no Inspector. As alterações aplicam-se à personagem em todas as cenas.
 
 | Campo no Inspector | Valor atual | O que controla |
 |---|---|---|
-| Max Run Speed | 720 px/s | a velocidade horizontal |
-| Time To Max Speed | 0,1 s | o tempo de aceleração |
+| Max Run Speed | 600 px/s | a velocidade horizontal |
+| Time To Max Speed | 0,18 s | o tempo de aceleração |
 | Time To Stop | 0,15 s | o tempo de travagem e, por consequência, o deslize |
 | Air Control | 0,7 | a fração da aceleração e da travagem do chão que se mantém no ar (1: igual ao chão; 0: nenhuma, e empurrar para o lado oposto deixa de soltar a personagem de uma parede) |
-| Fall Gravity | 7850 px/s² | a aceleração da queda |
+| Fall Gravity | 6600 px/s² | a aceleração da queda |
 | Max Fall Speed | 1400 px/s | a velocidade máxima de queda |
 | Jump Height | 240 px | a altura do salto completo |
-| Time To Peak | 0,35 s | o tempo até ao ponto mais alto do salto |
+| Time To Peak | 0,45 s | o tempo até ao ponto mais alto do salto |
 | Min Jump Height | 80 px | a altura do salto mínimo; um toque sobe alguns px acima deste valor |
-| Coyote Time | 0,07 s | o tempo, depois de sair de uma plataforma sem saltar ou de largar uma parede, durante o qual o salto ainda é aceite (0 desliga) |
-| Jump Buffer Time | 0,07 s | o tempo durante o qual um salto pedido no ar fica guardado à espera de ser possível (0 desliga) |
+| Coyote Time | 0,1 s | o tempo, depois de sair de uma plataforma sem saltar ou de largar uma parede, durante o qual o salto ainda é aceite (0 desliga) |
+| Jump Buffer Time | 0,1 s | o tempo durante o qual um salto pedido no ar fica guardado à espera de ser possível (0 desliga) |
+| Ledge Assist Height | 16 px | quanto abaixo do topo de um degrau podem ficar os pés para a personagem subir para ele, ao cair contra a parede dele, a andar para ele ou só encostada; só nas paredes do nível, nunca num demónio nem numa plataforma de sentido único (0 desliga) |
 | Wall Slide Speed | 350 px/s | a velocidade máxima de descida no deslize; a subida ao longo da parede não é travada |
-| Wall Jump Lock Time | 0,2 s | o tempo, depois de um salto da parede, durante o qual a corrida não responde; com 0,15 s ou menos, uma parede isolada passa a poder ser subida |
+| Wall Jump Lock Time | 0,2 s | o tempo, depois de um salto da parede, durante o qual a corrida não responde; com os valores antigos do movimento, 0,15 s ou menos deixava subir uma parede isolada, e com os atuais esse limite ainda não foi medido |
 
-Os valores do crucifixo estão no ficheiro `crucifix_stats.tres`, na pasta `crucifix/`, e editam-se
+Os valores do crucifixo estão no ficheiro `crucifix_stats.tres`, na pasta `scenes/characters/crucifix/`, e editam-se
 da mesma forma. O Speed Multiplier e o Repel Radius aplicam-se de imediato, também com o jogo a
 correr, quando são mudados no separador Remote do editor; os restantes valores são lidos sempre que
 são usados.
@@ -714,7 +871,7 @@ são usados.
 | Repel Speed | 1500 px/s | a velocidade a que são empurrados para fora desse raio |
 | Heal Per Second | 5 SP/s | a cura por cada segundo com o crucifixo erguido |
 
-Os valores dos SP estão no ficheiro `soul_points_stats.tres`, na pasta `player/`. O Max SP e o Low
+Os valores dos SP estão no ficheiro `soul_points_stats.tres`, na pasta `scenes/characters/player/`. O Max SP e o Low
 Threshold aplicam-se de imediato, também com o jogo a correr, quando são mudados no separador
 Remote; os restantes valores são lidos sempre que são usados.
 
@@ -754,49 +911,84 @@ Remote; os restantes valores são lidos sempre que são usados.
     ├── project.godot
     ├── main.tscn      cena principal: menus, pausa e o nível em jogo (script main.gd)
     ├── default_bus_layout.tres   buses de áudio
-    ├── core/          serviços globais: as opções do jogador (autoload Settings), o registo moral (autoload Moral), o progresso do jogo (autoload GameState), o ficheiro da gravação e os perfis de controlos
-    ├── player/        personagem: cena, scripts, valores do movimento, SP e agarrão
-    ├── crucifix/      crucifixo: cena, script e valores
-    ├── demon/         demónios que perseguem: cena, scripts, os estados (states/) e os valores de cada nível
-    ├── camera/        câmara do jogo e zonas de câmara
-    ├── debug/         overlay de depuração e vista dos demónios da sala de teste
-    ├── levels/        salas, níveis, a entrada de cada nível na lista do menu (LevelEntry) e os pontos de chegada (ArrivalPoint)
-    ├── offers/        tentações: o autoload Offers, uma oferta por ficheiro (OfferData), o catálogo e os efeitos
-    ├── background/    fundo em camadas: as camadas (BackgroundLayer), o modelo e o fundo de cada nível
-    ├── ui/            menus, ecrã das opções e o tema comum (ui_theme.tres)
-    ├── components/    componentes usados por mais de um sistema: Repellable, Hitbox, Hurtbox, SinkingDrawing e KnockOff
-    ├── tests/         testes e medidas que correm sem janela
+    ├── addons/        plugins de terceiros: o Dialogue Manager, que dá as falas
+    ├── assets/        arte e som
+    │   ├── audio/       som, por tipo: os efeitos sonoros em sfx/
+    │   ├── fonts/       tipos de letra (por enquanto vazia)
+    │   └── sprites/     uma pasta por grupo: player/, demon_lust/, environment/, backgrounds/ e ramps/
+    ├── dialogue/      as falas, um ficheiro .dialogue por nível
+    ├── scenes/        cenas, scripts e ficheiros de dados, por tipo e, dentro de cada tipo, por sistema
+    │   ├── autoload/    serviços globais: as opções do jogador (Settings), o registo moral (Moral), o progresso do jogo (GameState), as estatísticas da partida (RunStats), as tentações (Offers, em offers/, com o ritmo das ofertas por mortes), a gravação e os perfis de controlos
+    │   ├── characters/  a personagem (player/), o crucifixo (crucifix/), os demónios (demon/, com os estados em states/, e os que falam, Velvet e Asmodeu) e os componentes que mais de um sistema usa (components/)
+    │   ├── levels/      uma pasta por nível: a sala de teste (test_room/), a sala de treino (gym/) e o nível 1 (lust/, com os construtores e os mapas em texto em builders/); na raiz, as peças e os scripts comuns e o fundo de que os níveis partem (background/)
+    │   ├── objects/     peças com comportamento: portões (gates/), plataformas (platforms/) e armadilhas (traps/)
+    │   ├── others/      câmara (camera/), depuração (debug/), todos os shaders (shaders/) e conjuntos de tiles (tilesets/)
+    │   └── screens/     menus, ecrã das opções, o balão de diálogo e indicador de gravação
+    ├── tests/         testes automáticos (test_*.gd), que correm sem janela
+    │   ├── launchers/ abrem o jogo num ponto escolhido, para ver à mão (por agora, o fim da fase 2)
+    │   ├── measures/  medições, que imprimem números em vez de verificar resultados
     │   └── support/   preparação comum aos testes
-    └── assets/        sprites, audio, fonts
+    └── themes/        o tema comum da interface (ui_theme.tres)
 ```
 
-O projeto organiza-se por sistema: cada pasta reúne a cena, os scripts e os ficheiros de dados
-(`.tres`) de uma parte do jogo, que se encontram assim num único local. É a organização que a
-documentação do Godot descreve como a mais comum, com os recursos junto das cenas que os usam
+O projeto segue a estrutura de pastas das aulas de Conceção e Desenvolvimento de Jogos (CDJ): a
+arte e o som em `assets/`, as cenas e os scripts em `scenes/` e o tema da interface em `themes/`.
+Dentro de `scenes/`, as pastas dividem-se por tipo e, em cada tipo, por sistema. Cada pasta de
+sistema reúne a cena, os scripts e os ficheiros de dados (`.tres`) de uma parte do jogo, que se
+encontram assim num único local, como recomenda a documentação do Godot
 ([Project organization](https://docs.godotengine.org/en/stable/tutorials/best_practices/project_organization.html)).
-Um sistema novo, como um demónio ou um menu, recebe a sua pasta. Os ficheiros movem-se e
-renomeiam-se no painel FileSystem do editor, que atualiza as referências entre cenas e recursos; no
-fim, uma pesquisa pelo caminho antigo em todo o projeto confirma que nenhum script, incluindo os
-testes, ficou a apontar para ele.
+A arte é uma exceção: fica em `assets/`, separada das cenas que a usam, como pede a estrutura de CDJ.
+Os shaders e os conjuntos de tiles são outra: ficam juntos em `scenes/others/`, por tipo, porque
+servem várias partes do jogo e é por tipo que se procuram.
 
-Para que a organização se mantenha à medida que o jogo cresce, seguem-se quatro regras:
+Para que a organização se mantenha à medida que o jogo cresce, seguem-se oito regras:
 
-- `components/` recebe apenas o que dois ou mais sistemas usam; o resto fica na pasta do sistema a
-  que pertence.
-- O que é global e não pertence a nenhum sistema, como o estado do jogo, as opções gravadas ou o
-  áudio, fica numa pasta `core/`, criada quando surgir o primeiro desses serviços.
-- A arte e o som seguem uma única convenção, decidida com a primeira entrega: junto do sistema que
-  os usa, ou em `assets/` com as mesmas subpastas dos sistemas. As duas não se misturam.
+- Um sistema novo, como um demónio ou um menu, recebe a sua pasta dentro do tipo a que pertence, e
+  um nível novo recebe a sua em `scenes/levels/`. As peças que qualquer nível pode usar ficam na
+  raiz de `scenes/levels/`.
+- `scenes/characters/components/` recebe apenas o que dois ou mais sistemas usam; o resto fica na
+  pasta do sistema a que pertence.
+- O que é global e não pertence a nenhum sistema, como o estado do jogo, as opções gravadas ou a
+  gravação, fica em `scenes/autoload/`.
+- Os shaders ficam todos em `scenes/others/shaders/` e os conjuntos de tiles em
+  `scenes/others/tilesets/`, mesmo os que só um sistema usa.
+- O som também se divide por tipo: os efeitos sonoros ficam em `assets/audio/sfx/`, e a música e os
+  ambientes terão pastas suas ao lado desta.
+- O que não faz parte do jogo fica em pastas à parte: os construtores de um nível, com os mapas em
+  texto de que partem, em `builders/`, dentro da pasta do nível; em `tests/`, as medições em
+  `measures/` e os lançadores em `launchers/`.
+- Os nomes de pastas e de ficheiros usam minúsculas e `_` (snake_case). O sistema de ficheiros do
+  jogo exportado (o PCK) distingue maiúsculas, mesmo num jogo exportado em Windows, cujo editor não
+  as distingue: um caminho que só difere nelas funciona no editor e falha no jogo exportado (secção
+  Case sensitivity da mesma página da documentação). Por agora há uma exceção, as cenas antigas
+  do nível 1 (`LustLevel_*.tscn`).
 - Um sistema não acede ao interior de outro: comunica por sinais ou por uma referência atribuída no
   Inspector, nunca por um caminho na árvore de nós.
 
-A pasta `tests/` fica à parte, para que a exportação a possa excluir de uma só vez.
+Os ficheiros movem-se e renomeiam-se no painel FileSystem do editor, que atualiza as referências
+entre cenas e recursos; no fim, uma pesquisa pelo caminho antigo em todo o projeto confirma que
+nenhum script, incluindo os testes, ficou a apontar para ele.
+
+A pasta `tests/` e as pastas `builders/` ficam à parte, para que a exportação as possa excluir com
+um filtro por pasta. Os jogos exportados vão para `builds/`, na raiz do repositório, fora do projeto
+Godot e do git.
+
+A passagem para esta estrutura fez-se por script, em três commits. Em Windows, o git não distingue
+maiúsculas (`core.ignorecase`), e o `git add` não vê uma mudança que só as troca. Por isso, o
+primeiro commit tirou as cenas de `Lust/` antes de a pasta passar a `lust/`, e o nome antigo do
+`Passadeira.png` saiu do índice (`git rm --cached`) antes de o ficheiro passar a `passadeira.png`.
+O terceiro commit separou o que o segundo deixara misturado: os shaders, a sala de teste, os efeitos
+sonoros, os construtores e as medições. Os dois primeiros mudaram de pasta 199 ficheiros, com os
+seus `.import` e `.uid`, e passaram 415 referências para os caminhos novos; o terceiro passou 40
+ficheiros para outra pasta, deu nome novo a um e atualizou 60 referências. Os testes deram os mesmos resultados antes e depois de cada mudança,
+teste a teste, nenhuma cena ou recurso ficou a apontar para um caminho antigo, e o projeto importa
+sem erros num clone novo.
 
 Para um nível aparecer no Play, acrescenta-se à lista Levels do Main, no Inspector do `main.tscn`
 (Add Element › New LevelEntry, com o título e a cena). A ordem da lista é a dos botões. Um elemento
 deixado vazio, ou sem cena, fica fora do menu, com um aviso no Output.
 
-O nó raiz de cada nível tem o script `levels/level.gd` (`Level`), com a personagem do nível no campo
+O nó raiz de cada nível tem o script `scenes/levels/level.gd` (`Level`), com a personagem do nível no campo
 Player do Inspector. Quando a personagem morre, este script espera 1,5 s, para que a morte se veja,
 e recomeça o nível: no jogo, o Main troca-o por uma cópia nova da mesma cena; aberto com F6, o nível
 recarrega-se a si próprio. Uma cópia nova repõe a personagem, os demónios e a câmara como no início,
@@ -807,8 +999,8 @@ não é versionada e pode ser apagada sem perda de trabalho.
 
 ### Testes e medidas
 
-Os scripts de `Projeto/tests/` correm sem janela, a partir da raiz do repositório (`godot` designa
-o executável do Godot 4.7). Os testes terminam com o código 0 quando passam e 1 quando falham:
+Os scripts de `Projeto/tests/` correm a partir da raiz do repositório e, exceto os lançadores, sem
+janela (`godot` designa o executável do Godot 4.7). Os testes terminam com o código 0 quando passam e 1 quando falham:
 
 ```
 godot --headless --fixed-fps 60 --path Projeto --script res://tests/test_jump_height.gd
@@ -818,6 +1010,7 @@ godot --headless --fixed-fps 60 --path Projeto --script res://tests/test_coyote_
 godot --headless --fixed-fps 60 --path Projeto --script res://tests/test_jump_buffer.gd
 godot --headless --fixed-fps 60 --path Projeto --script res://tests/test_wall_slide.gd
 godot --headless --fixed-fps 60 --path Projeto --script res://tests/test_wall_jump.gd
+godot --headless --fixed-fps 60 --path Projeto --script res://tests/test_ledge_assist.gd
 godot --headless --fixed-fps 60 --path Projeto --script res://tests/test_jump_signals.gd
 godot --headless --fixed-fps 60 --path Projeto --script res://tests/test_debug_overlay.gd
 godot --headless --fixed-fps 60 --path Projeto --script res://tests/test_demon_debug_view.gd
@@ -832,6 +1025,17 @@ godot --headless --fixed-fps 60 --path Projeto --script res://tests/test_camera_
 godot --headless --fixed-fps 60 --path Projeto --script res://tests/test_main_flow.gd
 godot --headless --fixed-fps 60 --path Projeto --script res://tests/test_pause.gd
 godot --headless --fixed-fps 60 --path Projeto --script res://tests/test_phase_exit.gd
+godot --headless --fixed-fps 60 --path Projeto --script res://tests/test_lethal_spikes.gd
+godot --headless --fixed-fps 60 --path Projeto --script res://tests/test_gate.gd
+godot --headless --fixed-fps 60 --path Projeto --script res://tests/test_collapsing_platform.gd
+godot --headless --fixed-fps 60 --path Projeto --script res://tests/test_lust_phase_2.gd
+godot --headless --fixed-fps 60 --path Projeto --script res://tests/test_lust_phase_2_route.gd
+godot --headless --fixed-fps 60 --path Projeto --script res://tests/test_level1.gd
+godot --headless --fixed-fps 60 --path Projeto --script res://tests/test_level1_route.gd
+godot --headless --fixed-fps 60 --path Projeto --script res://tests/test_big_dog.gd
+godot --headless --fixed-fps 60 --path Projeto --script res://tests/test_biggest_dog.gd
+godot --headless --fixed-fps 60 --path Projeto --script res://tests/test_level1_phase3.gd
+godot --headless --fixed-fps 60 --path Projeto --script res://tests/test_level1_phase3_route.gd
 godot --headless --fixed-fps 60 --path Projeto --script res://tests/test_settings.gd
 godot --headless --fixed-fps 60 --path Projeto --script res://tests/test_options.gd
 godot --headless --fixed-fps 60 --path Projeto --script res://tests/test_crucifix.gd
@@ -856,6 +1060,14 @@ godot --headless --fixed-fps 60 --path Projeto --script res://tests/test_crucifi
 godot --headless --fixed-fps 60 --path Projeto --script res://tests/test_sinking_drawing.gd
 godot --headless --fixed-fps 60 --path Projeto --script res://tests/test_level_restart.gd
 godot --headless --fixed-fps 60 --path Projeto --script res://tests/test_moral_record.gd
+godot --headless --fixed-fps 60 --path Projeto --script res://tests/test_run_record.gd
+godot --headless --fixed-fps 60 --path Projeto --script res://tests/test_deaths_log.gd
+godot --headless --fixed-fps 60 --path Projeto --script res://tests/test_level_run_stats.gd
+godot --headless --fixed-fps 60 --path Projeto --script res://tests/test_dialogue_skip.gd
+godot --headless --fixed-fps 60 --path Projeto --script res://tests/test_death_offer_pacer.gd
+godot --headless --fixed-fps 60 --path Projeto --script res://tests/test_asmodeus_deaths.gd
+godot --headless --fixed-fps 60 --path Projeto --script res://tests/test_asmodeus.gd
+godot --headless --fixed-fps 60 --path Projeto --script res://tests/test_lust_asmodeus.gd
 godot --headless --fixed-fps 60 --path Projeto --script res://tests/test_moral_dialogue.gd
 godot --headless --fixed-fps 60 --path Projeto --script res://tests/test_gym_hint.gd
 godot --headless --fixed-fps 60 --path Projeto --script res://tests/test_gym_stations.gd
@@ -868,7 +1080,8 @@ O `test_input_profiles.gd` escreve seis ERROR, das tentativas de atribuir teclas
 esperados. O `test_soul_points.gd` escreve quatro ERROR, das quantidades de dano e de cura
 inválidas, também esperados. O `test_moral_record.gd` escreve seis WARNING, de uma tentação
 desconhecida (aceite e consultada), de um tom desconhecido e de três tempos de escuta inválidos,
-igualmente esperados.
+igualmente esperados. O `test_run_record.gd` escreve três WARNING, de mortes sem nível, sem zona e
+na fase 0, também esperados.
 
 Todos os scripts de testes e de medidas estendem `tests/support/base_test.gd`, diretamente ou
 através de outro ficheiro de suporte. Antes de o autoload `Settings` estar pronto, esse ficheiro
@@ -892,11 +1105,11 @@ esperados.
 
 O `measure_movement.gd` não verifica resultados: imprime as medidas da secção "Medidas para o
 desenho de níveis", com os valores que estiverem no `.tres`. As medidas junto das bordas correm a
-partir de 12 pontos de partida, 1 px entre cada um, que cobrem um passo de física à velocidade
+partir de 10 pontos de partida, 1 px entre cada um, que cobrem um passo de física à velocidade
 máxima, e imprimem o menor e o maior valor.
 
 ```
-godot --headless --fixed-fps 60 --path Projeto --script res://tests/measure_movement.gd
+godot --headless --fixed-fps 60 --path Projeto --script res://tests/measures/measure_movement.gd
 ```
 
 O `measure_crucifix_repel.gd` também não verifica resultados: mede quanto custa, num passo de
@@ -905,7 +1118,7 @@ em chamadas seguidas e no pior caso, e compara esse custo com o limite de 0,05 m
 decisão estão em "Crucifixo: componentes e modificadores de movimento".
 
 ```
-godot --headless --fixed-fps 60 --path Projeto --script res://tests/measure_crucifix_repel.gd
+godot --headless --fixed-fps 60 --path Projeto --script res://tests/measures/measure_crucifix_repel.gd
 ```
 
 O `measure_soul_points.gd` também não verifica resultados: aplica um golpe que deixa a personagem
@@ -914,7 +1127,7 @@ comparação, o tempo até sair do SP baixo e até encher, e os SP recuperados n
 pausa. Imprime também o que o crucifixo cura durante a pausa. Os números citados em "SP" vêm daqui.
 
 ```
-godot --headless --fixed-fps 60 --path Projeto --script res://tests/measure_soul_points.gd
+godot --headless --fixed-fps 60 --path Projeto --script res://tests/measures/measure_soul_points.gd
 ```
 
 O `measure_demon.gd` também não verifica resultados: mede quanto acrescentam a cada passo de física
@@ -926,16 +1139,16 @@ presa até ao fim. Os números e a decisão estão em "Demónio: estados,
 dados e famílias de personagens".
 
 ```
-godot --headless --fixed-fps 60 --path Projeto --script res://tests/measure_demon.gd
+godot --headless --fixed-fps 60 --path Projeto --script res://tests/measures/measure_demon.gd
 ```
 
 ### A personagem por dentro
 
-A cena é `player/player.tscn`, com o script `player/player.gd`: um `CharacterBody2D` com uma
+A cena é `scenes/characters/player/player.tscn`, com o script `scenes/characters/player/player.gd`: um `CharacterBody2D` com uma
 caixa de colisão de 48 × 96 px e a origem nos pés, pelo que, num nível, a origem fica na linha do
 chão. Está na camada `player` e colide com `world`, `one_way_platform` e `enemy`. Os valores vêm de um
-recurso `PlayerMovementStats` (`player/player_movement_stats.gd`), guardado em
-`player/player_movement_stats.tres`.
+recurso `PlayerMovementStats` (`scenes/characters/player/player_movement_stats.gd`), guardado em
+`scenes/characters/player/player_movement_stats.tres`.
 
 O desenho é um `Sprite2D` com uma imagem provisória, feita a partir do desenho de conceito
 (`assets/sprites/player/player_concept.png`): uma célula de 192 × 192 px, com os pés na linha
@@ -943,7 +1156,7 @@ y = 184, ao centro, e o corpo do tamanho da caixa de colisão (43 × 96 px). O s
 o que põe os pés na origem. As animações vão substituir esta imagem, com a mesma célula e a mesma
 linha dos pés.
 
-A personagem não lê o teclado diretamente. Um nó filho, `PlayerInput` (`player/player_input.gd`), é
+A personagem não lê o teclado diretamente. Um nó filho, `PlayerInput` (`scenes/characters/player/player_input.gd`), é
 o único que lê as ações da personagem no Input Map, e responde em cada passo de física a cinco
 perguntas: a direção da corrida e, para os botões de saltar e do crucifixo, se acabaram de ser
 premidos e se continuam premidos. A personagem recebe
@@ -958,9 +1171,12 @@ ter efeito.
 A lógica organiza-se numa máquina de estados com três estados, definida por um `enum` no
 `player.gd`: no chão (`ON_FLOOR`), no ar (`IN_AIR`) e na parede (`ON_WALL`). Cada estado tem a sua
 função de física, e o estado só muda em `_update_state()`, no início de cada passo de física, a
-partir do resultado do último `move_and_slide()`. O chão tem prioridade. Para entrar no estado da
-parede é preciso empurrar a personagem contra ela, mas para permanecer nele não, pelo que o estado
-termina quando a personagem deixa de tocar na parede ou aterra. Preferiu-se o `enum` a um nó por
+partir do resultado do último `move_and_slide()`. O chão tem prioridade. Fora do chão, tocar numa
+parede do nível põe a personagem no estado da parede, a menos que o jogador empurre para o lado
+oposto; no lado de um demónio, é preciso empurrar. O estado termina quando a personagem deixa de
+tocar na parede, quando o jogador empurra para fora ou quando aterra. Uma parede do nível é um
+corpo ou um tile fora das Knock Off Layers. A camada lê-se no servidor de física, que serve para
+os dois, porque um `TileMapLayer` não é um `CollisionObject2D`. Preferiu-se o `enum` a um nó por
 estado (padrão State) porque os três estados partilham a gravidade, a corrida e os contadores.
 Segue-se a ordem proposta por Nystrom (2014, capítulo "State"): primeiro o `enum`, e o padrão State quando um estado
 passar a ter dados que só nele fazem sentido, como agarrar bordas. As animações vão depender do
@@ -1000,6 +1216,16 @@ primeiro sistema que precise dele.
   e esvazia-se nos passos seguintes. Quando as duas tolerâncias estão ativas, prevalece o salto da
   parede. Qualquer salto esvazia as tolerâncias e o pedido guardado, pelo que cada pedido continua
   a produzir um único salto.
+- A ajuda nos degraus corre logo antes do `move_and_slide()`. Se o passo seguinte, no sentido em que
+  a personagem se move ou, parada de lado, no da parede em que toca, bate numa parede do nível, o
+  `test_move()` procura, de píxel em píxel até ao Ledge Assist Height, a menor subida a partir da
+  qual esse passo fica livre. A personagem sobe essa altura, e mais 1 px para cima da borda, para
+  pousar mesmo sem velocidade de lado; sem esse píxel, ficava a pairar junto à face, subida em
+  cada passo. Deixa de cair, e a tolerância de parede esvazia-se, como ao
+  aterrar, para que a tecla de saltar não dê um salto da parede para trás. Um teto não precisa de
+  verificação própria: a personagem é mais alta do que qualquer subida, e o `test_move()`
+  empurra-a para fora do teto, para baixo, onde a parede ainda trava o passo. O
+  `test_ledge_assist.gd` verifica-o.
 - A personagem emite um sinal em cada salto: `jumped` no salto do chão, incluindo os que usam as
   tolerâncias, e `wall_jumped` no salto da parede, que não emite o primeiro. Ambos enviam dois
   valores: os passos de física decorridos desde que a personagem deixou o chão ou a parede (0 se
@@ -1072,7 +1298,8 @@ Desta opção resultam duas regras:
 A `Camera2D` passa a ser processada no passo de física, e o Godot emite um aviso se ela estiver
 configurada para o modo Idle. Pela mesma razão, a suavização própria da `Camera2D` (Position
 Smoothing) não é usada: com a interpolação ativa, é aplicada mais do que uma vez por passo de física,
-e o mesmo valor deixa a câmara a 81 px da personagem em corrida, contra 144 px sem interpolação. A
+e o mesmo valor deixava a câmara a 81 px da personagem a correr a 720 px/s, a velocidade da altura,
+contra 144 px sem interpolação. A
 câmara do jogo faz a sua própria suavização, uma vez por passo.
 
 #### Input: ações nomeadas com teclas físicas
@@ -1129,7 +1356,7 @@ A camada `camera_bounds` é a das zonas de câmara (`CameraZone`): retângulos q
 mostra enquanto a personagem está dentro deles. As zonas não detetam colisões; a câmara lê-lhes a
 geometria, e a camada serve para as identificar e desenhar no editor.
 
-A camada `repellable` é a da cena `components/repellable.tscn`, que se coloca em tudo o que o
+A camada `repellable` é a da cena `scenes/characters/components/repellable.tscn`, que se coloca em tudo o que o
 crucifixo afasta. A camada está definida na cena, no Inspector, e não no código. O crucifixo procura
 apenas nessa camada, pelo que um demónio ou uma alma só é afastado se tiver o componente.
 
@@ -1148,7 +1375,7 @@ O crucifixo foi construído para não criar dependências entre sistemas, com pa
 indústria:
 
 - **Componente** (Nystrom, 2014, capítulo "Component"). O crucifixo é uma cena própria
-  (`crucifix/crucifix.tscn`), filha da personagem. Lê o botão através do mesmo `PlayerInput` da
+  (`scenes/characters/crucifix/crucifix.tscn`), filha da personagem. Lê o botão através do mesmo `PlayerInput` da
   personagem, pelo que uma inteligência artificial, uma cena animada ou um teste também o controlam.
 - **Modificadores de movimento.** A personagem não sabe que o crucifixo existe. Aceita
   modificadores (`MovementModifier`), cada um com uma fração da velocidade, uma fração da altura do
@@ -1173,7 +1400,7 @@ indústria:
   contam-se em passos de física inteiros, como as tolerâncias do salto, para que os testes os
   verifiquem ao passo exato. Os sinais `cooldown_started` e `cooldown_finished`, e o tempo restante
   de cada fase, servem o HUD.
-- **Componente `Repellable`** (`components/repellable.tscn`), à semelhança dos *hitboxes* e
+- **Componente `Repellable`** (`scenes/characters/components/repellable.tscn`), à semelhança dos *hitboxes* e
   *hurtboxes*. É uma `Area2D` que se coloca nos demónios e nas almas perdidas, com a camada
   `repellable` definida na cena. O crucifixo empurra apenas o que tem este componente e não conhece
   os scripts dos demónios nem das almas; estes recebem o sinal `repelled`, para reagir com uma
@@ -1243,7 +1470,7 @@ premido de novo no jogo.
 
 #### SP: componente, dados e ligação ao crucifixo
 
-Os SP são um nó-componente, `SoulPoints` (`player/soul_points.gd`), filho da personagem, com os
+Os SP são um nó-componente, `SoulPoints` (`scenes/characters/player/soul_points.gd`), filho da personagem, com os
 valores num `Resource`, `SoulPointsStats`, como o movimento e o crucifixo. A personagem recebe-o no
 Inspector (propriedade Soul Points), para que tudo o que a fere ou cura o encontre através dela.
 Separado da personagem, o componente testa-se sem ela e não acrescenta mais um sistema ao script da
@@ -1267,7 +1494,7 @@ porque a personagem não ataca.
   mudam, e o componente aplica-os de imediato: um máximo mais baixo do que os SP atuais desce-os
   com ele.
 
-O crucifixo cura através de uma ligação na cena da personagem: em `player/player.tscn`, o sinal
+O crucifixo cura através de uma ligação na cena da personagem: em `scenes/characters/player/player.tscn`, o sinal
 `healed` do crucifixo está ligado ao método `heal` dos SP. Nenhum dos dois scripts conhece o outro;
 quem os liga é a cena que os contém. A alternativa seria o crucifixo chamar os SP através da
 personagem, como já faz com o modificador, mas essa exceção à convenção "call down, signal up"
@@ -1284,9 +1511,10 @@ ligação da cena.
 #### Demónio: estados, dados e famílias de personagens
 
 Todos os demónios que perseguem a personagem, em todos os níveis, usam uma só cena,
-`demon/demon.tscn`, com os valores num `Resource`, `DemonStats`, como o movimento, o crucifixo e os
+`scenes/characters/demon/demon.tscn`, com os valores num `Resource`, `DemonStats`, como o movimento, o crucifixo e os
 SP. Cada ataque é outro `Resource`, `DemonAttack`, e o `DemonStats` tem a lista dos ataques do
-demónio. Os do nível 1 estão em `demon/lust_demon_stats.tres`; os demónios de um nível novo são
+demónio. Os do nível 1 estão em `scenes/characters/demon/lust_demon_stats.tres`, e os do cão grande, iguais exceto no
+dano, em `scenes/characters/demon/big_demon_stats.tres`; os demónios de um nível novo são
 outro ficheiro com os mesmos campos, outros ataques e outra arte, sem código novo.
 
 As personagens dividem-se pelo que fazem, e não pela história: as que perseguem usam esta cena, e as
@@ -1300,7 +1528,7 @@ não é esta cena com a perseguição desligada.
   `GRAB`, `THROWN`, `REPELLED`, `STUNNED`, `RETURN`, `OUT_OF_REACH`, `PATROL`, `ALERT` e `SEARCH`)
   continuam a ser uma
   enumeração no `demon.gd`, que a arte, o som e os testes leem, mas o que o demónio faz em cada um
-  está num objeto próprio, uma classe derivada de `DemonState`, em `demon/states/` (o padrão State).
+  está num objeto próprio, uma classe derivada de `DemonState`, em `scenes/characters/demon/states/` (o padrão State).
   Com a ronda e o "fora de alcance", o `demon.gd` chegou às 825 linhas, e sete estados partilhavam
   um mesmo contador de passos, posto a zero à mão antes de cada mudança. Agora, cada estado guarda os
   seus contadores e diz o que prepara ao começar e o que arruma ao sair. O demónio cria os
@@ -1343,7 +1571,7 @@ não é esta cena com a perseguição desligada.
   direção. No `test_demon.gd`, com os valores do teste, o salto aterrou a 2,3 px de uma personagem
   parada e a 3,0 px de uma que se afastava a 50 px/s.
 - **Alvo e memória num componente.** O que o demónio sabe da personagem que persegue está no
-  `DemonTarget` (`demon/demon_target.gd`): a caixa e a `Hurtbox` dela, a velocidade a que anda, há
+  `DemonTarget` (`scenes/characters/demon/demon_target.gd`): a caixa e a `Hurtbox` dela, a velocidade a que anda, há
   quantos passos não a vê, e onde e quando a viu pela última vez. O componente só guarda e conta; é
   o `demon.gd` que decide desistir, procurar ou atacar. Ao largar a personagem, guarda o último
   sítio onde a viu, que é para onde a procura vai. Não é um nó da cena, pelas razões dos estados.
@@ -1352,7 +1580,7 @@ não é esta cena com a perseguição desligada.
   scripts foi, em mediana de quatro execuções alternadas, 0,91 ms antes e 0,99 ms depois, dentro do
   orçamento (ADR 0037).
 - **Sentidos num componente.** O que o demónio percebe da personagem está no `DemonSenses`
-  (`demon/demon_senses.gd`): uma área circular, do raio do Sight Distance, encontra-a, e um raio
+  (`scenes/characters/demon/demon_senses.gd`): uma área circular, do raio do Sight Distance, encontra-a, e um raio
   confirma que nenhuma parede está entre os olhos do demónio e o meio dela ou, se esse estiver
   tapado, a cabeça. Com um só ponto, uma personagem numa plataforma ficava escondida pela própria
   plataforma. O componente diz também se o demónio repara nela (à frente, ou atrás até ao Sight
@@ -1408,7 +1636,7 @@ não é esta cena com a perseguição desligada.
   sobe a meio de um salto: um empurrão a meio de um salto rápido chegou a levar o demónio
   a 133,66 px de altura, acima dos degraus que o travam (medido no `test_demon.gd`, antes da
   correção).
-- **Pancada e agarrão em componentes.** O ataque passa por dois componentes de `components/`: a
+- **Pancada e agarrão em componentes.** O ataque passa por dois componentes de `scenes/characters/components/`: a
   `Hitbox`, no demónio, na camada `enemy_hitbox`, ligada só enquanto o ataque pode acertar e com o
   dano e o arremesso do ataque; e a `Hurtbox`, na personagem, na camada `player_hurtbox`, que é a
   única que procura. Na personagem, o `HitReaction` decide entre tirar SP e agarrar, o `GrabEscape`
@@ -1426,7 +1654,7 @@ não é esta cena com a perseguição desligada.
   do nível 1, e o segundo depois de um agarrão não deixa entrar nenhum (ADR 0055), salvo a mordida
   nas costas dos cães, que entra em qualquer invulnerabilidade, mas não com a `Hurtbox` fechada
   (ADR 0056). A mordida nas costas usa as mesmas peças. O `DemonBackBite`
-  (`demon/demon_back_bite.gd`) procura o corpo da personagem num espaço com a largura do cão e
+  (`scenes/characters/demon/demon_back_bite.gd`) procura o corpo da personagem num espaço com a largura do cão e
   48 px de altura, por cima das costas, alto o bastante para a encontrar antes de ela aterrar, mesmo
   a cair à velocidade máxima. Liga a sua `Hitbox` em cada passo em que ela aterra no cão, segundo a
   colisão do último movimento dela, e por isso nunca morde quem só lhe toca de lado ou por baixo,
@@ -1456,7 +1684,7 @@ não é esta cena com a perseguição desligada.
   isso uma prioridade de física mais baixa (Process Physics Priority −1), e move-se antes dos
   demónios em cada passo.
 - **Afundar com um shader.** O afundar corta o desenho na linha dos pés, com um shader
-  (`components/sink.gdshader`) que o componente `SinkingDrawing` controla. Mover os corpos para
+  (`scenes/others/shaders/sink.gdshader`) que o componente `SinkingDrawing` controla. Mover os corpos para
   baixo exigia, em todos os níveis, um chão com pelo menos 96 px de espessura onde um demónio
   agarra, e numa plataforma fina a personagem saía por baixo. O valor do shader não passa pela
   physics interpolation, que só move posições, por isso o desenho volta ao sítio no próprio passo
@@ -1608,7 +1836,7 @@ não é esta cena com a perseguição desligada.
   caça, com a personagem à vista, um demónio em movimento passa pelos outros, e só um encostado a
   ela o trava (ADR 0053); parado, afasta-se como os outros, e no vaivém vira junto de um parado.
 - **Ninguém fica em cima de ninguém (ADR 0047).** O componente `KnockOff`
-  (`components/knock_off.gd`) diz para que lado empurrar quem está de pé em cima da personagem ou
+  (`scenes/characters/components/knock_off.gd`) diz para que lado empurrar quem está de pé em cima da personagem ou
   de um demónio; quem o usa põe a velocidade (600 px/s nos dois). Antes, o demónio não tinha
   empurrão e podia ficar para sempre na cabeça da personagem. Num buraco de um corpo, o empurrão
   batia nas duas paredes e virava a cada passo: agora, se continuar em cima 6 passos (0,1 s) depois
@@ -1971,14 +2199,25 @@ crucifixo. O overlay mostra a oferta em causa, se já foi aceite, as recusas, o 
 homem ainda tem o crucifixo. As três teclas estão reservadas nos perfis de controlos, pelas mesmas
 razões do F4.
 
-O overlay é uma cena própria, `debug/debug_overlay.tscn`, num `CanvasLayer`, pelo que não se
+Uma linha `run` mostra os números escondidos da partida, que o jogador nunca vê:
+
+- a fase em curso;
+- as mortes nessa fase e no nível;
+- a zona da última morte;
+- o tempo passado na fase;
+- a pressão das mortes face ao limiar da próxima oferta do atalho;
+- o estado dessa oferta: aberta, à espera numa zona, ou fechada depois de o atalho ser aceite.
+
+Serve para afinar o ritmo das ofertas por mortes a jogar, sem ter de contar as mortes à mão.
+
+O overlay é uma cena própria, `scenes/others/debug/debug_overlay.tscn`, num `CanvasLayer`, pelo que não se
 desloca com a câmara. Recebe a personagem pelo Inspector e lê-a, ou fere-a com o F4, sem que ela
 dependa dele, pelo que a personagem é testada e exportada sem o overlay. Continua ativo com o jogo
 em pausa e, nas exportações de release, remove-se a si próprio, e o F4 com ele. O
 `test_debug_overlay.gd` verifica o comportamento nas versões de depuração; a remoção na versão de
 release só poderá ser confirmada na primeira exportação.
 
-Na sala de teste, uma segunda vista (`debug/demon_debug_view.gd`) desenha sobre cada demónio o
+Na sala de teste, uma segunda vista (`scenes/others/debug/demon_debug_view.gd`) desenha sobre cada demónio o
 estado em que está e há quanto tempo (em frames de física, que param na pausa, como os tempos dos
 estados), e uma seta para onde está virado. Ao longo do chão, desenha o
 posto e o troço da ronda. Enquanto o demónio persegue ou procura, marca com uma cruz o último sítio
@@ -1994,7 +2233,7 @@ pausa) e que a parede esconde a personagem logo atrás dela, mas não à frente.
 
 #### Câmara
 
-A câmara (`camera/game_camera.tscn`, script `GameCamera`) é uma `Camera2D` colocada ao lado
+A câmara (`scenes/others/camera/game_camera.tscn`, script `GameCamera`) é uma `Camera2D` colocada ao lado
 da personagem, na cena do nível, e não dentro da cena da personagem. Recebe a personagem pelo
 Inspector e lê-a sem que ela dependa da câmara; o nível pode assim parar a câmara numa cena
 cinemática sem alterar a personagem. É processada no passo de física e depois da personagem
@@ -2063,7 +2302,7 @@ ecrã em 1920 × 1080 antes de começar.
 
 #### Fundo em camadas
 
-O fundo é feito de nós `BackgroundLayer` (`background/background_layer.gd`), uma extensão do
+O fundo é feito de nós `BackgroundLayer` (`scenes/levels/background/background_layer.gd`), uma extensão do
 `Parallax2D` do Godot, um por camada. O `Parallax2D` desloca a camada uma fração (Scroll Scale) do
 movimento da câmara; a extensão acrescenta-lhe o que todas as camadas do jogo precisam:
 
@@ -2079,7 +2318,7 @@ movimento da câmara; a extensão acrescenta-lhe o que todas as camadas do jogo 
   Centered da imagem e o seu próprio Repeat Size, e, em FIT, também o Scroll Offset: estes campos não
   se acertam à mão.
 - A rampa de cor de cada camada (Ramp e Reverse Ramp). A camada cria um único material com o shader
-  `components/color_ramp.gdshader` e atribui-o a todas as peças sem material próprio, incluindo as
+  `scenes/others/shaders/color_ramp.gdshader` e atribui-o a todas as peças sem material próprio, incluindo as
   que entram depois; mudar a rampa muda todas as peças de uma vez, e retirá-la devolve-lhes as cores
   originais.
 
@@ -2125,7 +2364,9 @@ seguinte. Quando a personagem entra nessa área, o Main escurece o ecrã em 0,25
 pela outra e volta a clarear. As duas fases do nível 1 levaram, em conjunto, cerca de 0,1 s a
 carregar (medido a 2026-10-19), pelo que o carregamento termina antes de o ecrã ficar preto. Durante
 a passagem, o Esc não pausa. Uma fase aberta com F6 não tem o Main: a porta muda de cena diretamente,
-sem escurecer. O `test_phase_exit.gd` verifica as duas situações.
+sem escurecer. O `test_phase_exit.gd` verifica as duas situações. Uma `PhaseExit` sem fase seguinte é
+o fim do nível: o Main escurece o ecrã e volta ao menu principal (no nível 1, só depois das últimas
+falas da Asmodeu).
 
 A pausa usa `get_tree().paused`. O Main corre sempre (Process Mode Always) e só o `LevelSlot` é
 Pausable: o nível para e o Main continua a receber o Esc. O overlay de depuração continua ativo, e o
@@ -2161,11 +2402,11 @@ e remapeamento por captura da tecla seguinte.
   define.
 - Cada tecla está definida num único sítio. O perfil predefinido é o Input Map do `project.godot`,
   lido nas definições do projeto: uma tecla acrescentada em Project Settings ▸ Input Map passa a
-  fazer parte dele. O perfil das setas está definido uma só vez, em `core/input_profiles.gd`, e deixa
+  fazer parte dele. O perfil das setas está definido uma só vez, em `scenes/autoload/input_profiles.gd`, e deixa
   W, E, A, S e D livres para os upgrades. O Custom começa como cópia do predefinido.
 - O `Settings` guarda o perfil escolhido e as teclas do perfil personalizado e aplica-os ao Input
   Map. Como nenhum script lê teclas diretamente, a personagem e o crucifixo não mudaram.
-- No ecrã Controls (`ui/controls_menu.gd`), carregar no botão de uma ação do perfil Custom faz o
+- No ecrã Controls (`scenes/screens/controls_menu.gd`), carregar no botão de uma ação do perfil Custom faz o
   ecrã esperar pela próxima tecla ou botão do rato. O Esc ou o B cancelam sem alterar nada. A espera
   apanha a tecla antes de qualquer outro nó, pelo que o Esc não fecha a pausa.
 - Conflitos: se a tecla escolhida pertencia a outra ação, essa ação perde-a e, se ficar sem
@@ -2183,7 +2424,7 @@ e remapeamento por captura da tecla seguinte.
 - Nos testes, o `Settings` guarda as opções só em memória e não lê nem escreve o ficheiro do
   jogador (`GameSettings.ignore_player_file`, ver "Testes e medidas").
 
-O tamanho da letra e os espaços entre elementos estão num único tema, `ui/ui_theme.tres`, e nenhum
+O tamanho da letra e os espaços entre elementos estão num único tema, `themes/ui_theme.tres`, e nenhum
 nó define o seu próprio tamanho de letra: uma futura opção de tamanho do texto altera apenas o tema.
 
 #### Registo moral: escondido, uma soma e dois limiares
@@ -2197,7 +2438,7 @@ julgamento, mas não soma nem retira pontos.
 
 Tudo o que o homem faz soma pontos a um único total. Uma tentação aceite soma o valor indicado para
 ela, contando uma só vez, mesmo que volte a ser aceite. Cada portagem roubada no nível 3 vale menos
-do que um atalho, porque esse nível tem três. Uma resposta arrogante soma pouco. Ouvir uma proposta
+do que um atalho, porque esse nível tem três. Uma resposta arrogante soma meio ponto e uma humilde tira meio ponto. Ouvir uma proposta
 só conta a partir de alguns segundos, e cada proposta tem um máximo; ouvida outra vez, por exemplo
 depois de recomeçar a fase, conta apenas a escuta mais longa. Dois limiares transformam o total no
 estádio 0, 1 ou 2, que escolhe a variante das falas do homem: quanto mais alto, pior ele fala.
@@ -2205,31 +2446,40 @@ Cada resposta conta sempre que é dada. Por isso, uma conversa com respostas nã
 fase recomeça; essa regra pertence ao estado do jogo (`GameState`), que guarda as conversas já
 ouvidas, e não ao registo moral.
 
-Uma resposta humilde fica contada, mas não retira pontos, e o total nunca desce. Se descontasse, o
-jogador poderia aprender por tentativa e erro a "limpar" a fala com respostas humildes, e o registo
-deixaria de medir o que o jogador escolhe. A soma única foi preferida a contar apenas as tentações,
-que ignoraria a soberba nas respostas, e a ter um limiar por categoria, que daria seis valores
-difíceis de afinar e de explicar.
+Uma resposta humilde retira 0,5 pontos, e é a única coisa que retira pontos. O total nunca desce
+abaixo de 0. Assim, a humildade pode compensar a soberba, mas um homem sem nada a pesar não fica com
+pontos negativos. Antes, uma resposta humilde só ficava contada; o grupo decidiu que a humildade
+deve pesar tanto como a soberba. A soma única foi preferida a contar apenas as tentações, que
+ignoraria a soberba nas respostas, e a ter um limiar por categoria, que daria seis valores difíceis
+de afinar e de explicar.
+
+O tom também escolhe falas diretamente. No presente da Asmodeu, o homem fala com soberba se o
+estádio já subiu ou se deu mais respostas arrogantes do que humildes (`Moral.leans_arrogant()`).
+Assim, um homem que respondeu sempre com arrogância fala com arrogância, mesmo antes de os pontos
+chegarem ao estádio 1. Contar as respostas não soma pontos.
 
 | Valor | Referência |
 |---|---|
-| Atalho ou dom de um demónio (Moral Weight, no ficheiro da oferta em `offers/`) | 1 ponto |
+| Atalho de um demónio (Moral Weight, no ficheiro da oferta em `scenes/autoload/offers/`) | 1 ponto |
+| Dom de um demónio, como o charm (idem) | 2 pontos |
 | Cada portagem roubada (idem) | 0,4 pontos |
-| Tentação sem ficheiro de oferta (`core/moral_stats.tres`, tal como os seguintes) | 1 ponto |
-| Resposta arrogante | 0,15 pontos |
+| Tentação sem ficheiro de oferta (`scenes/autoload/moral_stats.tres`, tal como os seguintes) | 1 ponto |
+| Resposta arrogante | +0,5 pontos |
+| Resposta humilde | −0,5 pontos (o total nunca desce abaixo de 0) |
 | Ouvir uma proposta | 0,1 pontos por segundo além de 3 s, até 0,5 por proposta |
 | Estádio 1 / estádio 2 | a partir de 1 / de 3 pontos |
 
-São valores de referência, a afinar em jogo. Com eles, um atalho basta para a fala piorar, e as
-três portagens juntas pesam pouco mais do que um atalho. As regras estão numa classe sem nós
+São valores de referência, a afinar em jogo. Com eles, um atalho basta para a fala piorar, o atalho
+e o dom juntos chegam ao estádio 2, e as três portagens juntas pesam pouco mais do que um atalho.
+As regras estão numa classe sem nós
 (`MoralRecord`), testada isoladamente; o autoload limita-se a disponibilizá-la. O `reset()` limpa o
 registo para um jogo novo, e o registo entra na gravação do jogo.
 
 #### Ofertas: tentações em dados
 
 Todas as tentações do jogo passam por um único sistema, o autoload `Offers`. Cada oferta é um
-ficheiro de dados (`OfferData`, em `offers/`) com quem a faz, o que oferece, o custo tal como o
-demónio o diz, o efeito de a aceitar e o peso moral. O catálogo (`offers/offer_catalog.tres`)
+ficheiro de dados (`OfferData`, em `scenes/autoload/offers/`) com quem a faz, o que oferece, o custo tal como o
+demónio o diz, o efeito de a aceitar e o peso moral. O catálogo (`scenes/autoload/offers/offer_catalog.tres`)
 reúne-as todas. Os níveis 2 e 3 acrescentam ficheiros e falas, sem código novo.
 
 As falas usam três chamadas: `Offers.present` quando a proposta é feita, e `Offers.accept` ou
@@ -2240,10 +2490,11 @@ num atalho e o nível retira o crucifixo das mãos do homem.
 
 O efeito de uma oferta aceite só se aplica quando o balão de diálogo fecha. Assim, um atalho nunca
 muda a fase com uma conversa aberta. Há dois tipos de efeito: ir para outra fase, que é o atalho,
-e receber um upgrade, que são os dons. O atalho de Asmodeu leva à fase 3 da luxúria, com a mesma
+e receber um upgrade, que são os dons. O atalho de Asmodeu leva ao fim do nível 1, com a mesma
 passagem a preto das saídas de fase, e põe o homem no ponto de chegada (`ArrivalPoint`) junto à
-tenda, no fim do túnel final. A gravação guarda esse ponto, pelo que uma morte ou o Continue o
-devolvem à tenda, e não ao início da fase. Perder o crucifixo não é o custo de uma oferta em
+tenda, na sala da Asmodeu, onde ela lhe oferece logo o dom. A gravação guarda esse ponto, pelo que uma morte ou o Continue o
+devolvem à tenda, e não ao início da fase: um save point já alcançado não o leva para o seu ponto de
+renascimento quando ele chega por um ponto de chegada. Perder o crucifixo não é o custo de uma oferta em
 particular: é uma regra do jogo, guardada no `GameState`. O primeiro upgrade aceite, seja ele qual
 for, tira o crucifixo.
 
@@ -2254,11 +2505,153 @@ uma linha a `user://offers_log.csv`, com a oferta, a escolha, os segundos de esc
 jogo. Serve os playtests: permite verificar se quem aceita o atalho é quem está a ter
 dificuldades.
 
+Para cruzar com esse registo, cada morte acrescenta uma linha a `user://deaths_log.csv`. A linha
+leva a hora, o nível, a fase, a zona, a causa da morte, o sítio (a fiada de picos, ou a causa) e a
+posição, as mortes nesse sítio até então e se a morte trouxe
+uma oferta do atalho. Os dois registos usam o mesmo código (`scenes/autoload/csv_log.gd`). Os testes não
+escrevem em nenhum deles. O `test_deaths_log.gd` verifica o cabeçalho, uma linha por morte, a
+marcação da morte que trouxe a oferta e que um caminho vazio não escreve nada.
+
 O `test_offers.gd` verifica aceitar, recusar, aceitar duas vezes, uma oferta inexistente, o efeito
 adiado até o balão fechar e o crucifixo perdido com o primeiro upgrade. O `test_offer_catalog.gd`
 verifica os dados: ids únicos, todos os ids das falas presentes no catálogo, e um atalho que aponta
 para uma fase e um ponto de chegada que existem. O `test_offer_shortcut.gd` percorre o atalho no
 jogo, e o `test_dialogue_calls.gd` confirma que todas as funções chamadas pelas falas existem.
+
+#### Balão de diálogo: retrato e saltar falas
+
+As falas aparecem no balão do próprio jogo (`scenes/screens/dialogue_balloon.tscn`), feito a partir do balão
+de exemplo do Dialogue Manager, como o plugin recomenda. O `addons/` fica como veio. Além do que o
+exemplo já fazia (as falas a escrever-se, as respostas e o toque que mostra a fala inteira), o
+balão mostra o retrato de quem fala. Até a arte chegar (S3), o retrato é provisório: um quadrado
+com a cor da personagem e a inicial do nome. Os retratos finais entram no Inspector (Portraits), um
+por personagem, sem mudar código.
+
+Manter o Espaço premido durante 0,6 s (Skip Hold Time) salta as falas até à próxima com respostas,
+ou até ao fim da conversa. Uma barra fina enche-se enquanto se mantém a tecla. O salto nunca escolhe
+uma resposta pelo jogador e corre na mesma o que as falas saltadas fazem, como apresentar uma
+oferta. Um toque curto continua só a avançar uma fala. O Dialogue Manager não tem esta função: o seu
+autor recomenda acrescentá-la no balão, que é o que se fez. O número de falas saltadas fica nas
+estatísticas da partida, para o julgamento final, e não conta para a moral.
+
+O `test_dialogue_skip.gd` verifica que o salto para nas respostas sem escolher nenhuma, que a oferta
+das falas saltadas é apresentada, que um toque curto não salta, que uma conversa sem respostas
+termina e que o retrato provisório mostra a inicial.
+
+#### Estatísticas da partida: mortes, zonas e tempo
+
+O autoload `RunStats` conta as mortes do homem por fase e por zona de cada nível. Estes números
+servem as falas dos demónios (por exemplo, "morreste tantas vezes no mesmo sítio") e o julgamento
+final, que mostra ao homem o que fez, com números. Não entram no registo moral: só as decisões
+contam para a moral, e morrer não é uma decisão. Nada disto aparece no ecrã durante o jogo.
+
+A fase é dada pelo próprio nível. Cada nível começa na fase indicada em First Phase, que
+normalmente é 1. Os pontos de gravação que abrem uma fase têm o número dela em Starts Phase. No
+nível 1, a fase 2 começa no `Phase2Save` e a fase 3 no `Phase3Save`. Ao arrancar, o nível fica na
+fase do ponto mais avançado já alcançado. A zona de uma morte é a zona de câmara mais pequena que
+contém o homem. Os níveis já estão divididos nestas zonas, com nomes de sítios, por isso não é
+preciso marcar nada à parte. Fora de todas as zonas, a morte conta numa célula de 768 px
+(Death Cell Size). A zona só se procura no momento da morte, e não em cada frame. Os números de cada
+nível guardam-se em separado, para que a fase 1 do nível 2 não some às mortes da fase 1 do nível 1.
+
+Cada morte guarda também a causa. Os picos chamam-se `spikes`. Um agarrão leva o nome da cena do
+cão que agarrou (`demon`, `big_demon`, `biggest_demon`), ou o valor Cause do seu Hitbox, se estiver
+preenchido. Com vários cães a agarrar, conta o primeiro. "O mesmo sítio" é a mesma zona e aquilo
+que o matou. Cada fiada de picos conta por si (`Spikes1`, `Spikes2`...), porque há saltos mais
+difíceis do que outros: quem morre sempre nos picos 2 não deve ouvir falar dos picos 1. Os cães
+contam como uma matilha, pelo tipo, seja qual for o que o agarrou. Os picos e um cão na mesma zona
+são, portanto, sítios diferentes, e as falas não os confundem. O mesmo critério pesa na pressão das
+ofertas por mortes.
+
+O `RunStats` mede também o tempo passado em cada fase, contado a partir do momento em que a fase
+começa. O tempo não volta a zero quando o homem morre e para durante a pausa, porque o nível fica
+parado. Não há relógio no ecrã: o tempo serve as falas (por exemplo, "já cá andas há dez minutos")
+e o julgamento final. Um relógio visível daria ao jogo um ar de corrida contra o tempo, o que não
+condiz com o tom nem com o pilar "julgado sem saber".
+
+O `RunStats` fica fora do `GameState` porque a morte repõe o `GameState` como estava na última
+gravação, e uma morte tem de ficar contada. As regras estão numa classe sem nós (`RunRecord`),
+testada isoladamente no `test_run_record.gd`. O `test_level_run_stats.gd` verifica, no nível 1, a
+fase ao arrancar e ao entrar no `Phase2Save`, a zona de uma morte e o tempo, que para durante a
+pausa e se mantém quando a fase recomeça, e o aviso de uma oferta por mortes.
+
+#### Ofertas por mortes: cada vez mais seguidas
+
+Durante um nível, a única oferta é o atalho: saltar o resto do nível e ir diretamente ao fim. O
+demónio do nível oferece-o no início das fases 2 e 3 e também quando o homem vai morrendo. A fase 1
+faz-se sempre, por isso as mortes nela não trazem ofertas. O upgrade (o dom do demónio) só é
+oferecido no fim do nível.
+
+Cada morte nas fases 2 e 3 acrescenta "pressão": 1, mais 0,5 por cada morte que ele já teve no
+mesmo sítio (a mesma zona e a mesma fiada de picos, ou o mesmo tipo de cão). Morrer sempre no mesmo
+sítio traz a oferta mais cedo. Quando a pressão chega ao limiar, a zona dessa morte fica marcada, e a
+pressão volta a zero. O primeiro limiar é sorteado entre 4 e 7, e cada limiar seguinte é 70 % do
+anterior, nunca abaixo de 1,5, com uma variação sorteada de 15 % para cada lado. O jogador nunca
+consegue contar até à oferta, mas sente que ela aperta à medida que falha.
+
+As mortes contam sempre, mesmo com uma zona marcada. Podem estar várias zonas marcadas ao mesmo
+tempo, por exemplo uma no início, onde ele morreu muitas vezes, e outra mais à frente, onde está a
+sofrer agora. Cada uma espera por ele: quando volta a estar nessa zona, a Asmodeu aparece e fala
+dessa zona, com as mortes e o tempo que ele lá passou. Uma zona já marcada não volta a ser marcada,
+porque o limiar seguinte fica para outra zona. O jogo mede, por isso, também o tempo passado em cada
+zona. Depois de ele aceitar o atalho, acabam as ofertas nesse nível.
+
+| Valor (`scenes/autoload/offers/death_offer_stats.tres`) | Referência |
+|---|---|
+| Primeira fase com ofertas | 2 |
+| Primeiro limiar | sorteado entre 4 e 7 |
+| Peso de cada morte anterior na mesma zona | +0,5 |
+| Cada limiar seguinte | 70 % do anterior |
+| Limiar mínimo | 1,5 |
+| Variação sorteada | ±15 % |
+
+Com uma morte em cada zona, as ofertas chegam ao fim de 4, 3, 2, 2… mortes. Morrendo sempre no
+mesmo sítio, a primeira chega à terceira morte. A regra vive numa classe sem nós
+(`DeathOfferPacer`), testada no `test_death_offer_pacer.gd` com números fixos, sem sorteio. O
+`RunStats` alimenta-a com cada morte, avisa quando há uma oferta à espera e guarda-a com as
+estatísticas, para que a morte não a apague. Morrer não conta para a moral; só a resposta à oferta
+conta.
+
+A Asmodeu é um nó próprio (`scenes/characters/demon/asmodeus.tscn`), provisório até chegar a arte: um polígono
+cor-de-rosa escuro com o nome por cima. Não combate. Quando fala, aparece ao lado do homem, prende-o
+como a Velvet (sem correr, saltar nem erguer o crucifixo), fala no balão do jogo e desaparece.
+Enquanto fala, os cães do nível ficam parados (Asmodeus › Stills), para que nenhum morda o homem
+preso. O que acontece a seguir decidem as falas, através das ofertas.
+
+Quando é que ela fala decide outro nó do nível 1, o `AsmodeusDirector`, que só escolhe o cue:
+
+| Momento | Cue |
+|---|---|
+| Primeira chegada ao início da fase 2 (o save point com Starts Phase 2) | `asmodeus_offer` |
+| Primeira chegada ao início da fase 3 | `asmodeus_second_offer` |
+| Com uma oferta por mortes à espera, ao entrar na zona dela (ou ao renascer lá dentro) | `asmodeus_deaths` |
+| Ao entrar na sala dela, no fim do nível, aceite ou não o atalho | `asmodeus_gift` e depois `stairs` |
+
+A oferta por mortes só é verificada enquanto há uma à espera; sem ela, o diretor não faz nada a
+cada frame. Uma conversa só conta como tida quando o homem responde à oferta. Nesse momento, o
+diretor marca-a no `GameState` (`answered_` e o nome do cue), e a oferta por mortes deixa de estar à
+espera. Se o jogador sair antes de responder, a conversa do início de uma fase volta assim que ele
+pousa no chão depois do Continue, e a oferta por mortes continua à espera da sua zona. Aceitar o atalho fecha as ofertas por mortes. A saída do nível (`PhaseExit` sem fase
+seguinte e com Walk In Leads On desligado) só termina o nível depois da última fala de `stairs`;
+nessa altura o diretor marca o nível como feito (`lust_done`), com a tenda como ponto de chegada,
+o Main grava, escurece o ecrã e volta ao menu principal. Enquanto não houver nível 2, o Continue
+depois disso leva o homem à tenda e deixa-o jogar no nível já feito, sem falas nem ofertas e com
+os cães parados.
+
+O nível 1 acaba numa sala da Asmodeu, depois do corredor de baixo da fase 3, com cerca de 27 × 19
+tiles. Entre conversas, ela está lá de pé, à vista, num ponto próprio (`AsmodeusHome`, que o diretor
+recebe em Home). As falas finais dizem-se desse ponto, e não ao lado do homem. As outras conversas
+trazem-na para junto dele e, no fim, devolvem-na à sala. A saída do nível cobre o chão da sala
+inteira (1296 px), para que o fim comece tanto ao entrar como ao chegar à tenda pelo atalho, que
+fica dentro da sala. A sala tem zona de câmara própria (`ZoneP3AsmodeusRoom`, zoom 1,1), que mostra
+o túnel de entrada e a sala do chão ao teto, sem mostrar o corredor de onde ele vem.
+
+O `test_asmodeus.gd` verifica que o homem fica preso enquanto ela fala e é largado no fim. O
+`test_lust_asmodeus.gd` joga o nível 1 dentro do Main: a Asmodeu à vista na sua sala desde o início e o dom dito de lá, a oferta do início da fase 2 recusada, uma
+oferta por mortes que espera fora da zona e aparece ao entrar nela, o atalho aceite até à tenda, o
+dom, as escadas e o regresso ao menu, e a oferta do início da fase 3. Os testes de percurso do
+nível 1 retiram o diretor, tal como já não deixavam a Velvet falar, porque verificam o mapa e não as
+conversas.
 
 #### Gravação do jogo
 
@@ -2280,6 +2673,13 @@ as opções.
 | Os acontecimentos únicos, como já ter falado com a Velvet | Não se repetem, nem contam duas vezes. |
 | O nome do homem | As falas usam-no; o ecrã do nome ainda não existe. |
 
+As estatísticas da partida (`RunStats`: mortes e tempo por fase) são a exceção no sentido contrário:
+uma morte tem de ficar contada, por isso a morte nunca as repõe. Guardam-se num ficheiro próprio, ao
+lado da gravação (`user://save_run.cfg`), em cada gravação, em cada morte e ao sair para o menu ou
+fechar o jogo. O Continue repõe-nas e um jogo novo apaga-as. Ficam fora do `save.cfg` para que a
+morte continue a não alterar a gravação: o que lá está volta a ser exatamente o que estava no último
+checkpoint.
+
 Não se guardam os SP, os demónios, a câmara nem as tolerâncias do movimento: cada fase é uma cena
 nova e reconstrói-os. As opções do jogador ficam em ficheiro próprio, porque não pertencem a uma
 partida.
@@ -2288,7 +2688,12 @@ Até à gravação seguinte, o que o homem faz conta como não feito. A morte n�
 e repõe o autoload `GameState` e o registo moral tal como estavam na última gravação, e sair e usar
 o Continue tem o mesmo efeito. As fases são curtas, pelo que não se perde muito. A exceção é um
 upgrade aceite: não se pode desfazer, por isso o jogo grava logo que o homem o recebe, e uma morte
-antes do checkpoint seguinte não o tira nem devolve o crucifixo. Um nível que não
+antes do checkpoint seguinte não o tira nem devolve o crucifixo. Uma resposta a uma oferta também
+grava logo, porque é uma decisão: sair depois dela não faz repetir a conversa. Se a oferta aceite
+tiver efeito (um upgrade, ou o atalho), a gravação fica para quando o efeito se aplica, no fim das
+falas. Gravar o "sim" antes do efeito permitiria sair no intervalo e ficar com a oferta aceite sem o
+que ela dá. Sair antes de responder não guarda nada, nem as respostas de tom dadas antes, e a
+conversa repete-se no Continue. Um nível que não
 inicia o jogo, como o Test room, fica fora disto: não grava nem repõe nada.
 A gravação escreve primeiro uma cópia e só depois a coloca no lugar da anterior, para que um jogo
 fechado a meio não destrua a última gravação. Uma gravação danificada, de outra versão ou de uma
@@ -2298,8 +2703,8 @@ com a opção de a manter já selecionada.
 
 #### Sala de treino
 
-A sala de treino (`levels/gym/gym.tscn`) permite experimentar cada mecânica isoladamente, sem
-atravessar um nível. É composta por estações, cenas próprias em `levels/gym/stations/`, colocadas
+A sala de treino (`scenes/levels/gym/gym.tscn`) permite experimentar cada mecânica isoladamente, sem
+atravessar um nível. É composta por estações, cenas próprias em `scenes/levels/gym/stations/`, colocadas
 lado a lado. Cada estação respeita o mesmo contrato:
 
 - tem 1920 px de largura (um ecrã) e começa em x = 1920 · n, pela ordem de `Stations`;
@@ -2326,7 +2731,7 @@ da estação correspondente, e o 0 à décima, mantendo os SP; não funcionam du
 quando a tecla está atribuída a uma ação no perfil Custom. Lêem as teclas diretamente, sem ações no
 mapa de controlos, porque servem apenas para depuração; por isso não há equivalente no comando.
 
-A estação 10 mostra os cães que saltam (ADR 0042), com os valores de `levels/jumping_demon_stats.tres`:
+A estação 10 mostra os cães que saltam (ADR 0042), com os valores de `scenes/characters/demon/jumping_demon_stats.tres`:
 o cão sobe um degrau de 96 px e não chega ao pilar de 144 px. O degrau vai até ao fim da estação,
 porque os chãos se distinguem só pela altura: um cão que passasse para outro chão à mesma altura
 do seu posto ficava preso à parede ao voltar. A queda de 240 px não aparece na sala, porque é mais
@@ -2368,8 +2773,14 @@ iniciado por nada no jogo. A estação de cada uma acrescenta-se quando a mecân
 - Dialogue Manager 4.1.0, de Nathan Hoad. Licença MIT. Plugin de diálogo, em
   `Projeto/addons/dialogue_manager/`. https://github.com/nathanhoad/godot_dialogue_manager
 - `demon_alert.wav`, `demon_search.wav`, `demon_take_off.wav` e `demon_land.wav`, em
-  `Projeto/assets/audio/`: bips provisórios gerados por síntese de ondas sinusoidais, sem
+  `Projeto/assets/audio/sfx/`: bips provisórios gerados por síntese de ondas sinusoidais, sem
   material de terceiros. Saem quando chegarem os sons definitivos.
+- `level1_cave_map.png` e `level1_cave_shade.png`, em `Projeto/assets/sprites/backgrounds/`:
+  imagens provisórias geradas com IA (Claude) a partir do mapa do nível 1, sem material de
+  terceiros. A primeira dá a cor de cada área do fundo e a segunda escurece o fundo junto à rocha.
+  Na zona da fase 3 e na sala da Asmodeu, foram repintadas com IA (Claude), por scripts fora do repositório que
+  ajustam um modelo às imagens das fases 1 e 2 e só alteram os píxeis por onde essas zonas passam.
+  Saem ou refazem-se quando o mapa ou as áreas mudarem.
 
 ## Licença
 
