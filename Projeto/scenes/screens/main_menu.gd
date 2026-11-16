@@ -35,6 +35,8 @@ var _asked_level: int = 0
 @onready var _back_button: Button = %BackButton
 @onready var _options_menu: OptionsMenu = %OptionsMenu
 @onready var _replace_save_dialog: ConfirmationDialog = %ReplaceSaveDialog
+@onready var _crosses: MenuCrosses = $Crosses
+@onready var _blur: ColorRect = $Blur
 
 
 func _ready() -> void:
@@ -47,6 +49,8 @@ func _ready() -> void:
 	_options_menu.closed.connect(_show_main_panel.bind(_options_button))
 	_replace_save_dialog.confirmed.connect(_on_replace_save_confirmed)
 	_replace_save_dialog.canceled.connect(_on_replace_save_canceled)
+	_replace_save_dialog.get_label().horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	_replace_save_dialog.visibility_changed.connect(_on_replace_save_visibility_changed)
 	_size_options()
 	_show_main_panel(_play_button)
 
@@ -90,6 +94,17 @@ func set_can_continue(can_continue: bool) -> void:
 func open() -> void:
 	show()
 	_show_main_panel(_first_button())
+
+
+## While the question shows, what lies behind its box is blurred, and the menu's crosses, by the
+## level button, hide: the question has its own.
+func _on_replace_save_visibility_changed() -> void:
+	var showing: bool = _replace_save_dialog.visible
+	_crosses.visible = not showing
+	_blur.visible = showing
+	if showing:
+		_blur.position = Vector2(_replace_save_dialog.position)
+		_blur.size = Vector2(_replace_save_dialog.size)
 
 
 func _on_replace_save_confirmed() -> void:

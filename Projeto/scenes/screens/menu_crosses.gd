@@ -10,8 +10,9 @@ extends Control
 
 const CROSS: Texture2D = preload("res://assets/sprites/menu/menu_cross.png")
 
-## The menu whose options get the crosses; only controls inside it count.
-@export var menu: Control
+## The menu whose options get the crosses; only controls inside it count. It can be a window, as
+## the replace-save question, whose buttons are its own internal children.
+@export var menu: Node
 ## How tall a cross is, as a share of the option's font size.
 @export_range(0.2, 2.0, 0.05) var height_share: float = 0.75
 ## The gap, in px, between a cross and the text.
@@ -31,8 +32,7 @@ func _ready() -> void:
 	_left = _make_cross(false)
 	_right = _make_cross(true)
 	get_tree().node_added.connect(_on_node_added)
-	for node: Node in menu.find_children("*", "BaseButton", true, false):
-		_take_focus_on_hover(node as BaseButton)
+	_hook_buttons(menu)
 
 
 func _process(delta: float) -> void:
@@ -83,6 +83,15 @@ func _make_cross(mirrored: bool) -> TextureRect:
 	cross.hide()
 	add_child(cross)
 	return cross
+
+
+## Every button under node, the internal ones included (a dialog's OK and Cancel), takes the focus
+## on hover.
+func _hook_buttons(node: Node) -> void:
+	for child: Node in node.get_children(true):
+		if child is BaseButton:
+			_take_focus_on_hover(child as BaseButton)
+		_hook_buttons(child)
 
 
 ## Buttons added later, as the level list's, take the focus on hover too.
