@@ -104,9 +104,10 @@ func _run() -> void:
 		_set_shaders(row[1], row[2], row[3], row[4])
 		rig.set_mode(LightingRig.Mode.HYBRID)
 		await _measure(String(row[0]), viewport)
-	# The man in the scene and the dogs' smoke, on top of the five shaders. The event effects (the
-	# crucifix's light, squash, ghosts) cost nothing until their event; their row measures the ink
-	# style on the idle effects.
+	# The man in the scene and the dogs' smoke, on top of the five shaders. The man stands still at
+	# the start, so his trail leaves nothing, and the crucifix's light and the squash wait for their
+	# event: their row measures them idle, with the ink style. The smoke and the trail cost most with
+	# dogs running on screen and him falling, which this does not measure.
 	var man_rows: Array[Array] = [
 		["  all shaders, no man's look", false, false, false, false],
 		["  + man lit by the scene", true, false, false, false],
@@ -138,7 +139,7 @@ func _set_man(scene_light: bool, outline: bool, dog_smoke: bool, effects: bool) 
 	LightingRig.dog_smoke_on = dog_smoke
 	LightingRig.crucifix_fx_on = effects
 	LightingRig.squash_on = effects
-	LightingRig.ghosts_on = effects
+	LightingRig.trail = LightingRig.TRAIL_ASH if effects else LightingRig.TRAIL_OFF
 	LightingRig.ink_on = effects
 
 
