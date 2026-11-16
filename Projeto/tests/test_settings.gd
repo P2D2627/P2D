@@ -5,7 +5,9 @@
 # and ignores a new mode), so only their values are checked, and the rest is checked by hand with
 # F5. Each change is saved, with the file's version, and a new settings node reads the same values
 # back. A broken file gives the defaults. Values of the wrong type, out of range or not a number
-# (nan) are put right, and a frame rate cap the options do not offer turns into no cap. Reset brings
+# (nan) are put right, and a frame rate cap the options do not offer turns into no cap. The
+# accessibility switches Show Hidden and Hold To Escape, turned on, are saved and read back on, and
+# a value of the wrong type in the file gives their default, off. Reset brings
 # back the defaults and saves them. In the tests, a settings node on the player's file, the autoload
 # among them, keeps its options in memory: it neither reads nor writes that file. The tests use a
 # settings node of their own, with a file of their own, and never touch the player's file.
@@ -28,6 +30,7 @@ func _initialize() -> void:
 	results.append(await _each_change_is_saved_and_read_back())
 	results.append(await _a_broken_file_gives_the_defaults())
 	results.append(await _wrong_values_in_the_file_are_put_right())
+	results.append(await _the_switches_are_saved_read_back_and_put_right())
 	results.append(await _reset_brings_back_the_defaults_and_saves_them())
 	results.append(await _in_the_tests_the_players_file_is_neither_read_nor_written())
 	_delete_test_file()
@@ -154,6 +157,31 @@ func _wrong_values_in_the_file_are_put_right() -> bool:
 			("Wrong values put right: Master 3.0, Music -1.0, SFX \"loud\", Ambience 1, UI nan, full "
 			+ "screen \"yes\", V-Sync 0, cap 75 read as %s; set by code, a cap of 75 gives %d and a "
 			+ "volume of nan %.1f") % [got, cap_by_code, nan_by_code])
+
+
+## Show Hidden (#253) and Hold To Escape (#246), the accessibility switches: off by default, so on is
+## what must survive a save, and a wrong type in the file must not turn one on.
+func _the_switches_are_saved_read_back_and_put_right() -> bool:
+	_delete_test_file()
+	var settings: GameSettings = await _new_settings()
+	settings.set_show_hidden(true)
+	settings.set_hold_to_escape(true)
+	settings.queue_free()
+	var again: GameSettings = await _new_settings()
+	var read_back: Array = [again.is_show_hidden_on(), again.is_hold_to_escape_on()]
+	again.reset_to_defaults()
+	again.queue_free()
+	var file: ConfigFile = ConfigFile.new()
+	file.set_value("accessibility", "show_hidden", "yes")
+	file.set_value("accessibility", "hold_to_escape", 1)
+	file.save(TEST_PATH)
+	var wrong: GameSettings = await _new_settings()
+	var put_right: Array = [wrong.is_show_hidden_on(), wrong.is_hold_to_escape_on()]
+	wrong.queue_free()
+	return report(read_back == [true, true] and put_right == [false, false],
+			("Show Hidden and Hold To Escape turned on, read back by a new settings node: %s "
+			+ "(expected [true, true]); \"yes\" and 1 in the file read as %s (expected [false, false])")
+			% [read_back, put_right])
 
 
 func _reset_brings_back_the_defaults_and_saves_them() -> bool:

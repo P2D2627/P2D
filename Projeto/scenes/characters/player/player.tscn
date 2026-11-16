@@ -27,6 +27,7 @@
 [ext_resource type="Script" uid="uid://cnf6ppd87trgl" path="res://scenes/characters/player/player_animation.gd" id="14_animation"]
 [ext_resource type="Texture2D" path="res://assets/sprites/player/main_character_jump_384.png" id="15_jump"]
 [ext_resource type="Texture2D" path="res://assets/sprites/player/main_character_escape_384.png" id="16_escape"]
+[ext_resource type="Script" path="res://scenes/others/sight/sight_eyes.gd" id="17_sight_eyes"]
 
 [sub_resource type="RectangleShape2D" id="RectangleShape2D_player"]
 size = Vector2(48, 96)
@@ -323,6 +324,10 @@ stats = ExtResource("11_grab_stats")
 
 [node name="GrabPrompt" parent="." unique_id=1485858473 node_paths=PackedStringArray("grab_escape") instance=ExtResource("12_grab_prompt")]
 grab_escape = NodePath("../GrabEscape")
+
+[node name="Eyes" type="Marker2D" parent="."]
+position = Vector2(0, -84)
+script = ExtResource("17_sight_eyes")
 
 [connection signal="healed" from="Crucifix" to="SoulPoints" method="heal"]
 [connection signal="broke_free" from="GrabEscape" to="Crucifix" method="unblock" binds= [&"grab"]]
