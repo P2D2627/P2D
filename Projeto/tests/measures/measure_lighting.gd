@@ -48,9 +48,10 @@ func _run() -> void:
 	var lights: int = room.find_children("*", "PointLight2D", true, false).size()
 	print("Level 1: %d point lights in the tree" % lights)
 	print("Vision: %d occluder rectangles for the SDF" % rig.get_occluder_count())
-	print("Rim light: %d drawings" % rig.get_rim_count())
+	print("Rim light: %d drawings; smoke on %d dogs" % [rig.get_rim_count(), rig.get_smoking_dog_count()])
 	# The rows up to the SDF scales measure as before #261: without its shaders.
 	_set_shaders(false, false, false, false)
+	_set_man(false, false, false, false)
 	rig.set_mode(LightingRig.Mode.HYBRID)
 	for vision: int in [LightingRig.VISION_SDF, LightingRig.VISION_POLYGON]:
 		LightingRig.vision = vision
@@ -103,6 +104,21 @@ func _run() -> void:
 		_set_shaders(row[1], row[2], row[3], row[4])
 		rig.set_mode(LightingRig.Mode.HYBRID)
 		await _measure(String(row[0]), viewport)
+	# The man in the scene and the dogs' smoke, on top of the five shaders. The event effects (the
+	# crucifix's light, squash, ghosts) cost nothing until their event; their row measures the ink
+	# style on the idle effects.
+	var man_rows: Array[Array] = [
+		["  all shaders, no man's look", false, false, false, false],
+		["  + man lit by the scene", true, false, false, false],
+		["  + outline", false, true, false, false],
+		["  + dogs' smoke", false, false, true, false],
+		["  + event effects, ink style", false, false, false, true],
+		["A, glow, no vision, all of #261", true, true, true, true],
+	]
+	for row: Array in man_rows:
+		_set_man(row[1], row[2], row[3], row[4])
+		rig.set_mode(LightingRig.Mode.HYBRID)
+		await _measure(String(row[0]), viewport)
 	await _measure_glow_sources(rig)
 	quit(0)
 
@@ -112,6 +128,18 @@ func _set_shaders(grade: bool, fire_ramp: bool, fog: bool, rim: bool) -> void:
 	LightingRig.fire_ramp_on = fire_ramp
 	LightingRig.fog_on = fog
 	LightingRig.rim_on = rim
+
+
+## The contact shadow stays off, as by default.
+func _set_man(scene_light: bool, outline: bool, dog_smoke: bool, effects: bool) -> void:
+	LightingRig.scene_light_on = scene_light
+	LightingRig.outline_on = outline
+	LightingRig.shadow_on = false
+	LightingRig.dog_smoke_on = dog_smoke
+	LightingRig.crucifix_fx_on = effects
+	LightingRig.squash_on = effects
+	LightingRig.ghosts_on = effects
+	LightingRig.ink_on = effects
 
 
 ## What feeds the glow, a stand-in for comparing frames with glow on and off: with glow, grade and rim
