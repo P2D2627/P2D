@@ -1,6 +1,7 @@
 [gd_scene format=3]
 
 [ext_resource type="Script" path="res://scenes/objects/traps/lethal_spikes.gd" id="1_script"]
+[ext_resource type="Script" path="res://scenes/others/sight/sight_reveal.gd" id="2_sight_reveal"]
 
 [sub_resource type="RectangleShape2D" id="RectangleShape2D_spikes"]
 resource_local_to_scene = true
@@ -16,3 +17,9 @@ script = ExtResource("1_script")
 unique_name_in_owner = true
 position = Vector2(0, -12)
 shape = SubResource("RectangleShape2D_spikes")
+
+[node name="SightReveal" type="Node" parent="." node_paths=PackedStringArray("look_box")]
+script = ExtResource("2_sight_reveal")
+look_box = NodePath("../Shape")
+remembers = true
+spot_rise = 12.0

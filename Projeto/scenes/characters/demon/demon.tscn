@@ -17,6 +17,7 @@
 [ext_resource type="Script" path="res://scenes/characters/demon/demon_animation.gd" id="15_animation"]
 [ext_resource type="Texture2D" path="res://assets/sprites/demon_lust/dog_idle_cell.png" id="16_dog_idle"]
 [ext_resource type="Script" path="res://scenes/characters/demon/demon_back_bite.gd" id="14_back_bite"]
+[ext_resource type="Script" path="res://scenes/others/sight/sight_reveal.gd" id="17_sight_reveal"]
 
 [sub_resource type="RectangleShape2D" id="RectangleShape2D_body"]
 size = Vector2(112, 56)
@@ -209,6 +210,11 @@ sight_shape = NodePath("../SightArea/SightShape")
 line_of_sight = NodePath("../LineOfSight")
 body_box = NodePath("../CollisionShape2D")
 
+[node name="SightReveal" type="Node" parent="." node_paths=PackedStringArray("look_box", "senses")]
+script = ExtResource("17_sight_reveal")
+look_box = NodePath("../CollisionShape2D")
+senses = NodePath("../Senses")
+
 [node name="LedgeCheck" type="RayCast2D" parent="."]
 unique_name_in_owner = true
 position = Vector2(62, -1)
@@ -262,6 +268,7 @@ shape = SubResource("RectangleShape2D_back")
 
 [connection signal="state_changed" from="." to="Placeholder" method="_on_demon_state_changed"]
 [connection signal="warning_started" from="." to="Placeholder" method="_on_demon_warning_started"]
+[connection signal="warning_started" from="." to="SightReveal" method="reveal_now" unbinds=1]
 [connection signal="barked" from="." to="Placeholder" method="_on_demon_barked"]
 [connection signal="took_off" from="." to="Placeholder" method="_on_demon_took_off"]
 [connection signal="landed" from="." to="Placeholder" method="_on_demon_landed"]

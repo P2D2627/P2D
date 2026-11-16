@@ -268,7 +268,7 @@ estados:
 | Repelido | Depois de atirado pelo crucifixo, fica 0,3 s parado onde aterrou e volta a perseguir. |
 | Atordoado | Depois de atirado pela personagem ao soltar-se, fica 1,2 s no chão, achatado e mais escuro, e depois recua ou volta a perseguir. |
 | Fora de alcance | Com a personagem num chão ou numa parede acima ou abaixo do que os seus ataques chegam, não a segue por baixo nem por cima: para virado para ela e ladra, e depois anda para trás e para a frente num troço de 160 px à volta do sítio onde parou e, em cada ponta, volta a parar e a ladrar; contra uma parede ou na borda do seu chão, do lado dela, salta no sítio. Se ela sair do troço por cima dele, corre por baixo à velocidade da perseguição até ficar debaixo dela e anda aí. Se ela descer ao seu alcance, volta a persegui-la. Enquanto a vir, nunca desiste; se ela sair da sua vista, ladra mais 3 s para onde ela estava e depois vai procurá-la. |
-| Procurar | Quando uma parede a esconde durante 0,5 s, vai a 300 px/s até onde a viu pela última vez, ou até onde o seu chão deixa, e fareja ali durante 2,5 s, virando-se para o outro lado a meio. Se a vir, fica alerta e volta a persegui-la; se não, desiste. Fora do ecrã, desiste logo. Durante a procura mostra um "?" e, ao começar, toca dois bips a descer. |
+| Procurar | Quando uma parede a esconde durante 0,5 s, vai a 300 px/s até onde a viu pela última vez, ou até onde o seu chão deixa, e fareja ali durante 2,5 s, virando-se para o outro lado a meio. Se a vir, fica alerta e volta a persegui-la; se não, desiste. Fora do ecrã, desiste logo. Ao começar a procura, toca dois bips a descer; o "?" sobre a cabeça está desligado desde a linha de vista (Shows Search, no nó `Mark`). |
 | Voltar | Depois de desistir, volta ao posto a passo, a 200 px/s, e retoma a ronda. Se a vir à frente pelo caminho, fica alerta e volta a persegui-la. |
 
 O demónio vê a personagem a menos de 1100 px, mais de meio ecrã, se não houver uma parede entre os
@@ -491,6 +491,32 @@ do cão grande deixar de ser mais escura, parado, a avisar ou atordoado. O maior
 vezes maior (corpo de 896 × 448 px, caixa de ataque, arte e verificações aos pés) com um anel de
 proximidade de 736 px de alcance à volta do meio do corpo: chegar perto dele abre os portões da sua
 lista Opens. Por agora não faz mais nada de diferente de um cão normal.
+
+### Linha de vista
+
+Os cães (o demónio normal, o grande e o maior) e os picos letais só se veem quando a personagem os
+vê. A Asmodeu e a Velvet veem-se sempre. A partir dos olhos da personagem, a 84 px dos pés, o jogo
+verifica se algum corpo na camada world (o chão, as paredes e o que mais lá estiver) se interpõe
+entre ela e o topo de cada um destes elementos. O topo, porque o que está à frente tapa primeiro a
+parte de baixo, visto de cima ou de baixo; nos picos, os pontos ficam à altura dos dentes desenhados.
+As plataformas de sentido único não tapam a vista, tal como na visão dos cães. A personagem não vê
+para lá do ecrã, com 192 px de margem. As plataformas, as paredes e o fundo veem-se sempre.
+
+| Elemento | Aparece | Desaparece |
+|---|---|---|
+| Cão | quando a personagem o vê, ou quando ele vê a personagem | 0,3 s depois de deixar de ser visto, ao longo de 0,4 s |
+| Picos letais | da primeira vez que a personagem os vê | só quando o nível recomeça |
+
+Um cão que vê a personagem está sempre visível, e fica desenhado por inteiro no instante em que
+começa o aviso de um ataque, pelo que nenhum ataca sem ser visto. Aparecer demora 0,15 s, e um
+elemento na borda da vista mantém-se desenhado durante 0,3 s, para que nada pisque mais de três
+vezes por segundo (critério 2.3.1 da WCAG 2.2); o Inspector não deixa baixar este tempo de 0,3 s. Os
+sons dos cães continuam a ouvir-se fora da vista. Quando a personagem morre, o nível recomeça e os
+picos voltam a ficar escondidos até serem vistos, de acordo com a regra de que a morte repõe a fase
+tal como estava na última gravação. A opção de acessibilidade Show hidden dangers, desligada por
+omissão, mostra tudo. Os valores estão no nó `SightReveal` de `demon.tscn` e de `lethal_spikes.tscn`
+(Fade In Time, Fade Out Time, Linger Time e Spot Rise) e no nó `Eyes` da personagem (Screen
+Margin), e afinam-se no Inspector, também durante o jogo, no separador Remote.
 
 ## Medidas para o desenho de níveis
 
@@ -1189,6 +1215,8 @@ godot --headless --fixed-fps 60 --path Projeto --script res://tests/test_camera_
 godot --headless --fixed-fps 60 --path Projeto --script res://tests/test_controller_rumble.gd
 godot --headless --fixed-fps 60 --path Projeto --script res://tests/test_rumble_moments.gd
 godot --headless --fixed-fps 60 --path Projeto --script res://tests/test_crucifix_warning.gd
+godot --headless --fixed-fps 60 --path Projeto --script res://tests/test_reveal_rule.gd
+godot --headless --fixed-fps 60 --path Projeto --script res://tests/test_sight_reveal.gd
 godot --headless --fixed-fps 60 --path Projeto --script res://tests/test_main_flow.gd
 godot --headless --fixed-fps 60 --path Projeto --script res://tests/test_pause.gd
 godot --headless --fixed-fps 60 --path Projeto --script res://tests/test_phase_exit.gd
@@ -1327,6 +1355,16 @@ parado. Cada medida faz 100 000 chamadas seguidas. Os números estão em "Câmar
 
 ```
 godot --headless --fixed-fps 60 --path Projeto --script res://tests/measures/measure_controller_rumble.gd
+```
+
+O `measure_sight_reveal.gd` também não verifica resultados: mede quanto acrescentam os componentes da
+linha de vista no nível 1, com a personagem no início, e sem câmara, com elementos escondidos atrás
+de uma parede, o pior caso, e com cães à vista, comparando a mesma sala com os componentes ligados e
+desligados. Os números estão em "Linha de vista:
+um componente por objeto".
+
+```
+godot --headless --fixed-fps 60 --path Projeto --script res://tests/measures/measure_sight_reveal.gd
 ```
 
 O `measure_joypads.gd` precisa de um comando ligado e é o único que corre sem `--headless`, porque
@@ -2029,7 +2067,9 @@ não é esta cena com a perseguição desligada.
   áudio. Com Out Of Reach Pace Width a 0, o demónio fica parado como antes.
 - **Alerta e procura à vista e ao ouvido (ADR 0040).** O alerta durava 0,3 s e não se via nem se
   ouvia, pelo que a personagem não sabia que tinha sido descoberta. Agora, o nó `Mark` mostra um "!"
-  no alerta e um "?" na procura, brancos e com contorno escuro, para não se confundirem com as cores
+  no alerta e, com Shows Search ligado, um "?" na procura. Desde a linha de vista, Shows Search está
+  desligado por decisão do autor (ADR 0064): a procura fica só com os bips, e quem joga sem som deixa
+  de ter um sinal dela no ecrã. As marcas são brancas e com contorno escuro, para não se confundirem com as cores
   do aviso de ataque; distinguem-se pela forma e não pela cor. Cada marca surge maior e encolhe uma
   única vez, sem piscar. O "!" fica Alert Linger Time (0,5 s) já na perseguição, porque 0,3 s mal
   chega para ler. Qualquer outro estado apaga a marca no mesmo passo, e uma pausa suspende a
@@ -2685,6 +2725,40 @@ outra por acaso:
 | 3 | camada Front do fundo | Z Index 10 |
 | 4 | interface e overlay de depuração | `CanvasLayer`, por cima de tudo |
 
+#### Linha de vista: um componente por objeto
+
+Cada cão e cada faixa de picos tem um nó `SightReveal` (`scenes/others/sight/`). De três em três
+passos de física, com os componentes repartidos pelos três passos, o nó lança raios dos olhos da
+personagem (o nó `Eyes`, script `SightEyes`) até uma fila de pontos no topo da caixa do elemento,
+espaçados no máximo 96 px, contra a camada world. Basta um raio livre para o elemento contar como
+visto. Antes dos raios, o componente vê se a caixa está no ecrã, com a margem: os olhos calculam o
+retângulo do ecrã uma vez por passo, e o que está fora não lança raios. Nos cães, o componente
+pergunta também aos sentidos do cão (`DemonSenses.can_see`), e o sinal `warning_started` do cão
+desenha-o por inteiro de imediato (`reveal_now`): assim, um cão que vê a personagem ou começa um
+ataque está sempre visível. As regras (a memória dos picos, o tempo antes de esconder, as transições
+e a opção) estão numa classe pura, `RevealRule`, verificada pelo `test_reveal_rule.gd`; o
+`test_sight_reveal.gd` verifica o componente em cena. Os olhos registam-se numa variável estática ao
+entrar na árvore, para que nenhum elemento procure a personagem em cada verificação. Sem olhos na
+árvore, como numa cena aberta com F6, tudo se desenha, mas nada conta como visto.
+
+A alternativa considerada foi uma máscara recortada pelo polígono de visibilidade da personagem,
+calculado em cada frame com o varrimento angular descrito pela
+[Red Blob Games](https://www.redblobgames.com/articles/visibility/). Dava um recorte exato ao píxel,
+mas obrigava a extrair os segmentos de toda a geometria do nível e a reorganizar as cenas dos níveis
+para pôr os elementos escondidos sob a máscara. Ficou de lado por esse custo e esse risco. Pode
+entrar mais tarde como acabamento visual, mantendo a regra de jogo deste componente. Uma luz 2D
+invisível com sombras faria o mesmo na placa gráfica, mas misturava-se com o sistema de luz previsto.
+
+Custo (`measure_sight_reveal.gd`, duas execuções, 2026-11-16). O nível 1 tem 171 componentes (99
+cães e 72 faixas de picos). Com a personagem no início do nível, antes do corte fora do ecrã, os
+componentes acrescentavam em média cerca de 2,0 ms por frame aos scripts de física e 0,4 ms aos de
+desenho, acima dos 2 ms que um sistema pode gastar. Com o corte, e escrevendo a opacidade só quando
+muda, acrescentam 0,06 a 0,11 ms e cerca de 0,21 ms. Sem câmara, que é o pior caso, todos olham: com
+40 elementos escondidos atrás de uma parede (20 cães e 20 faixas de picos de quatro tiles), cerca de
+0,12 ms e 0,05 ms; com 200, cerca de 0,9 ms e 0,22 ms; com 40 cães à vista, 0,06 ms e 0,05 ms. Os
+picos já vistos não custam nada, porque deixam de verificar. O pior frame variou muito entre
+execuções, pelo que só as médias são citadas.
+
 #### Menus, pausa e opções
 
 A cena principal fica carregada durante todo o jogo e contém o menu principal, o menu de pausa e um
@@ -2718,14 +2792,14 @@ saltar nem interagir; com o jogo a retomar no próprio frame, a personagem salta
 
 As opções (volume dos buses Master, Music, SFX, Ambience e UI, ecrã inteiro, V-Sync, limite de FPS,
 força do tremor do ecrã, força da vibração do comando, vibração contínua, manter o salto para se
-soltar do agarrão e controlos)
+soltar do agarrão, mostrar o que a personagem não vê e controlos)
 estão no autoload `Settings`, porque têm de estar aplicadas antes de qualquer
 cena. Gravam-se em `user://settings.cfg` (no Windows, `%APPDATA%\Godot\app_userdata\P2D\`), um
 ficheiro de texto legível, com número de versão. Um ficheiro em falta ou ilegível, ou com valores de
 tipo errado ou que não são números, dá os valores predefinidos; um volume, ou uma força do tremor
 ou da vibração, fora do intervalo fica no limite mais próximo, e um limite de FPS que não está na lista dá o
 predefinido. Uma opção nova entra como chave nova: um ficheiro antigo, que não a tem, dá o valor
-predefinido e mantém as outras. Por isso, as quatro opções de acessibilidade entraram sem mudar o
+predefinido e mantém as outras. Por isso, as cinco opções de acessibilidade entraram sem mudar o
 número de versão, que só terá de subir quando uma chave mudar de sentido, de tipo ou de secção. O
 limite de FPS só
 limita o desenho; a física mantém-se nos 60 passos por segundo. Os menus nunca alteram o áudio, a

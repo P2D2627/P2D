@@ -4,8 +4,8 @@
 # nothing. The screen
 # shows what Settings holds. Each control changes Settings: the arrows move a volume, Enter turns
 # full screen and V-Sync on and off, and the frame rate list picks a cap. Hold To Escape is the
-# accessibility grid's last row, the down arrow and the D-pad reach it and go on, and Enter, the
-# controller's A and the mouse each switch it. Reset
+# accessibility grid's row before the last and Show Hidden its last; the down arrow and the D-pad
+# reach each and go on, and Enter, the controller's A and the mouse each switch them. Reset
 # brings back the
 # defaults, on the screen and in Settings. Back, Esc and B close the screen onto the Options button,
 # and that Esc goes no further. In the pause, the same screen opens; Esc and B go back to the pause,
@@ -28,6 +28,8 @@ func _initialize() -> void:
 	results.append(await _each_control_changes_settings())
 	results.append(await _hold_to_escape_switches_with_keys_controller_and_mouse())
 	results.append(await _the_down_arrow_and_the_d_pad_reach_hold_to_escape_and_go_on())
+	results.append(await _show_hidden_switches_with_keys_controller_and_mouse())
+	results.append(await _the_down_arrow_and_the_d_pad_reach_show_hidden_and_go_on())
 	results.append(await _reset_brings_back_the_defaults())
 	results.append(await _back_esc_and_b_close_the_screen_onto_options())
 	results.append(await _in_the_pause_esc_and_b_go_back_to_the_pause())
@@ -126,8 +128,8 @@ func _each_control_changes_settings() -> bool:
 			% [volume_changed, fullscreen_changed, vsync_changed, cap_changed])
 
 
-## Hold To Escape's switch is the accessibility grid's last row, after its title, and shows the
-## option off, as Settings holds it. With the focus on it, Enter turns the option on, the
+## Hold To Escape's switch is in the accessibility grid's row before the last, after its title, and
+## shows the option off, as Settings holds it. With the focus on it, Enter turns the option on, the
 ## controller's A off again and a click of the mouse on again; each time the switch shows what
 ## Settings holds. Reset, with the option on, turns both off.
 func _hold_to_escape_switches_with_keys_controller_and_mouse() -> bool:
@@ -137,10 +139,11 @@ func _hold_to_escape_switches_with_keys_controller_and_mouse() -> bool:
 	var switch: CheckButton = _accessibility_switch_titled(options, OptionsMenu.HOLD_TO_ESCAPE_TITLE)
 	# Noted now: once the main scene is freed, the switch compares equal to null.
 	var found: bool = switch != null
-	var last_row: bool = false
+	var row_before_last: bool = false
 	var steps: Array = []
 	if found:
-		last_row = switch.get_index() == switch.get_parent().get_child_count() - 2
+		# Three cells a row: the last row's switch is second from the end, this one three before.
+		row_before_last = switch.get_index() == switch.get_parent().get_child_count() - 5
 		steps.append(_hold_to_escape_shown_and_held(switch))
 		switch.grab_focus()
 		await tap(KEY_ENTER)
@@ -153,14 +156,14 @@ func _hold_to_escape_switches_with_keys_controller_and_mouse() -> bool:
 		steps.append(_hold_to_escape_shown_and_held(switch))
 	await remove_main(main)
 	var expected: Array = [[false, false], [true, true], [false, false], [true, true], [false, false]]
-	return report(found and last_row and steps == expected,
-			("Hold To Escape: a switch titled %s %s, in the last row %s; shown and in Settings at the "
-			+ "start, after Enter, A, a click and Reset: %s (%s)") % [OptionsMenu.HOLD_TO_ESCAPE_TITLE,
-			found, last_row, steps, expected])
+	return report(found and row_before_last and steps == expected,
+			("Hold To Escape: a switch titled %s %s, in the row before the last %s; shown and in "
+			+ "Settings at the start, after Enter, A, a click and Reset: %s (%s)")
+			% [OptionsMenu.HOLD_TO_ESCAPE_TITLE, found, row_before_last, steps, expected])
 
 
 ## Without the mouse: from Constant Vibration's switch, the down arrow selects Hold To Escape's, the
-## row under it, and the controller's D-pad down goes on to Controls.
+## row under it, and the controller's D-pad down goes on to Show Hidden's, the row under that.
 func _the_down_arrow_and_the_d_pad_reach_hold_to_escape_and_go_on() -> bool:
 	var main: Node = await _new_main_with_defaults()
 	await _open_options_in_the_main_menu(main)
@@ -168,7 +171,8 @@ func _the_down_arrow_and_the_d_pad_reach_hold_to_escape_and_go_on() -> bool:
 	var constant: CheckButton = _accessibility_switch_titled(options,
 			OptionsMenu.CONSTANT_VIBRATION_TITLE)
 	var switch: CheckButton = _accessibility_switch_titled(options, OptionsMenu.HOLD_TO_ESCAPE_TITLE)
-	var found: bool = constant != null and switch != null
+	var next: CheckButton = _accessibility_switch_titled(options, OptionsMenu.SHOW_HIDDEN_TITLE)
+	var found: bool = constant != null and switch != null and next != null
 	var reached: bool = false
 	var went_on: bool = false
 	if found:
@@ -176,11 +180,68 @@ func _the_down_arrow_and_the_d_pad_reach_hold_to_escape_and_go_on() -> bool:
 		await tap(KEY_DOWN)
 		reached = has_focus(switch)
 		await tap_joypad(JOY_BUTTON_DPAD_DOWN)
+		went_on = has_focus(next)
+	await remove_main(main)
+	return report(found and reached and went_on,
+			("Without the mouse: the three switches found %s; the down arrow from Constant vibration "
+			+ "selects Hold to escape %s; the D-pad down from it selects Show hidden dangers %s")
+			% [found, reached, went_on])
+
+
+## Show Hidden's switch is the accessibility grid's last row, after its title, and shows the option
+## off, as Settings holds it. With the focus on it, Enter turns the option on, the controller's A
+## off again and a click of the mouse on again; each time the switch shows what Settings holds.
+## Reset, with the option on, turns both off.
+func _show_hidden_switches_with_keys_controller_and_mouse() -> bool:
+	var main: Node = await _new_main_with_defaults()
+	await _open_options_in_the_main_menu(main)
+	var options: Control = _options_in_the_main_menu(main)
+	var switch: CheckButton = _accessibility_switch_titled(options, OptionsMenu.SHOW_HIDDEN_TITLE)
+	# Noted now: once the main scene is freed, the switch compares equal to null.
+	var found: bool = switch != null
+	var last_row: bool = false
+	var steps: Array = []
+	if found:
+		last_row = switch.get_index() == switch.get_parent().get_child_count() - 2
+		steps.append(_show_hidden_shown_and_held(switch))
+		switch.grab_focus()
+		await tap(KEY_ENTER)
+		steps.append(_show_hidden_shown_and_held(switch))
+		await tap_joypad(JOY_BUTTON_A)
+		steps.append(_show_hidden_shown_and_held(switch))
+		await _click_on(switch)
+		steps.append(_show_hidden_shown_and_held(switch))
+		await press_on(options, ^"%ResetButton", KEY_ENTER)
+		steps.append(_show_hidden_shown_and_held(switch))
+	await remove_main(main)
+	var expected: Array = [[false, false], [true, true], [false, false], [true, true], [false, false]]
+	return report(found and last_row and steps == expected,
+			("Show Hidden: a switch titled %s %s, in the last row %s; shown and in Settings at the "
+			+ "start, after Enter, A, a click and Reset: %s (%s)") % [OptionsMenu.SHOW_HIDDEN_TITLE,
+			found, last_row, steps, expected])
+
+
+## Without the mouse: from Hold To Escape's switch, the down arrow selects Show Hidden's, the row
+## under it, and the controller's D-pad down goes on to Controls.
+func _the_down_arrow_and_the_d_pad_reach_show_hidden_and_go_on() -> bool:
+	var main: Node = await _new_main_with_defaults()
+	await _open_options_in_the_main_menu(main)
+	var options: Control = _options_in_the_main_menu(main)
+	var hold: CheckButton = _accessibility_switch_titled(options, OptionsMenu.HOLD_TO_ESCAPE_TITLE)
+	var switch: CheckButton = _accessibility_switch_titled(options, OptionsMenu.SHOW_HIDDEN_TITLE)
+	var found: bool = hold != null and switch != null
+	var reached: bool = false
+	var went_on: bool = false
+	if found:
+		hold.grab_focus()
+		await tap(KEY_DOWN)
+		reached = has_focus(switch)
+		await tap_joypad(JOY_BUTTON_DPAD_DOWN)
 		went_on = has_focus(options.get_node_or_null(^"%ControlsButton"))
 	await remove_main(main)
 	return report(found and reached and went_on,
-			("Without the mouse: both switches found %s; the down arrow from Constant vibration "
-			+ "selects Hold to escape %s; the D-pad down from it selects Controls %s")
+			("Without the mouse: both switches found %s; the down arrow from Hold to escape selects "
+			+ "Show hidden dangers %s; the D-pad down from it selects Controls %s")
 			% [found, reached, went_on])
 
 
@@ -373,6 +434,11 @@ func _accessibility_switch_titled(options: Control, title: String) -> CheckButto
 ## expected steps are.
 func _hold_to_escape_shown_and_held(switch: CheckButton) -> Array:
 	return [switch.button_pressed, settings.is_hold_to_escape_on()]
+
+
+## Whether the switch shows Show Hidden on, and whether Settings holds it on, as above.
+func _show_hidden_shown_and_held(switch: CheckButton) -> Array:
+	return [switch.button_pressed, settings.is_show_hidden_on()]
 
 
 ## A click of the left mouse button in the middle of control, handed to the screen where the control
