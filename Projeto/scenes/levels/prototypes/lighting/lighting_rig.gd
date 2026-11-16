@@ -14,14 +14,27 @@ extends Node2D
 ## All: the level's fires on the floors past the start and in the background, with halos, sparks and
 ## embers (off); dust in the air that only shows where it is lit, blown by the storm's wind in gusts;
 ## the man's and the dogs' dust where they touch the floor or a wall (proto_contact_dust.gd); all the
-## particles drawn behind the rock; glow. Keys: F1 mode (current look, A, B), F2
-## glow, F3 the painted shade, F4 vision (off, SDF, polygon), F5/F6 darkness, F7 blur what he does
-## not see, F9 how soft the edge of his sight is, F10/F11 the man's light.
+## particles drawn behind the rock; glow.
+## Depth (#261): a copy of the rock, nudged out of each face (proto_depth.gd), is drawn behind the
+## man, the dogs, the spikes, the fires and the backdrop's near rocks, and the rock itself in front
+## of them. Copies of some of the backdrop's near rocks, dark and out of focus, frame the screen from
+## in front of everything (proto_foreground.gd). The background takes one colour, the darkest of the
+## level's colour ramp, in place of the cave map's coloured areas.
+## Keys: F1 mode (current look, A, B), F2 glow, F3 the painted shade, F4 vision (off, SDF, polygon),
+## F5/F6 darkness, F7 blur what he does not see, F9 how soft the edge of his sight is, F10/F11 the
+## man's light, F12 depth, Shift+F12 the far rocks in front.
 
 enum Mode { CURRENT, HYBRID, PROPAGATION }
 
 const ProtoFire := preload("res://scenes/levels/prototypes/lighting/proto_fire.gd")
 const ProtoContactDust := preload("res://scenes/levels/prototypes/lighting/proto_contact_dust.gd")
+const ProtoDepth := preload("res://scenes/levels/prototypes/lighting/proto_depth.gd")
+const ProtoForeground := preload("res://scenes/levels/prototypes/lighting/proto_foreground.gd")
+## The canvas layer of the rocks in front: above the level's, which is 0.
+const FOREGROUND_LAYER: int = 1
+## The background's one colour: the darkest of level 1's colour ramp, pink and bright red. Each level
+## would set its own, from its sin's ramp.
+const BACKGROUND_COLOR := Color8(30, 18, 24)
 const MOTE_SHADER: Shader = preload("res://scenes/levels/prototypes/lighting/proto_mote.gdshader")
 const LightPropagation := preload("res://scenes/levels/prototypes/lighting/light_propagation.gd")
 const COMPOSITE_SHADER: Shader = preload("res://scenes/levels/prototypes/lighting/light_composite.gdshader")
@@ -163,6 +176,8 @@ static var unseen_blur_on: bool = false
 static var softness_step: int = 1
 static var ambient: float = 0.3
 static var man_radius: float = 900.0
+static var depth_on: bool = true
+static var foreground_on: bool = true
 
 var hud_label: Label
 
@@ -170,6 +185,10 @@ var _level: Node2D
 var _tiles: TileMapLayer
 var _player: Node2D
 var _shade: CanvasItem
+## The stone rim's parent, drawn in front of the man with the tiles while depth is on.
+var _art: CanvasItem
+var _depth: Node2D
+var _foreground: Node2D
 var _fires: Array[Node2D] = []
 var _parallax_fires: Array[Sprite2D] = []
 var _unshaded := CanvasItemMaterial.new()
@@ -256,6 +275,11 @@ func _unhandled_key_input(event: InputEvent) -> void:
 			man_radius = maxf(man_radius - 50.0, 100.0)
 		KEY_F11:
 			man_radius += 50.0
+		KEY_F12:
+			if key.shift_pressed:
+				foreground_on = not foreground_on
+			else:
+				depth_on = not depth_on
 		_:
 			return
 	_apply()
@@ -315,6 +339,9 @@ func _setup() -> void:
 	_add_propagation()
 	_add_dust()
 	_add_contact_dust()
+	_add_depth()
+	_add_foreground()
+	_set_background()
 	_add_glow()
 	_add_vision()
 	# For recorded runs: "-- --lighting-mode=0" (current look), 1 (A) or 2 (B); "--lighting-vision=0"
@@ -343,6 +370,10 @@ func _setup() -> void:
 			vision = clampi(argument.get_slice("=", 1).to_int(), 0, VISION_NAMES.size() - 1)
 		elif argument == "--lighting-blur-unseen":
 			unseen_blur_on = true
+		elif argument.begins_with("--lighting-depth="):
+			depth_on = argument.get_slice("=", 1).to_int() != 0
+		elif argument.begins_with("--lighting-foreground="):
+			foreground_on = argument.get_slice("=", 1).to_int() != 0
 	_ready_done = true
 	_apply()
 
@@ -676,6 +707,58 @@ func _add_contact_dust() -> void:
 	contact.setup(_player as Player, dogs, _mote)
 
 
+## The rock's far copy goes just before the gates, so they and everything after them stand in front
+## of it; the air's dust goes before it, and the backdrop's near rocks right after it, between the
+## two copies like the man. The rock and its rim come to the front in _apply.
+func _add_depth() -> void:
+	var depth := ProtoDepth.new()
+	depth.name = "ProtoDepth"
+	_level.add_child(depth)
+	var gates: Node = _level.get_node_or_null(^"Gates")
+	_level.move_child(depth, gates.get_index() if gates != null else _tiles.get_index())
+	_level.move_child(_dust, depth.get_index())
+	var near: Node = _level.get_node_or_null(^"Backdrop/Near")
+	if near != null:
+		near.reparent(_level)
+		_level.move_child(near, depth.get_index() + 1)
+	_art = _level.get_node_or_null(^"Art") as CanvasItem
+	depth.setup(_tiles, _level.get_node_or_null(^"Art/StoneRim") as Node2D, MASK_ROCK)
+	_depth = depth
+
+
+## Copies of some of the backdrop's near rocks in front of everything, framing the screen
+## (proto_foreground.gd). The near ones stand on the floors and hang from the ceilings the man
+## sees; the far ones stand far below them, behind the rock. Run after _add_depth, which moves them.
+func _add_foreground() -> void:
+	# A canvas of its own, which follows the camera like the level: the cave's darkness
+	# (CanvasModulate) and the level's lights stay in the level's canvas.
+	var layer := CanvasLayer.new()
+	layer.name = "ProtoForegroundLayer"
+	layer.layer = FOREGROUND_LAYER
+	layer.follow_viewport_enabled = true
+	_level.add_child(layer)
+	var foreground := ProtoForeground.new()
+	foreground.name = "ProtoForeground"
+	layer.add_child(foreground)
+	var near := _level.get_node_or_null(^"Near") as Node2D
+	if near == null:
+		near = _level.get_node_or_null(^"Backdrop/Near") as Node2D
+	if near != null:
+		foreground.setup(near)
+	_foreground = foreground
+
+
+## The background in one colour: the cave map's coloured areas are hidden and the plain backing under
+## them takes Background Color. The painted shade by the rock stays.
+func _set_background() -> void:
+	var cave_map := _level.get_node_or_null(^"Backdrop/CaveMap") as CanvasItem
+	if cave_map != null:
+		cave_map.visible = false
+	var backing := _level.get_node_or_null(^"Background") as Polygon2D
+	if backing != null:
+		backing.color = BACKGROUND_COLOR
+
+
 ## Each mote is born at the wind's speed of the moment, and the layer's gravity is how fast the wind
 ## changes, so every mote alive keeps the wind's speed through a gust (born at w0, it gains w - w0).
 func _update_wind(delta: float) -> void:
@@ -983,6 +1066,13 @@ func _apply() -> void:
 		material.set_shader_parameter("unseen_blur_px", UNSEEN_BLUR_PX if unseen_blur_on else 0.0)
 	if _shade != null:
 		_shade.visible = shade_on
+	_depth.visible = depth_on
+	var front: int = 1 if depth_on else 0
+	_tiles.z_index = front
+	if _art != null:
+		_art.z_index = front
+	_foreground.visible = foreground_on
+	_foreground.set_process(foreground_on)
 
 
 func _update_hud() -> void:
@@ -990,8 +1080,9 @@ func _update_hud() -> void:
 		return
 	hud_label.text = ("LIGHTING (#257)    F1 mode: %s    F2 glow: %s    F3 painted shade: %s    F4 vision: %s\n"
 			% [MODE_NAMES[mode], _on(glow_on), _on(shade_on), VISION_NAMES[vision]]
-			+ "F7 blur unseen: %s    F9 soft edge: x%.1f    F5/F6 darkness: %.2f    F10/F11 man's light: %d px\n"
+			+ "F7 blur unseen: %s    F9 soft edge: x%.1f    F5/F6 darkness: %.2f    F10/F11 man's light: %d px"
 			% [_on(unseen_blur_on), SOFTNESS_STEPS[softness_step], ambient, man_radius]
+			+ "    F12 depth: %s    Shift+F12 rocks in front: %s\n" % [_on(depth_on), _on(foreground_on)]
 			+ "vision CPU: %.2f ms    B aura: %.2f ms    dogs, spikes, fires: line of sight (#253)"
 			% [_last_vision_usec / 1000.0, _last_aura_usec / 1000.0])
 
