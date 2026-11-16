@@ -6,7 +6,9 @@
 # off, what was never seen fades out again, and one that remembers has nothing to keep. Times of 0
 # make each change at once. A negative, infinite or nan time step changes nothing, and the opacity
 # never leaves 0 to 1, whatever the step. reveal_now() draws it in full at once and counts it as
-# just seen: out of sight, it lingers from then before fading.
+# just seen: out of sight, it lingers from then before fading. Seen in part, it fades in only to
+# that share and lingers there before fading out; seen in full and then in part, it fades down to
+# the share at Fade Out Time's pace, and a share over 1 counts as 1.
 # Run from the repository root; the exit code is 0 on pass and 1 on fail:
 # godot --headless --fixed-fps 60 --path Projeto --script res://tests/test_reveal_rule.gd
 extends "res://tests/support/player_test.gd"
@@ -34,7 +36,38 @@ func _initialize() -> void:
 	results.append(_bad_time_steps_change_nothing())
 	results.append(_the_opacity_stays_between_0_and_1())
 	results.append(_reveal_now_draws_it_at_once_as_just_seen())
+	results.append(_seen_in_part_it_fades_in_to_that_share_and_lingers_there())
+	results.append(_seen_in_full_then_in_part_it_fades_down_to_the_share())
 	finish(results)
+
+
+func _seen_in_part_it_fades_in_to_that_share_and_lingers_there() -> bool:
+	var rule: RevealRule = _rule()
+	var halfway: float = rule.step(true, false, FADE_IN / 4.0, 0.5)
+	var at_share: float = rule.step(true, false, FADE_IN / 4.0, 0.5)
+	var held: float = rule.step(true, false, FADE_IN, 0.5)
+	var lingering: float = rule.step(false, false, STEP)
+	for i: int in roundi((LINGER + FADE_OUT) / STEP) + 2:
+		rule.step(false, false, STEP)
+	var gone: float = rule.get_opacity()
+	return report(absf(halfway - 0.25) < TOLERANCE and absf(at_share - 0.5) < TOLERANCE
+			and absf(held - 0.5) < TOLERANCE and absf(lingering - 0.5) < TOLERANCE
+			and is_zero_approx(gone),
+			("Seen in half: %s, %s, then %s still seen, %s just out of sight, %s long after "
+			+ "(expected 0.25, 0.5, 0.5, 0.5, 0)") % [halfway, at_share, held, lingering, gone])
+
+
+func _seen_in_full_then_in_part_it_fades_down_to_the_share() -> bool:
+	var rule: RevealRule = _seen_rule()
+	var falling: float = rule.step(true, false, STEP, 0.5)
+	for i: int in roundi(FADE_OUT / STEP):
+		rule.step(true, false, STEP, 0.5)
+	var settled: float = rule.get_opacity()
+	var over_one: float = rule.step(true, false, FADE_IN, 1.5)
+	return report(absf(falling - (1.0 - STEP / FADE_OUT)) < TOLERANCE
+			and absf(settled - 0.5) < TOLERANCE and absf(over_one - 1.0) < TOLERANCE,
+			("Seen in full, then in half: %s after one step, %s once settled; then a share of 1.5: %s "
+			+ "(expected %s, 0.5, 1)") % [falling, settled, over_one, 1.0 - STEP / FADE_OUT])
 
 
 func _reveal_now_draws_it_at_once_as_just_seen() -> bool:

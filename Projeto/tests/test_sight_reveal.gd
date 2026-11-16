@@ -1,9 +1,10 @@
 # Checks SightReveal with the man's eyes in a scene (#253). With no eyes in the tree, all is drawn,
 # but nothing counts as seen: one that remembers, behind a wall when the man comes, fades out. A box
-# in plain sight is drawn; one behind a wall stays undrawn; a one-way platform does not hide it.
-# Seen and then put behind a wall, it stays drawn for a while and then fades out; one that remembers
-# stays drawn and stops looking. A wide box shows by any spot across its top, even with its middle
-# and its left end hidden. With senses that see the man, a box behind a wall is drawn, and with
+# in plain sight is drawn; one behind a wall stays undrawn; a one-way platform does not hide it, nor
+# does someone standing on the world's layer, as Velvet's body does. Seen and then put behind a
+# wall, it stays drawn for a while and then fades out; one that remembers stays drawn and stops
+# looking. A wide box seen only near one end is drawn in part, while narrow boxes at its other end
+# and its middle stay hidden. With senses that see the man, a box behind a wall is drawn, and with
 # senses that do not, it is not. The game's demon behind a wall is undrawn and is drawn once the wall
 # is gone; behind a slab that hides it from the man but not him from it, it is drawn, through its
 # senses; hidden, it is drawn in full on the frame it starts an attack's warning. The game's spikes
@@ -11,7 +12,12 @@
 # fade stops where it is. With the player's Show Hidden on, a box behind a wall is drawn, and turned
 # off, it fades out again; turned on in the pause, it applies as play resumes. With no Look Box, a
 # box is always drawn, and a warning says so (printed on purpose, once). With a camera, what is past
-# the screen and the eyes' margin is not seen, even in plain sight.
+# the screen and the eyes' margin is not seen, even in plain sight. Within Near Radius of his eyes,
+# a box behind a wall is drawn. A post whose top spot is hidden behind a slab, with its middle and
+# bottom spots in sight, is drawn in full, while the same post looking at its top only (Rows 1)
+# stays hidden; with only its bottom spot in sight, it is drawn in part, neither nothing nor all,
+# and one that remembers is then drawn in full. Someone standing in front of a wall does not let the
+# man see through the wall.
 # Run from the repository root; the exit code is 0 on pass and 1 on fail:
 # godot --headless --fixed-fps 60 --path Projeto --script res://tests/test_sight_reveal.gd
 extends "res://tests/support/player_test.gd"
@@ -32,6 +38,29 @@ const BOX_X: float = 400.0
 const WATCH_FRAMES: int = 60
 ## The one-way platforms' physics layer, 9, as a mask.
 const ONE_WAY_LAYER: int = 1 << 8
+## Within this many px of his eyes, a box is seen through anything.
+const NEAR_RADIUS: float = 240.0
+## Two of three rows of spots seen draw a box in full.
+const FULL_SHARE: float = 0.5
+## A wall between the man and a box close to him, at x = 180: its nearest corner is about 154 px
+## from his eyes.
+const NEAR_WALL_LEFT: float = 100.0
+const NEAR_WALL_RIGHT: float = 140.0
+const NEAR_BOX_X: float = 180.0
+## A post too narrow for more than one spot per row: at x = 400, its three spots sit 36, 21 and 6 px
+## up, and two of them seen draw it in full.
+const POST_SIZE: Vector2 = Vector2(12.0, 40.0)
+## A slab just short of the post. It cuts the ray from his eyes, 84 px up, to the top spot with about
+## 6 px to spare each way, and the rays to the middle and bottom spots pass under it. The deeper one
+## also cuts the middle spot's ray, with about 5 px to spare over the bottom spot's.
+const POST_SLAB_LEFT: float = 380.0
+const POST_SLAB_RIGHT: float = 390.0
+const POST_SLAB_TOP: float = -60.0
+const POST_SLAB_BOTTOM: float = -31.0
+const DEEP_POST_SLAB_BOTTOM: float = -15.0
+## A wall just past someone standing where the full wall would be.
+const PAST_SOMEONE_WALL_LEFT: float = 280.0
+const PAST_SOMEONE_WALL_RIGHT: float = 320.0
 ## A wall between the man and the boxes, from the floor up past anything his eyes could see over.
 const WALL_LEFT: float = 200.0
 const WALL_RIGHT: float = 240.0
@@ -67,9 +96,11 @@ func _initialize() -> void:
 	results.append(await _in_plain_sight_it_is_drawn())
 	results.append(await _behind_a_wall_it_stays_undrawn())
 	results.append(await _a_one_way_platform_does_not_hide_it())
+	results.append(await _someone_on_the_world_layer_does_not_hide_it())
+	results.append(await _someone_in_front_of_a_wall_does_not_let_it_through())
 	results.append(await _out_of_sight_it_lingers_then_fades_out())
 	results.append(await _one_that_remembers_stays_drawn_and_stops_looking())
-	results.append(await _a_wide_box_shows_when_any_spot_is_seen())
+	results.append(await _a_wide_box_seen_at_one_end_is_drawn_in_part())
 	results.append(await _a_demon_that_sees_the_man_is_drawn())
 	results.append(await _the_game_s_demon_hides_behind_a_wall())
 	results.append(await _the_game_s_demon_that_sees_the_man_is_drawn())
@@ -80,6 +111,10 @@ func _initialize() -> void:
 	results.append(await _show_hidden_turned_on_in_the_pause_applies_as_play_resumes())
 	results.append(await _with_no_look_box_it_is_always_drawn())
 	results.append(await _off_the_screen_nothing_is_seen())
+	results.append(await _near_his_eyes_it_is_drawn_behind_a_wall())
+	results.append(await _with_its_top_hidden_its_body_shows_it())
+	results.append(await _mostly_hidden_it_is_drawn_in_part())
+	results.append(await _one_that_remembers_seen_in_part_is_drawn_in_full())
 	finish(results)
 
 
@@ -126,6 +161,30 @@ func _a_one_way_platform_does_not_hide_it() -> bool:
 	return report(drawn, "Behind a one-way platform: drawn %s (expected true)" % drawn)
 
 
+## Velvet's body is a CharacterBody2D left on the world's layer. Someone as tall as the wall, where
+## the wall would be, does not hide the box: only the world blocks the man's sight.
+func _someone_on_the_world_layer_does_not_hide_it() -> bool:
+	var someone: CharacterBody2D = _make_someone_standing()
+	var reveal: SightReveal = _make_box(Vector2(BOX_X, 0.0))
+	var drawn: bool = await wait_until(func() -> bool: return reveal.get_opacity() >= 1.0,
+			WATCH_FRAMES)
+	await _remove([reveal.get_parent(), someone])
+	return report(drawn, ("Behind someone standing on the world's layer: drawn %s (expected true)"
+			% drawn))
+
+
+## The ray goes past someone's body, but not past the wall behind it.
+func _someone_in_front_of_a_wall_does_not_let_it_through() -> bool:
+	var someone: CharacterBody2D = _make_someone_standing()
+	var wall: StaticBody2D = make_wall(PAST_SOMEONE_WALL_LEFT, PAST_SOMEONE_WALL_RIGHT, WALL_TOP)
+	var reveal: SightReveal = _make_box(Vector2(BOX_X, 0.0))
+	var highest: float = await _highest_opacity(reveal, WATCH_FRAMES)
+	await _remove([reveal.get_parent(), someone, wall])
+	return report(is_zero_approx(highest),
+			("Behind someone standing in front of a wall, for %d frames: highest opacity %s "
+			+ "(expected 0)") % [WATCH_FRAMES, highest])
+
+
 func _out_of_sight_it_lingers_then_fades_out() -> bool:
 	var reveal: SightReveal = _make_box(Vector2(BOX_X, 0.0))
 	var drawn: bool = await wait_until(func() -> bool: return reveal.get_opacity() >= 1.0,
@@ -155,22 +214,23 @@ func _one_that_remembers_stays_drawn_and_stops_looking() -> bool:
 			+ "still looking %s (expected false)") % [WATCH_FRAMES, lowest, looking])
 
 
-## Behind the low wall, a box from x = 400 to 1200 shows by the spots near its right end alone: narrow
-## boxes at its left end and at its middle stay hidden, so looking only there would miss it.
-func _a_wide_box_shows_when_any_spot_is_seen() -> bool:
+## Behind the low wall, a box from x = 400 to 1200 is seen only by the top spots near its right end,
+## a few of the many across it, so it is drawn in part: neither cut off nor drawn whole. Narrow boxes
+## at its left end and at its middle stay hidden.
+func _a_wide_box_seen_at_one_end_is_drawn_in_part() -> bool:
 	var wall: StaticBody2D = make_wall(LOW_WALL_LEFT, LOW_WALL_RIGHT, LOW_WALL_TOP)
 	var narrow: SightReveal = _make_box(Vector2(BOX_X, 0.0))
 	var middle: SightReveal = _make_box(Vector2(800.0, 0.0))
 	var wide: SightReveal = _make_box(Vector2(800.0, 0.0), false, Vector2(800.0, BOX_SIZE.y))
-	var wide_drawn: bool = await wait_until(func() -> bool: return wide.get_opacity() >= 1.0,
-			WATCH_FRAMES)
+	var wide_highest: float = await _highest_opacity(wide, WATCH_FRAMES)
 	var narrow_highest: float = await _highest_opacity(narrow, LOOK_EVERY * 2)
 	var middle_highest: float = await _highest_opacity(middle, LOOK_EVERY * 2)
 	await _remove([narrow.get_parent(), middle.get_parent(), wide.get_parent(), wall])
-	return report(wide_drawn and is_zero_approx(narrow_highest) and is_zero_approx(middle_highest),
-			("Behind a low wall: a box from x = 400 to 1200 drawn %s (expected true); boxes 64 px "
-			+ "wide at x = 400 and at its middle, x = 800, highest opacity %s and %s (expected 0)")
-			% [wide_drawn, narrow_highest, middle_highest])
+	return report(wide_highest > 0.05 and wide_highest < 0.95 and is_zero_approx(narrow_highest)
+			and is_zero_approx(middle_highest),
+			("Behind a low wall: a box from x = 400 to 1200 at highest opacity %s (expected between 0 "
+			+ "and 1); boxes 64 px wide at x = 400 and at its middle, x = 800, highest opacity %s and %s "
+			+ "(expected 0)") % [wide_highest, narrow_highest, middle_highest])
 
 
 func _a_demon_that_sees_the_man_is_drawn() -> bool:
@@ -340,6 +400,55 @@ func _off_the_screen_nothing_is_seen() -> bool:
 			% [near_drawn, screen_edge, far_highest])
 
 
+func _near_his_eyes_it_is_drawn_behind_a_wall() -> bool:
+	var wall: StaticBody2D = make_wall(NEAR_WALL_LEFT, NEAR_WALL_RIGHT, WALL_TOP)
+	var reveal: SightReveal = _make_box(Vector2(NEAR_BOX_X, 0.0))
+	var drawn: bool = await wait_until(func() -> bool: return reveal.get_opacity() >= 1.0,
+			WATCH_FRAMES)
+	await _remove([reveal.get_parent(), wall])
+	return report(drawn, "Behind a wall, within Near Radius of his eyes: drawn %s (expected true)"
+			% drawn)
+
+
+## The same post twice: one looks at all three rows and sees two spots; the other, with Rows 1,
+## looks at its top only, which the slab hides, so the slab really cuts that ray.
+func _with_its_top_hidden_its_body_shows_it() -> bool:
+	var slab: StaticBody2D = make_wall(POST_SLAB_LEFT, POST_SLAB_RIGHT, POST_SLAB_TOP,
+			POST_SLAB_BOTTOM)
+	var reveal: SightReveal = _make_box(Vector2(BOX_X, 0.0), false, POST_SIZE)
+	var top_only: SightReveal = _make_box(Vector2(BOX_X, 0.0), false, POST_SIZE)
+	top_only.rows = 1
+	var top_only_highest: float = await _highest_opacity(top_only, WATCH_FRAMES)
+	var drawn: bool = await wait_until(func() -> bool: return reveal.get_opacity() >= 1.0,
+			WATCH_FRAMES)
+	await _remove([reveal.get_parent(), top_only.get_parent(), slab])
+	return report(drawn and is_zero_approx(top_only_highest),
+			("Its top spot behind a slab, the rest in sight: drawn in full %s (expected true); looking "
+			+ "at its top only, highest opacity %s (expected 0)") % [drawn, top_only_highest])
+
+
+func _mostly_hidden_it_is_drawn_in_part() -> bool:
+	var slab: StaticBody2D = make_wall(POST_SLAB_LEFT, POST_SLAB_RIGHT, POST_SLAB_TOP,
+			DEEP_POST_SLAB_BOTTOM)
+	var reveal: SightReveal = _make_box(Vector2(BOX_X, 0.0), false, POST_SIZE)
+	var highest: float = await _highest_opacity(reveal, WATCH_FRAMES)
+	await _remove([reveal.get_parent(), slab])
+	return report(highest > 0.05 and highest < 0.95,
+			"Only its bottom spot in sight: highest opacity %s (expected between 0 and 1)" % highest)
+
+
+## Seen in part once, one that remembers is drawn in full, as spikes half behind a ledge are.
+func _one_that_remembers_seen_in_part_is_drawn_in_full() -> bool:
+	var slab: StaticBody2D = make_wall(POST_SLAB_LEFT, POST_SLAB_RIGHT, POST_SLAB_TOP,
+			DEEP_POST_SLAB_BOTTOM)
+	var reveal: SightReveal = _make_box(Vector2(BOX_X, 0.0), true, POST_SIZE)
+	var drawn: bool = await wait_until(func() -> bool: return reveal.get_opacity() >= 1.0,
+			WATCH_FRAMES)
+	await _remove([reveal.get_parent(), slab])
+	return report(drawn, ("Remembers, only its bottom spot in sight: drawn in full %s (expected "
+			+ "true)") % drawn)
+
+
 ## The game's demon on the floor at at, standing still: its own physics is off, so it neither moves
 ## nor attacks, while its senses and its reveal run.
 func _add_still_demon(at: Vector2) -> Node2D:
@@ -369,6 +478,8 @@ func _make_box(at: Vector2, remembers: bool = false, size: Vector2 = BOX_SIZE,
 	reveal.fade_out_time = FADE_OUT
 	reveal.linger_time = LINGER
 	reveal.look_every = LOOK_EVERY
+	reveal.near_radius = NEAR_RADIUS
+	reveal.full_share = FULL_SHARE
 	if seeing != null:
 		var senses: StandInSenses = StandInSenses.new()
 		senses.body_box = look_box
@@ -392,6 +503,20 @@ func _make_spikes(at: Vector2) -> Node2D:
 ## The wall between the man and the boxes, already in the scene.
 func _make_full_wall() -> StaticBody2D:
 	return make_wall(WALL_LEFT, WALL_RIGHT, WALL_TOP)
+
+
+## Someone where the wall would be and as tall, on the world's layer, the default, already in the
+## scene: a CharacterBody2D, as Velvet's body is.
+func _make_someone_standing() -> CharacterBody2D:
+	var shape: RectangleShape2D = RectangleShape2D.new()
+	shape.size = Vector2(WALL_RIGHT - WALL_LEFT, -WALL_TOP)
+	var collision: CollisionShape2D = CollisionShape2D.new()
+	collision.shape = shape
+	var someone: CharacterBody2D = CharacterBody2D.new()
+	someone.position = Vector2((WALL_LEFT + WALL_RIGHT) / 2.0, WALL_TOP / 2.0)
+	someone.add_child(collision)
+	root.add_child(someone)
+	return someone
 
 
 ## The highest opacity over frames physics frames.

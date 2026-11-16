@@ -497,10 +497,15 @@ lista Opens. Por agora não faz mais nada de diferente de um cão normal.
 Os cães (o demónio normal, o grande e o maior) e os picos letais só se veem quando a personagem os
 vê. A Asmodeu e a Velvet veem-se sempre. A partir dos olhos da personagem, a 84 px dos pés, o jogo
 verifica se algum corpo na camada world (o chão, as paredes e o que mais lá estiver) se interpõe
-entre ela e o topo de cada um destes elementos. O topo, porque o que está à frente tapa primeiro a
-parte de baixo, visto de cima ou de baixo; nos picos, os pontos ficam à altura dos dentes desenhados.
-As plataformas de sentido único não tapam a vista, tal como na visão dos cães. A personagem não vê
-para lá do ecrã, com 192 px de margem. As plataformas, as paredes e o fundo veem-se sempre.
+entre ela e três filas de pontos de cada um destes elementos, do topo à base; nos picos, a fila de
+cima fica à altura dos dentes desenhados. Se a personagem vir pelo menos metade dos pontos, o
+elemento desenha-se por inteiro; se vir menos, desenha-se em parte, na proporção dessa metade (um
+ponto visto em seis dá um terço da opacidade), para que uma aresta de rocha o esbata em vez de o
+cortar. Os picos vistos em parte desenham-se por inteiro, porque ficam na memória. O que está a
+menos de 96 px dos olhos vê-se através de tudo. As plataformas de sentido único não tapam a vista,
+tal como na visão dos cães, nem o corpo de uma personagem que esteja na camada world, como o da
+Velvet. A personagem não vê para lá do ecrã, com 192 px de margem. As plataformas, as paredes e o
+fundo veem-se sempre.
 
 | Elemento | Aparece | Desaparece |
 |---|---|---|
@@ -2729,9 +2734,13 @@ outra por acaso:
 
 Cada cão e cada faixa de picos tem um nó `SightReveal` (`scenes/others/sight/`). De três em três
 passos de física, com os componentes repartidos pelos três passos, o nó lança raios dos olhos da
-personagem (o nó `Eyes`, script `SightEyes`) até uma fila de pontos no topo da caixa do elemento,
-espaçados no máximo 96 px, contra a camada world. Basta um raio livre para o elemento contar como
-visto. Antes dos raios, o componente vê se a caixa está no ecrã, com a margem: os olhos calculam o
+personagem (o nó `Eyes`, script `SightEyes`) até três filas de pontos na caixa do elemento, do topo
+à base (Rows), com os pontos de cada fila espaçados no máximo 96 px, contra a camada world. Para de
+lançar quando a personagem vê metade dos pontos (Full Share); com menos, passa a fração vista à
+regra, que desenha o elemento em parte. Um raio que encontra o corpo de uma personagem (um
+`CharacterBody2D`) segue para lá dele, até quatro corpos por raio; o resto da camada world para-o.
+A menos de 96 px dos olhos (Near Radius), o elemento conta como visto sem lançar raios. Antes dos
+raios, o componente vê se a caixa está no ecrã, com a margem: os olhos calculam o
 retângulo do ecrã uma vez por passo, e o que está fora não lança raios. Nos cães, o componente
 pergunta também aos sentidos do cão (`DemonSenses.can_see`), e o sinal `warning_started` do cão
 desenha-o por inteiro de imediato (`reveal_now`): assim, um cão que vê a personagem ou começa um
@@ -2753,11 +2762,16 @@ Custo (`measure_sight_reveal.gd`, duas execuções, 2026-11-16). O nível 1 tem 
 cães e 72 faixas de picos). Com a personagem no início do nível, antes do corte fora do ecrã, os
 componentes acrescentavam em média cerca de 2,0 ms por frame aos scripts de física e 0,4 ms aos de
 desenho, acima dos 2 ms que um sistema pode gastar. Com o corte, e escrevendo a opacidade só quando
-muda, acrescentam 0,06 a 0,11 ms e cerca de 0,21 ms. Sem câmara, que é o pior caso, todos olham: com
-40 elementos escondidos atrás de uma parede (20 cães e 20 faixas de picos de quatro tiles), cerca de
-0,12 ms e 0,05 ms; com 200, cerca de 0,9 ms e 0,22 ms; com 40 cães à vista, 0,06 ms e 0,05 ms. Os
-picos já vistos não custam nada, porque deixam de verificar. O pior frame variou muito entre
-execuções, pelo que só as médias são citadas.
+muda, acrescentam até 0,14 ms aos scripts de física (numa das execuções, a diferença ficou dentro do
+ruído) e 0,16 a 0,25 ms aos de desenho. Sem câmara, que é o pior caso, todos olham: com 40 elementos
+escondidos atrás de uma parede (20 cães e 20 faixas de picos de quatro tiles), cerca de 0,26 ms e
+0,05 ms; com 200, cerca de 2,4 ms e 0,3 ms; com 40 cães à vista, 0,17 ms e 0,06 ms. Os 200
+escondidos passam os 2 ms porque um elemento escondido lança um raio por cada ponto das três filas;
+com a fila única da primeira versão, eram cerca de 0,9 ms. Este caso não acontece no jogo: o nível 1
+tem 171 elementos no total e, com o corte fora do ecrã, só lançam raios os que estão no ecrã. Se
+um nível se aproximar dele, baixar o Rows para 2 ou 1 reduz na mesma proporção os raios dos
+escondidos. Os picos já vistos não custam nada, porque deixam de verificar. O pior frame variou
+muito entre execuções, pelo que só as médias são citadas.
 
 #### Menus, pausa e opções
 
