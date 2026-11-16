@@ -3237,6 +3237,9 @@ iniciado por nada no jogo. A estação de cada uma acrescenta-se quando a mecân
   Na zona da fase 3 e na sala da Asmodeu, foram repintadas com IA (Claude), por scripts fora do repositório que
   ajustam um modelo às imagens das fases 1 e 2 e só alteram os píxeis por onde essas zonas passam.
   Saem ou refazem-se quando o mapa ou as áreas mudarem.
+- `fire_low_sheet.png` e `fire_upright_sheet.png`, em `Projeto/assets/sprites/fire/`: fogos animados
+  desenhados por von Hafe, do grupo, convertidos dos GIF originais em folhas de frames. Usados pelo
+  protótipo de iluminação (#257).
 - Tinos, de The Tinos Project Authors. SIL Open Font License 1.1. Letra de reserva dos menus, com as
   medidas da Times New Roman, em `Projeto/assets/fonts/` (com a licença em `Tinos-OFL.txt`).
   https://github.com/googlefonts/tinos
