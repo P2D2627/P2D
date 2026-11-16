@@ -1,9 +1,12 @@
 # PROTOTYPE measure (#257). Prints what lighting costs a frame in level 1, at the man's
 # start, with the lighting rig of the prototype: the current look, mode A with glow and no vision,
 # and A with each technique of the man's sight (SDF, polygon), sharp and with what he does not see
-# blurred; and what one update of each technique costs on the CPU.
-# It runs with a window, since a headless run draws nothing: the window is 1920 x 1080 and vsync is
-# off, so the frame time is what a frame really takes on this PC. Render times come from the
+# blurred; and what one update of each technique costs on the CPU. Then #261's shaders, each alone
+# and all together, and what feeds the glow (pixels bright enough, and how many sit in a flame).
+# "-- --lighting-near-fire=0" measures it all a little before the first fire.
+# It runs with a window, since a headless run draws nothing: it asks for 1920 x 1080 with vsync off,
+# so the frame time is what a frame really takes on this PC; the game's settings may make the window
+# full screen, and the size printed is the window's real one. Render times come from the
 # rendering server's own measure (the GPU one may read 0 if the driver does not give it). It checks
 # nothing: the exit code is 1 only if the level fails to load.
 # Run from the repository root, with a window (no --headless):
@@ -45,13 +48,17 @@ func _run() -> void:
 	var lights: int = room.find_children("*", "PointLight2D", true, false).size()
 	print("Level 1: %d point lights in the tree" % lights)
 	print("Vision: %d occluder rectangles for the SDF" % rig.get_occluder_count())
+	print("Rim light: %d drawings" % rig.get_rim_count())
+	# The rows up to the SDF scales measure as before #261: without its shaders.
+	_set_shaders(false, false, false, false)
 	rig.set_mode(LightingRig.Mode.HYBRID)
 	for vision: int in [LightingRig.VISION_SDF, LightingRig.VISION_POLYGON]:
 		LightingRig.vision = vision
 		rig.set_mode(LightingRig.Mode.HYBRID)
 		print("Vision %s, one update on the CPU: %.2f ms (average of %d)" % [LightingRig.VISION_NAMES[vision],
 				rig.measure_vision_update(UPDATE_REPEATS) / 1000.0, UPDATE_REPEATS])
-	print("Level 1 at the start, %d x %d, %d frames each, vsync off" % [WINDOW_SIZE.x, WINDOW_SIZE.y, MEASURED_FRAMES])
+	var window: Vector2i = DisplayServer.window_get_size()
+	print("Level 1 at the start, window %d x %d, %d frames each, vsync off" % [window.x, window.y, MEASURED_FRAMES])
 	print("set-up | frame ms | render CPU ms | render GPU ms")
 	LightingRig.glow_on = false
 	LightingRig.vision = LightingRig.VISION_OFF
@@ -82,7 +89,68 @@ func _run() -> void:
 		root.sdf_scale = scale
 		await _measure("A, glow, vision SDF, field at %s" % SDF_SCALE_NAMES[scale], viewport)
 	root.sdf_scale = rig_scale
+	# #261's shaders, on A with glow and no vision: none, each alone, all.
+	LightingRig.vision = LightingRig.VISION_OFF
+	var shader_rows: Array[Array] = [
+		["A, glow, no vision, none of #261's shaders", false, false, false, false],
+		["  + grade", true, false, false, false],
+		["  + fires' ramp", false, true, false, false],
+		["  + one air", false, false, true, false],
+		["  + rim light", false, false, false, true],
+		["A, glow, no vision, all of #261's shaders", true, true, true, true],
+	]
+	for row: Array in shader_rows:
+		_set_shaders(row[1], row[2], row[3], row[4])
+		rig.set_mode(LightingRig.Mode.HYBRID)
+		await _measure(String(row[0]), viewport)
+	await _measure_glow_sources(rig)
 	quit(0)
+
+
+func _set_shaders(grade: bool, fire_ramp: bool, fog: bool, rim: bool) -> void:
+	LightingRig.grade_on = grade
+	LightingRig.fire_ramp_on = fire_ramp
+	LightingRig.fog_on = fog
+	LightingRig.rim_on = rim
+
+
+## What feeds the glow, a stand-in for comparing frames with glow on and off: with glow, grade and rim
+## light off and the HUD hidden, the pixels whose brightest channel reaches the glow's threshold, and
+## the share of them inside a flame on the screen. The glow should come from the flames, not from the
+## lit rock. It counts full-size pixels, while the glow's threshold works on a half-size average of
+## the frame (its first pass downsamples as it filters), so thin bright lines (text) weigh more here
+## than in the glow.
+func _measure_glow_sources(rig: LightingRig) -> void:
+	LightingRig.glow_on = false
+	_set_shaders(false, true, true, false)
+	rig.set_mode(LightingRig.Mode.HYBRID)
+	if rig.hud_label != null:
+		rig.hud_label.visible = false
+	await _wait(10)
+	var image: Image = root.get_texture().get_image()
+	image.convert(Image.FORMAT_RGBA8)
+	var data: PackedByteArray = image.get_data()
+	var width: int = image.get_width()
+	var flames: Array[Rect2] = rig.get_flame_screen_rects()
+	var level: int = ceili(LightingRig.GLOW_THRESHOLD * 255.0)
+	var sources: int = 0
+	var inside: int = 0
+	for y: int in image.get_height():
+		for x: int in width:
+			var i: int = (y * width + x) * 4
+			if maxi(data[i], maxi(data[i + 1], data[i + 2])) < level:
+				continue
+			sources += 1
+			var pixel := Vector2(float(x) + 0.5, float(y) + 0.5)
+			for flame: Rect2 in flames:
+				if flame.has_point(pixel):
+					inside += 1
+					break
+	if rig.hud_label != null:
+		rig.hud_label.visible = true
+	var share: float = 100.0 * float(inside) / float(sources) if sources > 0 else 0.0
+	print("Glow sources, frame %d x %d: %d px at or above %.2f, %.1f %% inside the %d flames on screen %s"
+			% [width, image.get_height(), sources, LightingRig.GLOW_THRESHOLD, share, flames.size(), flames])
 
 
 func _wait(frames: int) -> void:

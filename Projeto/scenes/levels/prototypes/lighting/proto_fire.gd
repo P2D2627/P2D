@@ -7,9 +7,23 @@ extends Node2D
 ## 2.3.1: no strong change three times a second), and drives the halo and, in mode A, two lights
 ## without shadows: one for the space around it and one on the rock's light mask, so the rock faces
 ## near it glow.
+## Its own ramp (#261, set_look): the flame's colours come from the fire's ramp
+## (proto_fire_ramp.gdshader), and each fire plays at its own speed, so no two keep the same rhythm
+## (the random start keeps them out of step; with their speeds they drift through it now and then).
 
+const RAMP_SHADER: Shader = preload("res://scenes/levels/prototypes/lighting/proto_fire_ramp.gdshader")
+## The fire's ramp, by brightness: a deep wine near the cave's darkest colour, a deep magenta, the
+## fire's pink, a peach and a warm core close to white.
+const RAMP_OFFSETS: PackedFloat32Array = [0.0, 0.35, 0.65, 0.9, 1.0]
+## The fire sheets' brightest luminance (measured on 16/11: 0.43 upright, 0.38 low), which takes
+## the ramp's light end; their outline sits at ~0.01, their body at 0.26 to 0.28.
+const RAMP_BRIGHTEST: float = 0.43
+const RAMP_COLORS: PackedColorArray = [Color(0.3, 0.05, 0.18), Color(0.62, 0.1, 0.42),
+		Color(1.0, 0.36, 0.78), Color(1.0, 0.84, 0.76), Color(1.0, 0.97, 0.92)]
 ## Seconds each drawn frame shows: the GIF's 130 ms.
 const FRAME_TIME: float = 0.13
+## With its own look, each fire plays this share faster or slower, at random.
+const SPEED_SPREAD: float = 0.1
 ## How much of each frame's brightness change reaches the halo and the lights.
 const FLICKER_SHARE: float = 0.35
 ## The halo's height, in flame heights.
@@ -43,6 +57,9 @@ var flicker: float = 1.0
 var _curve: PackedFloat32Array
 var _frames: int = 1
 var _time: float = 0.0
+var _speed: float = 1.0
+var _rate: float = 1.0
+var _plain: Material
 var _flame: Sprite2D
 var _halo: Sprite2D
 var _main_light: PointLight2D
@@ -61,6 +78,8 @@ func setup(sheet: Texture2D, frames: int, curve: PackedFloat32Array, flame_scale
 	_curve = curve
 	_frames = frames
 	_time = randf() * FRAME_TIME * float(frames)
+	_speed = randf_range(1.0 - SPEED_SPREAD, 1.0 + SPEED_SPREAD)
+	_plain = unshaded
 	_halo_color = color
 	var cell_height: float = float(sheet.get_height())
 	var flame_height: float = cell_height * flame_scale
@@ -125,8 +144,33 @@ func set_lights_enabled(on: bool) -> void:
 		_rock_light.enabled = on
 
 
+## The material every fire shares for its own look: proto_fire_ramp.gdshader with the fire's ramp.
+static func make_ramp_material() -> ShaderMaterial:
+	var gradient := Gradient.new()
+	gradient.offsets = RAMP_OFFSETS
+	gradient.colors = RAMP_COLORS
+	var texture := GradientTexture1D.new()
+	texture.gradient = gradient
+	var material := ShaderMaterial.new()
+	material.shader = RAMP_SHADER
+	material.set_shader_parameter(&"ramp", texture)
+	material.set_shader_parameter(&"brightest", RAMP_BRIGHTEST)
+	return material
+
+
+## On: the flame through Ramp, at this fire's own speed. Off: the GIF's colours, all at one speed.
+func set_look(ramp: Material, on: bool) -> void:
+	_flame.material = ramp if on else _plain
+	_rate = _speed if on else 1.0
+
+
+## The drawn flame, in the world: for the measure of what feeds the glow.
+func get_flame_rect() -> Rect2:
+	return Rect2(global_position - Vector2(_flame_size.x * 0.5, _flame_size.y), _flame_size)
+
+
 func _process(delta: float) -> void:
-	_time += delta
+	_time += delta * _rate
 	var step: float = fposmod(_time / FRAME_TIME, float(_frames))
 	var index: int = int(step)
 	_flame.frame = index
