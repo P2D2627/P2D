@@ -728,6 +728,23 @@ jogo levanta a personagem para cima de uma saliência que falha por até 16 px. 
 último troço, até à saída, é ainda o que foi gravado antes de o salto ficar mais pesado, e falha, como já falhava antes
 desta alteração; a verificação em papel também não sobe, com o movimento atual, a chaminé da esquerda que leva ao F.
 
+O poço ao lado do bloco foi depois alongado outra vez, para o triplo do que tinha: de 16 para 48 tiles. O troço novo,
+de 32 tiles, entra entre o fundo do poço e a passagem por baixo dele, as únicas duas linhas do mapa por onde a parte de
+cima da fase 3 toca no resto; a sala inicial, o bloco e o corredor para a fase 2 ficam onde estavam, e tudo o resto da
+fase 3, incluindo a sala da Asmodeu, desceu 32 tiles (1536 px) sem mudar de forma. Uma primeira versão, uma queda
+única com dentes de rocha com picos alternados de cada lado, não se passava na verificação em papel: à velocidade
+máxima de queda, a personagem não tem tempo de atravessar o poço de um lado para o outro. A versão final divide a
+queda em duas. Na primeira, um dente de rocha com picos encostado à parede esquerda obriga a cair pela direita, sobre
+uma plataforma que desaba 0,6 s depois de a personagem lhe tocar; na segunda, uma estaca de rocha com picos junto à
+parede esquerda obriga a contorná-la pela direita e a puxar depois para a esquerda, para aterrar antes do fosso com
+picos que já existia. Duas faixas de picos na parede direita castigam quem se encosta a ela. Na verificação em papel,
+a primeira queda passa para quem salta do bloco e larga a direção entre 64 e 168 px depois, e a segunda para quem larga
+até 80 px depois da borda e volta a carregar na esquerda a qualquer momento durante cerca de 1 s; quem fica parado na
+plataforma cai pela direita, contra os picos. A personagem real percorre o poço novo e chega aos dois desbloqueadores no
+`test_level1_phase3_route.gd`. As pedras do contorno do dente e da estaca foram dispostas pelo próprio `StoneRim`, a
+partir dos tiles novos, e a parede esquerda do poço passou a ter três faixas de pedra em vez de uma. O texto da fase 3
+tem agora 182 × 220 tiles e 181 tiles de picos; ficou também sem o cão que tinha sido retirado da cena à mão.
+
 | Medida em headless, sem o custo de desenhar | Fase 2 sozinha (33 cães) | Nível 1 antes da fase 3 (88 cães) |
 |---|---|---|
 | Recomeçar depois de uma morte (instanciar e entrar na árvore) | cerca de 25 ms | cerca de 90 ms |
@@ -922,7 +939,7 @@ Remote; os restantes valores são lidos sempre que são usados.
     │   ├── characters/  a personagem (player/), o crucifixo (crucifix/), os demónios (demon/, com os estados em states/, e os que falam, Velvet e Asmodeu) e os componentes que mais de um sistema usa (components/)
     │   ├── levels/      uma pasta por nível: a sala de teste (test_room/), a sala de treino (gym/) e o nível 1 (lust/, com os construtores e os mapas em texto em builders/); na raiz, as peças e os scripts comuns e o fundo de que os níveis partem (background/)
     │   ├── objects/     peças com comportamento: portões (gates/), plataformas (platforms/) e armadilhas (traps/)
-    │   ├── others/      câmara (camera/), depuração (debug/), todos os shaders (shaders/) e conjuntos de tiles (tilesets/)
+    │   ├── others/      câmara (camera/), atividade fora do ecrã (activity/, o ActivityTracker, que adormece o que está parado longe do ecrã), depuração (debug/), todos os shaders (shaders/) e conjuntos de tiles (tilesets/)
     │   └── screens/     menus, ecrã das opções, o balão de diálogo e indicador de gravação
     ├── tests/         testes automáticos (test_*.gd), que correm sem janela
     │   ├── launchers/ abrem o jogo num ponto escolhido, para ver à mão (por agora, o fim da fase 2)
@@ -1073,6 +1090,9 @@ godot --headless --fixed-fps 60 --path Projeto --script res://tests/test_gym_hin
 godot --headless --fixed-fps 60 --path Projeto --script res://tests/test_gym_stations.gd
 godot --headless --fixed-fps 60 --path Projeto --script res://tests/test_gym.gd
 godot --headless --fixed-fps 60 --path Projeto --script res://tests/test_gym_dogs.gd
+godot --headless --fixed-fps 60 --path Projeto --script res://tests/test_activity_tracker.gd
+godot --headless --fixed-fps 60 --path Projeto --script res://tests/test_demon_activity.gd
+godot --headless --fixed-fps 60 --path Projeto --script res://tests/test_parallax_activity.gd
 godot --headless --fixed-fps 60 --path Projeto --script res://tests/test_resources_load.gd
 ```
 
@@ -1140,6 +1160,16 @@ dados e famílias de personagens".
 
 ```
 godot --headless --fixed-fps 60 --path Projeto --script res://tests/measures/measure_demon.gd
+```
+
+O `measure_level1.gd` também não verifica resultados: em cinco pontos do percurso do nível 1, mede
+quanto custa cada frame com o `ActivityTracker` desligado e ligado, e com o processamento de todos
+os cães e desenhos com paralaxe desligado, o mínimo que custariam. Em cada ponto, o rastreador é
+medido primeiro desligado num e primeiro ligado no seguinte, para que nenhum dos dois seja sempre
+o primeiro. Os números e a decisão estão em "Atividade fora do ecrã".
+
+```
+godot --headless --fixed-fps 60 --path Projeto --script res://tests/measures/measure_level1.gd
 ```
 
 ### A personagem por dentro
@@ -2180,7 +2210,8 @@ atualiza uma vez por segundo, pelo que um único frame lento permanece visível 
 Mostra também o estado e a velocidade da personagem e, depois de cada salto, o tipo de salto, as
 tolerâncias usadas, em passos de física, e a altura atingida. Um salto completo mostra
 240 px, o mesmo valor que os testes medem. Com a câmara ligada, mostra ainda a zona de câmara em que
-a personagem está e as distâncias atuais da antecipação e do olhar para baixo. Mostra ainda os SP,
+a personagem está e as distâncias atuais da antecipação e do olhar para baixo, e quantos membros do
+`ActivityTracker` estão acordados (ver "Atividade fora do ecrã"). Mostra ainda os SP,
 a velocidade atual da regeneração e se os SP estão baixos ou acabaram. A tecla F3 mostra e esconde
 o texto.
 
@@ -2741,6 +2772,123 @@ original.
 
 Ficam de fora as armadilhas, o checkpoint, que ainda não existe, e o diálogo, que ainda não é
 iniciado por nada no jogo. A estação de cada uma acrescenta-se quando a mecânica entrar no jogo.
+
+#### Atividade fora do ecrã
+
+O nível 1 tornou-se mais lento noutro computador. O Godot já não desenha o que está fora do ecrã:
+cada desenho, e cada bloco de tiles, só é enviado à placa gráfica quando aparece. O que continua a
+custar em cada frame, esteja onde estiver, é o que se processa: os scripts e a física de cada cão e
+de cada desenho do fundo com paralaxe. Na altura, antes da fase 3, o nível 1 tinha 86 cães e 850
+desenhos com paralaxe. Mediu-se com o `measure_level1.gd` em cinco pontos do percurso, sem janela,
+em nenhum dos quais havia cães no ecrã (2026-11-11, um computador ligado à corrente, uma execução):
+
+| Nível 1, por frame | Frame inteiro | Scripts de física | Scripts de processamento |
+|---|---|---|---|
+| Como estava | 5,3 a 5,7 ms | 2,5 a 2,8 ms | 2,1 ms |
+| Sem o processamento dos cães | 2,1 a 2,3 ms | 0,3 ms | 1,5 a 1,7 ms |
+| Sem o da paralaxe | 3,9 a 4,1 ms | 2,6 a 2,7 ms | 0,6 a 0,7 ms |
+| Sem nenhum dos dois | 0,37 a 0,50 ms | 0,2 a 0,3 ms | 0,05 ms |
+
+Os cães, parados fora do ecrã, custavam cerca de 3,2 ms por frame, e a paralaxe cerca de 1,4 ms: em
+conjunto, mais de 90 % do frame. A cena antiga da fase 2, com 33 cães e sem paralaxe, ficava abaixo
+de 1,1 ms. Com janela, no ponto de partida, o mesmo computador desenhava a fase 2 e o nível 1 ao
+limite de 144 imagens por segundo do ecrã, pelo que a diferença estava no processador e não na placa
+gráfica.
+
+A decisão foi adormecer o que está em repouso e longe do ecrã, e acordá-lo quando o ecrã se
+aproxima. Fá-lo o `ActivityTracker` (`scenes/others/activity/activity_tracker.gd`), um nó da câmara
+do jogo (`scenes/others/camera/game_camera.tscn`): qualquer nível com essa câmara o tem, sem mudar a
+cena do nível. As regras são estas:
+
+- A zona é o retângulo do ecrã, com o zoom das zonas de câmara, e não um círculo. O ecrã é
+  retangular (16:9), e um círculo que lhe cobrisse os cantos manteria acordada uma área 1,84 vezes
+  maior do que o ecrã.
+- Um membro acorda quando o seu retângulo chega a 480 px do ecrã (Wake Margin) e adormece quando
+  fica a mais de 960 px (Sleep Margin). Entre as duas distâncias, mantém o que estava, pelo que nada
+  fica a alternar junto à margem. A diferença de 480 px corresponde a 0,67 s de corrida (720 px/s).
+- Só adormece o que está em repouso. Um cão parado ou em ronda no seu chão pode adormecer; em
+  qualquer outro estado (a perseguir, à procura, a voltar ao posto, no ar, projetado, a agarrar, e
+  qualquer estado que se acrescente), continua a ser processado, esteja a que distância estiver. Um
+  cão que persegue a personagem não para porque ela se afastou.
+- Adormecer é o modo de processamento Disabled do Godot: o membro deixa de correr os scripts, as
+  animações e os temporizadores, e as suas áreas saem da física, mas continua a ser desenhado se
+  estiver no ecrã. Ao acordar, recupera o seu próprio modo. O corpo de um cão adormecido fica como
+  obstáculo fixo (Disable Mode Make Static), pelo que um cão acordado nunca o atravessa.
+- Cada membro é verificado dez vezes por segundo, repartidos pelos frames, e todos de uma vez no
+  primeiro frame e quando o ecrã salta mais de 480 px num só frame, como num recomeço.
+- Sem câmara, como nos testes, tudo fica acordado, a mesma regra dos sentidos dos demónios.
+- Um ecrã inteiro à volta da personagem também conta como ecrã, esteja a câmara onde estiver. A
+  câmara entrega a personagem ao rastreador. Quando a personagem é colocada noutro sítio, como ao
+  escolher uma estação na sala de treino, a câmara desliza até ela, e durante esse tempo a
+  personagem está fora do ecrã. Sem esta regra, num teste que põe a personagem dentro do anel do cão
+  maior, a câmara ainda estava a mais de 5 400 px dela 30 frames depois, o cão continuava a dormir
+  e o portão não abria; com ela, o portão abre no segundo frame.
+
+O cão da luxúria (`lust_demon_stats.tres`) só começa uma perseguição no ecrã e desiste a 160 px
+fora dele (ADR 0032 e 0038). Por isso, adormecê-lo quando está parado longe do ecrã não muda nada do
+que o jogador vê. Um cão sem Chases Only On Screen fica acordado enquanto a personagem puder estar
+dentro do seu alcance de visão. O campo Activity Reach do demónio alarga a zona de um cão que atue
+sobre a personagem para lá do corpo. O cão maior da fase 3 junta à sua zona o anel que abre o portão
+3, que chega a 736 px do centro: na vertical, o corpo e a margem de 480 px só cobririam 704 px, e um
+cão adormecido não daria pela personagem dentro do anel. Como a zona segue o alcance do anel, um
+anel maior continua coberto sem mais nenhum ajuste. O `test_biggest_dog.gd` verifica que a zona
+contém o anel inteiro; sem esta regra, falhava.
+
+Um desenho com paralaxe adormecido fica onde estava ao adormecer, que não é onde estaria com a
+câmara atual. Por isso, a sua zona junta os dois sítios. Com uma profundidade baixa, o ecrã, ao
+voltar, encontraria primeiro o sítio onde o desenho parou, e este apareceria parado no lugar errado.
+No `test_parallax_activity.gd`, com profundidade 0,3, uma versão que só usava o sítio certo mostrava
+o desenho parado em 53 frames, e a que junta os dois em nenhum.
+
+Com o rastreador, o `measure_level1.gd` mediu o mesmo nível, antes da fase 3, com ele desligado e
+ligado, em alternância, nos cinco pontos, em seis execuções seguidas (30 comparações), no mesmo dia,
+com o computador a trabalhar com a bateria. Com a bateria, o processador trabalhava a cerca de dois
+terços da frequência máxima, e os valores absolutos variaram mais do dobro de uma execução para
+outra. Por isso, conta a comparação dentro de cada par (ADR 0048):
+
+| Nível 1, por frame, com a bateria | Média | Pior frame |
+|---|---|---|
+| Rastreador desligado | 5,3 a 13,9 ms | 6,8 a 20,0 ms |
+| Rastreador ligado | 0,7 a 2,8 ms | 1,4 a 5,2 ms |
+| Sem o processamento de cães e paralaxe | 0,3 a 1,2 ms | |
+
+Com o rastreador ligado, cada frame custou, na mediana dos 30 pares, 17,5 % do que custava desligado
+(de 8,6 % a 38 %), menos 5,4 ms por frame. Ficaram acordados 32 a 105 dos 937 membros, conforme o
+ponto. Sem o rastreador e com a bateria, o pior frame chegou a 20 ms, mais do que os 16,6 ms de um
+frame a 60 imagens por segundo; com ele, não passou de 5,2 ms.
+
+Ficaram de lado três alternativas:
+
+- Zonas de atividade a partir das zonas de câmara (113 no nível 1, antes da fase 3). Nada mudaria a
+  meio de uma sala, mas as zonas têm tamanhos muito diferentes, cada nível novo teria de as mapear,
+  e o cão em perseguição precisaria na mesma de uma exceção.
+- O `VisibleOnScreenEnabler2D` do Godot, que depende do desenho do ecrã. Esse desenho não existe
+  nos testes sem janela, a mesma razão por que os sentidos dos demónios não o usam.
+- Esconder o que está longe. O Godot já não desenha o que está fora do ecrã, pelo que não se
+  ganharia nada.
+
+O rastreador não tem uma lista do que adormece nem de exceções: cada membro diz onde atua e se pode
+adormecer. Qualquer demónio (`Demon` ou uma cena que o herde) e qualquer `ParallaxSprite` é membro
+sem código novo. Para tornar membro outra coisa, como uma plataforma que se move ou uma personagem
+com lógica própria, o script chama `ActivityTracker.join(self)` no `_ready` e tem um método
+`get_activity_rect()`, com o retângulo do mundo onde está ou atua, incluindo as áreas com que deteta
+a personagem, porque essas saem da física enquanto dorme. Se tiver de continuar a ser processado
+fora do ecrã em certos estados, tem também um `can_sleep()`, que devolve falso nesses estados. O que
+tem de funcionar longe do ecrã, como um portão aberto por um desbloqueador distante, não deve ser
+membro. O overlay de depuração mostra quantos membros estão acordados. O campo Enabled do
+`ActivityTracker`, no separador Remote, desliga-o durante o jogo, para comparar.
+
+O `test_activity_tracker.gd` verifica as regras com membros de teste, incluindo que um membro junto
+da personagem, com o ecrã longe, acorda no frame seguinte e não volta a dormir enquanto ela lá
+estiver. O `test_demon_activity.gd`
+verifica que um cão a perseguir continua a mais de 7 800 px do ecrã, que um cão parado longe do ecrã
+adormece e está acordado em todos os frames em que aparece, e que um cão a voltar ao posto só
+adormece quando lá chega. Com o repouso mal definido, de modo a que tudo pudesse adormecer, o cão a
+perseguir parava, e o teste falhava. O `test_parallax_activity.gd` verifica que um desenho
+adormecido nunca está no ecrã. A verificação do `test_level1.gd` que põe os cães a patrulhar com a
+personagem longe desliga o rastreador enquanto corre: ligado, adormeceria os cães longe do ecrã, e
+estes não patrulhariam. Com todos os testes, antes e depois do rastreador, falham as mesmas
+verificações (12 testes, das fases 1 a 3, já falhavam antes dele).
 
 ### Convenções de código
 
