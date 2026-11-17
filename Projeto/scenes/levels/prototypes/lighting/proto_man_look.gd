@@ -10,10 +10,11 @@ extends Node2D
 ## Trail: moving fast, he leaves a short wake of ash behind his body (proto_smoke.gd), one smooth
 ## body that erodes away; little while he walks, most in the air and as he falls, and never longer
 ## than Trail Max Length, so it shows his momentum and does not make him light. It can be light
-## instead of ash, to compare.
+## instead of ash, to compare, or light leaving his body (proto_soul_light.gd, #263).
 
 const ProtoContactDust := preload("res://scenes/levels/prototypes/lighting/proto_contact_dust.gd")
 const ProtoSmoke := preload("res://scenes/levels/prototypes/lighting/proto_smoke.gd")
+const ProtoSoulLight := preload("res://scenes/levels/prototypes/lighting/proto_soul_light.gd")
 ## The shadow: its size on the floor, how dark it is there, and how high above the floor he can be
 ## before it is gone.
 const SHADOW_SIZE := Vector2(72.0, 14.0)
@@ -85,6 +86,7 @@ var _squash: float = 0.0
 var _squash_time: float = -1.0
 var _fast_fall_speed: float = FAST_FALL_SPEED
 var _trail: ProtoSmoke
+var _soul: ProtoSoulLight
 ## From his feet to the middle of his drawing.
 var _body_center := Vector2.ZERO
 ## His body's middle at the last two physics frames: the trail's head is drawn between them, where
@@ -133,6 +135,7 @@ func set_scene_light(on: bool, own_mask: int, world_mask: int) -> void:
 	# about the tone of the lit rock and is lost against it (seen in recordings); with his light it
 	# reads, and it stayed darker than his body.
 	_trail.light_mask = world_mask
+	# The light leaving his body is unshaded and added: no mask to follow.
 
 
 func set_shadow(on: bool) -> void:
@@ -157,6 +160,11 @@ func set_trail(on: bool, light: bool) -> void:
 	_trail.set_look(ProtoSmoke.Look.LIGHT if light else ProtoSmoke.Look.ASH)
 	if not on:
 		_trail.clear()
+
+
+## The trail as light leaving his body, with his faint glow, on or off.
+func set_soul_trail(on: bool) -> void:
+	_soul.set_on(on)
 
 
 ## Ink style: the squash goes in steps held 1/Ink FPS s. Off: smooth. The trail is always smooth.
@@ -261,6 +269,12 @@ func _make_trail(player: Node2D) -> void:
 	_trail.setup(TRAIL_POOL, ASH_EDGE, ASH_CORE, ASH_OPACITY)
 	_trail.set_light_colors(LIGHT_EDGE, LIGHT_CORE, LIGHT_OPACITY)
 	_trail.visible = false
+	_soul = ProtoSoulLight.new()
+	_soul.name = "ProtoSoulLight"
+	player.get_parent().add_child(_soul)
+	player.get_parent().move_child(_soul, player.get_index())
+	_soul.setup(player as Player, _body_center)
+	_soul.set_on(false)
 
 
 ## The floor under his feet, straight down, within Shadow Reach; the shadow is his child, so it

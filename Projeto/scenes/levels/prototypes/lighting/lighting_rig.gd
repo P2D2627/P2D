@@ -36,7 +36,9 @@ extends Node2D
 ## "--lighting-shadow=1"). The crucifix's light on its events (proto_crucifix_fx.gd), smoke off the
 ## dogs (proto_dog_smoke.gd; the trail and the smoke are proto_smoke.gd), and the effects' ink style
 ## (proto_puff.gdshaderinc): two flat tones, an ink line, each image held, as the man's drawing is.
-## Keys, with Ctrl: F5 scene light, F6 outline, F7 trail (ash, light, off), F8 ink style, F9 the
+## The trail is light leaving his body by default (proto_soul_light.gd, #263); ash and light stay to
+## compare.
+## Keys, with Ctrl: F5 scene light, F6 outline, F7 trail (off, ash, light, soul), F8 ink style, F9 the
 ## crucifix's light, F10 the dogs' smoke, F11 squash.
 
 enum Mode { CURRENT, HYBRID, PROPAGATION }
@@ -48,11 +50,12 @@ const ProtoForeground := preload("res://scenes/levels/prototypes/lighting/proto_
 const ProtoManLook := preload("res://scenes/levels/prototypes/lighting/proto_man_look.gd")
 const ProtoDogSmoke := preload("res://scenes/levels/prototypes/lighting/proto_dog_smoke.gd")
 const ProtoCrucifixFx := preload("res://scenes/levels/prototypes/lighting/proto_crucifix_fx.gd")
-## The man's trail: off, ash or light (Ctrl+F7 goes round them).
+## The man's trail: off, ash, light or light leaving his body (Ctrl+F7 goes round them).
 const TRAIL_OFF: int = 0
 const TRAIL_ASH: int = 1
 const TRAIL_LIGHT: int = 2
-const TRAIL_NAMES: Array[String] = ["off", "ash", "light"]
+const TRAIL_SOUL: int = 3
+const TRAIL_NAMES: Array[String] = ["off", "ash", "light", "soul"]
 ## The canvas layer of the rocks in front: above the level's, which is 0.
 const FOREGROUND_LAYER: int = 1
 ## The background's one colour: the darkest of level 1's colour ramp, pink and bright red. Each level
@@ -267,7 +270,7 @@ static var outline_on: bool = true
 ## Off by default: the stone rim in front of the floor hides his feet and the shadow with them
 ## (seen in recorded frames, 16/11); it stays for floors without a rim.
 static var shadow_on: bool = false
-static var trail: int = TRAIL_ASH
+static var trail: int = TRAIL_SOUL
 static var ink_on: bool = true
 static var crucifix_fx_on: bool = true
 ## Off by default: the ash on the dogs does not read right yet (17/11); the code stays, Ctrl+F10
@@ -530,7 +533,7 @@ func _setup() -> void:
 	# "--lighting-drop=PX" lifts him PX, to record a landing; "--lighting-hops=N" and
 	# "--lighting-raise=N" (frames before he raises the crucifix) move him. Each toggle has its own
 	# "--lighting-<name>=0|1" (glow, grade, fire-ramp, fog, rim, scene-light, outline, shadow, ink,
-	# crucifix-fx, dog-smoke, squash); "--lighting-trail=0|1|2" (off, ash, light).
+	# crucifix-fx, dog-smoke, squash); "--lighting-trail=0|1|2|3" (off, ash, light, soul).
 	var near_fire: int = -1
 	var near_dog: int = -1
 	var fire_offset: Vector2 = NEAR_FIRE_OFFSET
@@ -1574,7 +1577,8 @@ func _apply() -> void:
 	_man_look.set_scene_light(scene_light_on and hybrid, MASK_MAN, MASK_WORLD)
 	_man_look.set_shadow(shadow_on and styled)
 	_man_look.set_squash(squash_on and styled)
-	_man_look.set_trail(trail != TRAIL_OFF and styled, trail == TRAIL_LIGHT)
+	_man_look.set_trail((trail == TRAIL_ASH or trail == TRAIL_LIGHT) and styled, trail == TRAIL_LIGHT)
+	_man_look.set_soul_trail(trail == TRAIL_SOUL and styled)
 	_dog_smoke.set_on(dog_smoke_on and styled)
 	var ink: bool = ink_on and styled
 	_man_look.set_ink(ink)
