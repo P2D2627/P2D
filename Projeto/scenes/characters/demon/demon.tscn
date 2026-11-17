@@ -168,7 +168,7 @@ take_off_sound = ExtResource("12_take_off")
 land_sound = ExtResource("13_land")
 
 [node name="Cue" type="AudioStreamPlayer2D" parent="DemonSounds"]
-bus = &"SFX"
+bus = &"Alerts"
 
 [node name="SinkingDrawing" type="Node" parent="." node_paths=PackedStringArray("drawing")]
 script = ExtResource("6_sinking_drawing")

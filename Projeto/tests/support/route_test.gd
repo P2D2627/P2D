@@ -1,8 +1,9 @@
 # Shared by the route tests: plays a level from start to finish with the real man in the real scene, without the
 # dogs. A stand-in input repeats, move by move, the way a paper check found (a .json made by the tools outside the
 # repository, which only know the movement's numbers). Before each jump he is put on that floor or wall, so a hop
-# that fails is reported on its own and the rest still run. At an unlocker it waits for the crucifix to cool down
-# from the last one, raises it, sees the gate open and goes through, and it ends walking into the way out. A "walkback" move goes off an edge, falls straight
+# that fails is reported on its own and the rest still run. At an unlocker it presses Interact, sees the gate open
+# and goes through, and it ends walking into the way out. The level's camera cutscenes count as seen, so none
+# stops the replay. A "walkback" move goes off an edge, falls straight
 # and, from a given frame, pushes back the other way. It says how many moves worked as the check said,
 # and fails if the man dies, an unlocker or gate does not work, or a move does not get where it should. A test
 # extends this file, with
@@ -52,6 +53,7 @@ func replay(scene_path: String, route_path: String) -> void:
 	var route: Dictionary = JSON.parse_string(FileAccess.get_file_as_string(route_path))
 	_level = (load(scene_path) as PackedScene).instantiate()
 	prepare_level(_level)
+	_see_the_cutscenes(_level)
 	root.add_child(_level)
 	var exit: PhaseExit = _level.get_node("PhaseExit") as PhaseExit
 	exit.reached.connect(func(_path: String) -> void: _reached_exit = true)
@@ -194,18 +196,23 @@ func _put_at_target(target: Dictionary) -> void:
 func _use_unlocker(leg: Dictionary) -> bool:
 	var unlocker: GateUnlocker = _level.get_node("GateUnlockers/%s" % leg["unlocker"]) as GateUnlocker
 	_stand_in.run_direction = 0.0
-	# Walks to the spot of the floor within the crucifix's reach, waits, as a player does, for the crucifix to
-	# cool down from the last unlocker, and raises it there.
+	# Walks to the spot of the floor by the unlocker and presses Interact there.
 	_player.global_position = Vector2(float(leg["stand_x"]), float(leg["stand_row"]) * TILE - 0.1)
 	_player.velocity = Vector2.ZERO
 	await wait_frames(SETTLE_FRAMES)
-	var crucifix: Crucifix = _player.get_node("Crucifix") as Crucifix
-	await wait_until(func() -> bool: return crucifix.get_phase() == Crucifix.Phase.READY,
-			crucifix.stats.get_cooldown_frames() + SETTLE_FRAMES)
-	_stand_in.crucifix_held = true
+	Input.action_press(&"interact")
 	var used: bool = await wait_until(unlocker.is_activated, WAIT_FRAMES)
-	_stand_in.crucifix_held = false
-	return report(used, "%s: used with the crucifix %s" % [leg["unlocker"], used])
+	Input.action_release(&"interact")
+	return report(used, "%s: used with Interact %s" % [leg["unlocker"], used])
+
+
+## Marks every camera cutscene of level as seen in GameState, so none plays while the route is replayed.
+func _see_the_cutscenes(level: Node) -> void:
+	var progress: GameProgress = root.get_node(^"GameState") as GameProgress
+	for node: Node in level.find_children("*", "Node", true, false):
+		var cutscene: CameraCutscene = node as CameraCutscene
+		if cutscene != null and not cutscene.event.is_empty():
+			progress.mark_event(cutscene.event)
 
 
 func _gate_is_open(gate_name: String) -> bool:
