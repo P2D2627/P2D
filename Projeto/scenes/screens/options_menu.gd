@@ -40,6 +40,7 @@ const VIBRATION_TITLE: String = "Vibration"
 const VIBRATION_STEP: float = 0.1
 const CONSTANT_VIBRATION_TITLE: String = "Constant vibration"
 const HOLD_TO_ESCAPE_TITLE: String = "Hold to escape"
+const SHOW_HIDDEN_TITLE: String = "Show hidden dangers"
 ## The game's pulses: the Vibration slider plays a hit's, the blow the player feels most often.
 const RUMBLE_STATS: RumbleStats = preload("res://scenes/others/feedback/rumble_stats.tres")
 
@@ -51,6 +52,7 @@ var _vibration_slider: HSlider
 var _vibration_text: Label
 var _constant_vibration_check: CheckButton
 var _hold_to_escape_check: CheckButton
+var _show_hidden_check: CheckButton
 ## Plays the Vibration slider's sample, also in the pause.
 var _sample_rumble: ControllerRumble
 ## True while the mouse drags the Vibration slider: the sample waits for the drag to end.
@@ -81,6 +83,7 @@ func _ready() -> void:
 	_add_vibration_row()
 	_add_constant_vibration_row()
 	_add_hold_to_escape_row()
+	_add_show_hidden_row()
 	_line_up_titles()
 	_sample_rumble = ControllerRumble.new()
 	_sample_rumble.process_mode = Node.PROCESS_MODE_ALWAYS
@@ -171,12 +174,20 @@ func _add_constant_vibration_row() -> void:
 	_add_accessibility_row(CONSTANT_VIBRATION_TITLE, _constant_vibration_check, Label.new())
 
 
-## Hold To Escape's row, the grid's last: its name and a switch, with nothing in the value's column.
+## Hold To Escape's row: its name and a switch, with nothing in the value's column.
 func _add_hold_to_escape_row() -> void:
 	_hold_to_escape_check = CheckButton.new()
 	_hold_to_escape_check.size_flags_horizontal = Control.SIZE_SHRINK_BEGIN
 	_hold_to_escape_check.toggled.connect(_settings.set_hold_to_escape)
 	_add_accessibility_row(HOLD_TO_ESCAPE_TITLE, _hold_to_escape_check, Label.new())
+
+
+## Show Hidden's row, the grid's last: its name and a switch, with nothing in the value's column.
+func _add_show_hidden_row() -> void:
+	_show_hidden_check = CheckButton.new()
+	_show_hidden_check.size_flags_horizontal = Control.SIZE_SHRINK_BEGIN
+	_show_hidden_check.toggled.connect(_settings.set_show_hidden)
+	_add_accessibility_row(SHOW_HIDDEN_TITLE, _show_hidden_check, Label.new())
 
 
 ## A row of the accessibility grid: a title with title_text, then control and value_text.
@@ -223,6 +234,7 @@ func _show_settings() -> void:
 	_show_vibration()
 	_constant_vibration_check.set_pressed_no_signal(_settings.is_constant_vibration_on())
 	_hold_to_escape_check.set_pressed_no_signal(_settings.is_hold_to_escape_on())
+	_show_hidden_check.set_pressed_no_signal(_settings.is_show_hidden_on())
 
 
 func _show_volume(bus: StringName) -> void:

@@ -2,11 +2,15 @@ class_name DemonMark
 extends Node2D
 
 ## The mark over a demon's head that tells the man what it is about (ADR 0040): Alert Text from the
-## moment it notices him, kept for Alert Linger Time into the chase, and Search Text for as long as
-## it searches for him. A demon with Alert Time 0 has no alert, so no mark when it notices him. The two tell apart by their shape, not their colour, and each pops up once
+## moment it notices him, kept for Alert Linger Time into the chase, and, with Shows Search on,
+## Search Text for as long as it searches for him. A demon with Alert Time 0 has no alert, so no mark when it notices him. The two tell apart by their shape, not their colour, and each pops up once
 ## as it shows and never blinks. It only listens to the demon's state_changed, wired in demon.tscn;
 ## DemonSounds plays the beeps that go with it, so a man who does not hear sees them and one who is
 ## not looking hears them. It stays when the art comes, which only changes its look.
+
+## Whether it shows Search Text while the demon searches. Off since the line of sight (ADR 0064): the
+## search mark is left out, its beeps alone telling of a search; kept here to turn back on.
+@export var shows_search: bool = false
 
 ## Shows the mark. Its text is set here, by state.
 @export var label: Label
@@ -31,12 +35,13 @@ func _ready() -> void:
 
 
 ## Alert Text as the demon notices the man, kept a while as it chases him, Search Text while it
-## searches, and no mark in any other state, at once, so the crucifix or a lost man end it at once.
+## searches if Shows Search is on, and no mark in any other state, at once, so the crucifix or a lost
+## man end it at once.
 func _on_demon_state_changed(previous: Demon.State, current: Demon.State) -> void:
 	match current:
 		Demon.State.ALERT:
 			_show_mark(alert_text)
-		Demon.State.SEARCH:
+		Demon.State.SEARCH when shows_search:
 			_show_mark(search_text)
 		Demon.State.CHASE when previous == Demon.State.ALERT:
 			_linger()

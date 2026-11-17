@@ -1,6 +1,7 @@
 # Test of the mark over a demon's head (ADR 0040). The demon scene has it, hidden at the start and
 # wired to the demon's state_changed. Alerted, the demon shows Alert Text, which pops up and shrinks
-# to its own size, and keeps it Alert Linger Time into the chase; searching, it shows Search Text.
+# to its own size, and keeps it Alert Linger Time into the chase. Searching, the demon of the scene
+# shows no mark, since Shows Search is off there (ADR 0064); turned on, it shows Search Text.
 # Any other state hides it at once, a chase with no alert shows none, and a pause stops the linger.
 # The demon's own physics is off, so only the test changes its state, by emitting state_changed.
 # Run from the repository root; the exit code is 0 on pass and 1 on fail:
@@ -26,6 +27,7 @@ func _initialize() -> void:
 	results.append(await _the_demon_has_a_hidden_mark())
 	results.append(await _the_alert_mark_pops_up_and_shrinks())
 	results.append(await _the_alert_mark_stays_into_the_chase_and_goes())
+	results.append(await _the_scene_s_demon_shows_no_mark_searching())
 	results.append(await _the_search_mark_stays_until_another_state())
 	results.append(await _other_states_hide_it_at_once())
 	results.append(await _a_pause_stops_the_linger())
@@ -80,10 +82,26 @@ func _the_alert_mark_stays_into_the_chase_and_goes() -> bool:
 			% [text, linger_frames, stayed, gone])
 
 
-## Searching, the demon shows Search Text for as long as it searches, and none once it returns.
+## Searching, the demon of the scene, with Shows Search off as the scene has it, shows no mark.
+func _the_scene_s_demon_shows_no_mark_searching() -> bool:
+	var demon: Demon = await _make_demon()
+	var mark: DemonMark = _mark_of(demon)
+	var off_in_the_scene: bool = not mark.shows_search
+	demon.state_changed.emit(Demon.State.CHASE, Demon.State.SEARCH)
+	await wait_frames(_frames_of(mark.alert_linger_time) + LEEWAY_FRAMES)
+	var shown: bool = mark.visible
+	await _clear(demon)
+	return report(off_in_the_scene and not shown,
+			"Search with the scene's mark: Shows Search off %s, a mark shown %s (expected true, false)"
+			% [off_in_the_scene, shown])
+
+
+## Searching with Shows Search turned on, the demon shows Search Text for as long as it searches, and
+## none once it returns.
 func _the_search_mark_stays_until_another_state() -> bool:
 	var demon: Demon = await _make_demon()
 	var mark: DemonMark = _mark_of(demon)
+	mark.shows_search = true
 	demon.state_changed.emit(Demon.State.CHASE, Demon.State.SEARCH)
 	await wait_frames(_frames_of(mark.alert_linger_time) + LEEWAY_FRAMES)
 	var stayed: bool = mark.visible and mark.label.text == mark.search_text

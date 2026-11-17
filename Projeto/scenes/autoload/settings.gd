@@ -38,6 +38,9 @@ const DEFAULT_CONSTANT_VIBRATION: bool = true
 ## Whether holding Jump breaks the man free of a grab, instead of pressing it again and again
 ## (GrabEscape). Off, since the presses are the grab as designed; on, for those who can't press fast.
 const DEFAULT_HOLD_TO_ESCAPE: bool = false
+## Whether the demons and the spikes are drawn even where the man does not see them (SightReveal).
+## Off, since not seeing them is the game as designed; on, for those who cannot play it that way.
+const DEFAULT_SHOW_HIDDEN: bool = false
 
 ## True only in the tests, set by tests/support/base_test.gd before the autoload is ready: then a
 ## settings node on the player's file keeps its options in memory, from the defaults, and neither
@@ -57,6 +60,7 @@ var _screen_shake: float = DEFAULT_SCREEN_SHAKE
 var _vibration: float = DEFAULT_VIBRATION
 var _constant_vibration: bool = DEFAULT_CONSTANT_VIBRATION
 var _hold_to_escape: bool = DEFAULT_HOLD_TO_ESCAPE
+var _show_hidden: bool = DEFAULT_SHOW_HIDDEN
 ## The id of the controls profile that is on, one of InputProfiles.PROFILES.
 var _input_profile: StringName = InputProfiles.DEFAULT_PROFILE
 ## The custom profile's bindings, by action; every action in InputProfiles.ACTIONS has at least one.
@@ -152,6 +156,16 @@ func set_hold_to_escape(on: bool) -> void:
 	save_to_file()
 
 
+func is_show_hidden_on() -> bool:
+	return _show_hidden
+
+
+## Nothing to apply: what hides out of the man's sight reads the option on each frame.
+func set_show_hidden(on: bool) -> void:
+	_show_hidden = on
+	save_to_file()
+
+
 func get_input_profile() -> StringName:
 	return _input_profile
 
@@ -235,6 +249,7 @@ func save_to_file() -> void:
 	file.set_value("accessibility", "vibration", _vibration)
 	file.set_value("accessibility", "constant_vibration", _constant_vibration)
 	file.set_value("accessibility", "hold_to_escape", _hold_to_escape)
+	file.set_value("accessibility", "show_hidden", _show_hidden)
 	file.set_value("input", "profile", String(_input_profile))
 	for action: StringName in InputProfiles.ACTIONS:
 		file.set_value("input_custom", action, _custom_bindings[action])
@@ -257,6 +272,7 @@ func _take_options_from(file: ConfigFile) -> void:
 	_constant_vibration = _read_bool(file, "accessibility", "constant_vibration",
 			DEFAULT_CONSTANT_VIBRATION)
 	_hold_to_escape = _read_bool(file, "accessibility", "hold_to_escape", DEFAULT_HOLD_TO_ESCAPE)
+	_show_hidden = _read_bool(file, "accessibility", "show_hidden", DEFAULT_SHOW_HIDDEN)
 	for bus: StringName in BUSES:
 		_apply_volume(bus)
 	_apply_fullscreen()
