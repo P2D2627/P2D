@@ -64,6 +64,12 @@ var _body: Rect2 = Rect2()
 var _player_on_screen_across: bool = true
 ## Where the player was across at the last step, to tell a move from a placing.
 var _last_player_x: float = 0.0
+## True while a CameraCutscene moves the camera: it does not follow the player meanwhile.
+var _directed: bool = false
+
+## Optional children: what keeps the world near the screen awake, and the streak of a fast move.
+@onready var _activity: ActivityTracker = get_node_or_null(^"%ActivityTracker") as ActivityTracker
+@onready var _motion_blur: MotionBlur = get_node_or_null(^"%MotionBlur") as MotionBlur
 
 
 func _ready() -> void:
@@ -75,9 +81,8 @@ func _ready() -> void:
 		set_physics_process(false)
 		return
 	# Its ActivityTracker keeps awake what is by the man, too, while this camera glides to him.
-	var activity: ActivityTracker = get_node_or_null(^"%ActivityTracker") as ActivityTracker
-	if activity != null:
-		activity.focus = player
+	if _activity != null:
+		_activity.focus = player
 	_gather_zones()
 	if not is_instance_valid(level_tiles):
 		level_tiles = _find_level_tiles()
@@ -103,6 +108,8 @@ func _ready() -> void:
 func _physics_process(delta: float) -> void:
 	if not is_instance_valid(player):
 		set_physics_process(false)
+		return
+	if _directed:
 		return
 	var followed: Vector2 = global_position - _lead
 	var placed: bool = absf(player.global_position.x - _last_player_x) > PLACED_DISTANCE
@@ -130,6 +137,54 @@ func _physics_process(delta: float) -> void:
 			_changing_zone and _player_on_screen_across and not placed and not _is_live(_lookout))
 	_player_on_screen_across = (absf(player.global_position.x - global_position.x)
 			<= get_viewport_rect().size.x / (2.0 * zoom.x))
+
+
+## Hands the camera to a cutscene: until release(), it stops following the player, and the cutscene
+## moves and zooms it.
+func direct() -> void:
+	_directed = true
+
+
+## Gives the camera back to the player. From wherever the cutscene left it, it glides to him as into
+## a new zone, no faster than Zone Change Speed. The streak and the way shown end.
+func release() -> void:
+	_directed = false
+	_changing_zone = true
+	_follow_speed = Vector2.ZERO
+	_zoom_speed = 0.0
+	set_motion_blur(Vector2.ZERO)
+	show_the_way([])
+
+
+func is_directed() -> bool:
+	return _directed
+
+
+## Streaks the screen along streak, in px of the screen, through its MotionBlur child, if it has one.
+func set_motion_blur(streak: Vector2) -> void:
+	if _motion_blur != null:
+		_motion_blur.set_streak(streak)
+
+
+## The screens a cutscene's move is about to show, in the level: its ActivityTracker, if it has one,
+## wakes what is there before the camera comes. Empty: only the screen and the man count again.
+func show_the_way(screens: Array[Rect2]) -> void:
+	if _activity != null:
+		_activity.extra_views = screens
+
+
+## The zoom at which the screen shows all of view, as close as that allows: the screen's own shape
+## leaves more around it on one side.
+func zoom_to_show(view: Rect2) -> float:
+	var screen: Vector2 = _screen_size()
+	return minf(screen.x / maxf(view.size.x, 1.0), screen.y / maxf(view.size.y, 1.0))
+
+
+## Where the camera goes to show view at zoom level: its middle, moved in where the screen would
+## pass the camera's own limits.
+func centre_to_show(view: Rect2, level: float) -> Vector2:
+	var centres: Rect2 = _range_in_box(_own_limits(), 0.5, 0.5, level)
+	return view.get_center().clamp(centres.position, centres.end)
 
 
 ## How far the camera leads ahead of the focus, in px. For the tests and the debug overlay.

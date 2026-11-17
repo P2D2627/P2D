@@ -9,8 +9,9 @@ extends Node
 ## nothing by the edge keeps switching. Asleep, it is Godot's PROCESS_MODE_DISABLED: no _process nor
 ## _physics_process, its animations, timers and tweens stop, and its areas leave the physics, but on the screen it is
 ## still drawn. Woken, it gets back its own process mode. Each member is checked once every Cycle Frames physics
-## frames, a share of them on each frame, and all of them at once on the first frame and when the screen, or the
-## man, jumps further than Wake Margin in one frame, as on a respawn. The screen is the camera's view, from the
+## frames, a share of them on each frame, and all of them at once on the first frame, when the screen, or the
+## man, jumps further than Wake Margin in one frame, as on a respawn, and when a camera cutscene hands it the way
+## its next move takes (extra_views), which then counts as the screen too. The screen is the camera's view, from the
 ## canvas transform, so it takes in the zones' zoom and works without a window; with no camera, as in the tests,
 ## everything stays awake, as the demons' senses count all of the world as the screen. Around Focus, the man,
 ## which GameCamera hands it, a screen's worth of the world counts as the screen too: put somewhere new, he can be
@@ -47,6 +48,13 @@ const PHYSICS_PRIORITY: int = -100
 ## The man, or whatever the camera follows: a screen's worth round him counts as the screen, wherever the camera
 ## is. GameCamera hands it its Player; without one, only the screen counts.
 var focus: Node2D = null
+## More of the world that counts as the screen, in the level: the screens a camera cutscene's move is about to
+## show, which GameCamera hands it, so what is there is awake, and moving, before it shows. Setting it checks every
+## member at once on the next physics frame.
+var extra_views: Array[Rect2] = []:
+	set(value):
+		extra_views = value
+		_had_screen = false
 
 ## Every member, in the order they are checked in, and the next to check.
 var _members: Array[Node] = []
@@ -97,6 +105,7 @@ func _physics_process(_delta: float) -> void:
 		views.append(Rect2(focus.global_position - screen.size / 2.0, screen.size))
 		jumped = jumped or focus.global_position.distance_to(_last_focus) > wake_margin
 		_last_focus = focus.global_position
+	views.append_array(extra_views)
 	var wake_areas: Array[Rect2] = []
 	var sleep_areas: Array[Rect2] = []
 	for view: Rect2 in views:

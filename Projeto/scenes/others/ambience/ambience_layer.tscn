@@ -1,0 +1,11 @@
+[gd_scene format=3]
+
+[ext_resource type="Script" path="res://scenes/others/ambience/ambience_layer.gd" id="1_script"]
+
+[node name="AmbienceLayer" type="Node2D" node_paths=PackedStringArray("player")]
+script = ExtResource("1_script")
+player = NodePath("Player")
+
+[node name="Player" type="AudioStreamPlayer2D" parent="."]
+max_polyphony = 2
+bus = &"Ambience"

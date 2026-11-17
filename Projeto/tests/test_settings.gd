@@ -1,4 +1,5 @@
-# Checks the player's options. The project has the five audio buses, each sending to Master, and
+# Checks the player's options. The project has the five audio buses with a volume option, each
+# sending to Master, then Alerts, which sends to SFX and so follows its option, and
 # the options as the autoload Settings. With no file, every option is its default, and applied. A
 # change applies at once: the bus volume and the frame rate cap. Full screen and V-Sync do nothing
 # without a window (from the first frame on, the engine reports the headless window as minimized
@@ -19,6 +20,9 @@ const SETTINGS_SCRIPT: GDScript = preload("res://scenes/autoload/settings.gd")
 const TEST_PATH: String = "user://test_settings.cfg"
 ## How far a bus volume read back from the AudioServer may be from the one set: it goes through dB.
 const VOLUME_TOLERANCE: float = 0.0001
+## The buses after the ones with a volume option, each with the bus it sends to and whose option it
+## follows: Alerts holds the sounds that turn the ambience down, and follows SFX.
+const SUB_BUSES: Dictionary[StringName, StringName] = {&"Alerts": &"SFX"}
 
 
 func _initialize() -> void:
@@ -39,16 +43,21 @@ func _initialize() -> void:
 
 func _the_project_has_the_buses_and_the_settings_autoload() -> bool:
 	var names: Array[StringName] = []
-	var all_send_to_master: bool = true
+	var sends_right: bool = true
 	for index: int in AudioServer.bus_count:
-		names.append(AudioServer.get_bus_name(index))
+		var bus: StringName = AudioServer.get_bus_name(index)
+		names.append(bus)
 		if index > 0:
-			all_send_to_master = all_send_to_master and AudioServer.get_bus_send(index) == &"Master"
+			var to: StringName = SUB_BUSES.get(bus, &"Master")
+			sends_right = sends_right and AudioServer.get_bus_send(index) == to
+	var expected: Array[StringName] = GameSettings.BUSES.duplicate()
+	expected.append_array(SUB_BUSES.keys())
 	var autoload: Node = root.get_node_or_null(^"Settings")
 	var is_settings: bool = autoload is GameSettings
-	return report(names == GameSettings.BUSES and all_send_to_master and is_settings,
-			"The buses %s, all sending to Master %s; the Settings autoload in the tree %s"
-			% [names, all_send_to_master, is_settings])
+	return report(names == expected and sends_right and is_settings,
+			"The buses %s, the option buses sending to Master and the others to theirs %s; "
+			% [names, sends_right]
+			+ "the Settings autoload in the tree %s" % is_settings)
 
 
 func _with_no_file_every_option_is_its_default_and_applied() -> bool:

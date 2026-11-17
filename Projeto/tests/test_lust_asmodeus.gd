@@ -1,6 +1,7 @@
 # Checks Asmodeus in level 1, in the main scene, as the game plays her. In a new game:
 # - Reaching phase 2's save, she talks from asmodeus_offer; while she talks the dogs stand still.
-#   Refusing, he stays in the level and moves again, with the dogs.
+#   Refusing, he stays in the level; the camera cutscene of phase 2 plays, with the dogs moving,
+#   and after it he moves again, with the dogs.
 # - An offer his deaths brought waits while he stands outside its zone, and she makes it from
 #   asmodeus_deaths once he walks into it; it waits until he answers. Accepting takes him to the tent at the level's end: he
 #   stands there, not at phase 2's start, though he reached it. No more offers come for his deaths.
@@ -74,11 +75,18 @@ func _phase_2_then_deaths_then_the_shortcut_and_the_ending() -> Array[bool]:
 	var talked: bool = balloon != null
 	var dogs_still: bool = not dogs.can_process()
 	var refused: bool = await _answer(level, balloon, REFUSE)
+	# The end of her offer starts phase 2's camera cutscene, gate B locking, with the dogs moving.
+	var intro: CameraCutscene = level.get_node(^"Cutscenes/Phase2Intro") as CameraCutscene
+	var shown: bool = intro.is_playing()
+	var dogs_in_it: bool = dogs.can_process()
+	await wait_until(func() -> bool: return not intro.is_playing(), TALK_FRAMES * 2)
+	await physics_frame
 	var moves_again: bool = (level.player.get_speed_multiplier() == 1.0 and dogs.can_process()
 			and level_in(main) == level)
-	results.append(report(talked and dogs_still and refused and moves_again,
-			("Phase 2: she talks %s, the dogs still %s; refused, the talk ends %s, he and the dogs "
-			+ "move again in the same level %s") % [talked, dogs_still, refused, moves_again]))
+	results.append(report(talked and dogs_still and refused and shown and dogs_in_it and moves_again,
+			("Phase 2: she talks %s, the dogs still %s; refused, the talk ends %s, the gate's cutscene "
+			+ "plays %s with the dogs moving %s, then he and the dogs move again in the same level %s")
+			% [talked, dogs_still, refused, shown, dogs_in_it, moves_again]))
 
 	# An offer for his deaths in phase 2's zone, made when he walks in.
 	var respawn: Vector2 = (phase_2_save.get_node(^"Respawn") as Node2D).global_position

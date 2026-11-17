@@ -469,8 +469,8 @@ ajusta no Inspector. Por agora são formas provisórias, até chegar a arte.
 
 | Elemento | Cena | Comportamento | Medida |
 |---|---|---|---|
-| Portão | `scenes/objects/gates/gate.tscn` | barra uma passagem à personagem, aos demónios e à visão destes; desbloqueado, sobe a sua própria altura, por trás da rocha; com Slide Way em Left ou Right, é um alçapão e desliza para esse lado a sua própria largura | desliza em 0,8 s (48 passos de física) |
-| Desbloqueador | `scenes/objects/gates/gate_unlocker.tscn` | ativa-se uma vez, com o crucifixo erguido ao pé dele, e abre os portões da lista Gates; o crucifixo não sabe que ele existe, porque o reconhece como mais um elemento repelível (`scenes/characters/components/crucifix_sensor.gd`), que não se move | alcance de 200 px, o raio do crucifixo |
+| Portão | `scenes/objects/gates/gate.tscn` | barra uma passagem à personagem, aos demónios e à visão destes; desbloqueado, sobe a sua própria altura, por trás da rocha; com Slide Way em Left ou Right, é um alçapão e desliza para esse lado a sua própria largura; pode também ser posto aberto de imediato e trancado outra vez, deslizando de volta ao seu lugar, para uma cena de câmara o mostrar a fechar | desliza em 0,8 s (48 passos de física), para abrir e para fechar |
+| Desbloqueador | `scenes/objects/gates/gate_unlocker.tscn` | ativa-se uma vez, com a ação de interagir (E, ou X no comando) ao pé dele, e abre os portões da lista Gates; enquanto a personagem está perto e ele ainda não foi usado, mostra por cima a tecla e a palavra "Unlock", como a Velvet mostra "Talk"; o crucifixo já não o abre; com uma cena de câmara (Cutscene), a câmara vai primeiro ao portão e este só abre quando ela lá chega | área de uso de 400 × 192 px, 200 px para cada lado, o alcance que tinha o crucifixo |
 | Anel de proximidade | `scenes/objects/gates/proximity_unlocker.tscn` | ativa-se uma vez, na primeira vez que a personagem entra no círculo, sem crucifixo, e abre os portões da lista Gates | alcance (Reach) de 288 px por omissão |
 | Picos letais | `scenes/objects/traps/lethal_spikes.tscn` | um toque mata a personagem de imediato, com qualquer valor de SP; os demónios passam por cima sem efeito | parte que mata com 24 px de altura e 4 px de folga em cada ponta, para um salto que passe à vista passar mesmo |
 | Plataforma que desaba | `scenes/objects/platforms/collapsing_platform.tscn` | usa o mesmo tile das plataformas de sentido único; pousar nela faz com que pisque e desapareça; saltar através dela, de baixo, não a ativa; volta ao fim de Come Back Time, com 0 fica desaparecida até o nível recomeçar | desaparece em 0,6 s (36 passos) e volta ao fim de 3 s |
@@ -618,6 +618,7 @@ deste jogo: a corrida, as chaminés, as subidas e as quedas. As medidas foram ob
 | Corpo sempre no ecrã | na vertical, a câmara desloca-se sempre o necessário para o corpo inteiro da personagem ficar no ecrã, mesmo que isso passe o limite de uma zona: uma câmara atrasada numa subida rápida, ou uma zona com o topo baixo demais, nunca cortam a cabeça. Na horizontal, o mesmo acontece enquanto a câmara muda de zona, se a personagem estava no ecrã e se deslocou, mas não ao entrar num miradouro, cuja Vista pode ficar ao lado da personagem; uma personagem que avança mais de 200 px num só passo foi colocada, não se deslocou, e a câmara continua a chegar até ela de forma suave. Dentro de uma zona, o lado da zona pode cortar até metade do corpo, antes de a personagem passar para a zona seguinte | com os pés 20 px abaixo do topo de uma zona ancorada em cima, a cabeça fica 76 px acima da zona, e o topo do ecrã sobe exatamente até ela; a correr a 720 px/s para um poço com zoom 2 e a parar a 120 px do lado oposto, o corpo chegava a ficar 205 px fora do ecrã e passou a ficar sempre dentro |
 | Limite horizontal | com a opção Limit Horizontally desligada (por omissão), a zona limita o ecrã só em cima e em baixo, e na horizontal a câmara segue a personagem como fora das zonas; ligada, limita-o dos quatro lados, para uma sala em que a câmara deve ficar parada | numa zona de 1200 px de largura, com a personagem a 1100 px da borda esquerda, a câmara fica no centro da zona (x 600) com a opção ligada e acompanha a personagem (x 1036) com a opção desligada, com o mesmo enquadramento vertical |
 | Âncora vertical | numa zona mais baixa do que o ecrã, a âncora da zona escolhe onde fica o ecrã: em baixo (1), o fundo do ecrã coincide com o fundo da zona; em cima (0), o topo do ecrã coincide com o topo da zona; ao centro (0,5, o valor por omissão), o excesso divide-se pelos dois lados | numa zona de 400 px de altura, o ecrã mostra 680 px acima da zona com a âncora em baixo e 340 px de cada lado com a âncora ao centro; numa zona mais alta do que o ecrã, a âncora não altera a posição da câmara |
+| Cenas de câmara | uma cena de câmara (`CameraCutscene`) leva a câmara a mostrar, por ordem, os enquadramentos (`CameraShot`) que tem como filhos, cada um com uma Vista (um `ReferenceRect` filho), um tempo de viagem e um tempo de paragem, e volta depois à personagem; começa quando a personagem entra pela primeira vez na sua zona de câmara (Trigger Zone), quando outro elemento a pede, como um desbloqueador, ou quando acaba uma conversa com a deixa escolhida (Talk Cue), como a oferta da Asmodeu; o mundo continua a correr, mas a personagem fica parada, sem crucifixo e sem receber golpes; o que está no caminho da câmara acorda antes de ela lá chegar (ver "Atividade fora do ecrã"); a câmara desloca-se com aceleração e travagem suaves e muda o zoom em proporção constante; um enquadramento com Keep Zoom mantém o zoom que a câmara tinha e só a centra na Vista; entre dois sítios que não cabem no mesmo ecrã, pode afastar-se a meio caminho até os dois caberem (Zoom Out To Travel); com Motion Blur, a imagem arrasta-se na direção da deslocação, tanto mais quanto mais depressa, até Max Blur, num ecrã por cima do nível e por baixo dos menus (`MotionBlur`, na câmara); cada enquadramento avisa quando a câmara lá chega (arrived), para um portão fechar ou abrir à vista; com um evento (Event), só se vê uma vez em todo o jogo, e o jogo grava nesse momento, como com um upgrade aceite, para uma morte não a repetir; o salto termina-a, passado meio segundo | uma viagem de 1 s chegou ao enquadramento em 59 passos de física (60 previstos); entre duas Vistas a 24 000 px uma da outra, com zooms de 1,2 e 0,6 nos extremos, a câmara afastou-se até ao zoom 0,070 a meio; com Keep Zoom, o zoom não mudou (diferença abaixo de 0,0001); com Motion Blur 0,5 e Max Blur 30 px, o arrastamento chegou a 30 px durante a viagem e foi 0 na paragem e no fim; um elemento adormecido junto da Vista acordou dois frames depois do início, antes de a câmara chegar; a cena da fase 2 do nível 1 durou 3,00 s; no fim, a câmara ficou exatamente onde estava antes de começar |
 | Miradouros | antes de uma queda, de uma subida ou de um entroncamento, um miradouro (`CameraLookout`) afasta a câmara para mostrar esse troço: enquanto a personagem estiver no retângulo do miradouro, e depois durante o salto ou a queda até aterrar, o ecrã enche a Vista (um `ReferenceRect` filho) e nunca mostra nada fora dela, pelo que a Vista se desenha só sobre esse troço do caminho; tem prioridade sobre as zonas; no chão, deixa de valer quando o corpo fica a mais de um tile (48 px) do retângulo | numa Vista de 2400 × 1350 px, o zoom fica em 0,8 e o ecrã coincide com a Vista; numa Vista de 6000 × 5000 px, o zoom para em 0,7 e o ecrã segue a personagem sem sair dela; ao sair de um rebordo, o miradouro mantém-se durante toda a queda e acaba na aterragem |
 
 As zonas de câmara definem-se na cena de cada nível (ver "Câmara" em "Para quem programa"). Cada
@@ -799,6 +800,34 @@ plataforma cai pela direita, contra os picos. A personagem real percorre o poço
 partir dos tiles novos, e a parede esquerda do poço passou a ter três faixas de pedra em vez de uma. O texto da fase 3
 tem agora 182 × 220 tiles e 181 tiles de picos; ficou também sem o cão que tinha sido retirado da cena à mão.
 
+Na fase 1, o poço com cães a meio do caminho passou de paredes irregulares a um poço de paredes direitas, com a
+largura da boca (13 tiles), que se alarga no fundo numa câmara de 21 × 4 tiles; ficou com 78 tiles de rocha a mais e 74
+a menos. No fim do corredor que acaba na subida para a parte de cima da fase, foi escavada uma cova de 5 tiles de
+largura e 4 de fundo, onde se pode atirar com o crucifixo os cães que esperam ao pé da subida. As duas zonas de câmara
+foram ajustadas para cobrir o que foi escavado, e a do poço passou a fixar o ecrã entre os seus lados, para não deixar
+ver, do fundo, a sala ao lado. As pedras do contorno (50 retiradas e 22 novas) foram dispostas pelo próprio `StoneRim`
+a partir dos tiles novos, e o fundo foi repintado só à volta das duas alterações, com a cor da zona onde ficam. O nível
+tem três cenas de câmara, curtas e sem zoom, com um ligeiro arrastamento da imagem nas deslocações: à entrada da
+primeira sala da fase 1, a câmara vai depressa até à saída, a chaminé que sobe para a fase 2, e volta (5 s ao todo);
+na fase 2, quando acaba a primeira conversa com a Asmodeu, a câmara vai ao primeiro portão, que se vê fechar, e volta
+(3 s); ao usar o desbloqueador desse portão, a câmara vai ao portão e ele abre à vista (4,6 s). As três só se veem uma
+vez, e o salto termina-as. Uma primeira versão afastava a câmara sobre a fase inteira, durava 13,5 e 16 s e começava a
+de fase 2 ao entrar na sala, ao mesmo tempo que a conversa, que imobiliza os cães: no caminho, viam-se cães parados.
+
+O fundo da caverna (`level1_cave_map.png` e `level1_cave_shade.png`, um píxel por 8 px do mundo) estava desalinhado com
+a rocha no tutorial e em quase toda a fase 1. Quando o poço S da fase 3 passou para o triplo, a imagem foi esticada 32
+tiles (1 536 px) para baixo a partir do corte, mas até ao fundo da imagem e não só até ao fim da fase 3, nas colunas da
+fase 3 (x de 2 400 a 11 136 px). Por isso, por baixo da fase 3, o ar aparecia escuro e a rocha iluminada, e via-se
+uma costura vertical a x = 2 400 px, no tutorial. O fundo foi refeito a partir da versão anterior ao poço triplo, com o
+esticão limitado às linhas da fase 3, e o repintado do poço da fase 1 foi aplicado outra vez por cima. Para o medir, a
+diferença entre o brilho médio do fundo no ar e na rocha, numa escala de 0 a 255, no tutorial e na fase 1 (x até
+11 000 px, y de 12 000 px até ao fundo): era 18 e passou a 116. Na fase 3 e na fase 2 o fundo ficou igual.
+
+A mesma medida mostrou que a sombra (`Backdrop/Shade`, a imagem que multiplica o fundo) estava 183 px abaixo do sítio
+onde a sua luz coincide com a rocha: tinha passado de y = −11 px para (−3, 172) num commit de 15 de novembro, sem razão
+registada. Voltou a (0, −11). Com ela no sítio, a diferença entre ar e rocha passou de 55 para 96 na fase 2, de 84 para
+107 na fase 3 e de 85 para 116 no tutorial e na fase 1: a luz fica no ar e a sombra junto às paredes.
+
 | Medida em headless, sem o custo de desenhar | Fase 2 sozinha (33 cães) | Nível 1 antes da fase 3 (88 cães) |
 |---|---|---|
 | Recomeçar depois de uma morte (instanciar e entrar na árvore) | cerca de 25 ms | cerca de 90 ms |
@@ -936,7 +965,7 @@ a vibração do crucifixo dá lugar a um impulso que desce até zero ao longo de
 parar de repente; largado antes, o crucifixo baixa sem impulso. Cada vez que algo que o crucifixo
 empurra entra na luz dele, como um cão que corre para a personagem, vibra uma pancada curta no motor
 fraco, por cima da vibração contínua. Vários a entrar no mesmo instante dão uma só pancada, e o
-desbloqueador de um portão, que o crucifixo alcança mas não empurra, não dá nenhuma. Depois da
+desbloqueador de um portão, que já não responde ao crucifixo, não dá nenhuma. Depois da
 morte, o crucifixo fica erguido até a sala recomeçar, mas o que ele faz já não vibra. Um impulso faz
 a vibração contínua descer a 30 % só nos motores que ele usa, para que se sinta por cima dela, e ela
 volta a subir à medida que o impulso desce. Assim, os toques para se soltar, só no motor fraco, não
@@ -1133,7 +1162,7 @@ Remote; os restantes valores são lidos sempre que são usados.
     │   ├── characters/  a personagem (player/), o crucifixo (crucifix/), os demónios (demon/, com os estados em states/, e os que falam, Velvet e Asmodeu) e os componentes que mais de um sistema usa (components/)
     │   ├── levels/      uma pasta por nível: a sala de teste (test_room/), a sala de treino (gym/) e o nível 1 (lust/, com os construtores e os mapas em texto em builders/); na raiz, as peças e os scripts comuns e o fundo de que os níveis partem (background/)
     │   ├── objects/     peças com comportamento: portões (gates/), plataformas (platforms/) e armadilhas (traps/)
-    │   ├── others/      câmara (camera/), atividade fora do ecrã (activity/, o ActivityTracker, que adormece o que está parado longe do ecrã), depuração (debug/), resposta aos impactos (feedback/), todos os shaders (shaders/) e conjuntos de tiles (tilesets/)
+    │   ├── others/      câmara (camera/), atividade fora do ecrã (activity/, o ActivityTracker, que adormece o que está parado longe do ecrã), som ambiente (ambience/, as camadas de sons soltos), depuração (debug/), resposta aos impactos (feedback/), todos os shaders (shaders/) e conjuntos de tiles (tilesets/)
     │   └── screens/     menus, ecrã das opções, o balão de diálogo e indicador de gravação
     ├── tests/         testes automáticos (test_*.gd), que correm sem janela
     │   ├── launchers/ abrem o jogo num ponto escolhido, para ver à mão (por agora, o fim da fase 2)
@@ -1244,6 +1273,7 @@ godot --headless --fixed-fps 60 --path Projeto --script res://tests/test_pause.g
 godot --headless --fixed-fps 60 --path Projeto --script res://tests/test_phase_exit.gd
 godot --headless --fixed-fps 60 --path Projeto --script res://tests/test_lethal_spikes.gd
 godot --headless --fixed-fps 60 --path Projeto --script res://tests/test_gate.gd
+godot --headless --fixed-fps 60 --path Projeto --script res://tests/test_camera_cutscene.gd
 godot --headless --fixed-fps 60 --path Projeto --script res://tests/test_collapsing_platform.gd
 godot --headless --fixed-fps 60 --path Projeto --script res://tests/test_lust_phase_2.gd
 godot --headless --fixed-fps 60 --path Projeto --script res://tests/test_lust_phase_2_route.gd
@@ -1268,6 +1298,7 @@ godot --headless --fixed-fps 60 --path Projeto --script res://tests/test_demon_j
 godot --headless --fixed-fps 60 --path Projeto --script res://tests/test_demon_path.gd
 godot --headless --fixed-fps 60 --path Projeto --script res://tests/test_demon_mark.gd
 godot --headless --fixed-fps 60 --path Projeto --script res://tests/test_demon_sounds.gd
+godot --headless --fixed-fps 60 --path Projeto --script res://tests/test_ambience_layer.gd
 godot --headless --fixed-fps 60 --path Projeto --script res://tests/test_hit_boxes.gd
 godot --headless --fixed-fps 60 --path Projeto --script res://tests/test_knockback.gd
 godot --headless --fixed-fps 60 --path Projeto --script res://tests/test_stacked_bodies.gd
@@ -1735,7 +1766,7 @@ a luz estaria no brilho todo ao apagar-se.
 O `struck` vem do sinal `area_entered` da área de afastamento, que o motor de física já calcula, e
 diz-se uma vez por passo de física, por muitos que entrem nesse passo. O que já está no raio quando
 o crucifixo se ergue conta nesse momento, e o que entra com ele em baixo não conta. Só conta o que o
-crucifixo empurra, um `Repellable` com Target: o desbloqueador de um portão, que ele só alcança, não
+crucifixo empurra, um `Repellable` com Target: um elemento que ele só alcance, sem o empurrar, não
 conta. Ficou de fora comparar, em cada passo, a lista do que está no raio com a do passo anterior.
 Essa comparação soma cerca de 4 µs por passo com 10 demónios no raio, 35 µs com 50 e 390 µs com 200:
 com quatro vezes mais demónios, custa cerca de onze vezes mais, perto do quadrado. Com o sinal, um
@@ -3279,6 +3310,12 @@ cena do nível. As regras são estas:
   personagem está fora do ecrã. Sem esta regra, num teste que põe a personagem dentro do anel do cão
   maior, a câmara ainda estava a mais de 5 400 px dela 30 frames depois, o cão continuava a dormir
   e o portão não abria; com ela, o portão abre no segundo frame.
+- Numa cena de câmara, o caminho de cada deslocação também conta como ecrã. No início de cada
+  deslocação, a cena entrega ao rastreador os ecrãs por onde a câmara vai passar, espaçados de meio
+  ecrã, e o rastreador verifica todos os membros nesse frame. Uma deslocação rápida percorre mais de
+  480 px em menos de dez frames, e um cão nesse caminho só seria verificado depois de já estar no
+  ecrã, parado. Assim, os cães do caminho já se movem, e a paralaxe já desliza, quando aparecem. No
+  fim da cena, o caminho deixa de contar, e o que ficou longe volta a adormecer.
 
 O cão da luxúria (`lust_demon_stats.tres`) só começa uma perseguição no ecrã e desiste a 160 px
 fora dele (ADR 0032 e 0038). Por isso, adormecê-lo quando está parado longe do ecrã não muda nada do
@@ -3345,6 +3382,44 @@ adormecido nunca está no ecrã. A verificação do `test_level1.gd` que põe os
 personagem longe desliga o rastreador enquanto corre: ligado, adormeceria os cães longe do ecrã, e
 estes não patrulhariam. Com todos os testes, antes e depois do rastreador, falham as mesmas
 verificações (12 testes, das fases 1 a 3, já falhavam antes dele).
+
+#### Som ambiente: camadas de sons soltos e o bus Alerts
+
+O som ambiente de um nível (trovões, rajadas de vento, vozes) não é uma faixa em ciclo, porque um
+ciclo, por mais longo que seja, acaba por ser reconhecido. Cada tipo de som é uma camada, um nó
+`AmbienceLayer` (`scenes/others/ambience/ambience_layer.tscn`), que toca um som de cada vez, em
+momentos e pontos escolhidos ao acaso:
+
+- O intervalo entre o início de um som e o do seguinte é sorteado entre Min Gap e Max Gap (por
+  omissão, 8 e 25 s).
+- Cada som parte de um ponto ao acaso à volta do centro do ecrã: por omissão, até 900 px para cada
+  lado e até 300 px para cima ou para baixo. O lado decide em que coluna se ouve mais, e a distância
+  decide o volume.
+- Os sons vêm de um `AudioStreamRandomizer` do Godot, no campo Sounds, que escolhe um som diferente
+  do anterior e lhe varia o tom e o volume.
+
+Assim, com poucos ficheiros, a sequência de sons não se repete. As camadas ficam dentro do nível, pelo
+que a pausa as suspende com o resto do jogo; `start()` e `stop()` ligam-nas e desligam-nas por zona
+ou por acontecimento. Os ambientes contínuos por baixo das camadas, como um vento constante, são
+leitores de som em ciclo no bus Ambience e não precisam de script. Ficaram de lado o
+`AudioStreamPlaylist` do Godot, que baralha faixas longas mas não controla o espaço entre elas (dois
+trovões podem seguir-se) e acaba por as repetir, e o FMOD, uma ferramenta externa, com licença e
+aprendizagem próprias, desproporcionada para três níveis.
+
+O som ambiente não pode tapar o que é preciso ouvir para sobreviver. Os sons do demónio e do
+crucifixo tocam num bus próprio, Alerts, que envia para o SFX e segue por isso o volume dos efeitos
+nas opções, sem opção própria. Um compressor no bus Ambience escuta o Alerts (sidechain): enquanto
+um alerta toca acima de −20 dB, o ambiente baixa, na razão de 4 para 1, e volta ao normal em 500 ms
+depois de o alerta acabar. Os sons da própria personagem (passos, saltos, aterragens e o deslizar na
+parede) ficam no SFX: se fossem eles a baixar o ambiente, este oscilaria a cada passo.
+
+O `test_ambience_layer.gd` verifica, com um som silencioso criado em memória, que cada intervalo
+fica entre Min Gap e Max Gap e que os intervalos variam; que os sons partem dos dois lados do centro
+do ecrã, dentro dos limites, ou da própria camada quando não há câmara; que tocam no bus Ambience;
+que `stop()` e a pausa os suspendem; e que o Alerts envia para o SFX, o compressor do Ambience o
+escuta, o demónio e o crucifixo estão no Alerts e a personagem no SFX. Quanto o ambiente baixa só se
+ouve com som real e confirma-se à mão. O `test_settings.gd` confirma a lista de buses: os cinco com
+opção de volume, todos a enviar para o Master, e o Alerts, a enviar para o SFX.
 
 ### Convenções de código
 

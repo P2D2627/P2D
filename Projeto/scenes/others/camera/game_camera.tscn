@@ -9,6 +9,7 @@
 [ext_resource type="Resource" path="res://scenes/others/feedback/impact_stats.tres" id="6_impact_stats"]
 [ext_resource type="Script" path="res://scenes/others/feedback/controller_rumble.gd" id="7_rumble"]
 [ext_resource type="Resource" path="res://scenes/others/feedback/rumble_stats.tres" id="8_rumble_stats"]
+[ext_resource type="Script" path="res://scenes/others/camera/motion_blur.gd" id="9_blur"]
 
 [node name="GameCamera" type="Camera2D"]
 process_physics_priority = 1
@@ -20,6 +21,11 @@ stats = ExtResource("2_stats")
 [node name="ActivityTracker" type="Node" parent="."]
 unique_name_in_owner = true
 script = ExtResource("3_tracker")
+
+[node name="MotionBlur" type="CanvasLayer" parent="."]
+unique_name_in_owner = true
+layer = 1
+script = ExtResource("9_blur")
 
 [node name="CameraShake" type="Node" parent="." node_paths=PackedStringArray("camera")]
 script = ExtResource("3_shake")

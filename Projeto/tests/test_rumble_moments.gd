@@ -515,8 +515,8 @@ func _a_stab_needs_the_spikes_and_his_death_on_one_frame() -> bool:
 
 ## Two souls in the crucifix's light while it is down strike nothing; raised over them, the crucifix is
 ## struck once, on that frame, though both are in and are pushed for frames until they are out. A
-## gate's unlocker coming into the light opens its gate and strikes nothing, as the crucifix does not
-## push it. Both souls put back in on one frame strike it once more, asking for Crucifix Struck over
+## gate's unlocker coming into the light strikes nothing and opens nothing: it answers Interact, not
+## the crucifix. Both souls put back in on one frame strike it once more, asking for Crucifix Struck over
 ## the held vibration, once the raise's pulse is over. The case's held vibration is flat.
 func _something_coming_into_the_crucifix_s_light_knocks_once() -> bool:
 	var scene: Scene = await _spawn_scene(START)
@@ -548,8 +548,8 @@ func _something_coming_into_the_crucifix_s_light_knocks_once() -> bool:
 							> crucifix.stats.repel_radius + SOUL_RADIUS)))
 	await _frames(_frames_of(stats.crucifix_raised))
 	unlocker.global_position = crucifix.global_position + Vector2(INSIDE_THE_LIGHT, 0.0)
-	var opened: bool = await wait_until(unlocker.is_activated)
 	await wait_frames(OVERLAP_FRAMES)
+	var opened: bool = unlocker.is_activated()
 	var strikes_with_the_unlocker: int = strikes[0]
 	_put_in_the_light(souls, crucifix)
 	var struck_again: bool = await wait_until(func() -> bool:
@@ -563,10 +563,10 @@ func _something_coming_into_the_crucifix_s_light_knocks_once() -> bool:
 	var knock: Vector2 = Vector2(stats.crucifix_struck.weak, stats.crucifix_struck.strong)
 	var last_knock: Vector2 = knocks[-1] if not knocks.is_empty() else Vector2.ZERO
 	return report(strikes_while_down == 0 and raised and struck and strikes_as_raised == 1
-			and pushed_out and opened and strikes_with_the_unlocker == 1 and struck_again
+			and pushed_out and not opened and strikes_with_the_unlocker == 1 and struck_again
 			and strikes_put_back == 2 and last_knock.is_equal_approx(knock),
 			("two souls in its light while it is down strike it %d time(s) (0); raised over them: %s, "
-			+ "struck: %s, %d time(s) (1); pushed out: %s; an unlocker in its light opens its gate: "
+			+ "struck: %s, %d time(s) (1); pushed out: %s; an unlocker in its light opens its gate (no): "
 			+ "%s, with %d strike(s) in all (1); both put back in on one frame strike it again: %s, "
 			+ "%d in all (2), asking %s (%s)") % [strikes_while_down, raised, struck,
 			strikes_as_raised, pushed_out, opened, strikes_with_the_unlocker, struck_again,
