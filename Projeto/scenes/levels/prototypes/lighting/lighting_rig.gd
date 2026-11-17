@@ -270,7 +270,9 @@ static var shadow_on: bool = false
 static var trail: int = TRAIL_ASH
 static var ink_on: bool = true
 static var crucifix_fx_on: bool = true
-static var dog_smoke_on: bool = true
+## Off by default: the ash on the dogs does not read right yet (17/11); the code stays, Ctrl+F10
+## turns it on.
+static var dog_smoke_on: bool = false
 static var squash_on: bool = true
 ## The grade's table, built once: a restart after a death keeps it.
 static var _grade_table: ImageTexture3D
@@ -1614,7 +1616,7 @@ func _update_hud() -> void:
 			"    (current look: none of these)" if mode == Mode.CURRENT else ""]
 			+ "Ctrl+F5 man lit by the scene: %s    Ctrl+F6 outline: %s    Ctrl+F7 trail: %s    Ctrl+F8 ink style: %s\n"
 			% [_on(scene_light_on), _on(outline_on), TRAIL_NAMES[trail], _on(ink_on)]
-			+ "Ctrl+F9 crucifix's light: %s    Ctrl+F10 dogs' smoke: %s    Ctrl+F11 squash: %s\n"
+			+ "Ctrl+F9 crucifix's light: %s    Ctrl+F10 dogs' ash: %s    Ctrl+F11 squash: %s\n"
 			% [_on(crucifix_fx_on), _on(dog_smoke_on), _on(squash_on)]
 			+ "vision CPU: %.2f ms    B aura: %.2f ms    dogs, spikes, fires: line of sight (#253)"
 			% [_last_vision_usec / 1000.0, _last_aura_usec / 1000.0])
