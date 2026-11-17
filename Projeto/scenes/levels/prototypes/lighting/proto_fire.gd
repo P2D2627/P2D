@@ -15,13 +15,14 @@ const RAMP_SHADER: Shader = preload("res://scenes/levels/prototypes/lighting/pro
 ## The fire's ramp, by brightness: a deep wine near the cave's darkest colour, a deep magenta, the
 ## fire's pink, a peach and a warm core close to white.
 const RAMP_OFFSETS: PackedFloat32Array = [0.0, 0.35, 0.65, 0.9, 1.0]
-## The fire sheets' brightest luminance (measured on 16/11: 0.43 upright, 0.38 low), which takes
-## the ramp's light end; their outline sits at ~0.01, their body at 0.26 to 0.28.
+## The luminance that takes the ramp's light end, read as the shader reads it (Rec. 601). The fire
+## sheets peak at 0.376 (the low fire) and 0.373 (the leaning, creeping and bonfire ones), measured
+## on 17/11; their outline sits at ~0.01, their body at ~0.26. Their brightest pixels are the band
+## round each tongue, not a core: taking 0.37 turned that band near white and the flames pastel in
+## the recorded frames, so it stays at 0.43, the look approved on 16/11 (band peach, body pink).
 const RAMP_BRIGHTEST: float = 0.43
 const RAMP_COLORS: PackedColorArray = [Color(0.3, 0.05, 0.18), Color(0.62, 0.1, 0.42),
 		Color(1.0, 0.36, 0.78), Color(1.0, 0.84, 0.76), Color(1.0, 0.97, 0.92)]
-## Seconds each drawn frame shows: the GIF's 130 ms.
-const FRAME_TIME: float = 0.13
 ## With its own look, each fire plays this share faster or slower, at random.
 const SPEED_SPREAD: float = 0.1
 ## How much of each frame's brightness change reaches the halo and the lights.
@@ -56,6 +57,8 @@ var flicker: float = 1.0
 
 var _curve: PackedFloat32Array
 var _frames: int = 1
+## Seconds each drawn frame shows: its GIF's own.
+var _frame_time: float = 0.1
 var _time: float = 0.0
 var _speed: float = 1.0
 var _rate: float = 1.0
@@ -71,13 +74,15 @@ var _particles: Node2D
 
 
 ## Builds the fire. Its origin is the middle of the flame's base, on the floor. Its sparks and
-## embers go under Particle Parent, which the rig draws before the tiles.
-func setup(sheet: Texture2D, frames: int, curve: PackedFloat32Array, flame_scale: float,
-		color: Color, unshaded: Material, additive: Material, halo_texture: Texture2D,
-		particle_parent: Node2D) -> void:
+## embers go under Particle Parent, which the rig draws before the tiles. Frame Time is the seconds
+## each drawn frame shows.
+func setup(sheet: Texture2D, frames: int, frame_time: float, curve: PackedFloat32Array,
+		flame_scale: float, color: Color, unshaded: Material, additive: Material,
+		halo_texture: Texture2D, particle_parent: Node2D) -> void:
 	_curve = curve
 	_frames = frames
-	_time = randf() * FRAME_TIME * float(frames)
+	_frame_time = frame_time
+	_time = randf() * frame_time * float(frames)
 	_speed = randf_range(1.0 - SPEED_SPREAD, 1.0 + SPEED_SPREAD)
 	_plain = unshaded
 	_halo_color = color
@@ -171,7 +176,7 @@ func get_flame_rect() -> Rect2:
 
 func _process(delta: float) -> void:
 	_time += delta * _rate
-	var step: float = fposmod(_time / FRAME_TIME, float(_frames))
+	var step: float = fposmod(_time / _frame_time, float(_frames))
 	var index: int = int(step)
 	_flame.frame = index
 	var brightness: float = lerpf(_curve[index], _curve[(index + 1) % _frames], step - float(index))

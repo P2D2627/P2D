@@ -95,25 +95,40 @@ const MASK_PARALLAX: int = 4
 ## his main light does not.
 const MASK_MAN: int = 8
 const TILE: int = 48
-## The fires: sheet, frames, each frame's brightness over the mean (measured on the GIFs), size.
+## The fires, taken in turn along the level: sheet, frames, seconds each frame shows and each
+## frame's brightness over the mean (both from the GIFs), size.
 const FIRE_KINDS: Array[Dictionary] = [
-	{"path": "res://assets/sprites/fire/fire_upright_sheet.png", "frames": 10, "scale": 0.45,
-	"curve": [0.879, 0.882, 1.086, 1.123, 1.036, 1.162, 1.144, 0.935, 0.864, 0.889]},
-	{"path": "res://assets/sprites/fire/fire_low_sheet.png", "frames": 9, "scale": 0.4,
-	"curve": [0.939, 0.698, 0.580, 0.783, 1.027, 1.214, 1.170, 1.325, 1.264]},
+	{"path": "res://assets/sprites/fire/fire_bonfire_sheet.png", "frames": 17, "frame_time": 0.11,
+	"scale": 0.45, "curve": [0.985, 0.923, 1.003, 1.046, 1.060, 1.318, 1.127, 1.059, 0.922, 1.004,
+	0.823, 0.777, 1.057, 1.038, 0.872, 0.993, 0.993]},
+	{"path": "res://assets/sprites/fire/fire_low_sheet.png", "frames": 9, "frame_time": 0.13,
+	"scale": 0.4, "curve": [0.939, 0.698, 0.580, 0.783, 1.027, 1.214, 1.170, 1.325, 1.264]},
+	{"path": "res://assets/sprites/fire/fire_leaning_sheet.png", "frames": 12, "frame_time": 0.12,
+	"scale": 0.5, "curve": [1.058, 1.109, 1.177, 1.384, 0.818, 0.853, 0.922, 1.008, 0.919, 1.047,
+	0.830, 0.874]},
+	{"path": "res://assets/sprites/fire/fire_creeping_sheet.png", "frames": 16, "frame_time": 0.09,
+	"scale": 0.45, "curve": [0.595, 0.667, 0.660, 0.774, 1.090, 1.254, 1.087, 1.285, 1.172, 1.250,
+	1.606, 1.295, 1.213, 0.770, 0.658, 0.624]},
 ]
 const FIRE_COLOR := Color(1.0, 0.36, 0.78)
 const FIRE_ENERGY: float = 0.6
 const FIRE_RADIUS: float = 950.0
 const FIRE_LIGHT_HEIGHT: float = 50.0
-const FIRE_FRAME_TIME: float = 0.13
-## Where fires go: floors from Gap tiles past the man's start, one every Spacing tiles, searched
-## Height tiles up and down from his floor.
-const FIRST_FIRE_GAP: int = 6
-const FIRE_SPACING: int = 14
-const FIRE_SCAN_WIDTH: int = 110
+## Where fires go, over the whole level: in the middle of each floor at least Min Floor tiles wide,
+## so on ground he walks and not on a step he jumps to, with Open Above open tiles over it inside the
+## map (the rock round the cave has open air above its top row); a long floor gets one every
+## Spacing tiles. Never within Spike Margin tiles of a strip of lethal spikes, at least Spacing tiles
+## from each other and Start Gap tiles from the man's start. Spacing keeps the fire lights that
+## reach one screen under the 15 lights a drawing takes in gl_compatibility (ADR 0065); the set-up
+## print says how many reach one.
+const FIRE_START_GAP: int = 6
+const FIRE_SPACING: int = 20
+const FIRE_MIN_FLOOR: int = 5
+const OPEN_ABOVE: int = 3
+const FIRE_SPIKE_MARGIN: int = 2
+const MAX_FIRES: int = 200
+## How far up and down from a row the rig looks for the floor a background rock stands on, in tiles.
 const FIRE_SCAN_HEIGHT: int = 14
-const MAX_FIRES: int = 6
 const NO_FLOOR: int = -99999
 ## Where a recorded run puts the man, from the fire it names.
 const NEAR_FIRE_OFFSET := Vector2(-300.0, -10.0)
@@ -263,6 +278,8 @@ var _depth: Node2D
 var _foreground: Node2D
 var _fires: Array[Node2D] = []
 var _parallax_fires: Array[Sprite2D] = []
+## Seconds each frame of each background fire shows, by its index in Parallax Fires.
+var _parallax_frame_times: Array[float] = []
 var _unshaded := CanvasItemMaterial.new()
 var _additive := CanvasItemMaterial.new()
 var _falloff: GradientTexture2D
@@ -326,7 +343,7 @@ func _process(delta: float) -> void:
 	_time += delta
 	for k: int in _parallax_fires.size():
 		var sprite: Sprite2D = _parallax_fires[k]
-		sprite.frame = (int(_time / FIRE_FRAME_TIME) + k * 3) % sprite.hframes
+		sprite.frame = (int(_time / _parallax_frame_times[k]) + k * 3) % sprite.hframes
 	_update_wind(delta)
 	if mode == Mode.PROPAGATION:
 		_update_propagation(delta)
@@ -626,7 +643,9 @@ func _add_fires() -> void:
 	particles.name = "ProtoFireParticles"
 	_level.add_child(particles)
 	_level.move_child(particles, _tiles.get_index())
+	var started_usec: int = Time.get_ticks_usec()
 	var spots: Array[Vector2] = _find_fire_spots()
+	var placed_ms: float = float(Time.get_ticks_usec() - started_usec) / 1000.0
 	_fire_ramp = ProtoFire.make_ramp_material()
 	for n: int in spots.size():
 		var kind: Dictionary = FIRE_KINDS[n % FIRE_KINDS.size()]
@@ -634,37 +653,142 @@ func _add_fires() -> void:
 		var fire := ProtoFire.new()
 		fire.position = spots[n]
 		holder.add_child(fire)
-		fire.setup(sheet, int(kind["frames"]), PackedFloat32Array(kind["curve"]), float(kind["scale"]),
-				FIRE_COLOR, _unshaded, _additive, _halo, particles)
+		fire.setup(sheet, int(kind["frames"]), float(kind["frame_time"]),
+				PackedFloat32Array(kind["curve"]), float(kind["scale"]), FIRE_COLOR, _unshaded,
+				_additive, _halo, particles)
 		fire.add_lights(_falloff, FIRE_COLOR, FIRE_ENERGY, FIRE_RADIUS, FIRE_LIGHT_HEIGHT,
 				MASK_WORLD | MASK_PARALLAX | MASK_MAN, MASK_ROCK)
 		fire.hide_when_unseen()
 		_fires.append(fire)
+	var screen: Vector2 = _screen_in_world()
+	var densest: Vector2i = _densest_screen(spots, screen)
+	print("ProtoFires: %d fires, placed in %.0f ms; at most %d light one %d x %d screen, from fire %d"
+			% [spots.size(), placed_ms, densest.x, screen.x, screen.y, densest.y])
 
 
+## The fire spots, left to right (see Fire Start Gap).
 func _find_fire_spots() -> Array[Vector2]:
 	var start: Vector2i = _tiles.local_to_map(_tiles.to_local(_player.global_position))
+	var by_spikes: Dictionary[Vector2i, bool] = _floor_by_spikes()
+	var map_top: int = _tiles.get_used_rect().position.y
+	var floors: Array[Vector2i] = []
+	for cell: Vector2i in _tiles.get_used_cells():
+		if cell.y - OPEN_ABOVE >= map_top and _is_open_floor(cell) and not by_spikes.has(cell):
+			floors.append(cell)
+	var candidates: Array[Vector2i] = []
+	for run: Rect2i in _runs_of(floors):
+		_add_floor_spots(run.position, run.size.x, candidates)
+	candidates.sort_custom(func(a: Vector2i, b: Vector2i) -> bool: return a.x < b.x)
+	var chosen: Array[Vector2i] = []
+	for cell: Vector2i in candidates:
+		if chosen.size() >= MAX_FIRES:
+			break
+		if Vector2(cell - start).length() >= FIRE_START_GAP \
+				and not _has_cell_within(chosen, cell, FIRE_SPACING):
+			chosen.append(cell)
 	var spots: Array[Vector2] = []
-	var x: int = start.x + FIRST_FIRE_GAP
-	while x < start.x + FIRE_SCAN_WIDTH and spots.size() < MAX_FIRES:
-		var floor_y: int = _floor_near(x, start.y)
-		if floor_y == NO_FLOOR:
-			x += 1
-			continue
-		var top: Vector2 = _tiles.map_to_local(Vector2i(x, floor_y)) - Vector2(0.0, TILE * 0.5)
-		spots.append(_tiles.to_global(top))
-		x += FIRE_SPACING
+	for cell: Vector2i in chosen:
+		spots.append(_tiles.to_global(_tiles.map_to_local(cell) - Vector2(0.0, TILE * 0.5)))
 	return spots
 
 
-## The floor nearest to row Around in column X with three open tiles above it, or No Floor.
+func _by_row_then_column(a: Vector2i, b: Vector2i) -> bool:
+	return a.y < b.y or (a.y == b.y and a.x < b.x)
+
+
+## Cells side by side in a row, as rects one tile tall, row by row and left to right.
+func _runs_of(cells: Array[Vector2i]) -> Array[Rect2i]:
+	var sorted: Array[Vector2i] = cells.duplicate()
+	sorted.sort_custom(_by_row_then_column)
+	var runs: Array[Rect2i] = []
+	var start: int = 0
+	for k: int in range(1, sorted.size() + 1):
+		if k < sorted.size() and sorted[k].y == sorted[k - 1].y \
+				and sorted[k].x == sorted[k - 1].x + 1:
+			continue
+		runs.append(Rect2i(sorted[start], Vector2i(k - start, 1)))
+		start = k
+	return runs
+
+
+## The spots on a floor of Length tiles from First: none if it is narrower than Min Floor, else one
+## every Spacing tiles, spread evenly and away from its ends.
+func _add_floor_spots(first: Vector2i, length: int, into: Array[Vector2i]) -> void:
+	if length < FIRE_MIN_FLOOR:
+		return
+	var count: int = maxi(1, floori(float(length) / float(FIRE_SPACING)))
+	for i: int in count:
+		into.append(first + Vector2i(floori((float(i) + 0.5) * float(length) / float(count)), 0))
+
+
+## The floor tiles under each strip of lethal spikes and Spike Margin tiles to each side of it: a
+## fire there would hide the teeth.
+func _floor_by_spikes() -> Dictionary[Vector2i, bool]:
+	var cells: Dictionary[Vector2i, bool] = {}
+	for node: Node in _level.find_children("*", "Area2D", true, false):
+		var spikes := node as LethalSpikes
+		if spikes == null:
+			continue
+		var base: Vector2i = _tiles.local_to_map(_tiles.to_local(
+				spikes.global_position + Vector2(0.0, TILE * 0.5)))
+		var reach: int = ceili(float(spikes.width_tiles) * 0.5) + FIRE_SPIKE_MARGIN
+		for dx: int in range(-reach, reach + 1):
+			cells[base + Vector2i(dx, 0)] = true
+	return cells
+
+
+func _has_cell_within(cells: Array[Vector2i], cell: Vector2i, distance: int) -> bool:
+	for other: Vector2i in cells:
+		if Vector2(cell - other).length() < float(distance):
+			return true
+	return false
+
+
+## The size of one screen in the world: the visible rect over the camera's zoom.
+func _screen_in_world() -> Vector2:
+	var camera: Camera2D = _level.get_viewport().get_camera_2d()
+	var zoom: Vector2 = camera.zoom if camera != null else Vector2.ONE
+	return _level.get_viewport().get_visible_rect().size / zoom
+
+
+## The screen whose light comes from the most fires, wherever it is: x is how many fires light it
+## and y the index of the fire on its left edge. A fire lights a screen when its spot falls in the
+## screen grown by the light's radius on each side; the fullest such box has a fire on its left edge
+## and one on its top edge, so those are the boxes it tries. Spots come left to right.
+func _densest_screen(spots: Array[Vector2], screen: Vector2) -> Vector2i:
+	var box: Vector2 = screen + Vector2.ONE * FIRE_RADIUS * 2.0
+	var densest := Vector2i.ZERO
+	for left: int in spots.size():
+		var last: int = left
+		while last + 1 < spots.size() and spots[last + 1].x <= spots[left].x + box.x:
+			last += 1
+		for top: int in range(left, last + 1):
+			var count: int = 0
+			for k: int in range(left, last + 1):
+				if spots[k].y >= spots[top].y and spots[k].y <= spots[top].y + box.y:
+					count += 1
+			if count > densest.x:
+				densest = Vector2i(count, left)
+	return densest
+
+
+## The floor nearest to row Around in column X with Open Above open tiles over it, or No Floor.
 func _floor_near(x: int, around: int) -> int:
 	for k: int in FIRE_SCAN_HEIGHT * 2:
 		var y: int = around + (k + 1) / 2 * (1 if k % 2 == 1 else -1)
-		if _is_solid(Vector2i(x, y)) and not _is_solid(Vector2i(x, y - 1)) \
-				and not _is_solid(Vector2i(x, y - 2)) and not _is_solid(Vector2i(x, y - 3)):
+		if _is_open_floor(Vector2i(x, y)):
 			return y
 	return NO_FLOOR
+
+
+## A solid tile with Open Above open tiles over it.
+func _is_open_floor(cell: Vector2i) -> bool:
+	if not _is_solid(cell):
+		return false
+	for k: int in range(1, OPEN_ABOVE + 1):
+		if _is_solid(cell + Vector2i.UP * k):
+			return false
+	return true
 
 
 func _is_solid(cell: Vector2i) -> bool:
@@ -706,6 +830,7 @@ func _add_background_fires() -> void:
 		var kind: Dictionary = FIRE_KINDS[_parallax_fires.size() % FIRE_KINDS.size()]
 		_parallax_fires.append(_add_background_fire(rock, _load_texture(String(kind["path"])),
 				int(kind["frames"]), blur))
+		_parallax_frame_times.append(float(kind["frame_time"]))
 		last_x = rock.global_position.x
 
 
