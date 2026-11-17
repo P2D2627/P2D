@@ -49,6 +49,8 @@ const RAMP_SNAP_SHARE: float = 0.001
 const WALL_HUG_STEP: float = 1.0
 ## The sides a wall beside him may be on: -1 left, 1 right.
 const WALL_SIDES: Array[float] = [-1.0, 1.0]
+## The brambles' hold on him (ADR 0067).
+const Snag := preload("res://scenes/characters/player/snag.gd")
 
 ## Movement values. Every player that uses the same file shares them.
 @export var stats: PlayerMovementStats
@@ -62,6 +64,9 @@ const WALL_SIDES: Array[float] = [-1.0, 1.0]
 ## where its attacks don't reach, is never a safe spot (ADR 0022).
 @export_flags_2d_physics var knock_off_layers: int = 0
 
+## The brambles' hold on him, which the strips catch him with; it puts itself here as it gets ready.
+## With none, as in a bare test player, brambles kill him at one touch.
+var snag: Snag = null
 ## In the air until the first move_and_slide() finds the floor.
 var _state: State = State.IN_AIR
 ## Physics frames left in which Jump still works after leaving the floor without jumping.

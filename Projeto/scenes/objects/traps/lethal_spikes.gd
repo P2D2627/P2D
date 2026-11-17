@@ -2,8 +2,10 @@
 class_name LethalSpikes
 extends Area2D
 
-## Spikes that kill the man at one touch, whatever his SP. Its origin is the middle of their base, on
-## the floor, so a strip of any width sits on the tile grid when its width and position agree. Only the
+## Spikes that kill the man at one touch, whatever his SP. With Catches on, they catch him instead
+## (ADR 0067): his Snag slows him, stops his jumps and takes his SP fast, and he dies there when it
+## runs out; out in time, he lives with what is left. Its origin is the middle of their base, on the
+## floor, so a strip of any width sits on the tile grid when its width and position agree. Only the
 ## man is on its mask: demons walk over spikes unharmed. They are drawn as brambles, the Art drawing
 ## once per tile, as tall as the teeth and a little wider than a tile, so they join into one hedge
 ## over the part that kills; with no Art, as teeth.
@@ -12,6 +14,9 @@ const TILE: float = 48.0
 ## What a death on spikes is put down to, in the run's numbers.
 const CAUSE: StringName = &"spikes"
 
+## Off: a touch kills at once. On: the man's Snag catches him and he dies once his SP runs out in
+## them (ADR 0067). Tried and set aside on 17/11, so off; the code stays to compare.
+@export var catches: bool = false
 ## How wide the strip is, in tiles.
 @export_range(1, 128) var width_tiles: int = 2:
 	set(value):
@@ -63,6 +68,7 @@ func _ready() -> void:
 	_apply_size()
 	if not Engine.is_editor_hint():
 		body_entered.connect(_on_body_entered)
+		body_exited.connect(_on_body_exited)
 
 
 func _draw() -> void:
@@ -109,9 +115,20 @@ func _draw_teeth() -> void:
 
 func _on_body_entered(body: Node2D) -> void:
 	var player: Player = body as Player
-	if player != null:
-		# Each strip counts as its own spot: one jump is harder than another.
+	if player == null:
+		return
+	# Each strip counts as its own spot: one jump is harder than another.
+	if catches and player.snag != null:
+		player.snag.catch(self, CAUSE)
+	else:
 		player.die(CAUSE, name)
+
+
+func _on_body_exited(body: Node2D) -> void:
+	var player: Player = body as Player
+	# Always: Catches turned off while he is in them must still let him go.
+	if player != null and player.snag != null:
+		player.snag.release(self)
 
 
 func _apply_size() -> void:

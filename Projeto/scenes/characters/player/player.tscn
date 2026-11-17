@@ -28,6 +28,7 @@
 [ext_resource type="Texture2D" path="res://assets/sprites/player/main_character_jump_384.png" id="15_jump"]
 [ext_resource type="Texture2D" path="res://assets/sprites/player/main_character_escape_384.png" id="16_escape"]
 [ext_resource type="Script" path="res://scenes/others/sight/sight_eyes.gd" id="17_sight_eyes"]
+[ext_resource type="Script" path="res://scenes/characters/player/snag.gd" id="18_snag"]
 
 [sub_resource type="RectangleShape2D" id="RectangleShape2D_player"]
 size = Vector2(48, 96)
@@ -325,6 +326,10 @@ stats = ExtResource("11_grab_stats")
 [node name="GrabPrompt" parent="." unique_id=1485858473 node_paths=PackedStringArray("grab_escape") instance=ExtResource("12_grab_prompt")]
 grab_escape = NodePath("../GrabEscape")
 
+[node name="Snag" type="Node" parent="." node_paths=PackedStringArray("player")]
+script = ExtResource("18_snag")
+player = NodePath("..")
+
 [node name="Eyes" type="Marker2D" parent="."]
 position = Vector2(0, -84)
 script = ExtResource("17_sight_eyes")
@@ -335,4 +340,5 @@ script = ExtResource("17_sight_eyes")
 [connection signal="died" from="." to="Hurtbox" method="set_closed" binds= [true]]
 [connection signal="grabbed" from="GrabEscape" to="Crucifix" method="block" binds= [&"grab"]]
 [connection signal="sink_changed" from="GrabEscape" to="SinkingDrawing" method="set_sink"]
+[connection signal="sink_changed" from="Snag" to="SinkingDrawing" method="set_sink"]
 [connection signal="struggled" from="GrabEscape" to="PlayerAnimation" method="struggle"]
