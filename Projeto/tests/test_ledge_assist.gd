@@ -49,6 +49,9 @@ const REST_PEAK_DEPTH: float = 8.0
 ## waits with no direction, so his run has stopped, before he jumps.
 const SETTLE_FRAMES: int = 3
 const STOP_FRAMES: int = 10
+## Less than a hug's step from a face, in px: close enough that pressing him against it could take
+## the place of his own speed toward it.
+const CLOSE_GAP: float = 0.5
 const TILE_SET: TileSet = preload("res://scenes/others/tilesets/cave_placeholder_tiles.tres")
 ## The levels' solid block: a full cell on the physics layer of the levels' walls.
 const SOLID_SOURCE: int = 0
@@ -140,6 +143,7 @@ func _initialize() -> void:
 	results.append(await _touching_the_face_with_no_direction_climbs_onto_the_ledge())
 	results.append(await _rising_along_far_tiles_with_no_direction_climbs_onto_the_ledge())
 	results.append(await _jumping_from_rest_by_a_far_ledge_climbs_onto_it(probe_jump_height))
+	results.append(await _carried_in_from_close_with_no_direction_climbs_onto_the_ledge())
 	results.append(await _further_below_the_top_falls_along_the_side())
 	results.append(await _with_ledge_assist_height_at_0_falls_along_the_side())
 	results.append(await _pushing_away_falls_along_the_side())
@@ -200,6 +204,17 @@ func _rising_along_far_tiles_with_no_direction_climbs_onto_the_ledge() -> bool:
 	return _report_on_the_ledge(approach,
 			"Rising along a far ledge of tiles with no direction held, from %.1f px below its top"
 			% SEAM_RISE_DEPTH)
+
+
+## Carried by his own speed into a far ledge with no direction held, a little below its top, he is
+## lifted onto it even from less than a hug's step away: his speed toward it counts as a push does.
+func _carried_in_from_close_with_no_direction_climbs_onto_the_ledge() -> bool:
+	var depth: float = _reach - UNDER_REACH
+	var approach: Approach = await _approach(FAR_TILE_LEDGE_FACE, 1.0, depth, 0.0, -1.0, -1.0, 0.0,
+			CLOSE_GAP)
+	return _report_on_the_ledge(approach,
+			"Carried into a far ledge from %.1f px with no direction held, %.1f px below its top"
+			% [CLOSE_GAP, depth])
 
 
 ## Getting onto a far ledge takes no push either: standing on the floor against its face, having let

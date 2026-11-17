@@ -110,6 +110,8 @@ var _ledge_hit: KinematicCollision2D = KinematicCollision2D.new()
 var _wall_hit: KinematicCollision2D = KinematicCollision2D.new()
 ## True from _hug_a_wall() moving him into a wall to the end of that frame's move.
 var _hugging: bool = false
+## True when this physics frame began with him going up, for _assist_onto_a_ledge().
+var _was_rising: bool = false
 
 ## The drawing faces left; it is mirrored while the player faces right.
 @onready var _sprite: AnimatedSprite2D = $Sprite
@@ -128,6 +130,7 @@ func _ready() -> void:
 ## body he can't stand on doesn't count: it shoves him off instead. Just before moving, a fall into
 ## a ledge a little below its top lifts him onto it (ADR 0059); a hug into a wall ends with the move.
 func _physics_process(delta: float) -> void:
+	_was_rising = velocity.y < 0.0
 	_update_state()
 	_shove_off_what_cannot_be_stood_on()
 	if is_on_floor() and velocity.y >= 0.0 and not _knock_off.is_shoving():
@@ -380,8 +383,10 @@ func _is_a_level_wall(collision: KinematicCollision2D) -> bool:
 ## touching one with no speed across, that the next step would hit, he goes up by the fewest whole
 ## px, at most Ledge Assist Height, that let the step carry him over it, and a px across, onto its
 ## edge, and stops falling, so he lands on it even with no speed across, which would leave him
-## hanging by the face. Like the wall slide, it takes no push. A one-way platform has no side for the
-## step to hit.
+## hanging by the face. Like the wall slide, it takes no push, but with no push and no speed of his
+## own toward the face, only the top of a rise along it lifts him: coming down along a face from
+## above, as past a gap in a wall, he is never stopped on its corner (#263). A one-way platform has
+## no side for the step to hit.
 ## Up there, off its face, the wall's coyote frames end, as on landing, so Jump jumps from the
 ## ledge, not off the face. He is never lifted onto a demon, nor while he pushes away, is grabbed,
 ## held still or in a knockback. Never through a ceiling either, with no check of its own: he is
@@ -397,6 +402,9 @@ func _assist_onto_a_ledge(delta: float) -> void:
 	if side == 0.0 and is_on_wall():
 		side = -signf(get_wall_normal().x)
 	if side == 0.0 or input.get_run_direction() == -side:
+		return
+	if (input.get_run_direction() == 0.0 and (_hugging or velocity.x == 0.0)
+			and not _was_rising):
 		return
 	var step: Vector2 = Vector2(side * maxf(absf(velocity.x) * delta, 1.0), 0.0)
 	if not test_move(global_transform, step, _ledge_hit) or not _is_a_level_wall(_ledge_hit):
@@ -466,18 +474,27 @@ func _physics_on_wall(delta: float) -> void:
 
 
 ## With no run input and no speed away from side (-1 left, 1 right), moves the player WALL_HUG_STEP
-## px toward a wall of the level on that side, if one is that close where this frame's rise or fall
-## takes him, so the move touches it. Only a wall of the level, never a demon's side, which still
-## takes a push (ADR 0058), and only while the wall is beside him at the end of the frame: past its
-## end, he gets no push and never drifts under it or over its top.
+## px toward a wall of the level on that side, so the move touches it. Only a wall of the level,
+## never a demon's side, which still takes a push (ADR 0058), and only one that is that close both
+## where he is and where this frame's rise or fall takes him: past a wall's end he gets no push, so
+## he never drifts under it or over its top, nor onto the corner of a wall whose top he falls past.
 func _hug_a_wall(delta: float, side: float) -> void:
 	if side == 0.0 or input.get_run_direction() != 0.0 or velocity.x * side < 0.0:
 		return
+	# His own speed already carries him a step a frame into it: the hug would only take its place.
+	if velocity.x * side * delta >= WALL_HUG_STEP:
+		return
 	var step: Vector2 = Vector2(side * WALL_HUG_STEP, 0.0)
 	var after_this_frame: Transform2D = global_transform.translated(Vector2(0.0, velocity.y * delta))
-	if test_move(after_this_frame, step, _wall_hit) and _is_a_level_wall(_wall_hit):
+	if (_is_a_level_wall_within(global_transform, step)
+			and _is_a_level_wall_within(after_this_frame, step)):
 		velocity.x = step.x / delta
 		_hugging = true
+
+
+## True if a step from where would hit a wall of the level.
+func _is_a_level_wall_within(where: Transform2D, step: Vector2) -> bool:
+	return test_move(where, step, _wall_hit) and _is_a_level_wall(_wall_hit)
 
 
 ## A hug's speed lasts its own move: once the move has put him against the wall, or a lift has put

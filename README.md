@@ -139,10 +139,12 @@ será confirmado em playtest. As tolerâncias beneficiam também quem reage mais
   durante o qual o botão é mantido: um toque dado antes da aterragem produz o salto mínimo.
 - Ajuda nos degraus: se a personagem cai contra a parede de um degrau com os pés até 16 px abaixo
   do topo, um sexto da sua altura, a andar para ele ou só encostada, sobe o que falta e pousa.
-  Como o deslize, não obriga a empurrar. Não atua durante a subida do salto, que já a leva por
-  cima, nem quando o jogador empurra para o lado oposto, nem nos demónios, para que os encontros
-  com eles não mudem. Nas plataformas de sentido único também não atua, porque não têm um lado
-  contra o qual a personagem bata.
+  Como o deslize, não obriga a empurrar; mas, sem direção premida e sem velocidade própria em
+  direção à parede, só atua no topo de uma subida ao longo dela, para que a personagem, ao descer
+  ao longo de uma parede com um vão, não fique pousada na quina da parede de baixo. Não atua
+  durante a subida do salto, que já a leva por cima, nem quando o jogador empurra para o lado
+  oposto, nem nos demónios, para que os encontros com eles não mudem. Nas plataformas de sentido
+  único também não atua, porque não têm um lado contra o qual a personagem bata.
 
 Durante a tolerância de borda, a gravidade continua a atuar, para que a personagem não pareça
 caminhar no ar. Por isso, o último salto aceite parte 27,5 px abaixo da borda e sobe 212,5 px acima
@@ -169,9 +171,10 @@ da colisão (0,08 px). A partir de cerca de x = 2048 px (valor medido), os arred
 números de 32 bits fazem esse contacto aparecer e desaparecer: no nível 1, a personagem caía a meio
 de 226 das 322 paredes e, ao saltar a direito encostada a uma parede, não entrava no deslize. Por
 isso, no ar e sem direção premida, a personagem é encostada 1 px por frame a uma parede do nível que
-esteja a essa distância, desde que a parede continue ao seu lado no fim desse frame, para não passar
-além do fim da parede. O lado de um demónio fica de fora. Com esta correção, não cai a meio de
-nenhuma das 322 paredes, e o custo é de até dois testes de colisão por frame, cerca de 5 µs.
+esteja a essa distância, desde que a parede esteja ao seu lado no início e no fim desse frame, para
+não passar além do fim da parede nem ser levada para a quina de uma parede cujo topo passa ao cair.
+O lado de um demónio fica de fora. Com esta correção, não cai a meio de nenhuma das 322 paredes, e
+o custo é de até quatro testes de colisão por frame, cerca de 10 µs no pior caso.
 
 O salto da parede é dado com a tecla de saltar sempre que a personagem toca numa parede no ar,
 empurrando-a ou não. A personagem sai para o lado oposto à parede, à velocidade máxima da corrida e

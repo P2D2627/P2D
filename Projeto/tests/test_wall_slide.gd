@@ -7,7 +7,8 @@
 # away from it on the floor all work as without a wall. A wall of the levels' tiles takes no push
 # either, touched or carried into. Far from the origin, on either side, carried into a wall or
 # jumping straight up from rest by it, he slides as near it; off the bottom of a wall that ends in
-# the air, he falls straight down. A demon's side, a body on Knock Off Layers, still takes a push:
+# the air, he falls straight down, and past a gap in a wall he slides on down to the floor, never
+# stopping on a corner. A demon's side, a body on Knock Off Layers, still takes a push:
 # touching one without pushing into it falls as without a wall, pushing into it slides, letting go
 # against one that backs away never follows it, and once it is gone it leaves no wall behind.
 # Run from the repository root; the exit code is 0 on pass and 1 on fail:
@@ -45,6 +46,17 @@ const FAR_FLOOR_REACH: float = 400.0
 ## WALL_TOP down to OVERHANG_BOTTOM, a whole number of tiles above the floor's top.
 const OVERHANG_FACE: float = 12000.0
 const OVERHANG_BOTTOM: float = -624.0
+## The face of a far wall of tiles with a gap in it, on its own floor: from WALL_TOP down to
+## GAP_TOP, then GAP_HEIGHT px of open air, then on down to the floor, in line; whole tiles.
+const GAPPED_FACE: float = 14400.0
+const GAP_TOP: float = -1248.0
+const GAP_HEIGHT: float = 144.0
+## Falling in the gap at Max Fall Speed, in line with the face below it, as after sliding down the
+## wall above it: the feet start this many px over the top of the wall below the gap and the side
+## of the body this many px from the face's line, under the safe margin, as level 1 measured (6.3 and
+## 0.074), so the frame that takes the feet past that top starts with no wall beside.
+const OVER_THE_TOP: float = 6.0
+const IN_LINE_GAP: float = 0.05
 ## Frames a player standing against a wall waits after letting go of the direction, before a jump,
 ## so his run has stopped.
 const STOP_FRAMES: int = 10
@@ -89,6 +101,9 @@ func _initialize() -> void:
 	_make_tile_wall(-FAR_TILE_FACE - TILE_SIZE, WALL_TOP)
 	make_platform(OVERHANG_FACE - FAR_FLOOR_REACH, OVERHANG_FACE + TILE_SIZE)
 	_make_tile_wall(OVERHANG_FACE, WALL_TOP, OVERHANG_BOTTOM)
+	make_platform(GAPPED_FACE - FAR_FLOOR_REACH, GAPPED_FACE + TILE_SIZE)
+	_make_tile_wall(GAPPED_FACE, WALL_TOP, GAP_TOP)
+	_make_tile_wall(GAPPED_FACE, GAP_TOP + GAP_HEIGHT)
 	await physics_frame
 	var results: Array[bool] = []
 	results.append(await _pushing_into_the_wall_slides_at_wall_slide_speed())
@@ -108,6 +123,8 @@ func _initialize() -> void:
 	results.append(await _carried_into_a_far_wall_of_tiles_without_pushing_slides(-1.0))
 	results.append(await _jumping_from_rest_by_a_far_wall_slides_after_the_peak())
 	results.append(await _off_the_bottom_of_a_wall_falls_straight_down())
+	results.append(await _past_a_gap_in_a_far_wall_slides_on_to_the_floor())
+	results.append(await _falling_in_line_past_a_wall_s_top_never_lands_on_its_corner())
 	results.append(await _a_demon_s_side_backing_away_is_never_followed())
 	results.append(await _a_demon_s_side_freed_while_touched_leaves_no_wall())
 	finish(results)
@@ -359,6 +376,39 @@ func _off_the_bottom_of_a_wall_falls_straight_down() -> bool:
 	return report(touching and landed and absf(drift) <= DRIFT_TOLERANCE,
 			"Off the bottom of a wall with no direction held: %.2f px across, tolerance %.2f px%s"
 			% [drift, DRIFT_TOLERANCE, _got_going_note(touching and landed)])
+
+
+## Coming down along a wall never leaves him on a corner: sliding down a far wall with a gap in it,
+## with no direction held, he falls past the gap, gets on the wall below it and slides on to the
+## floor. The ledge assist never lifts him onto the top corner of the wall below the gap, as he comes
+## down to it from above, not up to it (ADR 0059).
+func _past_a_gap_in_a_far_wall_slides_on_to_the_floor() -> bool:
+	var player: Player = spawn_player(Vector2(GAPPED_FACE - _half_width - GAP, START_HEIGHT))
+	player.velocity = Vector2(player.stats.max_run_speed, 0.0)
+	var touching: bool = await _wait_until_on_wall(player)
+	await _fall_until_the_floor(player)
+	var end_y: float = player.position.y
+	await _remove(player)
+	return report(touching and absf(end_y) <= HEIGHT_TOLERANCE,
+			("Past a gap in a far wall: landed at y %.1f, the floor's top at 0.0, the top of the "
+			+ "wall below the gap at %.1f%s")
+			% [end_y, GAP_TOP + GAP_HEIGHT, _got_going_note(touching)])
+
+
+## Pressing him against a wall needs the wall beside him for the whole frame: falling in a gap, in
+## line with the face below it and just over its top, with no direction held, he never lands on
+## that top's corner, as he would if a press made on the way past its top carried him onto it.
+func _falling_in_line_past_a_wall_s_top_never_lands_on_its_corner() -> bool:
+	var top: float = GAP_TOP + GAP_HEIGHT
+	var player: Player = spawn_player(
+			Vector2(GAPPED_FACE - _half_width - IN_LINE_GAP, top - OVER_THE_TOP))
+	player.velocity = Vector2(0.0, player.stats.max_fall_speed)
+	await _fall_until_the_floor(player)
+	var end_y: float = player.position.y
+	await _remove(player)
+	return report(absf(end_y) <= HEIGHT_TOLERANCE,
+			("Falling in line past the top of a far wall, %.1f px over it: landed at y %.1f, the "
+			+ "floor's top at 0.0, the wall's top at %.1f") % [OVER_THE_TOP, end_y, top])
 
 
 ## What keeps him on a wall with no direction held only holds him to the level's walls: pushed into a
