@@ -15,6 +15,12 @@ signal wall_jumped(late_frames: int, buffered_frames: int)
 ## that is on the physics frame after the one that touched the floor. The camera uses it to reframe
 ## on the new floor.
 signal landed
+## His head hit a ceiling: once each time it does, on the physics frame after the move that hit it,
+## as with landed. The controller's vibration uses it.
+signal head_bumped
+## He got on a wall: the state turned to ON_WALL, once each time it does, on the physics frame after
+## the move that touched it. The controller's vibration uses it.
+signal got_on_wall
 ## The man died: when a grab runs out of time, which the scene passes on from his GrabEscape to
 ## _on_grab_escape_died(), or when something calls die(), such as spikes. The level listens and starts
 ## over (ADR 0026). His scene closes his Hurtbox on it, since the room starts over.
@@ -82,6 +88,8 @@ var _grabbed: bool = false
 ## True when the last _update_state() found him on the floor, so landing is heard once, grabbed or
 ## not.
 var _was_on_floor: bool = false
+## True when the last _update_state() found his head against a ceiling, so a bump is heard once.
+var _was_on_ceiling: bool = false
 ## True once he has died, so he dies once.
 var _is_dead: bool = false
 ## What he died of, as die() was told; empty while alive.
@@ -272,11 +280,16 @@ func _on_grab_escape_died() -> void:
 ## floor, touching a wall puts the player on it unless he pushes away from it; a demon's side takes
 ## a push into it (ADR 0058). Staying on it takes neither, so he leaves it when it no longer touches
 ## it, or lands. Held still, he is off it, so he falls as in the air. Touching the floor is heard as
-## landed once, grabbed or not.
+## landed once, grabbed or not; hitting a ceiling as head_bumped once, and getting on a wall as
+## got_on_wall.
 func _update_state() -> void:
 	var on_floor: bool = is_on_floor()
 	var touched_down: bool = on_floor and not _was_on_floor
 	_was_on_floor = on_floor
+	var on_ceiling: bool = is_on_ceiling()
+	var bumped_head: bool = on_ceiling and not _was_on_ceiling
+	_was_on_ceiling = on_ceiling
+	var was_on_wall: bool = _state == State.ON_WALL
 	if _grabbed:
 		_state = State.GRABBED
 	elif on_floor:
@@ -292,6 +305,10 @@ func _update_state() -> void:
 					_state = State.IN_AIR
 	if touched_down:
 		landed.emit()
+	if bumped_head:
+		head_bumped.emit()
+	if _state == State.ON_WALL and not was_on_wall:
+		got_on_wall.emit()
 
 
 ## Turns the drawing to the last run direction; standing still keeps the last one.

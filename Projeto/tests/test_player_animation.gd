@@ -1,8 +1,10 @@
 # Checks PlayerAnimation. The choice alone: each state and velocity gives its animation, a
-# knockback gives hurt over any of them, and held by a demon he shows escape over everything while he
-# struggles, pressing Jump, and stands idle while he is only pulled. Missing
-# art falls back: the wall slide to the fall, the fall to the jump, the rest to idle. The jump's frame comes from the speed up or down: crouched on
-# the take-off, then up, top, down and braced, with the top only after going up. In player.tscn:
+# knockback gives hurt over any of them, and held by a demon he shows escape over everything.
+# Missing art falls back: the wall slide to the fall, the fall to the jump, the rest to idle. The
+# jump's frame comes from the speed up or down: crouched on the take-off, then up, top, down and
+# braced, with the top only after going up. A press in the grab jumps to the start of escape's next
+# pose, from any of its frames, and the poses must start in order, once each, within its frames. In
+# player.tscn:
 # standing he is idle, running he walks, in the air he jumps, and a jump from standing shows its
 # frames in order, from the crouch to the braced landing. Running, every step comes on a planted
 # frame and Step Length apart, so the feet keep to the ground; landing while running, the walk
@@ -41,6 +43,7 @@ func _initialize() -> void:
 	results.append(_each_state_and_velocity_gives_its_animation())
 	results.append(_missing_art_falls_back_to_the_nearest_animation())
 	results.append(_the_jump_frame_follows_the_speed_up_or_down())
+	results.append(_a_press_jumps_to_the_next_pose())
 	results.append(await _in_the_scene_he_stands_walks_and_jumps())
 	results.append(await _a_jump_shows_its_frames_in_order())
 	results.append(await _running_steps_land_on_planted_frames_a_step_length_apart())
@@ -65,16 +68,9 @@ func _each_state_and_velocity_gives_its_animation() -> bool:
 		[wall, Vector2(0.0, -FAST), false, PlayerAnimation.JUMP],
 		[floor_state, Vector2(FAST, 0.0), true, PlayerAnimation.HURT],
 		[air, Vector2(0.0, -FAST), true, PlayerAnimation.HURT],
-	]
-	# [state, velocity, knocked back, struggling, animation]
-	var grabbed_cases: Array[Array] = [
-		[grabbed, Vector2.ZERO, false, true, PlayerAnimation.ESCAPE],
-		[grabbed, Vector2(0.0, FAST), false, true, PlayerAnimation.ESCAPE],
-		[grabbed, Vector2(FAST, 0.0), true, true, PlayerAnimation.ESCAPE],
-		[grabbed, Vector2.ZERO, false, false, PlayerAnimation.IDLE],
-		[grabbed, Vector2(0.0, FAST), false, false, PlayerAnimation.IDLE],
-		[grabbed, Vector2(FAST, 0.0), true, false, PlayerAnimation.IDLE],
-		[floor_state, Vector2.ZERO, false, true, PlayerAnimation.IDLE],
+		[grabbed, Vector2.ZERO, false, PlayerAnimation.ESCAPE],
+		[grabbed, Vector2(0.0, FAST), false, PlayerAnimation.ESCAPE],
+		[grabbed, Vector2(FAST, 0.0), true, PlayerAnimation.ESCAPE],
 	]
 	var wrong: Array[String] = []
 	for case: Array in cases:
@@ -83,16 +79,9 @@ func _each_state_and_velocity_gives_its_animation() -> bool:
 		if got != case[3]:
 			wrong.append("%s %s knocked %s: %s, not %s" % [Player.State.find_key(case[0]), case[1],
 					case[2], got, case[3]])
-	for case: Array in grabbed_cases:
-		var got_grabbed: StringName = PlayerAnimation.animation_for(case[0], case[1], case[2],
-				WALK_MIN_SPEED, case[3])
-		if got_grabbed != case[4]:
-			wrong.append("%s %s knocked %s struggling %s: %s, not %s" % [
-					Player.State.find_key(case[0]), case[1], case[2], case[3], got_grabbed,
-					case[4]])
-	return report(wrong.is_empty(), "The choice alone, %d cases%s" % [
-			cases.size() + grabbed_cases.size(),
+	return report(wrong.is_empty(), "The choice alone, %d cases%s" % [cases.size(),
 			"" if wrong.is_empty() else ": " + "; ".join(wrong)])
+
 
 func _missing_art_falls_back_to_the_nearest_animation() -> bool:
 	var with_jump: SpriteFrames = SpriteFrames.new()
@@ -144,6 +133,37 @@ func _the_jump_frame_follows_the_speed_up_or_down() -> bool:
 					case[2], got, case[3]])
 	return report(wrong.is_empty(), "Jump frames, %d cases%s" % [cases.size(),
 			"" if wrong.is_empty() else ": " + "; ".join(wrong)])
+
+
+## A press jumps to the start of the pose after the one the frame is in; a frame before the first
+## start is still in the last pose; with no poses, the frame stays. The poses must start in order,
+## once each, within the animation's frames.
+func _a_press_jumps_to_the_next_pose() -> bool:
+	# [where the poses start, frame, frame after the press]
+	var presses: Array[Array] = [
+		[[0, 2], 0, 2], [[0, 2], 1, 2], [[0, 2], 2, 0], [[0, 2], 3, 0],
+		[[1, 3], 0, 1], [[1, 3], 1, 3], [[1, 3], 2, 3], [[1, 3], 3, 1],
+		[[0], 0, 0], [[], 3, 3],
+	]
+	# [where the poses start, frames in the animation, fit]
+	var lists: Array[Array] = [
+		[[0, 2], 4, true], [[0], 1, true], [[1, 3], 4, true], [[2, 0], 4, false],
+		[[0, 0], 4, false], [[0, 4], 4, false], [[-1, 2], 4, false], [[], 4, false],
+	]
+	var wrong: Array[String] = []
+	var poses: Array[int] = []
+	for press: Array in presses:
+		poses.assign(press[0])
+		var got: int = PlayerAnimation.next_pose_frame(press[1], poses)
+		if got != press[2]:
+			wrong.append("%s from %d: %d, not %d" % [poses, press[1], got, press[2]])
+	for list: Array in lists:
+		poses.assign(list[0])
+		var fits: bool = PlayerAnimation.are_valid_pose_frames(poses, list[1])
+		if fits != list[2]:
+			wrong.append("%s in %d frames: %s, not %s" % [poses, list[1], fits, list[2]])
+	return report(wrong.is_empty(), "Escape's poses, %d presses and %d lists%s" % [presses.size(),
+			lists.size(), "" if wrong.is_empty() else ": " + "; ".join(wrong)])
 
 
 ## From standing, a full jump: every frame drawn in the air, from the take-off to the landing, is

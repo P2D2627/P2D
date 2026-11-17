@@ -1,8 +1,29 @@
 [gd_resource type="Theme" format=3]
 
+[ext_resource type="SystemFont" path="res://themes/main_font.tres" id="1_font"]
+
+[sub_resource type="StyleBoxEmpty" id="StyleBoxEmpty_none"]
+
 [resource]
+default_font = ExtResource("1_font")
 default_font_size = 40
+Button/colors/font_color = Color(0.86, 0.86, 0.86, 1)
+Button/colors/font_disabled_color = Color(0.45, 0.45, 0.45, 1)
+Button/colors/font_focus_color = Color(1, 1, 1, 1)
+Button/colors/font_hover_color = Color(1, 1, 1, 1)
+Button/colors/font_hover_pressed_color = Color(1, 1, 1, 1)
+Button/colors/font_pressed_color = Color(0.75, 0.75, 0.75, 1)
+Button/styles/disabled = SubResource("StyleBoxEmpty_none")
+Button/styles/focus = SubResource("StyleBoxEmpty_none")
+Button/styles/hover = SubResource("StyleBoxEmpty_none")
+Button/styles/hover_pressed = SubResource("StyleBoxEmpty_none")
+Button/styles/normal = SubResource("StyleBoxEmpty_none")
+Button/styles/pressed = SubResource("StyleBoxEmpty_none")
 GridContainer/constants/h_separation = 32
 GridContainer/constants/v_separation = 20
 HBoxContainer/constants/separation = 24
+MenuOption/base_type = &"Button"
+MenuOption/font_sizes/font_size = 64
+MenuFirstOption/base_type = &"Button"
+MenuFirstOption/font_sizes/font_size = 110
 VBoxContainer/constants/separation = 20

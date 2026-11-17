@@ -1,0 +1,66 @@
+[gd_scene format=3]
+
+[ext_resource type="Script" path="res://scenes/levels/level.gd" id="1_level"]
+[ext_resource type="Script" path="res://scenes/levels/prototypes/lighting/lighting_proto.gd" id="2_proto"]
+[ext_resource type="TileSet" path="res://scenes/others/tilesets/cave_placeholder_tiles.tres" id="3_tiles"]
+[ext_resource type="PackedScene" path="res://scenes/characters/player/player.tscn" id="4_player"]
+[ext_resource type="PackedScene" path="res://scenes/others/camera/game_camera.tscn" id="5_camera"]
+[ext_resource type="PackedScene" path="res://scenes/characters/demon/demon.tscn" id="6_demon"]
+[ext_resource type="PackedScene" path="res://scenes/objects/traps/lethal_spikes.tscn" id="7_spikes"]
+
+[node name="LightingProto" type="Node2D" node_paths=PackedStringArray("player")]
+script = ExtResource("1_level")
+player = NodePath("Player")
+
+[node name="Proto" type="Node2D" parent="." node_paths=PackedStringArray("tiles", "player", "dogs", "fires", "hud_label")]
+script = ExtResource("2_proto")
+tiles = NodePath("../Tiles")
+player = NodePath("../Player")
+dogs = NodePath("../Dogs")
+fires = NodePath("../Fires")
+hud_label = NodePath("../Hud/Label")
+
+[node name="Backdrop" type="Polygon2D" parent="."]
+color = Color(0.45, 0.45, 0.46, 1)
+polygon = PackedVector2Array(0, 0, 4320, 0, 4320, 960, 0, 960)
+
+[node name="Tiles" type="TileMapLayer" parent="."]
+tile_set = ExtResource("3_tiles")
+
+[node name="Fires" type="Node2D" parent="."]
+
+[node name="FireStart" type="Node2D" parent="Fires"]
+position = Vector2(600, 672)
+
+[node name="FireCorridor" type="Node2D" parent="Fires"]
+position = Vector2(3000, 816)
+
+[node name="Spikes" parent="." instance=ExtResource("7_spikes")]
+position = Vector2(1224, 816)
+width_tiles = 3
+
+[node name="Dogs" type="Node2D" parent="."]
+
+[node name="DogBehindWall" parent="Dogs" instance=ExtResource("6_demon")]
+position = Vector2(2184, 816)
+faces_left = true
+
+[node name="DogFarEnd" parent="Dogs" instance=ExtResource("6_demon")]
+position = Vector2(4056, 816)
+faces_left = true
+
+[node name="Player" parent="." instance=ExtResource("4_player")]
+position = Vector2(168, 672)
+
+[node name="GameCamera" parent="." node_paths=PackedStringArray("player", "level_tiles") instance=ExtResource("5_camera")]
+player = NodePath("../Player")
+level_tiles = NodePath("../Tiles")
+
+[node name="Hud" type="CanvasLayer" parent="."]
+layer = 10
+
+[node name="Label" type="Label" parent="Hud"]
+offset_left = 16.0
+offset_top = 12.0
+offset_right = 1100.0
+offset_bottom = 140.0

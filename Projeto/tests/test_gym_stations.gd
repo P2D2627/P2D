@@ -4,7 +4,8 @@
 # copy at its start and lands there; a copy after that one, with no death, starts at the first
 # station again; and so does one after a death whose gym was left before it asked to start over.
 # The number keys 1 to 9 give their stations; a press puts the man at that start; a key past the
-# last station, a key the controls give to an action, and any key once he is dead do nothing.
+# last station, a key the controls give to an action (also with Shift held, as while the crucifix
+# is up), and any key once he is dead do nothing.
 # Run from the repository root; the exit code is 0 on pass and 1 on fail:
 # godot --headless --fixed-fps 60 --path Projeto --script res://tests/test_gym_stations.gd
 extends "res://tests/support/player_test.gd"
@@ -35,6 +36,7 @@ func _initialize() -> void:
 	results.append(_the_number_keys_give_their_stations())
 	results.append(await _a_number_key_puts_the_man_at_its_start())
 	results.append(await _a_number_key_of_an_action_does_nothing())
+	results.append(await _a_number_key_of_an_action_does_nothing_with_shift_held())
 	results.append(await _a_number_key_does_nothing_once_he_is_dead())
 	finish(results)
 
@@ -149,6 +151,22 @@ func _a_number_key_of_an_action_does_nothing() -> bool:
 			% [stayed, moved])
 
 
+## The same with Shift held, as while the crucifix is up (ADR 0063): a press of 2 that comes with
+## Shift among its modifiers is still the action's, and leaves the man at the first start.
+func _a_number_key_of_an_action_does_nothing_with_shift_held() -> bool:
+	var gym: Level = _make_gym()
+	var player: Player = _player_of(gym)
+	var key: InputEventKey = InputEventKey.new()
+	key.physical_keycode = KEY_2
+	InputMap.add_action(KEY_ACTION)
+	InputMap.action_add_event(KEY_ACTION, key)
+	_press_key(KEY_2, true)
+	var stayed: bool = player.global_position.is_equal_approx(STARTS[0])
+	InputMap.erase_action(KEY_ACTION)
+	gym.free()
+	return report(stayed, "Number key of an action with Shift held: 2 ignored %s" % stayed)
+
+
 ## Once the man is dead, while the gym waits to start over, a press of 2 leaves his body where it is.
 func _a_number_key_does_nothing_once_he_is_dead() -> bool:
 	var gym: Level = _make_gym(SLOW_RESTART)
@@ -161,10 +179,12 @@ func _a_number_key_does_nothing_once_he_is_dead() -> bool:
 	return report(stayed, "Number key once dead: the body left where it is %s" % stayed)
 
 
-func _press_key(keycode: Key) -> void:
+## Presses a key; with with_shift, as the keyboard sends it while Shift is held.
+func _press_key(keycode: Key, with_shift: bool = false) -> void:
 	var event: InputEventKey = InputEventKey.new()
 	event.physical_keycode = keycode
 	event.pressed = true
+	event.shift_pressed = with_shift
 	root.push_input(event)
 
 

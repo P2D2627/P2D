@@ -10,10 +10,10 @@ aceita.
 
 > **Estado:** a personagem jogável já anda, salta e tem controlo no ar, desliza nas paredes e salta
 > delas, e o salto tolera pedidos ligeiramente fora de tempo. O jogo abre num menu principal, que dá
-> acesso à sala de teste e ao nível 1, e tem pausa e opções gravadas. A câmara do jogo
-> está descrita em "Câmara". Na sala de teste, dois demónios perseguem a personagem, mordem-na e,
-> com o SP baixo, agarram-na; o crucifixo afasta-os, e quem morre recomeça a sala. Ainda não há
-> arte, e o som começou pela personagem e pelo crucifixo.
+> acesso à sala de teste, ao nível 1 e à sala de treino, e tem pausa e opções gravadas. A câmara do
+> jogo está descrita em "Câmara". Na sala de teste, dois demónios perseguem a personagem, mordem-na
+> e, com o SP baixo, agarram-na; o crucifixo afasta-os, e quem morre recomeça a sala. O nível 1 já
+> tem arte (chão, rochas e fundo em parallax), e o som começou pela personagem e pelo crucifixo.
 
 Este documento tem duas partes. A primeira descreve, para toda a equipa, o que já pode ser
 experimentado e as medidas que servem o desenho de níveis. A segunda, "Para quem programa",
@@ -27,7 +27,7 @@ cada sala) está em `docs/nivel1_desenho.md`, e os artigos que o fundamentam em 
 1. Instalar o Godot 4.7.x, versão standard (não a versão .NET).
 2. No Project Manager, importar `Projeto/project.godot`. O projeto Godot encontra-se na subpasta
    `Projeto/`, e não na raiz do repositório.
-3. Premir F5. O jogo abre no menu principal: Play mostra a lista de níveis, Options abre as opções
+3. Premir F5. O jogo abre no menu principal: New Game mostra a lista de níveis, Settings abre as opções
    e Quit fecha o jogo. Uma cena aberta com F6 corre sozinha, sem menus nem pausa.
 4. A sala de teste tem um bloco elevado, com duas bordas, para experimentar os saltos a partir de
    uma borda, e uma chaminé de 120 px entre a parede esquerda e um pilar suspenso, por baixo do qual
@@ -38,7 +38,7 @@ cada sala) está em `docs/nivel1_desenho.md`, e os artigos que o fundamentam em 
    Durante o jogo, a tecla F3 mostra e esconde o texto de depuração descrito em "Overlay de
    depuração", e a tecla F4 retira 10 SP à personagem, como um golpe, para experimentar a
    regeneração descrita em "SP".
-5. O nível 1 (Play ▸ Level 1: Lust) é uma só cena, `scenes/levels/lust/level1.tscn`, com o tutorial e as
+5. O nível 1 (New Game ▸ Level 1: Lust) é uma só cena, `scenes/levels/lust/level1.tscn`, com o tutorial e as
    fases 1, 2 e 3, e é ele que inicia uma partida nova. No início das fases 2 e 3, a Asmodeu
    aparece e oferece o atalho; depois de várias mortes nessas fases, volta a oferecê-lo à entrada
    da zona onde ele morre (ver "Ofertas por mortes"). Na saída, depois da fase 3 ou pelo atalho,
@@ -47,27 +47,29 @@ cada sala) está em `docs/nivel1_desenho.md`, e os artigos que o fundamentam em 
    também corre sozinha com F6, sem gravar nada.
 6. Entrar numa fase grava o jogo, o que é indicado por "Saving..." no canto do ecrã, e o menu
    principal passa a mostrar Continue, descrito em "Gravação do jogo".
-7. A sala de treino (Play ▸ Gym (training room)) põe à prova, uma de cada vez, as mecânicas que já
+7. A sala de treino (New Game ▸ Gym (training room)) põe à prova, uma de cada vez, as mecânicas que já
    existem: movimento, paredes e chaminés, câmara, zona fixa da câmara, cães, matilha e agarrão,
    crucifixo, SP e morte. Cada estação ocupa um ecrã e tem uma placa que explica o que experimentar.
    As teclas 1 a 9 levam ao início da estação com esse número, e o 0 à décima. Quem morre recomeça
    no início da estação onde estava. Ver "Sala de treino".
-Os controlos de teclado e rato escolhem-se em Options ▸ Controls, entre três perfis. O comando é
-igual em todos.
+Os controlos de teclado e rato escolhem-se em Settings ▸ Controls, entre três perfis. O comando é
+igual em todos. As teclas desenhadas no tutorial (`scenes/levels/key_prompt.gd`) mostram a tecla do
+perfil escolhido e, com um comando ligado, o botão do comando, com os nomes de um comando Xbox (A, B,
+RT, LS ← para o stick esquerdo); mudam no momento em que o comando se liga ou desliga.
 
-| Ação | Teclado e rato (predefinido) | Setas e QWEASD | Comando |
+| Ação | WASD (predefinido) | Setas e QWEASD | Comando |
 |---|---|---|---|
-| Andar | A / D ou setas | setas | stick esquerdo |
+| Andar | A / D ou setas | setas | stick esquerdo ou D-pad |
 | Saltar | Espaço | Espaço | A / Cross |
-| Deslizar numa parede | no ar, A / D ou setas contra a parede | no ar, setas contra a parede | stick esquerdo contra a parede |
+| Deslizar numa parede | no ar, A / D ou setas contra a parede | no ar, setas contra a parede | stick esquerdo ou D-pad contra a parede |
 | Saltar de uma parede | no ar, Espaço encostado à parede | no ar, Espaço encostado à parede | A / Cross encostado à parede |
-| Erguer o crucifixo | premir o botão esquerdo do rato no chão; fica erguido enquanto premido | premir Q no chão; fica erguido enquanto premido | premir RT / R2 no chão; fica erguido enquanto premido |
-| Soltar-se de um demónio | premir Espaço repetidamente | premir Espaço repetidamente | premir A / Cross repetidamente |
-| Interagir | E | Ctrl | B / Circle |
+| Erguer o crucifixo | premir Shift no chão; fica erguido enquanto premido | premir Q no chão; fica erguido enquanto premido | premir RT / R2 no chão; fica erguido enquanto premido |
+| Soltar-se de um demónio | premir Espaço repetidamente; com Hold to escape, mantê-lo premido | premir Espaço repetidamente; com Hold to escape, mantê-lo premido | premir A / Cross repetidamente; com Hold to escape, mantê-lo premido |
+| Interagir | E | Ctrl | X / Square |
 
 O terceiro perfil, Custom, começa igual ao predefinido, e cada ação pode receber outra tecla ou
-botão do rato. O Esc, o F3 e o F4 estão reservados. As teclas W, E, A, S e D do perfil das setas
-ficam livres para os upgrades.
+botão do rato. O Esc e as teclas de depuração (F3, F4, F7, F8 e F9) estão reservados. As teclas W,
+E, A, S e D do perfil das setas ficam livres para os upgrades.
 
 | Ação | Teclado | Comando |
 |---|---|---|
@@ -180,17 +182,18 @@ provisórios e serão afinados com a câmara e nos níveis.
 ### Crucifixo
 
 Enquanto o jogador recusar os upgrades, o crucifixo é a sua única defesa. Ergue-se ao premir o
-botão esquerdo do rato ou o gatilho direito do comando (RT / R2) com a personagem no chão e fica
-erguido enquanto o botão estiver premido, durante no máximo 5 s. Um toque dado até 0,1 s antes de
-aterrar ainda o ergue na aterragem, se o botão continuar premido, à semelhança da tolerância do
-salto. Baixa quando o botão é largado, quando a personagem sai do chão ou quando os 5 s terminam.
+Shift ou o gatilho direito do comando (RT / R2) com a personagem no chão e fica erguido enquanto o
+botão estiver premido, durante no máximo 5 s. Um toque dado até 0,1 s antes de aterrar ainda o
+ergue na aterragem, se o botão continuar premido, à semelhança da tolerância do salto. Baixa
+quando o botão é largado, quando a personagem sai do chão ou quando os 5 s terminam.
 Depois de cada uso, curto ou longo, há uma espera de 15 s até poder ser erguido de novo; um toque
 dado até 0,1 s antes do fim da espera também conta.
 
 Só um toque dado durante o jogo ergue o crucifixo. Um botão que já vinha premido, da espera, do
 menu principal ou da pausa, não o ergue até ser largado e premido outra vez. Assim, o jogador
-decide sempre o momento, e o clique do rato nos menus, que é o mesmo botão, nunca o ergue por
-engano. Durante a pausa, o tempo de uso para.
+decide sempre o momento e, se puser o crucifixo no botão esquerdo do rato no perfil Custom, o clique
+nos menus, que passa a ser o mesmo botão, nunca o ergue por engano. Durante a pausa, o tempo de uso
+para.
 
 Erguido, o crucifixo:
 
@@ -203,7 +206,14 @@ Erguido, o crucifixo:
   ar, e ficam 0,3 s parados onde aterram. De muito perto, o empurrão soma-se ao arremesso enquanto
   o demónio está no raio, e ele vai parar a cerca de 300 px;
 - cura 5 SP por segundo, que se somam à regeneração (ver "SP");
-- acende uma luz quente cujo alcance mostra o raio do afastamento.
+- acende uma luz quente cujo alcance mostra o raio do afastamento. No último segundo e meio de uso,
+  a luz pulsa duas vezes por segundo, cada vez mais fundo, como aviso de que o crucifixo vai baixar.
+  A descida mais funda, para 40 % do brilho, coincide com o instante em que o crucifixo baixa. O som
+  do crucifixo erguido treme com a luz e, com comando, a vibração cresce ao mesmo tempo. Duas vezes
+  por segundo fica abaixo do limite de três dos critérios 2.3.1 e 2.3.2 da WCAG 2.2, para quem tem
+  epilepsia fotossensível
+  ([Understanding 2.3.1](https://www.w3.org/WAI/WCAG22/Understanding/three-flashes-or-below-threshold.html)),
+  e a luz nunca se apaga.
 
 A duração limitada e a espera fixa obrigam a escolher quando usar a única defesa: largar o botão
 cedo não poupa tempo de espera. Ao contrário do deslize na parede, o crucifixo obriga a manter o
@@ -258,7 +268,7 @@ estados:
 | Repelido | Depois de atirado pelo crucifixo, fica 0,3 s parado onde aterrou e volta a perseguir. |
 | Atordoado | Depois de atirado pela personagem ao soltar-se, fica 1,2 s no chão, achatado e mais escuro, e depois recua ou volta a perseguir. |
 | Fora de alcance | Com a personagem num chão ou numa parede acima ou abaixo do que os seus ataques chegam, não a segue por baixo nem por cima: para virado para ela e ladra, e depois anda para trás e para a frente num troço de 160 px à volta do sítio onde parou e, em cada ponta, volta a parar e a ladrar; contra uma parede ou na borda do seu chão, do lado dela, salta no sítio. Se ela sair do troço por cima dele, corre por baixo à velocidade da perseguição até ficar debaixo dela e anda aí. Se ela descer ao seu alcance, volta a persegui-la. Enquanto a vir, nunca desiste; se ela sair da sua vista, ladra mais 3 s para onde ela estava e depois vai procurá-la. |
-| Procurar | Quando uma parede a esconde durante 0,5 s, vai a 300 px/s até onde a viu pela última vez, ou até onde o seu chão deixa, e fareja ali durante 2,5 s, virando-se para o outro lado a meio. Se a vir, fica alerta e volta a persegui-la; se não, desiste. Fora do ecrã, desiste logo. Durante a procura mostra um "?" e, ao começar, toca dois bips a descer. |
+| Procurar | Quando uma parede a esconde durante 0,5 s, vai a 300 px/s até onde a viu pela última vez, ou até onde o seu chão deixa, e fareja ali durante 2,5 s, virando-se para o outro lado a meio. Se a vir, fica alerta e volta a persegui-la; se não, desiste. Fora do ecrã, desiste logo. Ao começar a procura, toca dois bips a descer; o "?" sobre a cabeça está desligado desde a linha de vista (Shows Search, no nó `Mark`). |
 | Voltar | Depois de desistir, volta ao posto a passo, a 200 px/s, e retoma a ronda. Se a vir à frente pelo caminho, fica alerta e volta a persegui-la. |
 
 O demónio vê a personagem a menos de 1100 px, mais de meio ecrã, se não houver uma parede entre os
@@ -410,11 +420,14 @@ demónios do nível 1 acertam na mesma (ADR 0055).
 Com o SP baixo (25 SP ou menos), ou quando a pancada a deixaria a 0, o demónio agarra-a em vez de
 lhe tirar SP. Agarrada, a personagem para logo, não corre nem salta, e o crucifixo baixa; se for
 agarrada no ar, mesmo encostada a uma parede, cai a direito até ao chão. Solta-se premindo o salto
-repetidamente: 8 vezes, com um demónio. Um segundo demónio pode juntar-se a meio, e pede mais
-6. Com dois, o agarrão fica cheio: nenhuma pancada entra, e os outros demónios esperam a cerca de
-130 px. Se o jogador parar de premir, o progresso desce: ao fim de 0,25 s sem premir, perde metade
+repetidamente: 8 vezes, com um demónio. A animação de fuga corre durante todo o agarrão, e cada
+toque troca a mão que a personagem tem levantada, para que cada toque se veja. Um segundo demónio
+pode juntar-se a meio, e pede mais 6. Com dois, o agarrão fica cheio: nenhuma pancada entra, e os
+outros demónios esperam a cerca de 130 px. Se o jogador parar de premir, o progresso desce: ao fim de 0,25 s sem premir, perde metade
 da barra por segundo, pelo que quem prime 4 vezes por segundo não perde nada. Se não se soltar em
-3 s, a personagem morre, aparece "You died" e o nível recomeça 1,5 s depois.
+3 s, a personagem morre, aparece "You died" e o nível recomeça 1,5 s depois. Se morrer por outra
+causa enquanto está agarrada, como nos picos letais, o agarrão acaba da mesma forma: os toques
+deixam de contar e aparece "You died".
 
 Durante o agarrão, a personagem e os demónios que a agarram afundam-se no chão, até 96 px, ao ritmo
 do tempo que passa: o jogador vê quanto tempo lhe resta sem olhar para um número. O afundar é só
@@ -435,9 +448,19 @@ dois lados, como num buraco da largura de um corpo, atravessam-se ao fim de 0,1 
 separarem; enquanto se sobrepõem, o demónio não ataca.
 
 Os valores estão em `scenes/characters/player/grab_stats.tres` (o agarrão), no ficheiro de dados dos demónios (o dano
-e os arremessos) e na cena da personagem (a invulnerabilidade), e são provisórios. Soltar-se
-mantendo o salto premido, em vez de o premir repetidamente, já existe no código e chega às opções
-numa tarefa seguinte, para quem não consegue premir depressa.
+e os arremessos) e na cena da personagem (a invulnerabilidade), e são provisórios.
+
+Para quem não consegue premir depressa, a opção Hold to escape (ecrã Options, por baixo de Constant
+vibration) troca os toques por manter o salto premido: 1,2 s com um demónio, mais 0,9 s com o
+segundo, o que cabe nos 3 s do agarrão. Só conta a partir de um toque dado já durante o agarrão,
+para que um salto que vinha premido de antes não solte a personagem sozinho, e o texto passa de
+"Press Jump!" a "Hold Jump!". Largar o salto esvazia a barra como parar de premir: ao fim de 0,25 s,
+metade da barra por segundo. Com a opção ligada, os toques deixam de contar; aceitar as duas formas
+faria da opção um atalho para todos, porque cada toque somaria também o tempo premido. A opção vem
+desligada, porque os toques são o agarrão tal como foi desenhado, e guarda-se com as outras. O
+agarrão lê-a em cada frame: ligada ou desligada na pausa a meio de um agarrão, vale assim que o jogo
+continua, e o texto muda com ela, como acontece com as opções do tremor e da vibração. Mudar de modo
+a meio não perde o progresso, porque os toques e o tempo premido enchem a mesma barra.
 
 ### Portões, picos letais e plataformas que desabam
 
@@ -468,6 +491,37 @@ do cão grande deixar de ser mais escura, parado, a avisar ou atordoado. O maior
 vezes maior (corpo de 896 × 448 px, caixa de ataque, arte e verificações aos pés) com um anel de
 proximidade de 736 px de alcance à volta do meio do corpo: chegar perto dele abre os portões da sua
 lista Opens. Por agora não faz mais nada de diferente de um cão normal.
+
+### Linha de vista
+
+Os cães (o demónio normal, o grande e o maior) e os picos letais só se veem quando a personagem os
+vê. A Asmodeu e a Velvet veem-se sempre. A partir dos olhos da personagem, a 84 px dos pés, o jogo
+verifica se algum corpo na camada world (o chão, as paredes e o que mais lá estiver) se interpõe
+entre ela e três filas de pontos de cada um destes elementos, do topo à base; nos picos, a fila de
+cima fica à altura dos dentes desenhados. Se a personagem vir pelo menos metade dos pontos, o
+elemento desenha-se por inteiro; se vir menos, desenha-se em parte, na proporção dessa metade (um
+ponto visto em seis dá um terço da opacidade), para que uma aresta de rocha o esbata em vez de o
+cortar. Os picos vistos em parte desenham-se por inteiro, porque ficam na memória. O que está a
+menos de 96 px dos olhos vê-se através de tudo. As plataformas de sentido único não tapam a vista,
+tal como na visão dos cães, nem o corpo de uma personagem que esteja na camada world, como o da
+Velvet. A personagem não vê para lá do ecrã, com 192 px de margem. As plataformas, as paredes e o
+fundo veem-se sempre.
+
+| Elemento | Aparece | Desaparece |
+|---|---|---|
+| Cão | quando a personagem o vê, ou quando ele vê a personagem | 0,3 s depois de deixar de ser visto, ao longo de 0,4 s |
+| Picos letais | da primeira vez que a personagem os vê | só quando o nível recomeça |
+
+Um cão que vê a personagem está sempre visível, e fica desenhado por inteiro no instante em que
+começa o aviso de um ataque, pelo que nenhum ataca sem ser visto. Aparecer demora 0,15 s, e um
+elemento na borda da vista mantém-se desenhado durante 0,3 s, para que nada pisque mais de três
+vezes por segundo (critério 2.3.1 da WCAG 2.2); o Inspector não deixa baixar este tempo de 0,3 s. Os
+sons dos cães continuam a ouvir-se fora da vista. Quando a personagem morre, o nível recomeça e os
+picos voltam a ficar escondidos até serem vistos, de acordo com a regra de que a morte repõe a fase
+tal como estava na última gravação. A opção de acessibilidade Show hidden dangers, desligada por
+omissão, mostra tudo. Os valores estão no nó `SightReveal` de `demon.tscn` e de `lethal_spikes.tscn`
+(Fade In Time, Fade Out Time, Linger Time e Spot Rise) e no nó `Eyes` da personagem (Screen
+Margin), e afinam-se no Inspector, também durante o jogo, no separador Remote.
 
 ## Medidas para o desenho de níveis
 
@@ -801,6 +855,143 @@ Inspector do Godot, como os do movimento.
 | Lookout Change Sharpness | 3 /s | a rapidez com que a câmara se desloca para a Vista de um miradouro |
 | Lookout Change Speed | 2500 px/s | a velocidade máxima dessa deslocação; com os três valores, ao fim de 2 s a câmara está 96 % afastada e 96 % deslocada, para a entrada se ler como um recuo e não como um salto, e quem passa depressa ainda vê o caminho |
 
+### Tremor do ecrã
+
+Nos momentos em que a personagem corre perigo, o ecrã treme por instantes: um golpe de um demónio ou
+de um perigo (espinhos, uma pedra que lhe cai em cima), um agarrão, cada toque no Salto para se
+soltar e a libertação, a morte, uma aterragem depois de uma queda longa, erguer e perder o
+crucifixo, e uma pedra que se parte perto dela. Os toques para se soltar levam o tremor a um nível
+fixo, sem o somar, para que carregar depressa dê um abanão por toque em vez de o acumular;
+soltar-se mantendo o Salto premido (a opção Hold to escape) não faz tremer.
+A libertação também leva o tremor a um nível fixo, o mais alto do agarrão, quer a personagem se
+solte com toques quer mantendo o Salto; só a morte treme mais. Os
+movimentos de todos os dias, como um salto ou uma aterragem normais, não fazem tremer o ecrã, nem o
+crucifixo que o nível tira, ao começar, a quem já o perdeu. Cada momento acrescenta um
+trauma entre 0 e 1, que desce sozinho; o tremor é o trauma ao quadrado, pelo que os momentos fracos
+quase não se notam, e momentos seguidos somam-se até ao máximo. Nenhum tremor dura mais de meio
+segundo depois do último impacto. O ecrã desloca-se segundo um ruído contínuo, sem saltos ao acaso,
+e nunca roda, para mexer o ecrã o menos possível. Junto à borda de um nível, um tremor forte mostra
+até 32 px de fora do nível. Nas opções, Screen shake regula a força de 0 a 100 %, e 0 desliga o
+tremor.
+
+Os valores do tremor estão em `camera_shake_stats.tres` (`Projeto/scenes/others/camera/`) e os de
+cada momento em `impact_stats.tres` (`Projeto/scenes/others/feedback/`):
+
+| Campo no Inspector | Valor atual | O que controla |
+|---|---|---|
+| Max Offset | 32 px | o maior desvio do ecrã para cada lado, com trauma 1, em píxeis do ecrã |
+| Decay | 2 /s | o trauma que desaparece por segundo; com 2, o trauma máximo acaba em 0,5 s, e o Inspector não aceita menos |
+| Exponent | 2 | a potência do trauma; com 2, metade do trauma produz um quarto do tremor |
+| Speed | 10 | a rapidez do tremor; cada unidade faz o ecrã passar pelo centro cerca de 1,35 vezes por segundo, ou seja, cerca de 13 com 10 (medido a 60 FPS) |
+| Hit Trauma | 0,5 | um golpe de um demónio ou de um perigo |
+| Grab Trauma | 0,2 | um agarrão, somado ao golpe que o inicia |
+| Struggle Trauma | 0,45 | o nível a que cada toque no Salto para se soltar leva o trauma, sem o somar; abaixo do golpe, para que o golpe pese mais |
+| Break Free Trauma | 0,9 | o nível a que a libertação de um agarrão leva o trauma, sem o somar; acima do golpe e do agarrão juntos (0,7) |
+| Death Trauma | 1 | a morte, o momento mais forte, acima da libertação |
+| Hard Landing Trauma | 0,45 | a aterragem depois de uma queda de 480 px ou mais, a mesma que tem o som forte |
+| Crucifix Raised Trauma | 0,35 | erguer o crucifixo, uma vez, e nada enquanto está erguido |
+| Crucifix Lost Trauma | 0,5 | perder o crucifixo |
+| Rock Trauma | 0,55 | uma pedra que se parte junto à personagem |
+| Rock Reach | 900 px | a distância a partir da qual uma pedra já não faz tremer o ecrã nem vibrar o comando; até lá, o trauma e a vibração descem em linha reta com a distância |
+
+### Vibração do comando
+
+Com comando, a vibração responde ao que o corpo da personagem sente: golpes, peso, esforço e medo.
+Não responde à interface nem ao registo moral, que o jogo esconde do jogador. O comando tem dois
+motores: o fraco, pequeno e rápido, dá um zumbido seco; o forte, grande e lento, dá um baque. Em cada
+motor, a força e a rapidez da vibração andam juntas, e um motor pedido muito baixo roda devagar ou
+nem arranca. Num comando real, um tique só no motor fraco, perto do mínimo que se sente, parecia
+cócegas e, ao fim de algum tempo a jogar, deixava de se sentir. Por isso, os tiques do movimento dão
+um baque curto no motor forte, abaixo do golpe de um demónio ou de um perigo, com um pouco do fraco
+por cima.
+
+Os momentos estão organizados numa escada de quatro degraus, pela frequência e pela importância de
+cada um. Assim, os mais frequentes ficam leves e os raros e graves destacam-se:
+
+| Degrau | Frequência | Como vibra | Momentos |
+|---|---|---|---|
+| Tique | muitas vezes por minuto | curto, até 0,1 s; os do movimento com um baque no motor forte, abaixo do golpe de um demónio ou de um perigo | salto, aterragem curta, cabeça no teto, encostar a uma parede, cada toque para se soltar, algo que entra na luz do crucifixo |
+| Golpe | algumas vezes por minuto | os dois motores, o forte abaixo de meio, e desce depressa | golpe de um demónio ou de um perigo, agarrão, libertação, aterragem depois de uma queda longa, erguer o crucifixo, o crucifixo a esgotar-se |
+| Grave | raro, com consequências | o motor forte a meio ou mais, e desce devagar | morte, perder o crucifixo, pedra que se parte junto à personagem; nos picos letais, a morte começa com uma picada |
+| Contínuo | enquanto dura um estado | baixo, até 0,4 em cada motor, a pulsar | agarrado, enquanto a personagem afunda; o crucifixo erguido |
+
+Só os momentos graves usam o motor forte a meio ou mais, e a morte é o mais forte nos dois motores e
+o mais longo. Nos picos letais, a morte começa com uma picada curta e seca no motor fraco, acima da
+da morte, que se sente antes de o motor forte, mais lento, encher. É o único impulso acima da morte,
+porque faz parte dela. A aterragem cresce com a altura da queda, desde o tique da aterragem mais
+curta que se ouve até ao golpe de uma queda longa: é a mesma altura que escolhe o som. Cresce
+devagar nas quedas curtas dos saltos de todos os dias e depressa perto da queda longa, para que só
+esta chegue ao motor forte. Cada toque para se soltar começa a 80 % e fica mais firme à medida que a
+personagem se aproxima de se soltar. É o tique mais forte, porque vem por cima da vibração contínua
+do agarrão, que esconde um tique leve, e não passa da morte no motor fraco. A dez toques por
+segundo, cada toque acaba antes do seguinte, pelo que os toques se sentem separados. Os golpes e os
+momentos graves descem até zero na parte final da sua duração, como uma pancada que se apaga, em
+vez de pararem de repente.
+
+A vibração contínua pulsa, para não se tornar um zumbido liso. Começa num nível que ainda se sente,
+porque um motor pedido muito baixo mal roda. A do agarrão corre sobretudo no motor forte e cresce
+enquanto a personagem afunda. A do crucifixo corre no motor fraco e cresce durante o aviso de que o
+crucifixo vai baixar, ao mesmo tempo que a luz pulsa. Se o uso se esgotar com o botão ainda premido,
+a vibração do crucifixo dá lugar a um impulso que desce até zero ao longo de meio segundo, em vez de
+parar de repente; largado antes, o crucifixo baixa sem impulso. Cada vez que algo que o crucifixo
+empurra entra na luz dele, como um cão que corre para a personagem, vibra uma pancada curta no motor
+fraco, por cima da vibração contínua. Vários a entrar no mesmo instante dão uma só pancada, e o
+desbloqueador de um portão, que o crucifixo alcança mas não empurra, não dá nenhuma. Depois da
+morte, o crucifixo fica erguido até a sala recomeçar, mas o que ele faz já não vibra. Um impulso faz
+a vibração contínua descer a 30 % só nos motores que ele usa, para que se sinta por cima dela, e ela
+volta a subir à medida que o impulso desce. Assim, os toques para se soltar, só no motor fraco, não
+escondem o afundar. Quando dois impulsos se juntam, cada motor fica no mais forte, sem os somar. A
+libertação e a morte acabam a vibração contínua do agarrão; o crucifixo baixado e a morte acabam a
+do crucifixo.
+
+Só vibra o último comando usado, e nenhum enquanto se joga com o teclado. O comando em uso passa de
+um nível para o seguinte. A pausa e sair da janela do jogo param a vibração de imediato e descartam os
+impulsos. A vibração contínua volta quando o jogo continua, porque o estado continua. Sair do nível
+para tudo.
+
+Nas opções, Vibration regula a força de 0 a 100 %, e 0 desliga-a. Cada mudança do slider toca a
+vibração de um golpe no último comando usado, mesmo que o slider se mude com o rato, para o jogador
+sentir a força que escolhe. Se o slider for arrastado com o rato, toca uma vez, quando é largado.
+Constant vibration desliga só a vibração contínua, para quem aceita os impulsos mas não um zumbido
+prolongado. Os momentos têm também imagem ou som. O aviso de que o crucifixo vai baixar vê-se na luz
+dele, que pulsa, e ouve-se no som, que treme com ela (ver "Crucifixo").
+
+Os valores estão em `rumble_stats.tres` (`Projeto/scenes/others/feedback/`), agrupados no Inspector
+pelos degraus. Cada impulso tem o motor fraco e o forte, de 0 a 1, a duração e a parte final em que
+desce até zero (Fade, de 0 a 1). São valores de referência, a afinar com um comando com motores:
+
+| Campo no Inspector | Fraco | Forte | Duração | Fade | O momento |
+|---|---|---|---|---|---|
+| Jump | 0,2 | 0,4 | 0,1 s | 0,5 | um salto, do chão ou de uma parede: um baque curto, que desce na segunda metade |
+| Landing | 0,15 | 0,3 | 0,08 s | 0,5 | a aterragem mais curta que se ouve, um baque mais leve do que o salto; uma queda mais longa aterra mais forte, até Hard Landing, ao longo de Landing Growth |
+| Head Bump | 0,4 | 0,3 | 0,08 s | 0,5 | a cabeça no teto |
+| On Wall | 0,25 | 0,25 | 0,07 s | 0,5 | encostar a uma parede |
+| Struggle | 0,7 | 0 | 0,08 s | 0 | cada toque no Salto para se soltar: 80 % sem progresso (Struggle Start Share), 100 % perto de se soltar |
+| Crucifix Struck | 0,5 | 0 | 0,08 s | 0 | algo que o crucifixo empurra entra na luz dele, como um cão; vem por cima da vibração contínua, por isso fica acima dos tiques do movimento |
+| Hit | 0,5 | 0,45 | 0,16 s | 0,8 | um golpe de um demónio ou de um perigo; é também a amostra das opções; nenhum tique chega ao seu motor forte, nem na força nem no total ao longo do impulso, para o golpe de um demónio ou de um perigo pesar sempre mais do que um movimento |
+| Grab | 0,3 | 0,35 | 0,2 s | 0,7 | o agarrão, logo a seguir ao golpe que o inicia |
+| Break Free | 0,45 | 0,15 | 0,12 s | 0,6 | a libertação |
+| Hard Landing | 0,35 | 0,45 | 0,16 s | 0,8 | a aterragem depois de uma queda longa, o topo das aterragens |
+| Crucifix Raised | 0,4 | 0,1 | 0,12 s | 0,6 | erguer o crucifixo |
+| Crucifix Ran Out | 0,5 | 0,15 | 0,5 s | 1 | o uso do crucifixo esgota-se com o botão premido: desce até zero ao longo de todo o meio segundo, no lugar da vibração contínua |
+| Death | 0,7 | 1 | 0,6 s | 0,9 | a morte, o mais forte nos dois motores e o mais longo |
+| Spike Death | 1 | 0 | 0,06 s | 0 | a morte nos picos letais, por cima da Death: uma picada curta no motor fraco, que se sente antes de o motor forte encher |
+| Crucifix Lost | 0,35 | 0,75 | 0,45 s | 0,85 | perder o crucifixo, de vez |
+| Rock | 0,3 | 0,7 | 0,3 s | 0,8 | uma pedra que se parte junto à personagem; mais longe, enfraquece na mesma proporção do trauma do tremor, até ao Rock Reach |
+
+Landing Growth (2, de 1 a 4) diz como a aterragem cresce de Landing para Hard Landing com a altura
+da queda: a 1, em linha reta; acima de 1, devagar nas quedas curtas e depressa perto da queda longa.
+
+A vibração contínua tem os níveis completos, a parte com que começa e a pulsação:
+
+| Campo no Inspector | Fraco | Forte | Começa em | Pulsação | O estado |
+|---|---|---|---|---|---|
+| Grab Sink | 0,2 | 0,4 | 60 % | 2 por segundo, desce 50 % | agarrado: 60 % no agarrão, 100 % à beira da morte |
+| Crucifix Held | 0,35 | 0 | 60 % | 3 por segundo, desce 40 % | o crucifixo erguido: cresce até 100 % durante o aviso de que vai baixar (Warning Time, no `crucifix_stats.tres`) |
+
+A descida da vibração contínua sob um impulso (30 %) está no nó `ControllerRumble` da cena da
+câmara, no campo Sustain Duck Share.
+
 ## Fundo em camadas
 
 O fundo de cada nível é formado por camadas a distâncias diferentes da câmara. Quanto mais distante a
@@ -887,6 +1078,9 @@ são usados.
 | Repel Radius | 200 px | a distância à qual os demónios e as almas perdidas são afastados, e o alcance da luz |
 | Repel Speed | 1500 px/s | a velocidade a que são empurrados para fora desse raio |
 | Heal Per Second | 5 SP/s | a cura por cada segundo com o crucifixo erguido |
+| Warning Time | 1,5 s | o fim de cada uso em que a luz, o som e a vibração avisam que o crucifixo vai baixar (0 desliga o aviso) |
+| Warning Pulse Rate | 2 por segundo | quantas vezes por segundo a luz pulsa durante o aviso; no máximo 3, o limite para quem tem epilepsia fotossensível |
+| Warning Dim Depth | 0,6 | quanto a luz desce no fundo da última pulsação, no instante em que o crucifixo baixa (a 0,6, fica com 40 % do brilho); as pulsações anteriores descem menos |
 
 Os valores dos SP estão no ficheiro `soul_points_stats.tres`, na pasta `scenes/characters/player/`. O Max SP e o Low
 Threshold aplicam-se de imediato, também com o jogo a correr, quando são mudados no separador
@@ -931,15 +1125,15 @@ Remote; os restantes valores são lidos sempre que são usados.
     ├── addons/        plugins de terceiros: o Dialogue Manager, que dá as falas
     ├── assets/        arte e som
     │   ├── audio/       som, por tipo: os efeitos sonoros em sfx/
-    │   ├── fonts/       tipos de letra (por enquanto vazia)
-    │   └── sprites/     uma pasta por grupo: player/, demon_lust/, environment/, backgrounds/ e ramps/
+    │   ├── fonts/       tipos de letra: a Tinos, de reserva para a Times New Roman dos menus
+    │   └── sprites/     uma pasta por grupo: player/, demon_lust/, environment/, backgrounds/, ramps/ e menu/ (a arte dos menus)
     ├── dialogue/      as falas, um ficheiro .dialogue por nível
     ├── scenes/        cenas, scripts e ficheiros de dados, por tipo e, dentro de cada tipo, por sistema
     │   ├── autoload/    serviços globais: as opções do jogador (Settings), o registo moral (Moral), o progresso do jogo (GameState), as estatísticas da partida (RunStats), as tentações (Offers, em offers/, com o ritmo das ofertas por mortes), a gravação e os perfis de controlos
     │   ├── characters/  a personagem (player/), o crucifixo (crucifix/), os demónios (demon/, com os estados em states/, e os que falam, Velvet e Asmodeu) e os componentes que mais de um sistema usa (components/)
     │   ├── levels/      uma pasta por nível: a sala de teste (test_room/), a sala de treino (gym/) e o nível 1 (lust/, com os construtores e os mapas em texto em builders/); na raiz, as peças e os scripts comuns e o fundo de que os níveis partem (background/)
     │   ├── objects/     peças com comportamento: portões (gates/), plataformas (platforms/) e armadilhas (traps/)
-    │   ├── others/      câmara (camera/), atividade fora do ecrã (activity/, o ActivityTracker, que adormece o que está parado longe do ecrã), depuração (debug/), todos os shaders (shaders/) e conjuntos de tiles (tilesets/)
+    │   ├── others/      câmara (camera/), atividade fora do ecrã (activity/, o ActivityTracker, que adormece o que está parado longe do ecrã), depuração (debug/), resposta aos impactos (feedback/), todos os shaders (shaders/) e conjuntos de tiles (tilesets/)
     │   └── screens/     menus, ecrã das opções, o balão de diálogo e indicador de gravação
     ├── tests/         testes automáticos (test_*.gd), que correm sem janela
     │   ├── launchers/ abrem o jogo num ponto escolhido, para ver à mão (por agora, o fim da fase 2)
@@ -1001,7 +1195,7 @@ ficheiros para outra pasta, deu nome novo a um e atualizou 60 referências. Os t
 teste a teste, nenhuma cena ou recurso ficou a apontar para um caminho antigo, e o projeto importa
 sem erros num clone novo.
 
-Para um nível aparecer no Play, acrescenta-se à lista Levels do Main, no Inspector do `main.tscn`
+Para um nível aparecer no New Game, acrescenta-se à lista Levels do Main, no Inspector do `main.tscn`
 (Add Element › New LevelEntry, com o título e a cena). A ordem da lista é a dos botões. Um elemento
 deixado vazio, ou sem cena, fica fora do menu, com um aviso no Output.
 
@@ -1039,6 +1233,12 @@ godot --headless --fixed-fps 60 --path Projeto --script res://tests/test_landed_
 godot --headless --fixed-fps 60 --path Projeto --script res://tests/test_camera_zones.gd
 godot --headless --fixed-fps 60 --path Projeto --script res://tests/test_player_input.gd
 godot --headless --fixed-fps 60 --path Projeto --script res://tests/test_camera_keeps_player_on_screen.gd
+godot --headless --fixed-fps 60 --path Projeto --script res://tests/test_camera_shake.gd
+godot --headless --fixed-fps 60 --path Projeto --script res://tests/test_controller_rumble.gd
+godot --headless --fixed-fps 60 --path Projeto --script res://tests/test_rumble_moments.gd
+godot --headless --fixed-fps 60 --path Projeto --script res://tests/test_crucifix_warning.gd
+godot --headless --fixed-fps 60 --path Projeto --script res://tests/test_reveal_rule.gd
+godot --headless --fixed-fps 60 --path Projeto --script res://tests/test_sight_reveal.gd
 godot --headless --fixed-fps 60 --path Projeto --script res://tests/test_main_flow.gd
 godot --headless --fixed-fps 60 --path Projeto --script res://tests/test_pause.gd
 godot --headless --fixed-fps 60 --path Projeto --script res://tests/test_phase_exit.gd
@@ -1059,6 +1259,7 @@ godot --headless --fixed-fps 60 --path Projeto --script res://tests/test_crucifi
 godot --headless --fixed-fps 60 --path Projeto --script res://tests/test_crucifix_menus.gd
 godot --headless --fixed-fps 60 --path Projeto --script res://tests/test_input_profiles.gd
 godot --headless --fixed-fps 60 --path Projeto --script res://tests/test_controls.gd
+godot --headless --fixed-fps 60 --path Projeto --script res://tests/test_input_map.gd
 godot --headless --fixed-fps 60 --path Projeto --script res://tests/test_background_layer.gd
 godot --headless --fixed-fps 60 --path Projeto --script res://tests/test_soul_points.gd
 godot --headless --fixed-fps 60 --path Projeto --script res://tests/test_demon.gd
@@ -1134,8 +1335,10 @@ godot --headless --fixed-fps 60 --path Projeto --script res://tests/measures/mea
 
 O `measure_crucifix_repel.gd` também não verifica resultados: mede quanto custa, num passo de
 física, a lista do que está dentro do raio do crucifixo, com 10, 50 e 200 demónios de substituição,
-em chamadas seguidas e no pior caso, e compara esse custo com o limite de 0,05 ms. Os números e a
-decisão estão em "Crucifixo: componentes e modificadores de movimento".
+em chamadas seguidas e no pior caso, e compara esse custo com o limite de 0,05 ms. Com cada número
+de demónios, mede também o que somaria comparar essa lista com a do passo anterior, a forma de dizer
+`struck` que ficou de fora. Com o crucifixo erguido, mede ainda o seu `_process`, antes do aviso e
+durante ele. Os números e as decisões estão em "Crucifixo: componentes e modificadores de movimento".
 
 ```
 godot --headless --fixed-fps 60 --path Projeto --script res://tests/measures/measure_crucifix_repel.gd
@@ -1170,6 +1373,42 @@ o primeiro. Os números e a decisão estão em "Atividade fora do ecrã".
 
 ```
 godot --headless --fixed-fps 60 --path Projeto --script res://tests/measures/measure_level1.gd
+```
+
+O `measure_camera_shake.gd` também não verifica resultados: mede quanto custa, num frame desenhado,
+o nó que faz tremer o ecrã, sem tremor e com o trauma no máximo, em 100 000 chamadas seguidas. Os
+números estão em "Câmara".
+
+```
+godot --headless --fixed-fps 60 --path Projeto --script res://tests/measures/measure_camera_shake.gd
+```
+
+O `measure_controller_rumble.gd` também não verifica resultados: mede quanto custa o nó que faz
+vibrar o comando num frame desenhado com três impulsos a descer e duas vibrações contínuas a pulsar,
+o pior caso, em que pede ao comando em todos os frames; num evento de input; e num impulso iniciado e
+parado. Cada medida faz 100 000 chamadas seguidas. Os números estão em "Câmara".
+
+```
+godot --headless --fixed-fps 60 --path Projeto --script res://tests/measures/measure_controller_rumble.gd
+```
+
+O `measure_sight_reveal.gd` também não verifica resultados: mede quanto acrescentam os componentes da
+linha de vista no nível 1, com a personagem no início, e sem câmara, com elementos escondidos atrás
+de uma parede, o pior caso, e com cães à vista, comparando a mesma sala com os componentes ligados e
+desligados. Os números estão em "Linha de vista:
+um componente por objeto".
+
+```
+godot --headless --fixed-fps 60 --path Projeto --script res://tests/measures/measure_sight_reveal.gd
+```
+
+O `measure_joypads.gd` precisa de um comando ligado e é o único que corre sem `--headless`, porque
+sem janela o Godot não lê comandos. Lista os comandos que o motor vê, faz vibrar cada motor e, durante
+20 s, escreve cada ação e cada botão premidos, com a janela em foco. Sai com o código 1 se não houver
+comando.
+
+```
+godot --path Projeto --script res://tests/measures/measure_joypads.gd
 ```
 
 ### A personagem por dentro
@@ -1341,13 +1580,14 @@ teclado, e não pela letra impressa, pelo que o WASD se mantém num teclado AZER
 
 | Ação | Teclado | Comando |
 |---|---|---|
-| `move_left` / `move_right` | A / D, setas | stick esquerdo (eixo 0) |
-| `move_up` / `move_down` | W / S, setas | stick esquerdo (eixo 1) |
+| `move_left` / `move_right` | A / D, setas | stick esquerdo (eixo 0), D-pad |
+| `move_up` / `move_down` | W / S, setas | stick esquerdo (eixo 1), D-pad |
 | `jump` | Espaço | A / Cross |
-| `interact` | R | carregar no stick direito (R3) |
-| `crucifix` | botão esquerdo do rato | RT / R2 (eixo 5) |
+| `interact` | E | X / Square |
+| `crucifix` | Shift | RT / R2 (eixo 5) |
 | `pause` | Escape | Start |
 | `toggle_debug_overlay` | F3 | — |
+| `debug_damage` | F4 | — |
 | `debug_accept_offer` / `debug_refuse_offer` | F7 / F8 | — |
 | `debug_reset_run` | F9 | — |
 | `ui_accept` | Enter, Espaço | A / Cross |
@@ -1355,6 +1595,34 @@ teclado, e não pela letra impressa, pelo que o WASD se mantém num teclado AZER
 
 O `ui_accept` e o `ui_cancel` são ações que o Godot já traz para os menus; acrescentou-se-lhes o A e o
 B do comando, que não tinham.
+
+O teclado e o comando foram revistos em conjunto (ADR 0063). O grupo experimentou o crucifixo no
+botão esquerdo do rato e ninguém se adaptou, pelo que o perfil predefinido passou a usar só o
+teclado: o Shift, premido com o dedo mínimo, ergue o crucifixo sem tirar os outros dedos do WASD e do
+Espaço, e o E, ao lado, interage. O perfil mantém as setas para andar, pelo que também se joga com
+as duas mãos. No comando, o interagir passou do clique do stick direito, um stick que o jogo não usa,
+para o X, ao lado do A, e o B serve, por agora, só para voltar nos menus. O D-pad também anda, para
+quem prefere o movimento digital ao stick. No perfil predefinido, nenhuma tecla, botão ou direção
+serve duas ações de jogo; o Espaço e o A também confirmam nos menus, de propósito.
+
+Os poderes dos upgrades vão usar o botão do crucifixo: o crucifixo perde-se no primeiro upgrade
+aceite, pelo que os dois nunca coexistem, e o Shift e o RT (o Q, no perfil das setas) passam a usar
+o poder ativo. Trocar de poder fica no LB e no RB e, no perfil WASD, no Q e no R; o Y, o B e o LT
+ficam livres para a espada do nível 5. Estas ações entram no Input Map quando o primeiro upgrade
+for implementado.
+
+Limitações conhecidas. No Windows, cinco toques seguidos no Shift abrem o aviso das Teclas Fixas
+(Sticky Keys); quem se incomodar pode mudar o crucifixo para outra tecla no perfil Custom. As teclas
+desenhadas no tutorial ainda só mostram o teclado, pelo que quem joga com o comando não vê nelas o
+botão de cada ação. O comando ainda não se remapeia (issue #249), e o crucifixo só se ergue
+mantendo o botão premido, sem opção de alternar (issue #250).
+
+O `test_input_map.gd` verifica que cada ação de jogo do perfil predefinido tem exatamente as teclas,
+os botões e as direções desta tabela, nem mais nem menos, que não usa o rato, que nenhuma entrada
+serve duas ações de jogo e que os menus navegam com o D-pad e com o stick. Verifica também que,
+com o Shift premido, o A continua a andar e o Espaço continua a chegar ao salto. O
+`tests/measures/measure_joypads.gd` (ver "Testes e medidas") escreve cada ação e cada botão
+premidos num comando ligado, para confirmar a tabela num comando real.
 
 As teclas desta tabela são as do perfil de controlos predefinido. O jogador pode escolher outro
 perfil nas opções, e o `Settings` substitui, durante o jogo, as teclas e os botões do rato das ações
@@ -1446,12 +1714,33 @@ indústria:
   da luz, que assim mostra sempre a área onde o crucifixo atua, e o abrandamento ao seu
   modificador.
 
-Com o resto do jogo, o crucifixo comunica por sinais (`raised`, `lowered`, `cooldown_started`,
-`cooldown_finished`, `lost` e `healed`), que o HUD e o som poderão escutar e que os SP já escutam
-(ver "SP: componente, dados e ligação ao crucifixo").
+Com o resto do jogo, o crucifixo comunica por sinais (`raised`, `lowered`, `ran_out`, `refused`,
+`cooldown_started`, `cooldown_finished`, `lost`, `healed` e `struck`), que o HUD e o som poderão
+escutar e que os SP e a vibração já escutam (ver "SP: componente, dados e ligação ao crucifixo").
 Perdido, emite `lost` e sai do jogo (`queue_free`); o HUD retira o ícone ao receber esse sinal. A
 exceção é o afastamento: o crucifixo empurra os demónios e as almas chamando o componente
 `Repellable` de cada um (ver acima), sem conhecer os seus scripts.
+
+O aviso de que o crucifixo vai baixar também vive no crucifixo. O `get_warning_progress()` diz
+quanto do aviso já passou, de 0 a 1, e o `get_warning_pulse()` diz que parte do brilho a luz tem
+nesse momento. A luz e o som do crucifixo erguido seguem o segundo, e a vibração lê o primeiro.
+Assim, todos seguem o mesmo relógio, e um valor novo de Warning Time chega a todos. O volume do som
+segue a parte do brilho que a luz tem, o que o baixa cerca de 8 dB na descida mais funda; só o volume
+muda, porque mexer no tom soaria a avaria e chocaria com a música. O `_process` do
+crucifixo só corre com ele erguido e só muda a energia da luz; ao baixar, a luz volta ao brilho da
+cena. Custa cerca de 0,5 a 0,7 µs por frame. A fase da pulsação conta-se a partir do fim do uso, para
+a descida mais funda coincidir com o instante em que o crucifixo baixa: contada a partir do início,
+a luz estaria no brilho todo ao apagar-se.
+
+O `struck` vem do sinal `area_entered` da área de afastamento, que o motor de física já calcula, e
+diz-se uma vez por passo de física, por muitos que entrem nesse passo. O que já está no raio quando
+o crucifixo se ergue conta nesse momento, e o que entra com ele em baixo não conta. Só conta o que o
+crucifixo empurra, um `Repellable` com Target: o desbloqueador de um portão, que ele só alcança, não
+conta. Ficou de fora comparar, em cada passo, a lista do que está no raio com a do passo anterior.
+Essa comparação soma cerca de 4 µs por passo com 10 demónios no raio, 35 µs com 50 e 390 µs com 200:
+com quatro vezes mais demónios, custa cerca de onze vezes mais, perto do quadrado. Com o sinal, um
+passo em que nada entra não custa nada a mais. Os números deste parágrafo e do anterior vêm do
+`measure_crucifix_repel.gd` (três execuções, 2026-11-14).
 
 Com a personagem é diferente. O crucifixo recebe-a no Inspector (propriedade Player), lê o botão
 através do `PlayerInput` dela, pergunta-lhe se está no chão e coloca e retira o seu modificador.
@@ -1493,10 +1782,16 @@ bloqueio do salto, a tolerância antes de aterrar e antes do fim da espera, o to
 cedo, a parede, a saída do chão, a duração máxima, a espera fixa, a pausa, a perda, a cura, o
 afastamento, a camada da cena `Repellable` e a afinação com o jogo a correr. Usa um demónio de
 substituição, que flutua à altura do crucifixo; o afastamento de um demónio no chão verifica-se no
-`test_demon.gd`, com o crucifixo da personagem. O `test_crucifix_menus.gd` usa a cena principal
-e o rato: com o botão premido durante a pausa e mantido ao retomar com Esc, com um clique no Resume
-e com o botão premido desde o menu principal, o crucifixo não se ergue até o botão ser largado e
-premido de novo no jogo.
+`test_demon.gd`, com o crucifixo da personagem. O `test_crucifix_menus.gd` usa a cena principal,
+com o crucifixo no botão esquerdo do rato pelo perfil Custom: com o botão premido durante a pausa
+e mantido ao retomar com Esc, com um clique no Resume e com o botão premido desde o menu principal,
+o crucifixo não se ergue até o botão ser largado e premido de novo no jogo. O
+`test_crucifix_warning.gd` verifica o aviso: a luz com o brilho todo antes
+dele e a pulsar entre os limites durante ele, mais funda no fim, a mais funda no último instante, e
+sem passar a frequência; de volta ao brilho todo ao baixar, também quando o botão é largado a meio
+do aviso; o volume do som a seguir a luz e de volta ao normal ao baixar; o aviso a 0 no instante
+em que baixa; e o `_process` do crucifixo e dos seus sons só com ele erguido. Verifica
+também que os valores do jogo pulsam três vezes por segundo ou menos.
 
 #### SP: componente, dados e ligação ao crucifixo
 
@@ -1807,7 +2102,9 @@ não é esta cena com a perseguição desligada.
   áudio. Com Out Of Reach Pace Width a 0, o demónio fica parado como antes.
 - **Alerta e procura à vista e ao ouvido (ADR 0040).** O alerta durava 0,3 s e não se via nem se
   ouvia, pelo que a personagem não sabia que tinha sido descoberta. Agora, o nó `Mark` mostra um "!"
-  no alerta e um "?" na procura, brancos e com contorno escuro, para não se confundirem com as cores
+  no alerta e, com Shows Search ligado, um "?" na procura. Desde a linha de vista, Shows Search está
+  desligado por decisão do autor (ADR 0064): a procura fica só com os bips, e quem joga sem som deixa
+  de ter um sinal dela no ecrã. As marcas são brancas e com contorno escuro, para não se confundirem com as cores
   do aviso de ataque; distinguem-se pela forma e não pela cor. Cada marca surge maior e encolhe uma
   única vez, sem piscar. O "!" fica Alert Linger Time (0,5 s) já na perseguição, porque 0,3 s mal
   chega para ler. Qualquer outro estado apaga a marca no mesmo passo, e uma pausa suspende a
@@ -2331,6 +2628,89 @@ posição dos pés. Sem janela, o Godot cria uma janela de 64 × 64 px, e o
 modo de proporção Expand transforma-a num ecrã de 1920 × 1920; por isso, os testes da câmara fixam o
 ecrã em 1920 × 1080 antes de começar.
 
+O tremor do ecrã não altera a posição da câmara. Um nó filho, `CameraShake`, desloca o `offset` da
+`Camera2D`, que o seguimento, as zonas e os limites não usam, pelo que nenhum deles o vê. As regras
+estão numa classe sem nó, `ShakeTrauma`, que os testes executam diretamente: cada impacto soma
+trauma, até 1, ou, nos toques para se soltar e na libertação, leva-o a um nível fixo sem o somar, e
+o trauma desce a uma taxa constante; o tremor é o trauma elevado a um expoente, e o desvio
+segue um ruído Simplex contínuo, com cada eixo numa linha diferente do ruído. O desvio é dividido
+pelo zoom, para mover o ecrã os mesmos píxeis com qualquer zoom, e calcula-se em cada frame
+desenhado, porque só altera o que se vê: custa 1,1 µs por frame sem tremor e 1,9 µs com o trauma
+no máximo, 0,011 % de um frame a 60 FPS (`measure_camera_shake.gd`, três execuções, 2026-11-14).
+Com o jogo em pausa, a câmara para e, com a interpolação de física, continuaria a desenhar o último
+desvio; por isso, ao entrar na pausa, o desvio volta a 0 e a câmara redesenha logo. Os demónios
+decidem se estão no ecrã pela posição da câmara, com o zoom e os limites, sem o desvio, pelo que o
+tremor não os faz parar nem arrancar. Não o decidem pelo que está desenhado, porque, com a
+interpolação de física, o desenho segue a câmara com até dois passos de física de atraso, desvio
+incluído: medido com um demónio a 1 px da borda do ecrã, com o tremor no máximo, a leitura pelo
+desenho errava em 58 de 60 passos e a leitura pela posição em nenhum. Os momentos que fazem tremer o ecrã são ligados por outro nó filho da câmara,
+`ImpactFeedback`, que procura entre os filhos da personagem o `Hurtbox`, o `GrabEscape`, o
+`Crucifix` e o `PlayerSounds`, e no nível os `Hazard`, os `LethalSpikes` e as `FallingRock`, e liga-se aos sinais que
+estes já emitem, sem que nenhum dependa do tremor. Faz a procura no fim do primeiro frame do nível,
+depois de o nível ter tirado o crucifixo a quem já o perdeu, para esse passo não contar como um
+impacto. Ficou de fora um deslocamento aleatório com um `Tween` por impacto: cada impacto teria o seu
+`Tween` a mexer no mesmo `offset`, impactos seguidos disputavam-no e o pior caso não tinha teto; o
+trauma tem um dono só e nunca passa de 1. O `test_camera_shake.gd` verifica as regras (o trauma
+máximo acaba em meio segundo e o Speed tem a rapidez que o Inspector descreve), a opção e o ecrã das
+opções, o trauma de cada momento, o zoom, a pausa, o início de um nível sem crucifixo e os
+demónios, e que a morte da personagem faz tremer o ecrã sem mover a câmara.
+
+A vibração do comando segue o mesmo desenho. O `ImpactFeedback` responde a cada momento e a cada
+estado que o corpo da personagem sente com um pedido a outro nó filho da câmara, `ControllerRumble`,
+e, nos golpes e nos momentos graves, também com trauma para o `CameraShake`. A lista dos momentos
+fica assim num só sítio, e o tremor e a vibração não se desencontram. Os valores estão num recurso
+próprio, `RumbleStats`, agrupado pelos degraus da escada; cada impulso é um `RumblePulse` e cada
+estado contínuo um `RumbleSustain`. As regras estão numa classe sem nó, `RumbleRules`. Cada impulso
+tem um nível para cada motor, uma duração e uma descida final em linha reta. Cada vibração contínua
+tem os seus níveis e uma pulsação em cosseno. Com vários ao mesmo tempo, cada motor fica no nível do
+mais forte, limitado ao intervalo de 0 a 1, o que o Godot aceita. Uma vibração contínua desce à sua
+parte só nos motores que um impulso usa, em proporção do que resta do impulso, e por isso volta sem
+salto quando ele acaba. O primeiro frame de um impulso não lhe desconta tempo, para que dure
+o tempo todo a qualquer taxa de frames. O `ControllerRumble` volta a pedir ao comando quando esse
+resultado muda e sempre que começa um impulso, porque um impulso igual a outro que já corre acaba
+mais tarde. Cada pedido vale pela duração do impulso que acaba por último ou, com vibração contínua,
+por 0,25 s, renovados antes de acabarem, para que os motores parem sozinhos mesmo que o jogo deixe de
+correr. A pausa e a janela fora de foco descartam os impulsos, mas guardam as vibrações contínuas,
+que voltam com o jogo.
+O comando ativo é o do último input: um botão, ou um analógico movido pelo menos até meio, torna esse
+comando o ativo, e uma tecla ou um botão do rato deixam o jogo sem comando ativo. É partilhado por
+todas as instâncias do nó e passa de um nível para o seguinte: o Godot só envia eventos do analógico
+quando o valor muda, e quem entra na fase seguinte com o analógico encostado não os voltaria a dar.
+Cada instância guarda o comando a que fez o último pedido e, quando o comando ativo muda, para esse e
+passa a sua vibração para o novo. Assim, o nó do nível e as amostras das opções, que estão na árvore
+ao mesmo tempo, não dependem da ordem em que recebem o input. A amostra vibra o último comando usado
+mesmo com o rato em uso (Keeps Last Controller), para que um arrasto do slider se sinta no comando.
+Com a janela fora de foco nenhum impulso começa, também onde o jogo não
+pausa (na mudança de fase ou num nível corrido com F6). O `_process` só corre enquanto algo vibra. No
+pior caso, com três impulsos a descer e duas vibrações contínuas a pulsar, pede ao comando em todos
+os frames e custa cerca de 4,4 µs por frame, 0,026 % de um frame a 60 FPS. O `_input` vê cada evento
+de input, haja vibração ou não, e custa cerca de 0,7 µs por evento; iniciar e parar um impulso custa
+cerca de 4,9 µs (`measure_controller_rumble.gd`, três execuções, 2026-11-14). O `ImpactFeedback` só tem
+`_process` com o crucifixo erguido. A aterragem cresce com a altura da queda, que o `PlayerSounds` já
+mede para escolher o som, e não com a velocidade, porque a queda chega à velocidade máxima aos
+166 px. A personagem passou a dar dois sinais, `head_bumped` e `got_on_wall`, emitidos uma vez por
+contacto, como o `landed`. Os picos letais matam sem sinal próprio: chamam a morte da personagem. O
+`ImpactFeedback` ouve a entrada de um corpo nos picos e reconhece a morte nos picos quando essa
+entrada e a morte caem no mesmo passo de física, por qualquer ordem, sem mudar o script dos picos. A
+vibração contínua do crucifixo lê o aviso do próprio crucifixo, o mesmo que a luz segue. Depois da
+morte, o crucifixo fica erguido até a sala recomeçar, e o `ImpactFeedback` deixa de responder ao que
+ele diz. Ficaram de fora três alternativas: derivar a vibração do trauma do tremor,
+que dava a todos os momentos a mesma mistura de motores e fundia os toques rápidos do agarrão num
+zumbido; um segundo nó a ouvir os mesmos sinais por conta própria, que duplicava a procura dos
+momentos; e impulsos de força constante, que se sentem como um zumbido e não como uma pancada
+(ADR 0062). O `test_controller_rumble.gd` verifica as regras, o comando escolhido e o que passa ao
+nível seguinte, dois nós ao mesmo tempo, os pedidos renovados e os que não se repetem, a vibração
+contínua com as paragens e o foco, as duas opções, um ficheiro de opções com valores errados e o ecrã
+das opções com a amostra, com um arrasto real do rato e com o ecrã fechado a meio do arrasto. O
+`test_rumble_moments.gd` verifica a escada sobre os valores do jogo, o impulso de cada momento, a
+vibração contínua do agarrão e do crucifixo, os toques num agarrão real, a morte com o crucifixo
+erguido, o crucifixo a esgotar-se, o que entra na luz dele (nada com ele em baixo, uma só pancada
+ao erguê-lo por cima de duas almas e outra quando voltam a entrar juntas, nenhuma para o
+desbloqueador de um portão), o crucifixo depois da morte, a morte nos picos letais (pelas duas
+ordens, e sem picada se a entrada vier noutro passo), a aterragem pela altura da queda e os tiques
+dos movimentos reais (salto, aterragem, cabeça no teto, mesmo encostada vários
+frames, e parede), com a física do jogo.
+
 #### Fundo em camadas
 
 O fundo é feito de nós `BackgroundLayer` (`scenes/levels/background/background_layer.gd`), uma extensão do
@@ -2381,6 +2761,49 @@ outra por acaso:
 | 3 | camada Front do fundo | Z Index 10 |
 | 4 | interface e overlay de depuração | `CanvasLayer`, por cima de tudo |
 
+#### Linha de vista: um componente por objeto
+
+Cada cão e cada faixa de picos tem um nó `SightReveal` (`scenes/others/sight/`). De três em três
+passos de física, com os componentes repartidos pelos três passos, o nó lança raios dos olhos da
+personagem (o nó `Eyes`, script `SightEyes`) até três filas de pontos na caixa do elemento, do topo
+à base (Rows), com os pontos de cada fila espaçados no máximo 96 px, contra a camada world. Para de
+lançar quando a personagem vê metade dos pontos (Full Share); com menos, passa a fração vista à
+regra, que desenha o elemento em parte. Um raio que encontra o corpo de uma personagem (um
+`CharacterBody2D`) segue para lá dele, até quatro corpos por raio; o resto da camada world para-o.
+A menos de 96 px dos olhos (Near Radius), o elemento conta como visto sem lançar raios. Antes dos
+raios, o componente vê se a caixa está no ecrã, com a margem: os olhos calculam o
+retângulo do ecrã uma vez por passo, e o que está fora não lança raios. Nos cães, o componente
+pergunta também aos sentidos do cão (`DemonSenses.can_see`), e o sinal `warning_started` do cão
+desenha-o por inteiro de imediato (`reveal_now`): assim, um cão que vê a personagem ou começa um
+ataque está sempre visível. As regras (a memória dos picos, o tempo antes de esconder, as transições
+e a opção) estão numa classe pura, `RevealRule`, verificada pelo `test_reveal_rule.gd`; o
+`test_sight_reveal.gd` verifica o componente em cena. Os olhos registam-se numa variável estática ao
+entrar na árvore, para que nenhum elemento procure a personagem em cada verificação. Sem olhos na
+árvore, como numa cena aberta com F6, tudo se desenha, mas nada conta como visto.
+
+A alternativa considerada foi uma máscara recortada pelo polígono de visibilidade da personagem,
+calculado em cada frame com o varrimento angular descrito pela
+[Red Blob Games](https://www.redblobgames.com/articles/visibility/). Dava um recorte exato ao píxel,
+mas obrigava a extrair os segmentos de toda a geometria do nível e a reorganizar as cenas dos níveis
+para pôr os elementos escondidos sob a máscara. Ficou de lado por esse custo e esse risco. Pode
+entrar mais tarde como acabamento visual, mantendo a regra de jogo deste componente. Uma luz 2D
+invisível com sombras faria o mesmo na placa gráfica, mas misturava-se com o sistema de luz previsto.
+
+Custo (`measure_sight_reveal.gd`, duas execuções, 2026-11-16). O nível 1 tem 171 componentes (99
+cães e 72 faixas de picos). Com a personagem no início do nível, antes do corte fora do ecrã, os
+componentes acrescentavam em média cerca de 2,0 ms por frame aos scripts de física e 0,4 ms aos de
+desenho, acima dos 2 ms que um sistema pode gastar. Com o corte, e escrevendo a opacidade só quando
+muda, acrescentam até 0,14 ms aos scripts de física (numa das execuções, a diferença ficou dentro do
+ruído) e 0,16 a 0,25 ms aos de desenho. Sem câmara, que é o pior caso, todos olham: com 40 elementos
+escondidos atrás de uma parede (20 cães e 20 faixas de picos de quatro tiles), cerca de 0,26 ms e
+0,05 ms; com 200, cerca de 2,4 ms e 0,3 ms; com 40 cães à vista, 0,17 ms e 0,06 ms. Os 200
+escondidos passam os 2 ms porque um elemento escondido lança um raio por cada ponto das três filas;
+com a fila única da primeira versão, eram cerca de 0,9 ms. Este caso não acontece no jogo: o nível 1
+tem 171 elementos no total e, com o corte fora do ecrã, só lançam raios os que estão no ecrã. Se
+um nível se aproximar dele, baixar o Rows para 2 ou 1 reduz na mesma proporção os raios dos
+escondidos. Os picos já vistos não custam nada, porque deixam de verificar. O pior frame variou
+muito entre execuções, pelo que só as médias são citadas.
+
 #### Menus, pausa e opções
 
 A cena principal fica carregada durante todo o jogo e contém o menu principal, o menu de pausa e um
@@ -2405,29 +2828,62 @@ mesmo acontece a qualquer nó de um nível com Process Mode Always. Perder o foc
 (Main › Pause On Focus Loss), opção que convém desligar quando se afinam valores pelo separador
 Remote do editor.
 
-O Espaço e o A servem para saltar e para confirmar nos menus, e o B para interagir e para voltar. Os
+O Espaço e o A servem para saltar e para confirmar nos menus, e o B para voltar. Os
 botões do Godot disparam quando a tecla é largada, e o B fecha a pausa também ao ser largado. Isso
 não chega: num toque rápido, carregar e largar chegam no mesmo frame, e o Godot considera a ação
 acabada de carregar durante todo esse frame. Por isso o jogo retoma no frame seguinte ao da tecla que
 o retomou. Os testes confirmam que retomar com o Espaço, o A ou o B, também num toque rápido, não faz
 saltar nem interagir; com o jogo a retomar no próprio frame, a personagem saltava.
 
-As opções (volume dos buses Master, Music, SFX, Ambience e UI, ecrã inteiro, V-Sync, limite de FPS
-e controlos)
+As opções (volume dos buses Master, Music, SFX, Ambience e UI, ecrã inteiro, V-Sync, limite de FPS,
+força do tremor do ecrã, força da vibração do comando, vibração contínua, manter o salto para se
+soltar do agarrão, mostrar o que a personagem não vê e controlos)
 estão no autoload `Settings`, porque têm de estar aplicadas antes de qualquer
 cena. Gravam-se em `user://settings.cfg` (no Windows, `%APPDATA%\Godot\app_userdata\P2D\`), um
 ficheiro de texto legível, com número de versão. Um ficheiro em falta ou ilegível, ou com valores de
-tipo errado, fora do intervalo ou que não são números, dá os valores predefinidos. O limite de FPS só
+tipo errado ou que não são números, dá os valores predefinidos; um volume, ou uma força do tremor
+ou da vibração, fora do intervalo fica no limite mais próximo, e um limite de FPS que não está na lista dá o
+predefinido. Uma opção nova entra como chave nova: um ficheiro antigo, que não a tem, dá o valor
+predefinido e mantém as outras. Por isso, as cinco opções de acessibilidade entraram sem mudar o
+número de versão, que só terá de subir quando uma chave mudar de sentido, de tipo ou de secção. O
+limite de FPS só
 limita o desenho; a física mantém-se nos 60 passos por segundo. Os menus nunca alteram o áudio, a
 janela ou o motor diretamente: pedem a mudança ao `Settings`, que a aplica e grava. Com o jogo
 embutido no editor, o ecrã inteiro não se aplica (só a janela normal é suportada); experimenta-se com
 o jogo numa janela à parte ou numa exportação.
+
+#### Aspeto dos menus
+
+O menu principal e a pausa seguem a maqueta do grupo: fundo preto, a personagem principal à
+esquerda, iluminada por uma luz que entra pelo canto superior direito, e as opções à direita, em
+maiúsculas, com uma cruz de cada lado da opção selecionada. A pausa tem a mesma composição, mas o
+preto fica a 60 % de opacidade, para se continuar a ver o jogo por trás. As opções e os controlos
+abrem na mesma coluna, com o mesmo estilo.
+
+- **Fundo partilhado** (`scenes/screens/menu_backdrop.tscn`): o preto (Background Alpha), os raios
+  de luz e a personagem. Os raios são um shader (`scenes/others/shaders/god_rays.gdshader`), somado
+  ao que está por trás, que ondula lentamente; a cor, a intensidade, a direção, o alcance e o brilho
+  junto à origem afinam-se no material do nó Rays.
+- **Personagem:** desenhada pelo grupo já com a luz e as sombras pintadas
+  (`assets/sprites/menu/menu_character.png`), e mostrada tal como está. O
+  `scenes/screens/builders/build_menu_art.gd` traz a personagem e a cruz para o projeto, recortadas.
+- **Cruzes** (`scenes/screens/menu_crosses.gd`): seguem o foco, de teclado, comando ou rato, e
+  deslizam para a opção selecionada; o rato por cima de um botão dá-lhe o foco. Ficam só nos botões:
+  um slider mostra a sua própria seleção.
+- **Letra:** Times New Roman em todo o jogo (menus, tutorial, falas, indicador de gravação e overlay),
+  como fonte por omissão do projeto (`gui/theme/custom_font`, `themes/main_font.tres`), pedida ao
+  sistema (no Windows existe sempre). A sua licença não
+  permite incluí-la no jogo, por isso, onde não existir, entra a Tinos, com as mesmas medidas.
+- **Tamanhos:** a primeira opção visível é sempre a maior (110 px, a variação MenuFirstOption do
+  tema): Continue quando há gravação, New Game quando não há, Resume na pausa. As outras têm 64 px
+  (MenuOption). Os tamanhos vêm todos do tema, nunca de um nó, e os testes dos menus confirmam-no.
 
 #### Controlos: perfis e remapeamento
 
 Os controlos seguem o modelo habitual nos jogos de PC: perfis predefinidos, um perfil personalizado
 e remapeamento por captura da tecla seguinte.
 
+- Nenhum perfil predefinido usa o rato; no Custom, qualquer ação pode receber um botão do rato.
 - Os perfis só mudam o teclado e o rato das ações de jogo (andar, saltar, crucifixo, interagir). O
   comando, a pausa, o overlay de depuração e as ações dos menus ficam como o `project.godot` os
   define.
@@ -2929,6 +3385,12 @@ verificações (12 testes, das fases 1 a 3, já falhavam antes dele).
   Na zona da fase 3 e na sala da Asmodeu, foram repintadas com IA (Claude), por scripts fora do repositório que
   ajustam um modelo às imagens das fases 1 e 2 e só alteram os píxeis por onde essas zonas passam.
   Saem ou refazem-se quando o mapa ou as áreas mudarem.
+- `fire_low_sheet.png` e `fire_upright_sheet.png`, em `Projeto/assets/sprites/fire/`: fogos animados
+  desenhados por von Hafe, do grupo, convertidos dos GIF originais em folhas de frames. Usados pelo
+  protótipo de iluminação (#257).
+- Tinos, de The Tinos Project Authors. SIL Open Font License 1.1. Letra de reserva dos menus, com as
+  medidas da Times New Roman, em `Projeto/assets/fonts/` (com a licença em `Tinos-OFL.txt`).
+  https://github.com/googlefonts/tinos
 
 ## Licença
 

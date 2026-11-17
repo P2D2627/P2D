@@ -1,7 +1,7 @@
 # Checks the crucifix and the movement modifiers it uses. A modifier's shares multiply with the
 # others', a value changed while it is on takes effect at once, a share of the jump's height lowers
-# the full jump and a share of the speed slows the wall jump. The crucifix's action is the left
-# mouse button and R2. A press of Crucifix on the floor raises it, through the player's own input or
+# the full jump and a share of the speed slows the wall jump. The crucifix's action is Shift and R2,
+# with no mouse button. A press of Crucifix on the floor raises it, through the player's own input or
 # a stand-in; up, it slows the run by Crucifix Stats, stops every jump, lights up and heals the
 # man's SP, and letting go gives the full movement back with no jump left over. A press a moment
 # before landing raises it on landing; one made long before raises nothing until Crucifix is pressed
@@ -87,7 +87,7 @@ func _initialize() -> void:
 	results.append(await _a_value_changed_while_on_takes_effect_at_once())
 	results.append(await _a_share_of_the_jump_height_lowers_the_full_jump())
 	results.append(await _a_share_of_the_speed_slows_the_wall_jump())
-	results.append(_the_crucifix_action_is_the_left_mouse_button_and_r2())
+	results.append(_the_crucifix_action_is_shift_and_r2())
 	results.append(await _the_crucifix_action_raises_it_through_the_players_own_input())
 	results.append(await _holding_it_slows_the_run_to_its_share())
 	results.append(await _letting_go_gives_the_full_speed_back())
@@ -199,22 +199,24 @@ func _a_share_of_the_speed_slows_the_wall_jump() -> bool:
 			% [kick[0], expected, "" if touched else " (never reached the wall)"])
 
 
-## The Input Map binds Crucifix to the left mouse button and to R2 pulled all the way, and to no key.
-func _the_crucifix_action_is_the_left_mouse_button_and_r2() -> bool:
-	var mouse: InputEventMouseButton = InputEventMouseButton.new()
-	mouse.button_index = MOUSE_BUTTON_LEFT
-	mouse.pressed = true
+## The Input Map binds Crucifix to Shift and to R2 pulled all the way, and to no mouse button: the
+## default controls need no mouse (ADR 0063).
+func _the_crucifix_action_is_shift_and_r2() -> bool:
+	var shift: InputEventKey = InputEventKey.new()
+	shift.physical_keycode = KEY_SHIFT
+	shift.pressed = true
 	var trigger: InputEventJoypadMotion = InputEventJoypadMotion.new()
 	trigger.axis = JOY_AXIS_TRIGGER_RIGHT
 	trigger.axis_value = 1.0
-	var by_mouse: bool = InputMap.event_is_action(mouse, &"crucifix", true)
+	var by_shift: bool = InputMap.event_is_action(shift, &"crucifix", true)
 	var by_trigger: bool = InputMap.event_is_action(trigger, &"crucifix", true)
-	var keys: int = 0
+	var mouse_buttons: int = 0
 	for event: InputEvent in InputMap.action_get_events(&"crucifix"):
-		if event is InputEventKey:
-			keys += 1
-	return report(by_mouse and by_trigger and keys == 0,
-			"The Crucifix action: left mouse button %s, R2 %s, keys %d" % [by_mouse, by_trigger, keys])
+		if event is InputEventMouseButton:
+			mouse_buttons += 1
+	return report(by_shift and by_trigger and mouse_buttons == 0,
+			"The Crucifix action: Shift %s, R2 %s, mouse buttons %d"
+			% [by_shift, by_trigger, mouse_buttons])
 
 
 ## The scene's own PlayerInput reads the Crucifix action: pressing it raises the crucifix, lights it

@@ -24,6 +24,17 @@ extends Resource
 ## physics frames.
 @export_range(0.0, 60.0, 0.5, "suffix:s") var cooldown_time: float = 15.0
 
+@export_group("Warning")
+## Seconds before the end of a use from which the crucifix warns that it is about to come down: its
+## light pulses, deeper as the end comes, and the controller's vibration grows. 0 warns nothing.
+@export_range(0.0, 5.0, 0.1, "suffix:s") var warning_time: float = 1.5
+## How many times a second the light dims and comes back while it warns: 3 at most, so it never
+## flashes faster than is safe for players with photosensitive epilepsy.
+@export_range(0.5, 3.0, 0.1, "suffix:Hz") var warning_pulse_rate: float = 2.0
+## How far the light dims at the bottom of each pulse as the use ends, out of its brightness: the
+## dips grow from nothing as the warning begins to this at its end.
+@export_range(0.0, 1.0, 0.05) var warning_dim_depth: float = 0.6
+
 @export_group("Repel")
 ## Distance from the crucifix, in px, inside which demons and lost souls are pushed out. The light
 ## shows it.

@@ -4,7 +4,8 @@
 # takes the level out at once and shows the main menu on Play, and a new choice leaves one level in
 # the slot. Start on the gamepad pauses and resumes like Esc. In the main menu, Esc and Start do not
 # pause. Losing the window's focus pauses, only in a level and only with Pause On Focus Loss on, and
-# while paused it changes nothing. All the pause's text takes its size from the UI theme, with no
+# while paused it changes nothing. All the pause's text takes its size from the UI theme (its own,
+# or a variation the theme sizes, as Resume's), with no
 # size set on a single node. Leaving the pause never makes the player jump: not with Space or A on
 # Resume, both also Jump, nor with Space held through the pause and Esc to resume. In the game, B
 # reaches the game. A B pressed in the pause closes it and stops there, one that went down in the
@@ -229,10 +230,11 @@ func _space_held_through_the_pause_and_esc_to_resume_does_not_jump() -> bool:
 			% [on_the_floor, resumed, jumps])
 
 
-## B, the gamepad's back button, was also Interact until Interact moved to R3; the check that a B
-## pressed in the pause leaves Interact unpressed stays, should B ever be both again. In the game,
-## B goes past the hidden pause to the game. A B that went down in the game and comes up in the pause leaves the pause open; a B pressed
-## in the pause closes it and stops there. The probe sits in the level, so it only runs while the
+## B, the gamepad's back button, was also Interact until Interact moved to R3, and then to X (ADR
+## 0063); the check that a B pressed in the pause leaves Interact unpressed stays, should B ever be
+## both again. In the game, B goes past the hidden pause to the game. A B that went down in the game
+## and comes up in the pause leaves the pause open; a B pressed in the pause closes it and stops
+## there. The probe sits in the level, so it only runs while the
 ## game does.
 func _b_closes_the_pause_and_leaves_interact_unpressed() -> bool:
 	var back_counter: BackCounter = BackCounter.new()

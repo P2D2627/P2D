@@ -160,11 +160,13 @@ position = Vector2(216, 960)
 position = Vector2(420, 0)
 
 [node name="MoveLeftKey" parent="Tutorial/Move" unique_id=328183651 instance=ExtResource("8_key_prompt")]
-position = Vector2(-60, 780)
+position = Vector2(-27, 780)
+alignment = 2
 action = &"move_left"
 
 [node name="MoveRightKey" parent="Tutorial/Move" unique_id=108972472 instance=ExtResource("8_key_prompt")]
-position = Vector2(60, 780)
+position = Vector2(27, 780)
+alignment = 0
 action = &"move_right"
 
 [node name="MoveText" type="Label" parent="Tutorial/Move" unique_id=359662246]

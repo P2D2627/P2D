@@ -4,7 +4,10 @@ extends Node2D
 ## The crucifix's sounds. It only listens to the crucifix's signals, as PlayerSounds only reads the
 ## player, so the crucifix's script never touches the audio. It is a Node2D so that its 2D sound
 ## players follow the crucifix. An empty sound slot plays nothing, so the sounds not made yet only
-## need their file dropped in. Lost, the crucifix takes these sounds with it.
+## need their file dropped in. Lost, the crucifix takes these sounds with it. While the crucifix
+## warns that it is about to come down, the hold wavers with its light: its volume follows the
+## light's share of its brightness (Crucifix.get_warning_pulse()), about 8 dB lower at the deepest
+## dip. _process() only runs while the crucifix is up.
 
 ## The crucifix whose sounds these are.
 @export var crucifix: Crucifix
@@ -34,12 +37,16 @@ extends Node2D
 var _raise_playing: bool = false
 ## True from ran_out until the lowered that follows it on the same frame.
 var _ran_out: bool = false
+## The hold's volume as the crucifix went up, which the warning wavers down from and goes back to.
+## Read then, so a volume set in the Remote tab while it is down counts.
+var _hold_volume_db: float = 0.0
 
 
 func _ready() -> void:
 	assert(crucifix != null, "CrucifixSounds: assign the Crucifix to Crucifix.")
 	assert(cue != null, "CrucifixSounds: assign an AudioStreamPlayer2D to Cue.")
 	assert(hold != null, "CrucifixSounds: assign an AudioStreamPlayer2D to Hold.")
+	set_process(false)
 	crucifix.raised.connect(_on_raised)
 	crucifix.ran_out.connect(_on_ran_out)
 	crucifix.lowered.connect(_on_lowered)
@@ -47,6 +54,11 @@ func _ready() -> void:
 	crucifix.refused.connect(_on_refused)
 	cue.finished.connect(_on_cue_finished)
 	hold.finished.connect(_on_hold_finished)
+
+
+## While the crucifix is up, the hold's volume follows its light: all of it until the warning.
+func _process(_delta: float) -> void:
+	hold.volume_db = _hold_volume_db + linear_to_db(crucifix.get_warning_pulse())
 
 
 ## Plays sound on the cue from the start, with its pitch moved a little at random. With no sound,
@@ -61,6 +73,8 @@ func _play_cue(sound: AudioStream) -> void:
 
 ## The hold starts with no raise sound at once; otherwise when the raise ends.
 func _on_raised() -> void:
+	_hold_volume_db = hold.volume_db
+	set_process(true)
 	hold.stop()
 	_raise_playing = raise_sound != null
 	if _raise_playing:
@@ -76,6 +90,8 @@ func _on_ran_out() -> void:
 ## Going down cuts the raise and the hold off, then plays the holster, or the cooldown's sound when
 ## the use ran out of time.
 func _on_lowered() -> void:
+	set_process(false)
+	hold.volume_db = _hold_volume_db
 	_raise_playing = false
 	cue.stop()
 	hold.stop()

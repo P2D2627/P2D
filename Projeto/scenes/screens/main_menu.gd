@@ -1,9 +1,11 @@
 class_name MainMenu
 extends CanvasLayer
 
-## The first screen. The main panel has the game's name, Continue while there is a save to come
-## back to, Play, Options and Quit; Play opens the level panel, with a button for each level and
-## Back, and Options opens the options screen. The
+## The first screen, over the MenuBackdrop (the character in the light), with the crosses marking
+## the selected option. The main panel has Continue while there is a save to come back to, New Game
+## (PlayButton), Settings (OptionsButton) and Quit; the first of them is always the biggest. The
+## game's name is kept in Title, hidden. New Game opens the level panel, with a button for each
+## level and Back, and Settings opens the options screen. The
 ## menu only says what was chosen, through its signals, and the scene it is in decides what that
 ## does. Each panel opens with its first button selected, so the arrow keys and Enter work without
 ## the mouse; Esc on the level panel goes back, and coming back selects the button the player left
@@ -14,6 +16,10 @@ signal continue_requested
 ## The player agreed to replace the save with the new game of the level at index.
 signal new_game_confirmed(index: int)
 signal quit_requested
+
+## The theme's look for the main panel's first option, the biggest, and for the others.
+const FIRST_OPTION: StringName = &"MenuFirstOption"
+const OPTION: StringName = &"MenuOption"
 
 ## The level the replace-save question is about.
 var _asked_level: int = 0
@@ -29,6 +35,8 @@ var _asked_level: int = 0
 @onready var _back_button: Button = %BackButton
 @onready var _options_menu: OptionsMenu = %OptionsMenu
 @onready var _replace_save_dialog: ConfirmationDialog = %ReplaceSaveDialog
+@onready var _crosses: MenuCrosses = $Crosses
+@onready var _blur: ColorRect = $Blur
 
 
 func _ready() -> void:
@@ -41,6 +49,9 @@ func _ready() -> void:
 	_options_menu.closed.connect(_show_main_panel.bind(_options_button))
 	_replace_save_dialog.confirmed.connect(_on_replace_save_confirmed)
 	_replace_save_dialog.canceled.connect(_on_replace_save_canceled)
+	_replace_save_dialog.get_label().horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	_replace_save_dialog.visibility_changed.connect(_on_replace_save_visibility_changed)
+	_size_options()
 	_show_main_panel(_play_button)
 
 
@@ -58,6 +69,7 @@ func add_levels(titles: PackedStringArray) -> void:
 	for index: int in titles.size():
 		var button: Button = Button.new()
 		button.text = titles[index]
+		button.theme_type_variation = OPTION
 		button.pressed.connect(level_chosen.emit.bind(index))
 		_level_buttons.add_child(button)
 
@@ -73,6 +85,7 @@ func ask_to_replace_save(index: int) -> void:
 ## Shows or hides Continue. Selected when it shows, as what most players want next.
 func set_can_continue(can_continue: bool) -> void:
 	_continue_button.visible = can_continue
+	_size_options()
 	if _main_panel.is_visible_in_tree():
 		_first_button().grab_focus()
 
@@ -81,6 +94,17 @@ func set_can_continue(can_continue: bool) -> void:
 func open() -> void:
 	show()
 	_show_main_panel(_first_button())
+
+
+## While the question shows, what lies behind its box is blurred, and the menu's crosses, by the
+## level button, hide: the question has its own.
+func _on_replace_save_visibility_changed() -> void:
+	var showing: bool = _replace_save_dialog.visible
+	_crosses.visible = not showing
+	_blur.visible = showing
+	if showing:
+		_blur.position = Vector2(_replace_save_dialog.position)
+		_blur.size = Vector2(_replace_save_dialog.size)
 
 
 func _on_replace_save_confirmed() -> void:
@@ -93,6 +117,13 @@ func _on_replace_save_canceled() -> void:
 
 func _first_button() -> Button:
 	return _continue_button if _continue_button.visible else _play_button
+
+
+## The first option shown is the biggest; the others are all the same size.
+func _size_options() -> void:
+	var first: Button = _first_button()
+	for button: Button in [_continue_button, _play_button, _options_button, _quit_button]:
+		button.theme_type_variation = FIRST_OPTION if button == first else OPTION
 
 
 ## The main panel alone, with the given button selected. The options screen hides itself when it

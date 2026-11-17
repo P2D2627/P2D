@@ -10,13 +10,16 @@ extends RefCounted
 ## bindings, and puts them in the Input Map; this file only knows the profiles and how to read and
 ## write a binding.
 
-const KEYBOARD_AND_MOUSE: StringName = &"keyboard_and_mouse"
+## The default profile, which needs no mouse (ADR 0063). Before, it was "keyboard_and_mouse"; a
+## settings file with that id still gets this profile, because an id that is not one gives the
+## default.
+const WASD: StringName = &"wasd"
 const ARROWS_AND_QWEASD: StringName = &"arrows_and_qweasd"
 const CUSTOM: StringName = &"custom"
-const DEFAULT_PROFILE: StringName = KEYBOARD_AND_MOUSE
+const DEFAULT_PROFILE: StringName = WASD
 ## The profiles, by id, in the order the controls screen lists them, with the name it shows.
 const PROFILES: Dictionary[StringName, String] = {
-	KEYBOARD_AND_MOUSE: "Keyboard and mouse",
+	WASD: "WASD",
 	ARROWS_AND_QWEASD: "Arrows and QWEASD",
 	CUSTOM: "Custom",
 }

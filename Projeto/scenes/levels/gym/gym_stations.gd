@@ -78,9 +78,12 @@ func station_at(x: float) -> int:
 	return station
 
 
+## Whether the controls give the key to an action, whatever modifiers come with it: Shift is held
+## while the crucifix is up (ADR 0063), and a key the controls give to an action is still that
+## action's with Shift down.
 func _is_an_action(key: InputEventKey) -> bool:
 	for action: StringName in InputMap.get_actions():
-		if key.is_action(action, true):
+		if key.is_action(action):
 			return true
 	return false
 

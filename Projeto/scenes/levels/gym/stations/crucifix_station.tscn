@@ -40,7 +40,7 @@ faces_left = true
 [node name="GymHint" parent="." instance=ExtResource("1_hint")]
 position = Vector2(90, 360)
 text = "Crucifixo
-Desce e mantém premido o crucifixo (no perfil predefinido, o botão esquerdo do rato): andas devagar e não saltas.
+Desce e mantém premido o crucifixo (no perfil predefinido, o Shift; no comando, o RT): andas devagar e não saltas.
 O cão que entrar na luz é atirado para trás.
 Erguido, devolve SP. Dura uns segundos, e depois tens de esperar."
 
