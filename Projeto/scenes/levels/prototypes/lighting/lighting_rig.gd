@@ -14,14 +14,75 @@ extends Node2D
 ## All: the level's fires on the floors past the start and in the background, with halos, sparks and
 ## embers (off); dust in the air that only shows where it is lit, blown by the storm's wind in gusts;
 ## the man's and the dogs' dust where they touch the floor or a wall (proto_contact_dust.gd); all the
-## particles drawn behind the rock; glow. Keys: F1 mode (current look, A, B), F2
-## glow, F3 the painted shade, F4 vision (off, SDF, polygon), F5/F6 darkness, F7 blur what he does
-## not see, F9 how soft the edge of his sight is, F10/F11 the man's light.
+## particles drawn behind the rock; glow.
+## Depth (#261): a copy of the rock, nudged out of each face (proto_depth.gd), is drawn behind the
+## man, the dogs, the spikes, the fires and the backdrop's near rocks, and the rock itself in front
+## of them. Copies of some of the backdrop's near rocks, dark and out of focus, frame the screen from
+## in front of everything (proto_foreground.gd), off by default. The background takes one colour, the darkest of the
+## level's colour ramp, in place of the cave map's coloured areas.
+## Shaders (#261), in modes A and B; the current look (F1) keeps none of them: glow from what is near
+## full brightness in some channel (most of each flame, and today the white placeholder man); a colour
+## grade of the whole frame that takes the hue of level 1's ramp and keeps each colour's brightness;
+## the fires' own ramp, each at its own speed; one air for the backdrop's layers, fading into the
+## background's colour; a rim of light on the characters (mode A, the only one with lights).
+## Keys: F1 mode (current look, A, B), F2 glow, F3 the painted shade, F4 vision (off, SDF, polygon),
+## F5/F6 darkness, F7 blur what he does not see, F9 how soft the edge of his sight is, F10/F11 the
+## man's light, F12 depth; with Ctrl (Shift raises the crucifix): F1 grade, F2 the fires' ramp, F3 one
+## air, F4 rim light, F12 the rocks in front.
+## The man in the scene (#261, proto_man_look.gd): his body lit by the scene and not by the light he
+## carries (mode A), the scenery's ink round him, a squash as he lands, a short trail of ash (or
+## light) as he moves fast, and a contact shadow (off: the stone rim hides it;
+## "--lighting-shadow=1"). The crucifix's light on its events (proto_crucifix_fx.gd), smoke off the
+## dogs (proto_dog_smoke.gd; the trail and the smoke are proto_smoke.gd), and the effects' ink style
+## (proto_puff.gdshaderinc): two flat tones, an ink line, each image held, as the man's drawing is.
+## Keys, with Ctrl: F5 scene light, F6 outline, F7 trail (ash, light, off), F8 ink style, F9 the
+## crucifix's light, F10 the dogs' smoke, F11 squash.
 
 enum Mode { CURRENT, HYBRID, PROPAGATION }
 
 const ProtoFire := preload("res://scenes/levels/prototypes/lighting/proto_fire.gd")
 const ProtoContactDust := preload("res://scenes/levels/prototypes/lighting/proto_contact_dust.gd")
+const ProtoDepth := preload("res://scenes/levels/prototypes/lighting/proto_depth.gd")
+const ProtoForeground := preload("res://scenes/levels/prototypes/lighting/proto_foreground.gd")
+const ProtoManLook := preload("res://scenes/levels/prototypes/lighting/proto_man_look.gd")
+const ProtoDogSmoke := preload("res://scenes/levels/prototypes/lighting/proto_dog_smoke.gd")
+const ProtoCrucifixFx := preload("res://scenes/levels/prototypes/lighting/proto_crucifix_fx.gd")
+## The man's trail: off, ash or light (Ctrl+F7 goes round them).
+const TRAIL_OFF: int = 0
+const TRAIL_ASH: int = 1
+const TRAIL_LIGHT: int = 2
+const TRAIL_NAMES: Array[String] = ["off", "ash", "light"]
+## The canvas layer of the rocks in front: above the level's, which is 0.
+const FOREGROUND_LAYER: int = 1
+## The background's one colour: the darkest of level 1's colour ramp, pink and bright red. Each level
+## would set its own, from its sin's ramp.
+const BACKGROUND_COLOR := Color8(30, 18, 24)
+## Glow: only what reaches Threshold in its brightest channel glows, fully from Threshold + HDR
+## Scale. 2D never goes past 1.0, so with Godot's default scale (2.0) the most a pixel gave was
+## ~0.007 of glow (smoothstep in Godot 4.7.2's drivers/gles3/shaders/effects/glow.glsl).
+const GLOW_THRESHOLD: float = 0.9
+const GLOW_HDR_SCALE: float = 0.1
+const GLOW_INTENSITY: float = 0.8
+## The grade: a Lut Size³ table of the whole frame, applied after glow. Each colour takes Grade
+## Strength of the hue of level 1's ramp at its brightness, as the tiles' ramp reads it (light on the
+## left): the ramp's colour minus its own luma, added to the colour's luma, so brightness and
+## contrast stay; the ramp's light end is a deep pink, darker than the colours it lands on.
+const GRADE_RAMP_PATH: String = "res://assets/sprites/ramps/lust_ramp.jpg"
+const LUT_SIZE: int = 32
+const GRADE_STRENGTH: float = 0.3
+## Luma weights (Rec. 601), as color_ramp.gdshader reads a gray.
+const LUMA := Vector3(0.299, 0.587, 0.114)
+## One air: the backdrop's layers, far to near, and how much of the background's colour each takes.
+const FOG_LAYERS: PackedStringArray = ["Far", "Mid", "Near"]
+const FOG_AMOUNTS: Array[float] = [0.85, 0.65, 0.45]
+## Rim light: proto_rim.gdshader in place of each SinkingDrawing's sink.gdshader.
+const RIM_SHADER: Shader = preload("res://scenes/levels/prototypes/lighting/proto_rim.gdshader")
+## The rim's width in the viewport's px (1920 × 1080), scaled to the window's by the stretch.
+const RIM_WIDTH_PX: float = 4.0
+const RIM_STRENGTH: float = 2.0
+## The man's outline, in the viewport's px like the rim, in the dark ink of the scenery's lines.
+const OUTLINE_PX: float = 3.0
+const OUTLINE_COLOR := Color(0.1, 0.05, 0.09)
 const MOTE_SHADER: Shader = preload("res://scenes/levels/prototypes/lighting/proto_mote.gdshader")
 const LightPropagation := preload("res://scenes/levels/prototypes/lighting/light_propagation.gd")
 const COMPOSITE_SHADER: Shader = preload("res://scenes/levels/prototypes/lighting/light_composite.gdshader")
@@ -30,6 +91,9 @@ const MODE_NAMES: PackedStringArray = ["current look", "A hybrid", "B propagatio
 const MASK_WORLD: int = 1
 const MASK_ROCK: int = 2
 const MASK_PARALLAX: int = 4
+## The man's drawing while the scene lights it: the fires, his fill light and the crucifix reach it,
+## his main light does not.
+const MASK_MAN: int = 8
 const TILE: int = 48
 ## The fires: sheet, frames, each frame's brightness over the mean (measured on the GIFs), size.
 const FIRE_KINDS: Array[Dictionary] = [
@@ -53,6 +117,10 @@ const MAX_FIRES: int = 6
 const NO_FLOOR: int = -99999
 ## Where a recorded run puts the man, from the fire it names.
 const NEAR_FIRE_OFFSET := Vector2(-300.0, -10.0)
+## And from the dog it names ("--lighting-near-dog=N").
+const NEAR_DOG_OFFSET := Vector2(-260.0, -10.0)
+## How long a recorded run holds the crucifix ("--lighting-raise=N"): past a whole use (5 s).
+const RAISE_HOLD_FRAMES: int = 360
 ## Fires far in the background, at the foot of the far layer's rocks within Range of the man's
 ## start, at least Spacing apart: big, out of focus and dimmed by distance.
 ## Off until they are placed by hand: placed by the rocks' feet, some sat against the ceiling and read
@@ -163,6 +231,25 @@ static var unseen_blur_on: bool = false
 static var softness_step: int = 1
 static var ambient: float = 0.3
 static var man_radius: float = 900.0
+static var depth_on: bool = true
+## Off by default: not worth it for now (16/11); the code stays, Ctrl+F12 turns them on.
+static var foreground_on: bool = false
+static var grade_on: bool = true
+static var fire_ramp_on: bool = true
+static var fog_on: bool = true
+static var rim_on: bool = true
+static var scene_light_on: bool = true
+static var outline_on: bool = true
+## Off by default: the stone rim in front of the floor hides his feet and the shadow with them
+## (seen in recorded frames, 16/11); it stays for floors without a rim.
+static var shadow_on: bool = false
+static var trail: int = TRAIL_ASH
+static var ink_on: bool = true
+static var crucifix_fx_on: bool = true
+static var dog_smoke_on: bool = true
+static var squash_on: bool = true
+## The grade's table, built once: a restart after a death keeps it.
+static var _grade_table: ImageTexture3D
 
 var hud_label: Label
 
@@ -170,6 +257,10 @@ var _level: Node2D
 var _tiles: TileMapLayer
 var _player: Node2D
 var _shade: CanvasItem
+## The stone rim's parent, drawn in front of the man with the tiles while depth is on.
+var _art: CanvasItem
+var _depth: Node2D
+var _foreground: Node2D
 var _fires: Array[Node2D] = []
 var _parallax_fires: Array[Sprite2D] = []
 var _unshaded := CanvasItemMaterial.new()
@@ -179,6 +270,19 @@ var _halo: GradientTexture2D
 var _darkness: CanvasModulate
 var _man_lights: Array[PointLight2D] = []
 var _environment: Environment
+var _fire_ramp: ShaderMaterial
+## One air: each backdrop layer's haze material, this level's own copy, with the colour and amount
+## level1.tscn gave it.
+var _fog_materials: Array[ShaderMaterial] = []
+var _haze_colors: Array[Color] = []
+var _haze_amounts: Array[float] = []
+## Rim light: the characters' own materials, which SinkingDrawing made; the man's among them.
+var _rim_materials: Array[ShaderMaterial] = []
+var _man_material: ShaderMaterial
+var _man_look: ProtoManLook
+var _dog_smoke: ProtoDogSmoke
+var _crucifix_fx: ProtoCrucifixFx
+var _contact_dust: ProtoContactDust
 var _dust: Node2D
 var _dust_layers: Array[CPUParticles2D] = []
 var _mote: GradientTexture2D
@@ -237,25 +341,65 @@ func _unhandled_key_input(event: InputEvent) -> void:
 		return
 	match key.physical_keycode:
 		KEY_F1:
-			mode = ((int(mode) + 1) % MODE_NAMES.size()) as Mode
+			if key.ctrl_pressed:
+				grade_on = not grade_on
+			else:
+				mode = ((int(mode) + 1) % MODE_NAMES.size()) as Mode
 		KEY_F2:
-			glow_on = not glow_on
+			if key.ctrl_pressed:
+				fire_ramp_on = not fire_ramp_on
+			else:
+				glow_on = not glow_on
 		KEY_F3:
-			shade_on = not shade_on
+			if key.ctrl_pressed:
+				fog_on = not fog_on
+			else:
+				shade_on = not shade_on
 		KEY_F4:
-			vision = (vision + 1) % VISION_NAMES.size()
+			if key.ctrl_pressed:
+				rim_on = not rim_on
+			else:
+				vision = (vision + 1) % VISION_NAMES.size()
 		KEY_F5:
-			ambient = clampf(ambient - 0.05, 0.0, 1.0)
+			if key.ctrl_pressed:
+				scene_light_on = not scene_light_on
+			else:
+				ambient = clampf(ambient - 0.05, 0.0, 1.0)
 		KEY_F6:
-			ambient = clampf(ambient + 0.05, 0.0, 1.0)
+			if key.ctrl_pressed:
+				outline_on = not outline_on
+			else:
+				ambient = clampf(ambient + 0.05, 0.0, 1.0)
 		KEY_F7:
-			unseen_blur_on = not unseen_blur_on
+			if key.ctrl_pressed:
+				trail = (trail + 1) % TRAIL_NAMES.size()
+			else:
+				unseen_blur_on = not unseen_blur_on
+		KEY_F8:
+			# Without Ctrl, F8 is the game's own debug key (and stops a run from the editor): left alone.
+			if not key.ctrl_pressed:
+				return
+			ink_on = not ink_on
 		KEY_F9:
-			softness_step = (softness_step + 1) % SOFTNESS_STEPS.size()
+			if key.ctrl_pressed:
+				crucifix_fx_on = not crucifix_fx_on
+			else:
+				softness_step = (softness_step + 1) % SOFTNESS_STEPS.size()
 		KEY_F10:
-			man_radius = maxf(man_radius - 50.0, 100.0)
+			if key.ctrl_pressed:
+				dog_smoke_on = not dog_smoke_on
+			else:
+				man_radius = maxf(man_radius - 50.0, 100.0)
 		KEY_F11:
-			man_radius += 50.0
+			if key.ctrl_pressed:
+				squash_on = not squash_on
+			else:
+				man_radius += 50.0
+		KEY_F12:
+			if key.ctrl_pressed:
+				foreground_on = not foreground_on
+			else:
+				depth_on = not depth_on
 		_:
 			return
 	_apply()
@@ -283,6 +427,33 @@ func measure_aura_update(times: int) -> float:
 ## For the measure: the rectangles of occluders the SDF is made from.
 func get_occluder_count() -> int:
 	return _occluder_count
+
+
+## For the measure: how many drawings take the rim light.
+func get_rim_count() -> int:
+	return _rim_materials.size()
+
+
+## For the measure: how many dogs carry smoke.
+func get_smoking_dog_count() -> int:
+	return _dog_smoke.get_dog_count()
+
+
+## For the measure: the flames drawn now, on the screen, in the window's px (the stretch's final
+## transform after the camera's).
+func get_flame_screen_rects() -> Array[Rect2]:
+	var rects: Array[Rect2] = []
+	var viewport: Viewport = get_viewport()
+	var to_screen: Transform2D = viewport.get_final_transform() * viewport.get_canvas_transform()
+	var screen := Rect2(Vector2.ZERO, Vector2(viewport.get_window().size) if viewport.get_window() != null
+			else viewport.get_visible_rect().size)
+	for fire: Node2D in _fires:
+		if not fire.is_visible_in_tree() or fire.modulate.a <= 0.0:
+			continue
+		var rect: Rect2 = to_screen * (fire as ProtoFire).get_flame_rect()
+		if rect.intersects(screen):
+			rects.append(rect)
+	return rects
 
 
 ## For the measure: the average cost of one update of the man's sight with the current technique,
@@ -315,26 +486,44 @@ func _setup() -> void:
 	_add_propagation()
 	_add_dust()
 	_add_contact_dust()
+	_add_depth()
+	_add_foreground()
+	_set_background()
 	_add_glow()
+	_add_fog()
+	_add_rim()
+	_add_man_look()
 	_add_vision()
 	# For recorded runs: "-- --lighting-mode=0" (current look), 1 (A) or 2 (B); "--lighting-vision=0"
 	# (off), 1 (SDF) or 2 (polygon); "--lighting-blur-unseen"; "--lighting-near-fire=N" puts the man
 	# a little before fire N, to record a spot with more rock; "--lighting-fire-gap=PX" sets how far;
-	# "--lighting-drop=PX" lifts him PX, to record a landing.
+	# "--lighting-near-dog=N" puts him a little before dog N (the camera takes ~7 s to get there);
+	# "--lighting-drop=PX" lifts him PX, to record a landing; "--lighting-hops=N" and
+	# "--lighting-raise=N" (frames before he raises the crucifix) move him. Each toggle has its own
+	# "--lighting-<name>=0|1" (glow, grade, fire-ramp, fog, rim, scene-light, outline, shadow, ink,
+	# crucifix-fx, dog-smoke, squash); "--lighting-trail=0|1|2" (off, ash, light).
 	var near_fire: int = -1
+	var near_dog: int = -1
 	var fire_offset: Vector2 = NEAR_FIRE_OFFSET
 	var drop: float = 0.0
 	for argument: String in OS.get_cmdline_user_args():
 		if argument.begins_with("--lighting-near-fire="):
 			near_fire = argument.get_slice("=", 1).to_int()
+		elif argument.begins_with("--lighting-near-dog="):
+			near_dog = argument.get_slice("=", 1).to_int()
 		elif argument.begins_with("--lighting-fire-gap="):
 			fire_offset.x = -argument.get_slice("=", 1).to_float()
 		elif argument.begins_with("--lighting-drop="):
 			drop = argument.get_slice("=", 1).to_float()
 		elif argument.begins_with("--lighting-hops="):
 			_hop.call_deferred(argument.get_slice("=", 1).to_int())
+		elif argument.begins_with("--lighting-raise="):
+			_raise_crucifix.call_deferred(argument.get_slice("=", 1).to_int())
 	if near_fire >= 0 and near_fire < _fires.size():
 		_player.global_position = _fires[near_fire].global_position + fire_offset
+	var dogs: Array[Demon] = _find_dogs()
+	if near_dog >= 0 and near_dog < dogs.size():
+		_player.global_position = dogs[near_dog].global_position + NEAR_DOG_OFFSET
 	_player.global_position.y -= drop
 	for argument: String in OS.get_cmdline_user_args():
 		if argument.begins_with("--lighting-mode="):
@@ -343,6 +532,36 @@ func _setup() -> void:
 			vision = clampi(argument.get_slice("=", 1).to_int(), 0, VISION_NAMES.size() - 1)
 		elif argument == "--lighting-blur-unseen":
 			unseen_blur_on = true
+		elif argument.begins_with("--lighting-depth="):
+			depth_on = argument.get_slice("=", 1).to_int() != 0
+		elif argument.begins_with("--lighting-foreground="):
+			foreground_on = argument.get_slice("=", 1).to_int() != 0
+		elif argument.begins_with("--lighting-glow="):
+			glow_on = argument.get_slice("=", 1).to_int() != 0
+		elif argument.begins_with("--lighting-grade="):
+			grade_on = argument.get_slice("=", 1).to_int() != 0
+		elif argument.begins_with("--lighting-fire-ramp="):
+			fire_ramp_on = argument.get_slice("=", 1).to_int() != 0
+		elif argument.begins_with("--lighting-fog="):
+			fog_on = argument.get_slice("=", 1).to_int() != 0
+		elif argument.begins_with("--lighting-rim="):
+			rim_on = argument.get_slice("=", 1).to_int() != 0
+		elif argument.begins_with("--lighting-scene-light="):
+			scene_light_on = argument.get_slice("=", 1).to_int() != 0
+		elif argument.begins_with("--lighting-outline="):
+			outline_on = argument.get_slice("=", 1).to_int() != 0
+		elif argument.begins_with("--lighting-shadow="):
+			shadow_on = argument.get_slice("=", 1).to_int() != 0
+		elif argument.begins_with("--lighting-trail="):
+			trail = clampi(argument.get_slice("=", 1).to_int(), 0, TRAIL_NAMES.size() - 1)
+		elif argument.begins_with("--lighting-ink="):
+			ink_on = argument.get_slice("=", 1).to_int() != 0
+		elif argument.begins_with("--lighting-crucifix-fx="):
+			crucifix_fx_on = argument.get_slice("=", 1).to_int() != 0
+		elif argument.begins_with("--lighting-dog-smoke="):
+			dog_smoke_on = argument.get_slice("=", 1).to_int() != 0
+		elif argument.begins_with("--lighting-squash="):
+			squash_on = argument.get_slice("=", 1).to_int() != 0
 	_ready_done = true
 	_apply()
 
@@ -357,6 +576,17 @@ func _hop(times: int) -> void:
 		await _physics_frames(HOP_HOLD)
 		Input.action_release(&"jump")
 	Input.action_release(&"move_right")
+
+
+## For recorded runs ("--lighting-raise=N"): after N physics frames the man raises the crucifix and
+## holds it for Raise Hold Frames, past the end of a use, to record its raise, warning and end.
+func _raise_crucifix(after: int) -> void:
+	await _physics_frames(after)
+	if not is_inside_tree():
+		return
+	Input.action_press(&"crucifix")
+	await _physics_frames(RAISE_HOLD_FRAMES)
+	Input.action_release(&"crucifix")
 
 
 func _physics_frames(count: int) -> void:
@@ -376,7 +606,7 @@ func _set_light_masks() -> void:
 	# parallax moved off it, it would light only the characters and lose its shield of light.
 	var crucifix_light := _player.get_node_or_null("Crucifix/Light") as PointLight2D
 	if crucifix_light != null:
-		crucifix_light.range_item_cull_mask = MASK_WORLD | MASK_ROCK | MASK_PARALLAX
+		crucifix_light.range_item_cull_mask = MASK_WORLD | MASK_ROCK | MASK_PARALLAX | MASK_MAN
 
 
 func _set_mask_deep(node: Node, mask: int) -> void:
@@ -397,6 +627,7 @@ func _add_fires() -> void:
 	_level.add_child(particles)
 	_level.move_child(particles, _tiles.get_index())
 	var spots: Array[Vector2] = _find_fire_spots()
+	_fire_ramp = ProtoFire.make_ramp_material()
 	for n: int in spots.size():
 		var kind: Dictionary = FIRE_KINDS[n % FIRE_KINDS.size()]
 		var sheet: Texture2D = _load_texture(String(kind["path"]))
@@ -406,7 +637,7 @@ func _add_fires() -> void:
 		fire.setup(sheet, int(kind["frames"]), PackedFloat32Array(kind["curve"]), float(kind["scale"]),
 				FIRE_COLOR, _unshaded, _additive, _halo, particles)
 		fire.add_lights(_falloff, FIRE_COLOR, FIRE_ENERGY, FIRE_RADIUS, FIRE_LIGHT_HEIGHT,
-				MASK_WORLD | MASK_PARALLAX, MASK_ROCK)
+				MASK_WORLD | MASK_PARALLAX | MASK_MAN, MASK_ROCK)
 		fire.hide_when_unseen()
 		_fires.append(fire)
 
@@ -521,7 +752,8 @@ func _add_hybrid() -> void:
 	_darkness = CanvasModulate.new()
 	add_child(_darkness)
 	var colors: Array[Color] = [MAN_COLOR, MAN_COLOR, FILL_COLOR]
-	var masks: Array[int] = [MASK_WORLD | MASK_PARALLAX, MASK_ROCK, MASK_WORLD | MASK_PARALLAX]
+	# His main light leaves his own drawing out while the scene lights it (MASK_MAN); the fill reaches it.
+	var masks: Array[int] = [MASK_WORLD | MASK_PARALLAX, MASK_ROCK, MASK_WORLD | MASK_PARALLAX | MASK_MAN]
 	for k: int in MAN_LIGHT_SHARES.size():
 		var light := PointLight2D.new()
 		light.texture = _falloff
@@ -663,17 +895,72 @@ func _add_dust() -> void:
 ## The man's and the dogs' dust where they touch the floor or a wall (proto_contact_dust.gd), before
 ## the tiles like the air's dust.
 func _add_contact_dust() -> void:
-	var contact := ProtoContactDust.new()
-	contact.name = "ProtoContactDust"
-	_level.add_child(contact)
-	_level.move_child(contact, _tiles.get_index())
+	_contact_dust = ProtoContactDust.new()
+	_contact_dust.name = "ProtoContactDust"
+	_level.add_child(_contact_dust)
+	_level.move_child(_contact_dust, _tiles.get_index())
+	_contact_dust.setup(_player as Player, _find_dogs(), _mote)
+
+
+## Every dog in the level, not only those under Dogs: the crucifix tutorial's dog is under Tutorial.
+func _find_dogs() -> Array[Demon]:
 	var dogs: Array[Demon] = []
-	var dogs_root: Node = _level.get_node_or_null(^"Dogs")
-	if dogs_root != null:
-		for node: Node in dogs_root.find_children("*", "CharacterBody2D", true, false):
-			if node is Demon:
-				dogs.append(node as Demon)
-	contact.setup(_player as Player, dogs, _mote)
+	for node: Node in _level.find_children("*", "CharacterBody2D", true, false):
+		if node is Demon:
+			dogs.append(node as Demon)
+	return dogs
+
+
+## The rock's far copy goes just before the gates, so they and everything after them stand in front
+## of it; the air's dust goes before it, and the backdrop's near rocks right after it, between the
+## two copies like the man. The rock and its rim come to the front in _apply.
+func _add_depth() -> void:
+	var depth := ProtoDepth.new()
+	depth.name = "ProtoDepth"
+	_level.add_child(depth)
+	var gates: Node = _level.get_node_or_null(^"Gates")
+	_level.move_child(depth, gates.get_index() if gates != null else _tiles.get_index())
+	_level.move_child(_dust, depth.get_index())
+	var near: Node = _level.get_node_or_null(^"Backdrop/Near")
+	if near != null:
+		near.reparent(_level)
+		_level.move_child(near, depth.get_index() + 1)
+	_art = _level.get_node_or_null(^"Art") as CanvasItem
+	depth.setup(_tiles, _level.get_node_or_null(^"Art/StoneRim") as Node2D, MASK_ROCK)
+	_depth = depth
+
+
+## Copies of some of the backdrop's near rocks in front of everything, framing the screen
+## (proto_foreground.gd). The near ones stand on the floors and hang from the ceilings the man
+## sees; the far ones stand far below them, behind the rock. Run after _add_depth, which moves them.
+func _add_foreground() -> void:
+	# A canvas of its own, which follows the camera like the level: the cave's darkness
+	# (CanvasModulate) and the level's lights stay in the level's canvas.
+	var layer := CanvasLayer.new()
+	layer.name = "ProtoForegroundLayer"
+	layer.layer = FOREGROUND_LAYER
+	layer.follow_viewport_enabled = true
+	_level.add_child(layer)
+	var foreground := ProtoForeground.new()
+	foreground.name = "ProtoForeground"
+	layer.add_child(foreground)
+	var near := _level.get_node_or_null(^"Near") as Node2D
+	if near == null:
+		near = _level.get_node_or_null(^"Backdrop/Near") as Node2D
+	if near != null:
+		foreground.setup(near)
+	_foreground = foreground
+
+
+## The background in one colour: the cave map's coloured areas are hidden and the plain backing under
+## them takes Background Color. The painted shade by the rock stays.
+func _set_background() -> void:
+	var cave_map := _level.get_node_or_null(^"Backdrop/CaveMap") as CanvasItem
+	if cave_map != null:
+		cave_map.visible = false
+	var backing := _level.get_node_or_null(^"Background") as Polygon2D
+	if backing != null:
+		backing.color = BACKGROUND_COLOR
 
 
 ## Each mote is born at the wind's speed of the moment, and the layer's gravity is how fast the wind
@@ -942,15 +1229,100 @@ class VisionFan extends Node2D:
 			RenderingServer.canvas_item_add_triangle_array(get_canvas_item(), _indices, _points, _colors)
 
 
+## Glow and the grade, in the environment's one pass over the frame. Canvas layers up to the first
+## one at or above Background Canvas Max Layer take them; the HUD, on layer 10, does not.
 func _add_glow() -> void:
 	_environment = Environment.new()
 	_environment.background_mode = Environment.BG_CANVAS
 	_environment.background_canvas_max_layer = 1
-	_environment.glow_hdr_threshold = 0.9
-	_environment.glow_intensity = 0.8
+	_environment.glow_hdr_threshold = GLOW_THRESHOLD
+	_environment.glow_hdr_scale = GLOW_HDR_SCALE
+	_environment.glow_intensity = GLOW_INTENSITY
+	if _grade_table == null:
+		_grade_table = _make_grade()
+	_environment.adjustment_color_correction = _grade_table
 	var world_environment := WorldEnvironment.new()
 	world_environment.environment = _environment
 	add_child(world_environment)
+
+
+## The grade's table: the environment reads it at the frame's sRGB colour, so each cell holds what
+## the colour at its centre becomes (the outermost half cells read the edge cell). Null if the table
+## cannot be made; the grade then does nothing.
+func _make_grade() -> ImageTexture3D:
+	var ramp: Image = _load_texture(GRADE_RAMP_PATH).get_image()
+	if ramp.is_compressed():
+		ramp.decompress()
+	var last: int = ramp.get_width() - 1
+	var row: int = ramp.get_height() >> 1
+	var slices: Array[Image] = []
+	for b: int in LUT_SIZE:
+		var slice := Image.create_empty(LUT_SIZE, LUT_SIZE, false, Image.FORMAT_RGB8)
+		for g: int in LUT_SIZE:
+			for r: int in LUT_SIZE:
+				var color := Color((r + 0.5) / LUT_SIZE, (g + 0.5) / LUT_SIZE, (b + 0.5) / LUT_SIZE)
+				var luma: float = LUMA.dot(Vector3(color.r, color.g, color.b))
+				var ramp_color: Color = ramp.get_pixel(roundi((1.0 - luma) * last), row)
+				var hue_shift: float = luma - LUMA.dot(Vector3(ramp_color.r, ramp_color.g, ramp_color.b))
+				var target := Color(clampf(ramp_color.r + hue_shift, 0.0, 1.0),
+						clampf(ramp_color.g + hue_shift, 0.0, 1.0), clampf(ramp_color.b + hue_shift, 0.0, 1.0))
+				slice.set_pixel(r, g, color.lerp(target, GRADE_STRENGTH))
+		slices.append(slice)
+	var table := ImageTexture3D.new()
+	if table.create(Image.FORMAT_RGB8, LUT_SIZE, LUT_SIZE, LUT_SIZE, false, slices) != OK:
+		push_error("lighting_rig: the grade's table could not be made")
+		return null
+	return table
+
+
+## One air: the backdrop layers' haze materials (Near sits in the level once depth has moved it).
+## Each layer gets its own copy: the scene's materials are shared by every instance of the level,
+## so writing to them would leave the next level, after a death, with this one's fog as "original".
+func _add_fog() -> void:
+	for layer_name: String in FOG_LAYERS:
+		var layer := _level.get_node_or_null(NodePath("Backdrop/" + layer_name)) as CanvasItem
+		if layer == null:
+			layer = _level.get_node_or_null(NodePath(layer_name)) as CanvasItem
+		if layer == null or not layer.material is ShaderMaterial:
+			continue
+		var haze := layer.material.duplicate() as ShaderMaterial
+		layer.material = haze
+		_fog_materials.append(haze)
+		_haze_colors.append(haze.get_shader_parameter(&"haze_color") as Color)
+		_haze_amounts.append(float(haze.get_shader_parameter(&"haze_amount")))
+
+
+## The man in the scene (his light, outline, shadow, squash and trail), the crucifix's light on its
+## events and the dogs' smoke.
+func _add_man_look() -> void:
+	var drawing := _player.get_node_or_null(^"Sprite") as CanvasItem
+	if drawing != null:
+		_man_material = drawing.material as ShaderMaterial
+	_man_look = ProtoManLook.new()
+	_man_look.name = "ProtoManLook"
+	add_child(_man_look)
+	_man_look.setup(_player as CharacterBody2D, drawing if drawing != null else _player as CanvasItem)
+	_dog_smoke = ProtoDogSmoke.new()
+	_dog_smoke.name = "ProtoDogSmoke"
+	add_child(_dog_smoke)
+	_dog_smoke.setup(_find_dogs(), _player)
+	var crucifix := _player.get_node_or_null(^"Crucifix") as Crucifix
+	if crucifix != null:
+		# In the level, so its camera draws it; last and on the rock's z, so the light is in front of
+		# the man, the dogs and the rock.
+		_crucifix_fx = ProtoCrucifixFx.new()
+		_crucifix_fx.name = "ProtoCrucifixFx"
+		_crucifix_fx.z_index = 1
+		_level.add_child(_crucifix_fx)
+		_crucifix_fx.setup(crucifix, _find_dogs())
+
+
+## Rim light: every drawing in the level that SinkingDrawing gave its own sink.gdshader material.
+func _add_rim() -> void:
+	for node: Node in _level.find_children("*", "CanvasItem", true, false):
+		var drawing_material := (node as CanvasItem).material as ShaderMaterial
+		if drawing_material != null and drawing_material.shader == SinkingDrawing.SHADER:
+			_rim_materials.append(drawing_material)
 
 
 func _apply() -> void:
@@ -970,7 +1342,41 @@ func _apply() -> void:
 	_composite.set_shader_parameter("ambient", Vector3(dark.r, dark.g, dark.b))
 	_aura_cell = Vector2i(NO_FLOOR, NO_FLOOR)
 	_dust.visible = mode != Mode.CURRENT
-	_environment.glow_enabled = glow_on
+	# The current look keeps none of #261's shaders, for the A/B; the rim needs mode A's lights.
+	var styled: bool = mode != Mode.CURRENT
+	_environment.glow_enabled = glow_on and styled
+	_environment.adjustment_enabled = grade_on and styled and _grade_table != null
+	for fire: Node2D in _fires:
+		(fire as ProtoFire).set_look(_fire_ramp, fire_ramp_on and styled)
+	var fog: bool = fog_on and styled
+	for k: int in _fog_materials.size():
+		_fog_materials[k].set_shader_parameter(&"haze_color", BACKGROUND_COLOR if fog else _haze_colors[k])
+		_fog_materials[k].set_shader_parameter(&"haze_amount", FOG_AMOUNTS[k] if fog else _haze_amounts[k])
+	# proto_rim.gdshader draws the rim (mode A) and the man's outline; without either, sink.gdshader.
+	var rim: bool = rim_on and hybrid
+	var outline: bool = outline_on and styled
+	var stretch: float = get_viewport().get_final_transform().get_scale().x
+	for drawing_material: ShaderMaterial in _rim_materials:
+		var outlined: bool = outline and drawing_material == _man_material
+		var wanted: Shader = RIM_SHADER if rim or outlined else SinkingDrawing.SHADER
+		if drawing_material.shader != wanted:
+			drawing_material.shader = wanted
+		if wanted == RIM_SHADER:
+			drawing_material.set_shader_parameter(&"rim_width_px", RIM_WIDTH_PX * stretch)
+			drawing_material.set_shader_parameter(&"rim_strength", RIM_STRENGTH if rim else 0.0)
+			drawing_material.set_shader_parameter(&"outline_px", OUTLINE_PX * stretch if outlined else 0.0)
+			drawing_material.set_shader_parameter(&"outline_color", OUTLINE_COLOR)
+	_man_look.set_scene_light(scene_light_on and hybrid, MASK_MAN, MASK_WORLD)
+	_man_look.set_shadow(shadow_on and styled)
+	_man_look.set_squash(squash_on and styled)
+	_man_look.set_trail(trail != TRAIL_OFF and styled, trail == TRAIL_LIGHT)
+	_dog_smoke.set_on(dog_smoke_on and styled)
+	var ink: bool = ink_on and styled
+	_man_look.set_ink(ink)
+	_contact_dust.set_ink(ink)
+	if _crucifix_fx != null:
+		_crucifix_fx.set_on(crucifix_fx_on and styled)
+		_crucifix_fx.set_ink(ink)
 	var seeing: bool = vision != VISION_OFF and mode != Mode.CURRENT
 	_vision_layer.visible = seeing
 	_vision_viewport.render_target_update_mode = (SubViewport.UPDATE_ALWAYS
@@ -983,6 +1389,13 @@ func _apply() -> void:
 		material.set_shader_parameter("unseen_blur_px", UNSEEN_BLUR_PX if unseen_blur_on else 0.0)
 	if _shade != null:
 		_shade.visible = shade_on
+	_depth.visible = depth_on
+	var front: int = 1 if depth_on else 0
+	_tiles.z_index = front
+	if _art != null:
+		_art.z_index = front
+	_foreground.visible = foreground_on
+	_foreground.set_process(foreground_on)
 
 
 func _update_hud() -> void:
@@ -990,8 +1403,16 @@ func _update_hud() -> void:
 		return
 	hud_label.text = ("LIGHTING (#257)    F1 mode: %s    F2 glow: %s    F3 painted shade: %s    F4 vision: %s\n"
 			% [MODE_NAMES[mode], _on(glow_on), _on(shade_on), VISION_NAMES[vision]]
-			+ "F7 blur unseen: %s    F9 soft edge: x%.1f    F5/F6 darkness: %.2f    F10/F11 man's light: %d px\n"
+			+ "F7 blur unseen: %s    F9 soft edge: x%.1f    F5/F6 darkness: %.2f    F10/F11 man's light: %d px"
 			% [_on(unseen_blur_on), SOFTNESS_STEPS[softness_step], ambient, man_radius]
+			+ "    F12 depth: %s    Ctrl+F12 rocks in front: %s\n" % [_on(depth_on), _on(foreground_on)]
+			+ "Ctrl+F1 grade: %s    Ctrl+F2 fires' ramp: %s    Ctrl+F3 one air: %s    Ctrl+F4 rim light: %s%s\n"
+			% [_on(grade_on), _on(fire_ramp_on), _on(fog_on), _on(rim_on),
+			"    (current look: none of these)" if mode == Mode.CURRENT else ""]
+			+ "Ctrl+F5 man lit by the scene: %s    Ctrl+F6 outline: %s    Ctrl+F7 trail: %s    Ctrl+F8 ink style: %s\n"
+			% [_on(scene_light_on), _on(outline_on), TRAIL_NAMES[trail], _on(ink_on)]
+			+ "Ctrl+F9 crucifix's light: %s    Ctrl+F10 dogs' smoke: %s    Ctrl+F11 squash: %s\n"
+			% [_on(crucifix_fx_on), _on(dog_smoke_on), _on(squash_on)]
 			+ "vision CPU: %.2f ms    B aura: %.2f ms    dogs, spikes, fires: line of sight (#253)"
 			% [_last_vision_usec / 1000.0, _last_aura_usec / 1000.0])
 

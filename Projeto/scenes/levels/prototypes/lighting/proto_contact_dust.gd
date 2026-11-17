@@ -34,6 +34,9 @@ const PUFF_COLOR := Color(0.66, 0.58, 0.66)
 ## Played on 16/11: only a hint of dust, never a cloud that draws the eye.
 const PUFF_ALPHA: float = 0.4
 const PUFF_LIFETIME: float = 0.6
+## Ink style (#261): each image of an effect is held for 1/Ink FPS s, like a drawing animated on
+## threes at 60 fps, close to the man's walk (18 fps). Every effect of the rig in ink style uses it.
+const INK_FPS: int = 20
 ## A landing rolls a cloud out to each side along the floor: Land Amount particles per side, sizes in
 ## px (min, max) for the hardest; a softer one is smaller (down to Soft Land Size times) and slower,
 ## from the first to the second px/s, by how hard it was (0 to 1). The amount never changes, so no
@@ -100,6 +103,7 @@ var _man_jump: Roll
 var _man_wall_jump: Roll
 var _man_slide: CPUParticles2D
 var _dog_dust: Dictionary[Demon, DogDust] = {}
+var _ink: bool = false
 
 
 ## Speck is the soft dot the falling specks are drawn with.
@@ -144,6 +148,16 @@ func setup(player: Player, dogs: Array[Demon], speck: Texture2D) -> void:
 		dog.warning_started.connect(_on_dog_warned.bind(dog))
 		dog.landed.connect(_on_dog_landed.bind(dog))
 		dog.state_changed.connect(_on_dog_state_changed.bind(dog))
+
+
+## Ink style (#261, proto_puff.gdshaderinc): the clouds in two flat tones with an ink line, each
+## image held for 1/Ink FPS s. Off, the soft clouds of #257.
+func set_ink(on: bool) -> void:
+	_ink = on
+	for material: ShaderMaterial in [_lit, _glow, _smoke_material]:
+		material.set_shader_parameter(&"ink_style", on)
+	for puff: Node in find_children("*", "CPUParticles2D", true, false):
+		(puff as CPUParticles2D).fixed_fps = INK_FPS if on else 0
 
 
 func _process(_delta: float) -> void:
@@ -224,6 +238,8 @@ func _dust_for(dog: Demon) -> DogDust:
 	dust.warn = _make_puff(dust.holder, WARN_AMOUNT, JUMP_SIZE, WARN_ALPHA, _glow)
 	dust.land = _make_roll(dust.holder, DOG_LAND_AMOUNT, JUMP_SIZE, PUFF_ALPHA, _lit)
 	dust.smoke = _make_smoke(dust.holder, dog)
+	for puff: Node in dust.holder.get_children():
+		(puff as CPUParticles2D).fixed_fps = INK_FPS if _ink else 0
 	_dog_dust[dog] = dust
 	return dust
 
