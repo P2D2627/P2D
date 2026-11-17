@@ -1282,6 +1282,7 @@ godot --headless --fixed-fps 60 --path Projeto --script res://tests/test_dialogu
 godot --headless --fixed-fps 60 --path Projeto --script res://tests/test_death_offer_pacer.gd
 godot --headless --fixed-fps 60 --path Projeto --script res://tests/test_asmodeus_deaths.gd
 godot --headless --fixed-fps 60 --path Projeto --script res://tests/test_asmodeus.gd
+godot --headless --fixed-fps 60 --path Projeto --script res://tests/test_velvet_walk.gd
 godot --headless --fixed-fps 60 --path Projeto --script res://tests/test_lust_asmodeus.gd
 godot --headless --fixed-fps 60 --path Projeto --script res://tests/test_moral_dialogue.gd
 godot --headless --fixed-fps 60 --path Projeto --script res://tests/test_gym_hint.gd
@@ -1827,11 +1828,19 @@ dano, em `scenes/characters/demon/big_demon_stats.tres`; os demónios de um nív
 outro ficheiro com os mesmos campos, outros ataques e outra arte, sem código novo.
 
 As personagens dividem-se pelo que fazem, e não pela história: as que perseguem usam esta cena, e as
-que estão paradas e falam (o demónio do tutorial, as almas e os bosses) terão cenas próprias. O que
+que falam sem perseguir (o demónio do tutorial, as almas e os bosses) têm ou terão cenas próprias. O que
 as duas famílias partilham são componentes, como o `Repellable`, e não uma classe-mãe. Uma
 classe-mãe comum ficaria quase vazia e não serviria uma personagem das duas famílias, como uma alma
 que fala e que o crucifixo afasta. Pela mesma razão, o demónio do tutorial, que fala e não persegue,
 não é esta cena com a perseguição desligada.
+
+O demónio do tutorial, a Velvet (`scenes/characters/demon/tutorial_demon.tscn`), é um cão que passeia
+na sua zona: anda 128 px para cada lado do sítio onde está no nível, a 88 px/s, e descansa 1,5 s em
+cada ponta (grupo Walk do Inspector). Enquanto o homem está na Talk Area dela, ou enquanto fala, fica
+parada e virada para ele. A Talk Area não acompanha o passeio, para que o sítio onde a conversa começa
+não dependa do momento em que o homem chega. O frame da folha segue o chão percorrido, 11 px por
+frame, para que as patas não escorreguem a nenhuma velocidade. Ela anda sem colidir, por isso a zona
+tem de ser chão plano. A caixa de colisão cobre o tronco (66 × 54 px), sem a cabeça nem a cauda.
 
 - **Um objeto por estado.** Os catorze estados (`IDLE`, `CHASE`, `WARNING`, `LUNGE`, `RETREAT`,
   `GRAB`, `THROWN`, `REPELLED`, `STUNNED`, `RETURN`, `OUT_OF_REACH`, `PATROL`, `ALERT` e `SEARCH`)
@@ -3258,6 +3267,9 @@ iniciado por nada no jogo. A estação de cada uma acrescenta-se quando a mecân
 - `bramble.png`, em `Projeto/assets/sprites/traps/`, e `platform_slab.png`, em
   `Projeto/assets/sprites/environment/`: a silva dos picos letais e a laje das plataformas,
   desenhadas por von Hafe, do grupo, recortadas e reduzidas dos PNG originais (#263).
+- `velvet_walk_sheet.png`, em `Projeto/assets/sprites/velvet/`: a Velvet a andar, 8 frames,
+  desenhada pela Sofia, do grupo, com o fundo branco tornado transparente e reduzida da folha
+  original (#263).
 - Tinos, de The Tinos Project Authors. SIL Open Font License 1.1. Letra de reserva dos menus, com as
   medidas da Times New Roman, em `Projeto/assets/fonts/` (com a licença em `Tinos-OFL.txt`).
   https://github.com/googlefonts/tinos
