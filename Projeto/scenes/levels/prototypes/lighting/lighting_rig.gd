@@ -14,7 +14,8 @@ extends Node2D
 ## All: the level's fires on the floors past the start and in the background, with halos, sparks and
 ## embers (off); dust in the air that only shows where it is lit, blown by the storm's wind in gusts;
 ## the man's and the dogs' dust where they touch the floor or a wall (proto_contact_dust.gd); all the
-## particles drawn behind the rock; glow.
+## particles drawn behind the rock; glow. A stone slab (#263) over each run of one-way tiles and each
+## collapsing platform, whose own tile is then drawn clear.
 ## Depth (#261): a copy of the rock, nudged out of each face (proto_depth.gd), is drawn behind the
 ## man, the dogs, the spikes, the fires and the backdrop's near rocks, and the rock itself in front
 ## of them. Copies of some of the backdrop's near rocks, dark and out of focus, frame the screen from
@@ -129,6 +130,14 @@ const FIRE_SPIKE_MARGIN: int = 2
 const MAX_FIRES: int = 200
 ## How far up and down from a row the rig looks for the floor a background rock stands on, in tiles.
 const FIRE_SCAN_HEIGHT: int = 14
+## The platforms' slab: as tall as its drawing's shape makes it up to Slab Height, so a slab
+## stretches sideways at most by what a Max Tiles run asks (1.32 at 4 tiles), and wider runs take
+## two slabs, mirrored. The stones' mean top, Top In Art of the drawing's height down (measured on
+## 17/11: 8 px of 144), sits on the tile's top, where the man stands.
+const SLAB_PATH: String = "res://assets/sprites/environment/platform_slab.png"
+const SLAB_HEIGHT: float = 96.0
+const SLAB_MAX_TILES: int = 4
+const SLAB_TOP_IN_ART: float = 8.0 / 144.0
 const NO_FLOOR: int = -99999
 ## Where a recorded run puts the man, from the fire it names.
 const NEAR_FIRE_OFFSET := Vector2(-300.0, -10.0)
@@ -497,6 +506,7 @@ func _setup() -> void:
 	_set_light_masks()
 	_hide_marks()
 	_add_fires()
+	_add_platform_slabs()
 	if BACKGROUND_FIRES_ON:
 		_add_background_fires()
 	_add_hybrid()
@@ -709,6 +719,74 @@ func _runs_of(cells: Array[Vector2i]) -> Array[Rect2i]:
 		runs.append(Rect2i(sorted[start], Vector2i(k - start, 1)))
 		start = k
 	return runs
+
+
+func _add_platform_slabs() -> void:
+	var slab: Texture2D = _load_texture(SLAB_PATH)
+	var holder := Node2D.new()
+	holder.name = "ProtoSlabs"
+	_level.add_child(holder)
+	_level.move_child(holder, _player.get_index())
+	var one_way: Array[Vector2i] = []
+	for cell: Vector2i in _tiles.get_used_cells():
+		if _tiles.get_cell_alternative_tile(cell) == CollapsingPlatform.ONE_WAY_ALTERNATIVE:
+			one_way.append(cell)
+	var runs: Array[Rect2i] = _runs_of(one_way)
+	for run: Rect2i in runs:
+		var corner: Vector2 = _tiles.map_to_local(run.position) - Vector2.ONE * TILE * 0.5
+		_add_slabs(holder, slab, holder.to_local(_tiles.to_global(corner)), run.size.x,
+				run.position.x)
+	var platforms: int = 0
+	for node: Node in _level.find_children("*", "Node2D", true, false):
+		var platform := node as CollapsingPlatform
+		if platform == null:
+			continue
+		# Beside its tiles, not under them: they blink, unseen now, while the slab fades out over the
+		# platform's Collapse Time, gone as it goes, and shows again as it comes back.
+		var layer := platform.get_node("%Tiles") as TileMapLayer
+		var slabs := Node2D.new()
+		slabs.position = layer.position
+		platform.add_child(slabs)
+		var column: int = _tiles.local_to_map(_tiles.to_local(layer.global_position)).x
+		_add_slabs(slabs, slab, Vector2.ZERO, platform.width_tiles, column)
+		platform.collapsing.connect(_fade_out.bind(slabs, platform.collapse_time))
+		platform.came_back.connect(func() -> void: slabs.modulate.a = 1.0)
+		platforms += 1
+	_clear_one_way_tile()
+	print("ProtoSlabs: %d runs of one-way tiles, %d collapsing platforms" % [runs.size(), platforms])
+
+
+## Slabs over a platform Width Tiles wide whose top left corner is Corner, in Parent's space;
+## Column, the tile column of its left end, mirrors every other slab along the level.
+func _add_slabs(parent: Node2D, slab: Texture2D, corner: Vector2, width_tiles: int,
+		column: int) -> void:
+	var count: int = ceili(float(width_tiles) / float(SLAB_MAX_TILES))
+	var width: float = width_tiles * TILE / float(count)
+	var shape: float = float(slab.get_width()) / float(slab.get_height())
+	var height: float = minf(SLAB_HEIGHT, width / shape)
+	for k: int in count:
+		var sprite := Sprite2D.new()
+		sprite.texture = slab
+		sprite.centered = false
+		sprite.flip_h = (column + k) % 2 == 1
+		sprite.scale = Vector2(width / float(slab.get_width()), height / float(slab.get_height()))
+		sprite.position = corner + Vector2(k * width, -SLAB_TOP_IN_ART * height)
+		sprite.light_mask = MASK_ROCK
+		parent.add_child(sprite)
+
+
+func _fade_out(item: CanvasItem, seconds: float) -> void:
+	item.create_tween().tween_property(item, "modulate:a", 0.0, seconds)
+
+
+## The one-way tile drawn clear, so only the slab shows: a change to the level's TileSet in memory,
+## for this run only, which the collapsing platforms share.
+func _clear_one_way_tile() -> void:
+	var source := _tiles.tile_set.get_source(CollapsingPlatform.ONE_WAY_SOURCE) \
+			as TileSetAtlasSource
+	var data: TileData = source.get_tile_data(CollapsingPlatform.ONE_WAY_ATLAS,
+			CollapsingPlatform.ONE_WAY_ALTERNATIVE)
+	data.modulate = Color(data.modulate, 0.0)
 
 
 ## The spots on a floor of Length tiles from First: none if it is narrower than Min Floor, else one

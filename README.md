@@ -477,14 +477,15 @@ a meio não perde o progresso, porque os toques e o tempo premido enchem a mesma
 ### Portões, picos letais e plataformas que desabam
 
 Cinco elementos para qualquer nível, cada um numa cena própria, que se coloca na cena do nível e se
-ajusta no Inspector. Por agora são formas provisórias, até chegar a arte.
+ajusta no Inspector. Por agora são formas provisórias, até chegar a arte, exceto os picos, que já
+são silvas.
 
 | Elemento | Cena | Comportamento | Medida |
 |---|---|---|---|
 | Portão | `scenes/objects/gates/gate.tscn` | barra uma passagem à personagem, aos demónios e à visão destes; desbloqueado, sobe a sua própria altura, por trás da rocha; com Slide Way em Left ou Right, é um alçapão e desliza para esse lado a sua própria largura | desliza em 0,8 s (48 passos de física) |
 | Desbloqueador | `scenes/objects/gates/gate_unlocker.tscn` | ativa-se uma vez, com o crucifixo erguido ao pé dele, e abre os portões da lista Gates; o crucifixo não sabe que ele existe, porque o reconhece como mais um elemento repelível (`scenes/characters/components/crucifix_sensor.gd`), que não se move | alcance de 200 px, o raio do crucifixo |
 | Anel de proximidade | `scenes/objects/gates/proximity_unlocker.tscn` | ativa-se uma vez, na primeira vez que a personagem entra no círculo, sem crucifixo, e abre os portões da lista Gates | alcance (Reach) de 288 px por omissão |
-| Picos letais | `scenes/objects/traps/lethal_spikes.tscn` | um toque mata a personagem de imediato, com qualquer valor de SP; os demónios passam por cima sem efeito | parte que mata com 24 px de altura e 4 px de folga em cada ponta, para um salto que passe à vista passar mesmo |
+| Picos letais | `scenes/objects/traps/lethal_spikes.tscn` | um toque mata a personagem de imediato, com qualquer valor de SP; os demónios passam por cima sem efeito; desenham-se como silvas, um arbusto por tile, um pouco mais largo do que o tile, para formarem uma sebe contínua, com a altura e o espelho escolhidos ao acaso a partir da posição da faixa, que fica sempre igual; sem arte (Art), voltam aos dentes | parte que mata com 24 px de altura e 4 px de folga em cada ponta, para um salto que passe à vista passar mesmo; cada arbusto com 40 px de altura, mais ou menos 10 %, que cobre a parte que mata de ponta a ponta (`test_lethal_spikes_art.gd`) |
 | Plataforma que desaba | `scenes/objects/platforms/collapsing_platform.tscn` | usa o mesmo tile das plataformas de sentido único; pousar nela faz com que pisque e desapareça; saltar através dela, de baixo, não a ativa; volta ao fim de Come Back Time, com 0 fica desaparecida até o nível recomeçar | desaparece em 0,6 s (36 passos) e volta ao fim de 3 s |
 
 A largura e a altura destes elementos definem-se em tiles, no Inspector. A morte imediata é o método
@@ -1238,6 +1239,7 @@ godot --headless --fixed-fps 60 --path Projeto --script res://tests/test_main_fl
 godot --headless --fixed-fps 60 --path Projeto --script res://tests/test_pause.gd
 godot --headless --fixed-fps 60 --path Projeto --script res://tests/test_phase_exit.gd
 godot --headless --fixed-fps 60 --path Projeto --script res://tests/test_lethal_spikes.gd
+godot --headless --fixed-fps 60 --path Projeto --script res://tests/test_lethal_spikes_art.gd
 godot --headless --fixed-fps 60 --path Projeto --script res://tests/test_gate.gd
 godot --headless --fixed-fps 60 --path Projeto --script res://tests/test_collapsing_platform.gd
 godot --headless --fixed-fps 60 --path Projeto --script res://tests/test_lust_phase_2.gd
@@ -3253,6 +3255,9 @@ iniciado por nada no jogo. A estação de cada uma acrescenta-se quando a mecân
   `fire_creeping_sheet.png`, em `Projeto/assets/sprites/fire/`: fogos animados desenhados por von
   Hafe, do grupo, convertidos dos GIF originais em folhas de frames. Usados pelo protótipo de
   iluminação (#257; os três últimos desde a #263).
+- `bramble.png`, em `Projeto/assets/sprites/traps/`, e `platform_slab.png`, em
+  `Projeto/assets/sprites/environment/`: a silva dos picos letais e a laje das plataformas,
+  desenhadas por von Hafe, do grupo, recortadas e reduzidas dos PNG originais (#263).
 - Tinos, de The Tinos Project Authors. SIL Open Font License 1.1. Letra de reserva dos menus, com as
   medidas da Times New Roman, em `Projeto/assets/fonts/` (com a licença em `Tinos-OFL.txt`).
   https://github.com/googlefonts/tinos
