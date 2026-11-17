@@ -164,6 +164,15 @@ entrar no deslize e para o manter, segue as Game Accessibility Guidelines (s.d.-
 não obrigar o jogador a manter teclas premidas. Antes, só se entrava no deslize a empurrar contra a
 parede, e nos testes com o grupo e com os professores o deslize quase não aparecia.
 
+Sem direção premida, o motor de física só deteta o contacto com a parede pela margem de segurança
+da colisão (0,08 px). A partir de cerca de x = 2048 px (valor medido), os arredondamentos dos
+números de 32 bits fazem esse contacto aparecer e desaparecer: no nível 1, a personagem caía a meio
+de 226 das 322 paredes e, ao saltar a direito encostada a uma parede, não entrava no deslize. Por
+isso, no ar e sem direção premida, a personagem é encostada 1 px por frame a uma parede do nível que
+esteja a essa distância, desde que a parede continue ao seu lado no fim desse frame, para não passar
+além do fim da parede. O lado de um demónio fica de fora. Com esta correção, não cai a meio de
+nenhuma das 322 paredes, e o custo é de até dois testes de colisão por frame, cerca de 5 µs.
+
 O salto da parede é dado com a tecla de saltar sempre que a personagem toca numa parede no ar,
 empurrando-a ou não. A personagem sai para o lado oposto à parede, à velocidade máxima da corrida e
 com a altura de um salto completo (240 px). Como a direção do salto é sempre a de afastamento da

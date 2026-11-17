@@ -5,9 +5,11 @@
 # direction in the air, and the fall after that peak speeds up as without a wall until it reaches
 # Wall Slide Speed. Pushing away from the wall, from the slide or while carried into it, and running
 # away from it on the floor all work as without a wall. A wall of the levels' tiles takes no push
-# either. A demon's side, a body on Knock Off Layers, still takes a push: touching one without
-# pushing into it falls as without a wall, pushing into it slides, and once it is gone it leaves no
-# wall behind.
+# either, touched or carried into. Far from the origin, on either side, carried into a wall or
+# jumping straight up from rest by it, he slides as near it; off the bottom of a wall that ends in
+# the air, he falls straight down. A demon's side, a body on Knock Off Layers, still takes a push:
+# touching one without pushing into it falls as without a wall, pushing into it slides, letting go
+# against one that backs away never follows it, and once it is gone it leaves no wall behind.
 # Run from the repository root; the exit code is 0 on pass and 1 on fail:
 # godot --headless --fixed-fps 60 --path Projeto --script res://tests/test_wall_slide.gd
 extends "res://tests/support/player_test.gd"
@@ -32,6 +34,27 @@ const TILE_FACE: float = 1700.0
 ## The face of a body on the demons' layer that is freed while the player touches it, on the
 ## player's right, between the wall and the demon's side; it only exists in its own case.
 const GONE_FACE: float = 800.0
+## The face of another wall of tiles, as the first, far from the origin as most of a level's walls
+## are, on its own floor: level 1 reaches x = 17 800. From about x = 2048 (measured), the rounding
+## of 32-bit floats makes a touch the engine reads only from the safe margin come and go. Its
+## mirror, a wall on the player's left, has its face at x = -FAR_TILE_FACE.
+const FAR_TILE_FACE: float = 9600.0
+## How far each far wall's floor reaches from its face into the open, in px.
+const FAR_FLOOR_REACH: float = 400.0
+## The face of a wall of tiles that ends in the air, far from the origin too, on its own floor: from
+## WALL_TOP down to OVERHANG_BOTTOM, a whole number of tiles above the floor's top.
+const OVERHANG_FACE: float = 12000.0
+const OVERHANG_BOTTOM: float = -624.0
+## Frames a player standing against a wall waits after letting go of the direction, before a jump,
+## so his run has stopped.
+const STOP_FRAMES: int = 10
+## The face of a body on the demons' layer that backs away slowly from the player, at BACKING_SPEED
+## px/s for BACKING_FRAMES frames, between the wall and the freed demon's side; only in its own case.
+const BACKING_FACE: float = 500.0
+const BACKING_SPEED: float = 20.0
+const BACKING_FRAMES: int = 60
+## How far across the player may move where nothing should carry him across, in px.
+const DRIFT_TOLERANCE: float = 0.5
 const TILE_SET: TileSet = preload("res://scenes/others/tilesets/cave_placeholder_tiles.tres")
 ## The levels' solid block: a full cell on the physics layer of the levels' walls.
 const SOLID_SOURCE: int = 0
@@ -60,6 +83,12 @@ func _initialize() -> void:
 	var demon_side: StaticBody2D = make_wall(DEMON_FACE, DEMON_FACE + WALL_THICKNESS, WALL_TOP)
 	demon_side.collision_layer = _demon_layers
 	_make_tile_wall(TILE_FACE, WALL_TOP)
+	make_platform(FAR_TILE_FACE - FAR_FLOOR_REACH, FAR_TILE_FACE + TILE_SIZE)
+	_make_tile_wall(FAR_TILE_FACE, WALL_TOP)
+	make_platform(-FAR_TILE_FACE - TILE_SIZE, -FAR_TILE_FACE + FAR_FLOOR_REACH)
+	_make_tile_wall(-FAR_TILE_FACE - TILE_SIZE, WALL_TOP)
+	make_platform(OVERHANG_FACE - FAR_FLOOR_REACH, OVERHANG_FACE + TILE_SIZE)
+	_make_tile_wall(OVERHANG_FACE, WALL_TOP, OVERHANG_BOTTOM)
 	await physics_frame
 	var results: Array[bool] = []
 	results.append(await _pushing_into_the_wall_slides_at_wall_slide_speed())
@@ -75,6 +104,11 @@ func _initialize() -> void:
 	results.append(await _touching_a_demon_without_pushing_falls_as_without_it())
 	results.append(await _pushing_into_a_demon_slides())
 	results.append(await _touching_a_wall_of_tiles_without_pushing_slides())
+	results.append(await _carried_into_a_far_wall_of_tiles_without_pushing_slides(1.0))
+	results.append(await _carried_into_a_far_wall_of_tiles_without_pushing_slides(-1.0))
+	results.append(await _jumping_from_rest_by_a_far_wall_slides_after_the_peak())
+	results.append(await _off_the_bottom_of_a_wall_falls_straight_down())
+	results.append(await _a_demon_s_side_backing_away_is_never_followed())
 	results.append(await _a_demon_s_side_freed_while_touched_leaves_no_wall())
 	finish(results)
 
@@ -275,6 +309,82 @@ func _touching_a_wall_of_tiles_without_pushing_slides() -> bool:
 			"Touching a wall of tiles without pushing into it")
 
 
+## The way most players meet a wall of the levels: carried into it by a jump's speed, with no
+## direction held, far from the origin, as most of a level's walls are, on the right (side 1) or
+## on the left (-1). The move that reaches it leaves him a hair off its face; he slides all the way
+## down to the floor, as near the origin.
+func _carried_into_a_far_wall_of_tiles_without_pushing_slides(side: float) -> bool:
+	var face: float = side * FAR_TILE_FACE
+	var player: Player = spawn_player(Vector2(face - side * (_half_width + GAP), START_HEIGHT))
+	player.velocity = Vector2(side * player.stats.max_run_speed, 0.0)
+	var touching: bool = await _wait_until_on_wall(player)
+	var fall: FallResult = await _fall_until_the_floor(player)
+	return await _report_slide(player, touching, fall,
+			"Carried into a far wall of tiles on the %s with no direction held"
+			% ("right" if side > 0.0 else "left"))
+
+
+## Getting on a far wall needs no push either: standing against it, having let go of the direction,
+## a straight jump with no direction held puts him on the wall, so he slides after the peak.
+func _jumping_from_rest_by_a_far_wall_slides_after_the_peak() -> bool:
+	var what: String = "Jumping straight up from rest by a far wall"
+	var player: Player = await spawn_on_floor(
+			Vector2(FAR_TILE_FACE - _half_width - GAP, FLOOR_SPAWN_HEIGHT))
+	if player == null:
+		return report(false, "%s: never landed" % what)
+	Input.action_press(&"move_right")
+	var touched: bool = await _wait_until_on_wall(player)
+	await _wait_frames(SETTLE_FRAMES)
+	Input.action_release(&"move_right")
+	await _wait_frames(STOP_FRAMES)
+	Input.action_press(&"jump")
+	var rose: bool = await _wait_until_rising(player)
+	await _wait_until_falling(player)
+	var fall: FallResult = await _fall_until_the_floor(player)
+	Input.action_release(&"jump")
+	return await _report_slide(player, touched and rose, fall, what)
+
+
+## Staying on a wall with no direction held only presses into a wall that is still there: sliding
+## off the bottom of a wall that ends in the air, he falls straight down, never drifting under it.
+func _off_the_bottom_of_a_wall_falls_straight_down() -> bool:
+	var player: Player = spawn_player(Vector2(OVERHANG_FACE - _half_width - GAP, START_HEIGHT))
+	player.velocity = Vector2(player.stats.max_run_speed, 0.0)
+	var touching: bool = await _wait_until_on_wall(player)
+	var x_on_the_wall: float = player.position.x
+	await _fall_until_the_floor(player)
+	var drift: float = player.position.x - x_on_the_wall
+	var landed: bool = player.is_on_floor()
+	await _remove(player)
+	return report(touching and landed and absf(drift) <= DRIFT_TOLERANCE,
+			"Off the bottom of a wall with no direction held: %.2f px across, tolerance %.2f px%s"
+			% [drift, DRIFT_TOLERANCE, _got_going_note(touching and landed)])
+
+
+## What keeps him on a wall with no direction held only holds him to the level's walls: pushed into a
+## demon's side and let go, while it backs away slowly he never follows it across.
+func _a_demon_s_side_backing_away_is_never_followed() -> bool:
+	var what: String = "Let go against a demon's side that backs away"
+	var side: StaticBody2D = make_wall(BACKING_FACE, BACKING_FACE + WALL_THICKNESS, WALL_TOP)
+	side.collision_layer = _demon_layers
+	var player: Player = spawn_player(Vector2(BACKING_FACE - _half_width - GAP, START_HEIGHT))
+	Input.action_press(&"move_right")
+	var touched: bool = await _wait_until_on_wall(player)
+	await _wait_frames(SETTLE_FRAMES)
+	Input.action_release(&"move_right")
+	await _wait_frames(STOP_FRAMES)
+	var x_let_go: float = player.position.x
+	for _frame: int in BACKING_FRAMES:
+		side.position.x += BACKING_SPEED / Engine.physics_ticks_per_second
+		await physics_frame
+	var across: float = player.position.x - x_let_go
+	side.queue_free()
+	await _remove(player)
+	return report(touched and absf(across) <= DRIFT_TOLERANCE,
+			"%s at %.1f px/s: followed it %.2f px, tolerance %.2f px%s"
+			% [what, BACKING_SPEED, across, DRIFT_TOLERANCE, _got_going_note(touched)])
+
+
 ## A demon's side that is freed while the player touches it leaves no wall behind: falling at the
 ## top falling speed against it with no push, on the frame after it goes he keeps that speed, with
 ## no brake from a wall that is no longer there.
@@ -296,13 +406,13 @@ func _a_demon_s_side_freed_while_touched_leaves_no_wall() -> bool:
 			+ "Max Fall Speed %.1f px/s%s") % [speed, top_speed, _got_going_note(touching)])
 
 
-## A wall of the levels' solid tiles, one tile thick, with its left face at x = face, from the
-## floor's top up to top or a little over it.
-func _make_tile_wall(face: float, top: float) -> void:
+## A wall of the levels' solid tiles, one tile thick, with its left face at x = face, from bottom up
+## to top or a little over it. Bottom is the floor's top unless given, and a whole number of tiles.
+func _make_tile_wall(face: float, top: float, bottom: float = 0.0) -> void:
 	var tiles: TileMapLayer = TileMapLayer.new()
 	tiles.tile_set = TILE_SET
 	tiles.position = Vector2(face, 0.0)
-	for row: int in range(floori(top / TILE_SIZE), 0):
+	for row: int in range(floori(top / TILE_SIZE), floori(bottom / TILE_SIZE)):
 		tiles.set_cell(Vector2i(0, row), SOLID_SOURCE, SOLID_ATLAS)
 	root.add_child(tiles)
 

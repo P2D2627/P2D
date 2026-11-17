@@ -42,6 +42,13 @@ const FLOOR_ANGLE_THRESHOLD: float = 0.01
 ## so a ramp that should end on its last frame can stop a few ten-thousandths of a px/s short, as
 ## from 600 px/s in 0.15 s, and would take one frame more.
 const RAMP_SNAP_SHARE: float = 0.001
+## Px a frame the player is moved into a wall of the level beside him while no run input pushes him,
+## so every move touches it. Without a push, the engine reads the touch only from the safe margin,
+## and from about x = 2048 (measured) the rounding of 32-bit floats makes that touch come and go: he
+## missed walls he touched and fell off walls he was on (#263).
+const WALL_HUG_STEP: float = 1.0
+## The sides a wall beside him may be on: -1 left, 1 right.
+const WALL_SIDES: Array[float] = [-1.0, 1.0]
 
 ## Movement values. Every player that uses the same file shares them.
 @export var stats: PlayerMovementStats
@@ -99,6 +106,10 @@ var _death_cause: StringName = &""
 var _death_source: StringName = &""
 ## What the next step would hit, for _assist_onto_a_ledge(): one, kept, so no frame makes a new one.
 var _ledge_hit: KinematicCollision2D = KinematicCollision2D.new()
+## What a hug's step would hit, for _hug_a_wall(), kept in the same way.
+var _wall_hit: KinematicCollision2D = KinematicCollision2D.new()
+## True from _hug_a_wall() moving him into a wall to the end of that frame's move.
+var _hugging: bool = false
 
 ## The drawing faces left; it is mirrored while the player faces right.
 @onready var _sprite: AnimatedSprite2D = $Sprite
@@ -115,7 +126,7 @@ func _ready() -> void:
 ## A knockback runs instead of the state's own physics until it ends. Landing ends it: on the floor
 ## and no longer going up, so the frame it takes off from the floor on still counts. The top of a
 ## body he can't stand on doesn't count: it shoves him off instead. Just before moving, a fall into
-## a ledge a little below its top lifts him onto it (ADR 0059).
+## a ledge a little below its top lifts him onto it (ADR 0059); a hug into a wall ends with the move.
 func _physics_process(delta: float) -> void:
 	_update_state()
 	_shove_off_what_cannot_be_stood_on()
@@ -135,6 +146,7 @@ func _physics_process(delta: float) -> void:
 				_physics_grabbed(delta)
 	_assist_onto_a_ledge(delta)
 	move_and_slide()
+	_end_the_hug()
 	_update_facing()
 
 
@@ -364,11 +376,12 @@ func _is_a_level_wall(collision: KinematicCollision2D) -> bool:
 
 
 ## Lifts the player onto a ledge he falls into with his feet a little below its top (ADR 0059). Off
-## the floor, at the top of a jump or falling, moving toward a wall of the level, or touching one
-## with no speed across, that the next step would hit, he goes up by the fewest whole px, at most
-## Ledge Assist Height, that let the step carry him over it, and a px across, onto its edge, and
-## stops falling, so he lands on it even with no speed across, which would leave him hanging by the
-## face. Like the wall slide, it takes no push. A one-way platform has no side for the step to hit.
+## the floor, at the top of a jump or falling, moving toward a wall of the level, a hug included, or
+## touching one with no speed across, that the next step would hit, he goes up by the fewest whole
+## px, at most Ledge Assist Height, that let the step carry him over it, and a px across, onto its
+## edge, and stops falling, so he lands on it even with no speed across, which would leave him
+## hanging by the face. Like the wall slide, it takes no push. A one-way platform has no side for the
+## step to hit.
 ## Up there, off its face, the wall's coyote frames end, as on landing, so Jump jumps from the
 ## ledge, not off the face. He is never lifted onto a demon, nor while he pushes away, is grabbed,
 ## held still or in a knockback. Never through a ceiling either, with no check of its own: he is
@@ -394,6 +407,7 @@ func _assist_onto_a_ledge(delta: float) -> void:
 			global_position += up + Vector2(side, 0.0)
 			velocity.y = 0.0
 			_wall_coyote_frames_left = 0
+			_end_the_hug()
 			return
 
 
@@ -412,7 +426,8 @@ func _physics_on_floor(delta: float) -> void:
 ## Gravity pulls. A kept press of Jump jumps off a wall the player touches, pushing into it or
 ## not, or left a moment ago, even with coyote frames left; away from walls, it jumps while coyote
 ## frames are left. Without a jump, the counters run down. The run keeps only the share in
-## _air_control().
+## _air_control(). Unless held still, he hugs a wall of the level right beside him, so he gets on it
+## with no push, as the engine's touch alone lets him only near the origin (ADR 0058).
 func _physics_in_air(delta: float) -> void:
 	_apply_gravity(delta)
 	_keep_jump_press()
@@ -424,21 +439,53 @@ func _physics_in_air(delta: float) -> void:
 	else:
 		_run_down_counters()
 	_apply_run(delta, _air_control())
+	if _held_still:
+		return
+	for side: float in WALL_SIDES:
+		_hug_a_wall(delta, side)
+		if _hugging:
+			return
 
 
 ## Gravity pulls as in the air, but the fall stops at wall_slide_speed at once; going up is not
-## slowed. A kept press of Jump jumps off the wall; without one, the counters run down. The run
-## keeps only the share in _air_control().
+## slowed. A kept press of Jump jumps off the wall; without one, the counters run down and he hugs
+## the wall, so he stays on it with no push. The run keeps only the share in _air_control().
 func _physics_on_wall(delta: float) -> void:
 	_apply_gravity(delta)
 	velocity.y = minf(velocity.y, stats.wall_slide_speed)
 	_keep_jump_press()
 	_keep_wall_touch()
-	if _jump_buffer_frames_left > 0:
+	var jumps: bool = _jump_buffer_frames_left > 0
+	if jumps:
 		_wall_jump(delta)
 	else:
 		_run_down_counters()
 	_apply_run(delta, _air_control())
+	if not jumps:
+		_hug_a_wall(delta, -_away_from_last_wall)
+
+
+## With no run input and no speed away from side (-1 left, 1 right), moves the player WALL_HUG_STEP
+## px toward a wall of the level on that side, if one is that close where this frame's rise or fall
+## takes him, so the move touches it. Only a wall of the level, never a demon's side, which still
+## takes a push (ADR 0058), and only while the wall is beside him at the end of the frame: past its
+## end, he gets no push and never drifts under it or over its top.
+func _hug_a_wall(delta: float, side: float) -> void:
+	if side == 0.0 or input.get_run_direction() != 0.0 or velocity.x * side < 0.0:
+		return
+	var step: Vector2 = Vector2(side * WALL_HUG_STEP, 0.0)
+	var after_this_frame: Transform2D = global_transform.translated(Vector2(0.0, velocity.y * delta))
+	if test_move(after_this_frame, step, _wall_hit) and _is_a_level_wall(_wall_hit):
+		velocity.x = step.x / delta
+		_hugging = true
+
+
+## A hug's speed lasts its own move: once the move has put him against the wall, or a lift has put
+## him on a ledge, he keeps no speed across, as with no hug, landing included.
+func _end_the_hug() -> void:
+	if _hugging:
+		velocity.x = 0.0
+		_hugging = false
 
 
 ## Held by a demon: gravity pulls off the floor, up to Grabbed Fall Speed, and nothing else moves
