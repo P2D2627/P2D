@@ -25,7 +25,7 @@ extends Node2D
 @export var raise_sound: AudioStream
 ## The crucifix going down when Crucifix is let go or the player leaves the floor.
 @export var holster_sound: AudioStream
-## The crucifix going down because the use ran out of Max Use Time, instead of Holster Sound.
+## The crucifix going down because its charge ran out, instead of Holster Sound.
 @export var cooldown_sound: AudioStream
 ## The cooldown ending: the crucifix can go up again.
 @export var available_sound: AudioStream

@@ -5,10 +5,12 @@
 # a stand-in; up, it slows the run by Crucifix Stats, stops every jump, lights up and heals the
 # man's SP, and letting go gives the full movement back with no jump left over. A press a moment
 # before landing raises it on landing; one made long before raises nothing until Crucifix is pressed
-# again. It never goes up on a wall, and leaving the floor lowers it. A use lasts at most Max Use
-# Time, every use is followed by the whole Cooldown Time, Crucifix held through both raises nothing,
-# a press just before the cooldown ends raises it then, and the pause stops the use. Lost, it goes
-# down, says so once and leaves the game, also from the cooldown. It pushes a Repellable inside its
+# again. It never goes up on a wall, and leaving the floor lowers it with the rest of its charge. Its
+# charge is Max Use Time: a use spends only its own time of it and fills back in its share of
+# Cooldown Time, the time from empty to full. Run empty, it stays down the whole Cooldown Time,
+# Crucifix held through the use and that raises nothing, a press just before it is full raises it
+# then, and the pause stops the use. Lost, it goes down, says so once and leaves the game, also
+# while it is locked. It pushes a Repellable inside its
 # radius out of it while one outside stays put, and the Repellable scene is on the layer the
 # crucifix looks on. A new radius or slowdown in Stats takes effect at once. No demon exists yet, so
 # a bare CharacterBody2D with a Repellable stands in for one. The timing cases use short times on
@@ -57,6 +59,10 @@ const FAR_OFFSET: Vector2 = Vector2(-600.0, 0.0)
 ## Max Use Time and Cooldown Time of the timing cases, in s: 30 and 60 frames.
 const SHORT_USE_TIME: float = 0.5
 const SHORT_COOLDOWN_TIME: float = 1.0
+## A Cooldown Time three times SHORT_USE_TIME, so the charge fills a third as fast as it is spent.
+const THIRD_SPEED_COOLDOWN_TIME: float = 1.5
+## Frames the taps case presses and lets go of Crucifix in turn, one frame each.
+const TAP_FRAMES: int = 120
 ## Frames a short use lasts before Crucifix is let go, in the case of the short use.
 const SHORT_HOLD_FRAMES: int = 10
 ## The share the modifier cases use.
@@ -95,9 +101,12 @@ func _initialize() -> void:
 	results.append(await _a_press_just_before_landing_raises_it_on_landing())
 	results.append(await _a_press_long_before_landing_raises_nothing_until_pressed_again())
 	results.append(await _a_press_on_a_wall_raises_nothing())
-	results.append(await _leaving_the_floor_lowers_it_and_starts_the_cooldown())
+	results.append(await _leaving_the_floor_lowers_it_and_keeps_the_rest_of_the_charge())
 	results.append(await _a_use_lasts_at_most_max_use_time())
-	results.append(await _a_short_use_still_takes_the_whole_cooldown())
+	results.append(await _a_short_use_spends_only_its_own_time())
+	results.append(await _the_charge_fills_back_in_its_share_of_cooldown_time())
+	results.append(await _run_empty_it_stays_down_for_the_whole_cooldown_time())
+	results.append(await _quick_taps_raise_it_fewer_than_three_times_a_second())
 	results.append(await _held_through_the_cooldown_it_waits_for_a_fresh_press())
 	results.append(await _a_press_just_before_the_cooldown_ends_raises_it_then())
 	results.append(await _the_pause_stops_the_use_and_letting_go_in_it_lowers_it())
@@ -363,9 +372,9 @@ func _a_press_on_a_wall_raises_nothing() -> bool:
 			"" if touched else " (never reached the wall)"])
 
 
-## Walking off a ledge with the crucifix up lowers it as the player leaves the floor, and the
-## cooldown starts.
-func _leaving_the_floor_lowers_it_and_starts_the_cooldown() -> bool:
+## Walking off a ledge with the crucifix up lowers it as the player leaves the floor, ready to go up
+## again with the rest of its charge.
+func _leaving_the_floor_lowers_it_and_keeps_the_rest_of_the_charge() -> bool:
 	var player: Player = await spawn_on_floor(LEDGE_START)
 	if player == null:
 		return report(false, "Walking off a ledge: the player never landed")
@@ -389,14 +398,14 @@ func _leaving_the_floor_lowers_it_and_starts_the_cooldown() -> bool:
 	await remove_player(player)
 	# The crucifix runs after the player, so it can only see the fall one frame after it starts.
 	return report(up_before and left_floor and frames_up_in_the_air <= 1
-			and phase == Crucifix.Phase.COOLDOWN,
+			and phase == Crucifix.Phase.READY,
 			"Walking off a ledge: up before %s, frames up in the air %d, phase then %s%s"
 			% [up_before, frames_up_in_the_air, Crucifix.Phase.find_key(phase),
 			"" if left_floor else " (never left the floor)"])
 
 
 ## Holding Crucifix for longer than Max Use Time keeps the crucifix up for exactly Max Use Time,
-## then it goes down and cools down.
+## then it goes down, empty, and is locked until it is full again.
 func _a_use_lasts_at_most_max_use_time() -> bool:
 	var player: Player = await spawn_on_floor(FLOOR_START)
 	if player == null:
@@ -414,35 +423,83 @@ func _a_use_lasts_at_most_max_use_time() -> bool:
 			% [frames_up, expected, Crucifix.Phase.find_key(phase)])
 
 
-## Letting go after a short use starts the whole Cooldown Time, and a press made at its start, and
-## held, does not raise the crucifix during it.
-func _a_short_use_still_takes_the_whole_cooldown() -> bool:
+## Let go after a short use, the crucifix is ready at once with the rest of its charge, Max Use Time
+## less the frames it was up, and a fresh press raises it again.
+func _a_short_use_spends_only_its_own_time() -> bool:
 	var player: Player = await spawn_on_floor(FLOOR_START)
 	if player == null:
-		return report(false, "The cooldown after a short use: the player never landed")
+		return report(false, "A short use: the player never landed")
+	var crucifix: Crucifix = _crucifix_of(player)
+	_use_short_times(crucifix)
+	var stand_in: StandInInput = put_a_stand_in(player)
+	var charge: float = await _use_for(crucifix, stand_in, SHORT_HOLD_FRAMES)
+	var phase: Crucifix.Phase = crucifix.get_phase()
+	var expected: float = crucifix.stats.max_use_time \
+			- float(SHORT_HOLD_FRAMES) / Engine.physics_ticks_per_second
+	stand_in.crucifix_held = true
+	var up_again: bool = await wait_until(crucifix.is_raised,
+			crucifix.stats.get_min_down_frames() + SETTLE_FRAMES)
+	await remove_player(player)
+	return report(phase == Crucifix.Phase.READY and is_equal_approx(charge, expected) and up_again,
+			"A short use of %d frames: then %s with %.3f s of charge, expected %.3f s; up again at a fresh press %s"
+			% [SHORT_HOLD_FRAMES, Crucifix.Phase.find_key(phase), charge, expected, up_again])
+
+
+## Down, the charge fills from empty to full in Cooldown Time, so a short use comes back in its
+## share of it, Cooldown Time / Max Use Time frames for each frame up, on that frame and not one
+## sooner or later. Here the charge fills a third as fast as it is spent, a share no float holds.
+func _the_charge_fills_back_in_its_share_of_cooldown_time() -> bool:
+	var player: Player = await spawn_on_floor(FLOOR_START)
+	if player == null:
+		return report(false, "The charge filling back: the player never landed")
+	var crucifix: Crucifix = _crucifix_of(player)
+	_use_short_times(crucifix)
+	crucifix.stats.cooldown_time = THIRD_SPEED_COOLDOWN_TIME
+	var stand_in: StandInInput = put_a_stand_in(player)
+	await _use_for(crucifix, stand_in, SHORT_HOLD_FRAMES)
+	var full: float = crucifix.stats.max_use_time
+	var refill_frames: int = ceili(float(SHORT_HOLD_FRAMES * crucifix.stats.get_cooldown_frames())
+			/ crucifix.stats.get_max_use_frames())
+	await wait_frames(refill_frames - 1)
+	var a_frame_before: float = crucifix.get_charge()
+	await physics_frame
+	var after: float = crucifix.get_charge()
+	await wait_frames(SETTLE_FRAMES)
+	var later: float = crucifix.get_charge()
+	await remove_player(player)
+	return report(a_frame_before < full and is_equal_approx(after, full)
+			and is_equal_approx(later, full),
+			"The charge after a %d-frame use: %.4f s a frame before %d frames down, %.4f s on that frame and %.4f s later, full at %.4f s"
+			% [SHORT_HOLD_FRAMES, a_frame_before, refill_frames, after, later, full])
+
+
+## Held until the charge runs out, the crucifix stays down the whole Cooldown Time, the time the
+## charge takes to fill from empty, with all of it left on its first frame.
+func _run_empty_it_stays_down_for_the_whole_cooldown_time() -> bool:
+	var player: Player = await spawn_on_floor(FLOOR_START)
+	if player == null:
+		return report(false, "Run empty: the player never landed")
 	var crucifix: Crucifix = _crucifix_of(player)
 	_use_short_times(crucifix)
 	var stand_in: StandInInput = put_a_stand_in(player)
 	stand_in.crucifix_held = true
-	await wait_frames(SETTLE_FRAMES + SHORT_HOLD_FRAMES)
-	stand_in.crucifix_held = false
-	await physics_frame
-	# The frame that let go has run: the cooldown starts full, and this is its first frame.
+	var locked: bool = await wait_until(func() -> bool:
+		return crucifix.get_phase() == Crucifix.Phase.COOLDOWN,
+		crucifix.stats.get_max_use_frames() + SETTLE_FRAMES)
+	# The frame that ran it empty has run: the lock starts full, and this is its first frame.
 	var expected: int = crucifix.stats.get_cooldown_frames()
 	var full_time: float = crucifix.stats.cooldown_time
 	var cooldown_left: float = crucifix.get_cooldown_left()
-	var started: bool = crucifix.get_phase() == Crucifix.Phase.COOLDOWN
-	stand_in.crucifix_held = true
-	var raised_during: Array[bool] = [false]
 	var more_frames: int = await _count_frames_while(func() -> bool:
-		raised_during[0] = raised_during[0] or crucifix.is_raised()
 		return crucifix.get_phase() == Crucifix.Phase.COOLDOWN, false)
+	var charge: float = crucifix.get_charge()
+	var full: float = crucifix.stats.max_use_time
 	await remove_player(player)
-	var frames_cooling: int = more_frames + 1 if started else 0
-	return report(frames_cooling == expected and is_equal_approx(cooldown_left, full_time)
-			and not raised_during[0],
-			"The cooldown after a short use: %d frames, Cooldown Time %d frames, %.3f s left on its first frame; went up during it %s"
-			% [frames_cooling, expected, cooldown_left, raised_during[0]])
+	var frames_locked: int = more_frames + 1 if locked else 0
+	return report(frames_locked == expected and is_equal_approx(cooldown_left, full_time)
+			and is_equal_approx(charge, full),
+			"Run empty: locked %d frames, Cooldown Time %d frames, %.3f s left on its first frame, %.3f s of charge after"
+			% [frames_locked, expected, cooldown_left, charge])
 
 
 ## Holding Crucifix through a whole use and the whole cooldown leaves the crucifix down once it is
@@ -470,8 +527,32 @@ func _held_through_the_cooldown_it_waits_for_a_fresh_press() -> bool:
 			% [Crucifix.Phase.find_key(phase), up_while_held, up_after_fresh_press])
 
 
-## Crucifix pressed a little less than Raise Buffer Time before the cooldown ends, and held, raises
-## the crucifix as soon as it is ready.
+## Crucifix pressed and let go on every other frame for TAP_FRAMES frames raises it again and again,
+## but each time more than a third of a second after the last, so its light goes on fewer than three
+## times in any second, the limit for players with photosensitive epilepsy.
+func _quick_taps_raise_it_fewer_than_three_times_a_second() -> bool:
+	var player: Player = await spawn_on_floor(FLOOR_START)
+	if player == null:
+		return report(false, "Quick taps: the player never landed")
+	var crucifix: Crucifix = _crucifix_of(player)
+	var raise_frames: Array[int] = []
+	crucifix.raised.connect(func() -> void: raise_frames.append(Engine.get_physics_frames()))
+	var stand_in: StandInInput = put_a_stand_in(player)
+	for frame: int in TAP_FRAMES:
+		stand_in.crucifix_held = frame % 2 == 0
+		await physics_frame
+	await remove_player(player)
+	var shortest_gap: int = TAP_FRAMES
+	for index: int in range(1, raise_frames.size()):
+		shortest_gap = mini(shortest_gap, raise_frames[index] - raise_frames[index - 1])
+	var a_third: float = Engine.physics_ticks_per_second / 3.0
+	return report(raise_frames.size() >= 2 and shortest_gap > a_third,
+			"Quick taps for %d frames: raised %d times, at least %d frames apart (more than %.1f wanted)"
+			% [TAP_FRAMES, raise_frames.size(), shortest_gap, a_third])
+
+
+## Run empty, then Crucifix let go and pressed a little less than Raise Buffer Time before the
+## charge is full, and held, raises the crucifix as soon as it is ready.
 func _a_press_just_before_the_cooldown_ends_raises_it_then() -> bool:
 	var player: Player = await spawn_on_floor(FLOOR_START)
 	if player == null:
@@ -480,9 +561,8 @@ func _a_press_just_before_the_cooldown_ends_raises_it_then() -> bool:
 	_use_short_times(crucifix)
 	var stand_in: StandInInput = put_a_stand_in(player)
 	stand_in.crucifix_held = true
-	await wait_frames(SETTLE_FRAMES + SHORT_HOLD_FRAMES)
-	stand_in.crucifix_held = false
 	await wait_until(func() -> bool: return crucifix.get_phase() == Crucifix.Phase.COOLDOWN)
+	stand_in.crucifix_held = false
 	await wait_frames(crucifix.stats.get_cooldown_frames() - BUFFER_MARGIN_FRAMES)
 	var still_cooling: bool = crucifix.get_phase() == Crucifix.Phase.COOLDOWN
 	stand_in.crucifix_held = true
@@ -494,8 +574,8 @@ func _a_press_just_before_the_cooldown_ends_raises_it_then() -> bool:
 			% [BUFFER_MARGIN_FRAMES, still_cooling, up])
 
 
-## The pause stops the use's count; Crucifix let go during the pause lowers the crucifix, and starts
-## the cooldown, once the game comes back.
+## The pause stops the use's count; Crucifix let go during the pause lowers the crucifix, ready with
+## the rest of its charge, once the game comes back.
 func _the_pause_stops_the_use_and_letting_go_in_it_lowers_it() -> bool:
 	var player: Player = await spawn_on_floor(FLOOR_START)
 	if player == null:
@@ -515,7 +595,7 @@ func _the_pause_stops_the_use_and_letting_go_in_it_lowers_it() -> bool:
 	var phase: Crucifix.Phase = crucifix.get_phase()
 	await remove_player(player)
 	return report(is_equal_approx(left_at_pause, left_after_pause) and up_in_the_pause
-			and phase == Crucifix.Phase.COOLDOWN,
+			and phase == Crucifix.Phase.READY,
 			"The pause: %.3f s of use left before it and %.3f s after %d frames of it, up in it %s; let go in it, then %s"
 			% [left_at_pause, left_after_pause, PAUSE_FRAMES, up_in_the_pause,
 			Crucifix.Phase.find_key(phase)])
@@ -550,18 +630,18 @@ func _lost_it_goes_down_says_so_once_and_leaves_the_game() -> bool:
 			% [up_before, times_lost[0], times_lowered[0], gone, speed, top_speed])
 
 
-## Lost during the cooldown, the crucifix says so and leaves the game too.
+## Lost while locked after running empty, the crucifix says so and leaves the game too.
 func _lost_during_the_cooldown_it_also_leaves_the_game() -> bool:
 	var player: Player = await spawn_on_floor(FLOOR_START)
 	if player == null:
 		return report(false, "Lost during the cooldown: the player never landed")
 	var crucifix: Crucifix = _crucifix_of(player)
+	_use_short_times(crucifix)
 	var stand_in: StandInInput = put_a_stand_in(player)
 	stand_in.crucifix_held = true
-	await wait_frames(SETTLE_FRAMES)
-	stand_in.crucifix_held = false
-	await wait_frames(SETTLE_FRAMES)
-	var cooling: bool = crucifix.get_phase() == Crucifix.Phase.COOLDOWN
+	var cooling: bool = await wait_until(func() -> bool:
+		return crucifix.get_phase() == Crucifix.Phase.COOLDOWN,
+		crucifix.stats.get_max_use_frames() + SETTLE_FRAMES)
 	var times_lost: Array[int] = [0]
 	crucifix.lost.connect(func() -> void: times_lost[0] += 1)
 	crucifix.lose()
@@ -722,6 +802,17 @@ func _make_demon(at: Vector2) -> CharacterBody2D:
 
 func _crucifix_of(player: Player) -> Crucifix:
 	return player.get_node(^"Crucifix") as Crucifix
+
+
+## Raises the crucifix with the stand-in, keeps it up for frames physics frames, the one that lets go
+## included, and gives back its charge once it is down: each of those frames spent a frame of it.
+func _use_for(crucifix: Crucifix, stand_in: StandInInput, frames: int) -> float:
+	stand_in.crucifix_held = true
+	await wait_until(crucifix.is_raised)
+	await wait_frames(frames - 1)
+	stand_in.crucifix_held = false
+	await physics_frame
+	return crucifix.get_charge()
 
 
 ## Gives the crucifix its own copy of Stats with SHORT_USE_TIME and SHORT_COOLDOWN_TIME, so the case

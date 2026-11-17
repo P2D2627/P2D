@@ -2,14 +2,17 @@ class_name Crucifix
 extends Node2D
 
 ## The crucifix the man holds up. A press of Crucifix raises it, on the floor, and it stays up while
-## Crucifix is held, for at most Max Use Time. A press a moment before it can go up, such as just
-## before landing, still raises it then (Raise Buffer Time). Only a press made in the game counts:
-## Crucifix held down since a menu, the pause or the cooldown raises nothing until it is pressed
-## again. Letting go, leaving the floor or running out of time lowers it, and every use, long or
-## short, is followed by the same Cooldown Time. Something else, such as the grab, can keep it down
-## with block(), without the crucifix knowing what it is. While up, it slows the player down, stops
-## it from jumping, pushes every Repellable inside its radius out of it, saying struck as something
-## it pushes comes in, heals and lights up its radius. For the last Warning Time of a use, the light
+## Crucifix is held and it has charge. The charge is Max Use Time: each second up spends a second of
+## it, and down it fills back from empty to full in Cooldown Time, so a short use costs only its own
+## time. A press a moment before it can go up, such as just before landing, still raises it then
+## (Raise Buffer Time). Only a press made in the game counts: Crucifix held down since a menu, the
+## pause or the cooldown raises nothing until it is pressed again. Letting go or leaving the floor
+## lowers it with the rest of its charge, and it stays down at least Min Down Time, so quick taps
+## never flash its light; running the charge out lowers it and locks it, the cooldown, until the
+## charge is full again. Something else, such as the grab, can keep it down with block(), without
+## the crucifix knowing what it is. While up, it slows the player down, stops it from jumping,
+## pushes every Repellable inside its radius out of it, saying struck as something it pushes comes
+## in, heals and lights up its radius. For the last Warning Time of its charge, the light
 ## pulses, deeper as the end comes, to warn that it is about to come down; the vibration and the
 ## sound read the same warning. _process() only runs while it is up.
 ## Lost for good, it leaves the game. It goes as a child of the player and reads the player's own
@@ -18,19 +21,19 @@ extends Node2D
 
 ## The crucifix went up.
 signal raised
-## The crucifix went down. After a use, cooldown_started follows; when it is lost, lost does. When
-## the use ran out of time, ran_out comes just before.
+## The crucifix went down. When its charge ran out, ran_out comes just before and cooldown_started
+## follows; when it is lost, lost does.
 signal lowered
-## The use ran out of Max Use Time with Crucifix still held on the floor; lowered follows on the
-## same frame. Letting go or leaving the floor on that frame counts as that, and does not say this.
+## The charge ran out, also on a frame that lets go or leaves the floor, so the cooldown it starts is
+## always heard; lowered follows on the same frame.
 signal ran_out
 ## A press of Crucifix came during the cooldown, too early for the kept press to raise the crucifix
 ## when the cooldown ends. Every upgrade with a cooldown says so with a signal of this name, so they
 ## can share the sound of a refused press.
 signal refused
-## The cooldown started; it lasts duration seconds.
+## The charge ran out: the crucifix is locked for duration seconds, until the charge is full again.
 signal cooldown_started(duration: float)
-## The cooldown is over: the crucifix goes up at the next press of Crucifix.
+## The charge is full again after running out: the crucifix goes up at the next press of Crucifix.
 signal cooldown_finished
 ## The crucifix is gone for good, after the first upgrade accepted. It leaves the game at the end of
 ## this frame.
@@ -44,7 +47,8 @@ signal healed(amount: float)
 ## Target, such as a gate's unlocker, says nothing.
 signal struck
 
-## What the crucifix is doing. Only _physics_process() changes it.
+## What the crucifix is doing: down with charge, up, or locked after running its charge out.
+## _physics_process() changes it, and so do block() and lose() as they lower it.
 enum Phase { READY, RAISED, COOLDOWN }
 
 ## Name of the crucifix's modifier on the player.
@@ -67,10 +71,16 @@ const NO_FRAME: int = -1
 @export var player: Player
 
 var _phase: Phase = Phase.READY
-## Physics frames left in the current use, while RAISED.
-var _use_frames_left: int = 0
-## Physics frames left in the cooldown, while COOLDOWN.
-var _cooldown_frames_left: int = 0
+## The charge, in units that keep it exact in whole frames: a physics frame up spends
+## _spend_per_frame() of them and a frame down gives back _fill_per_frame(), so a full charge lasts
+## exactly Max Use Time and fills from empty in exactly Cooldown Time, with no rounding. Full when
+## the crucifix is ready.
+var _charge: int = 0
+## What a frame up spent when the charge was last looked at: a new Cooldown Time, set while the game
+## runs, changes the units, and the charge is scaled to keep the same seconds of use.
+var _spent_per_frame: int = 1
+## Physics frames left of Min Down Time, after it was lowered with charge left.
+var _down_frames_left: int = 0
 ## Physics frames left in which a press of Crucifix is kept, waiting for a moment the crucifix can
 ## go up.
 var _raise_buffer_frames_left: int = 0
@@ -96,6 +106,8 @@ func _ready() -> void:
 	assert(player != null, "Crucifix: assign the player that holds it to Player.")
 	_light_energy = _light.energy
 	_repel_area.area_entered.connect(_on_repel_area_entered)
+	_spent_per_frame = _spend_per_frame()
+	_charge = _full_charge()
 	_apply_stats()
 	_show(false)
 	set_process(false)
@@ -109,6 +121,13 @@ func _process(_delta: float) -> void:
 ## Runs after the player's own physics, as its child, so it reads the state of this frame. The
 ## slowdown and the jump block it puts on the player take effect from the next frame.
 func _physics_process(delta: float) -> void:
+	# Stats changed while the game runs: the same seconds of use in the new units, and no more than
+	# a new, shorter Max Use Time.
+	var spend: int = _spend_per_frame()
+	if spend != _spent_per_frame:
+		_charge = roundi(float(_charge) * spend / _spent_per_frame)
+		_spent_per_frame = spend
+	_charge = mini(_charge, _full_charge())
 	if player.input.is_crucifix_just_pressed() and not is_blocked():
 		# One frame for the press itself, then Raise Buffer Time's frames.
 		_raise_buffer_frames_left = stats.get_raise_buffer_frames() + 1
@@ -139,9 +158,9 @@ func is_raised() -> bool:
 
 
 ## Keeps the crucifix down for source, such as the grab, until unblock() with the same source. If
-## it is up, it goes down and the cooldown starts, as after any use. While any source keeps it down,
-## a press of Crucifix is not kept, so Crucifix held since then raises nothing until it is pressed
-## again. Blocking twice for the same source is the same as once. After lose(), it does nothing.
+## it is up, it goes down with the rest of its charge, as when Crucifix is let go. While any source
+## keeps it down, a press of Crucifix is not kept, so Crucifix held since then raises nothing until
+## it is pressed again. Blocking twice for the same source is the same as once. After lose(), it does nothing.
 func block(source: StringName) -> void:
 	if is_queued_for_deletion():
 		return
@@ -150,7 +169,6 @@ func block(source: StringName) -> void:
 	_raise_buffer_frames_left = 0
 	if _phase == Phase.RAISED:
 		_lower()
-		_start_cooldown()
 
 
 ## Lets the crucifix go up again for source. It stays down while another source keeps it there,
@@ -164,16 +182,23 @@ func is_blocked() -> bool:
 	return not _blockers.is_empty()
 
 
-## Seconds left in the current use; 0 unless the crucifix is up. For the HUD.
+## Seconds of charge left while the crucifix is up; 0 unless it is up. For the warning.
 func get_use_time_left() -> float:
-	return float(_use_frames_left) / Engine.physics_ticks_per_second
+	return get_charge() if _phase == Phase.RAISED else 0.0
+
+
+## Seconds the crucifix can stay up on its charge now, up or down: Max Use Time when full. For the
+## HUD.
+func get_charge() -> float:
+	return float(_charge) / _spend_per_frame() / Engine.physics_ticks_per_second
 
 
 ## How far the warning that it is about to come down has gone, from 0 to 1: 0 while it is down, as it
-## comes down, or while more than Warning Time of its use is left, then up in a straight line to 1 as
-## the use runs out. For the light and the vibration.
+## comes down, or while more than Warning Time of charge is left, then up in a straight line to 1 as
+## the charge runs out; raised with less than that, it starts part of the way. For the light and the
+## vibration.
 func get_warning_progress() -> float:
-	if _phase != Phase.RAISED or _use_frames_left <= 0 or stats.warning_time <= 0.0:
+	if _phase != Phase.RAISED or _charge <= 0 or stats.warning_time <= 0.0:
 		return 0.0
 	return clampf(1.0 - get_use_time_left() / stats.warning_time, 0.0, 1.0)
 
@@ -190,9 +215,11 @@ func get_warning_pulse() -> float:
 	return 1.0 - stats.warning_dim_depth * progress * dip
 
 
-## Seconds left in the cooldown; 0 unless it is cooling down. For the HUD.
+## Seconds left in the cooldown, until the charge is full; 0 unless it is locked. For the HUD.
 func get_cooldown_left() -> float:
-	return float(_cooldown_frames_left) / Engine.physics_ticks_per_second
+	if _phase != Phase.COOLDOWN:
+		return 0.0
+	return float(_cooldown_frames_left()) / Engine.physics_ticks_per_second
 
 
 ## Takes the crucifix away for good: it goes down, if it was up, says so with lost and leaves the
@@ -208,39 +235,74 @@ func lose() -> void:
 	queue_free()
 
 
-## Goes up with a kept press, on the floor, while Crucifix is still held.
+## Fills the charge, and goes up with a kept press, on the floor, while Crucifix is still held, once
+## Min Down Time is over. A press made during it is kept: its Raise Buffer Time only starts then.
 func _physics_ready(held: bool) -> void:
+	_fill()
+	if _down_frames_left > 0:
+		_down_frames_left -= 1
+		if _raise_buffer_frames_left > 0:
+			# Undoes this frame's count of the kept press, at the end of _physics_process().
+			_raise_buffer_frames_left += 1
+		return
 	if _raise_buffer_frames_left > 0 and held and _is_on_floor():
 		_raise()
 
 
-## Counts the use down; letting go, leaving the floor or running out of time lowers it and starts
-## the cooldown. Otherwise it repels and heals.
+## Spends a frame of the charge; letting go or leaving the floor lowers it with the rest, and running
+## the charge out lowers it and starts the cooldown. Otherwise it repels and heals.
 func _physics_raised(delta: float, held: bool) -> void:
-	_use_frames_left -= 1
+	_charge = maxi(_charge - _spend_per_frame(), 0)
 	var on_floor: bool = _is_on_floor()
-	if held and on_floor and _use_frames_left <= 0:
+	var empty: bool = _charge == 0
+	if empty:
 		ran_out.emit()
-	if not held or not on_floor or _use_frames_left <= 0:
+	if not held or not on_floor or empty:
 		_lower()
-		_start_cooldown()
+		if empty:
+			_start_cooldown()
 		return
 	_repel(delta)
 	_heal(delta)
 
 
+## Fills the charge; once it is full, the crucifix is ready again.
 func _physics_cooldown() -> void:
-	_cooldown_frames_left -= 1
-	if _cooldown_frames_left <= 0:
-		_cooldown_frames_left = 0
+	_fill()
+	if _charge >= _full_charge():
 		_phase = Phase.READY
 		cooldown_finished.emit()
 
 
 ## True while the cooldown lasts longer than a press made now is kept, so that press will not raise
-## the crucifix when the cooldown ends. Read before this frame's count of the cooldown.
+## the crucifix when the cooldown ends. Read before this frame's filling of the charge.
 func _cooldown_outlasts_a_press() -> bool:
-	return _cooldown_frames_left > stats.get_raise_buffer_frames()
+	return _cooldown_frames_left() > stats.get_raise_buffer_frames()
+
+
+## Physics frames the charge takes to be full from where it is, while it fills.
+func _cooldown_frames_left() -> int:
+	return ceili(float(_full_charge() - _charge) / _fill_per_frame())
+
+
+## Units of a full charge: Max Use Time's frames, each worth what a frame up spends.
+func _full_charge() -> int:
+	return stats.get_max_use_frames() * _spend_per_frame()
+
+
+## Units a physics frame up spends: Cooldown Time's frames, at least one, so a frame down, which
+## gives back Max Use Time's frames, fills an empty charge in exactly Cooldown Time.
+func _spend_per_frame() -> int:
+	return maxi(1, stats.get_cooldown_frames())
+
+
+## Units a physics frame down gives back.
+func _fill_per_frame() -> int:
+	return stats.get_max_use_frames()
+
+
+func _fill() -> void:
+	_charge = mini(_charge + _fill_per_frame(), _full_charge())
 
 
 ## On the floor by both the player's state and the last move_and_slide(), so a jump taken on this
@@ -268,7 +330,6 @@ func _apply_stats() -> void:
 func _raise() -> void:
 	_phase = Phase.RAISED
 	_raise_buffer_frames_left = 0
-	_use_frames_left = stats.get_max_use_frames()
 	player.add_movement_modifier(MODIFIER_SOURCE, _modifier)
 	_show(true)
 	set_process(true)
@@ -277,8 +338,11 @@ func _raise() -> void:
 		_strike()
 
 
+## Down with the rest of its charge, ready to go up again after Min Down Time; the cooldown, if it
+## ran out, comes after.
 func _lower() -> void:
-	_use_frames_left = 0
+	_phase = Phase.READY
+	_down_frames_left = stats.get_min_down_frames()
 	player.remove_movement_modifier(MODIFIER_SOURCE)
 	_show(false)
 	set_process(false)
@@ -286,9 +350,10 @@ func _lower() -> void:
 	lowered.emit()
 
 
+## Locked until the charge is full; Min Down Time does not add to that.
 func _start_cooldown() -> void:
 	_phase = Phase.COOLDOWN
-	_cooldown_frames_left = stats.get_cooldown_frames()
+	_down_frames_left = 0
 	cooldown_started.emit(stats.cooldown_time)
 
 

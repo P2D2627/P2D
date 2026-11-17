@@ -1,7 +1,7 @@
 # Checks that something else, such as the grab, can keep the crucifix down (ADR 0021). Blocked
-# while up, it goes down at once, says so once and starts the cooldown, and the player runs and
-# jumps in full again. While blocked, a press raises nothing; after the block, Crucifix held since
-# then raises nothing until it is pressed again. It stays down while any source keeps it there,
+# while up, it goes down at once, says so once and keeps the rest of its charge, with no cooldown,
+# and the player runs and jumps in full again. While blocked, a press raises nothing; after the
+# block, Crucifix held since then raises nothing until it is pressed again. It stays down while any source keeps it there,
 # blocking twice for one source is the same as once, and unblocking a source that kept nothing down
 # changes nothing. After lose(), a block does nothing.
 # Run from the repository root; the exit code is 0 on pass and 1 on fail:
@@ -25,7 +25,7 @@ const NOBODY: StringName = &"nobody"
 func _initialize() -> void:
 	make_platform(FLOOR_LEFT, FLOOR_RIGHT)
 	var results: Array[bool] = []
-	results.append(await _blocked_while_up_it_goes_down_and_cools_down())
+	results.append(await _blocked_while_up_it_goes_down_and_keeps_the_charge())
 	results.append(await _while_blocked_a_press_raises_nothing())
 	results.append(await _after_the_block_it_waits_for_a_fresh_press())
 	results.append(await _it_stays_down_while_any_source_keeps_it())
@@ -33,7 +33,7 @@ func _initialize() -> void:
 	finish(results)
 
 
-func _blocked_while_up_it_goes_down_and_cools_down() -> bool:
+func _blocked_while_up_it_goes_down_and_keeps_the_charge() -> bool:
 	var player: Player = await spawn_on_floor(START)
 	if player == null:
 		return report(false, "Blocked while up: the player never landed")
@@ -48,8 +48,8 @@ func _blocked_while_up_it_goes_down_and_cools_down() -> bool:
 	var full_movement: bool = (is_equal_approx(player.get_speed_multiplier(), 1.0)
 			and not player.is_jump_blocked())
 	await remove_player(player)
-	return report(up_before and phase == Crucifix.Phase.COOLDOWN and full_movement
-			and heard == [&"raised", &"lowered", &"cooldown_started"],
+	return report(up_before and phase == Crucifix.Phase.READY and full_movement
+			and heard == [&"raised", &"lowered"],
 			"Blocked while up %s: phase %s, signals %s, full run and jump %s"
 			% [up_before, Crucifix.Phase.find_key(phase), heard, full_movement])
 

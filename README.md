@@ -195,13 +195,17 @@ provisórios e serão afinados com a câmara e nos níveis.
 
 Enquanto o jogador recusar os upgrades, o crucifixo é a sua única defesa. Ergue-se ao premir o
 Shift ou o gatilho direito do comando (RT / R2) com a personagem no chão e fica erguido enquanto o
-botão estiver premido, durante no máximo 5 s. Um toque dado até 0,1 s antes de aterrar ainda o
-ergue na aterragem, se o botão continuar premido, à semelhança da tolerância do salto. Baixa
-quando o botão é largado, quando a personagem sai do chão ou quando os 5 s terminam.
-Depois de cada uso, curto ou longo, há uma espera de 15 s até poder ser erguido de novo; um toque
-dado até 0,1 s antes do fim da espera também conta.
+botão estiver premido e houver carga. A carga funciona como uma bateria de 5 s: cada segundo
+erguido gasta um segundo, e largar o botão guarda o resto. Com o crucifixo em baixo, a carga volta a
+encher de vazia a cheia em 15 s, pelo que cada segundo gasto volta em 3 s. Um toque dado até 0,1 s
+antes de aterrar ainda o ergue na aterragem, se o botão continuar premido, à semelhança da
+tolerância do salto. Baixa quando o botão é largado, quando a personagem sai do chão ou quando a
+carga acaba. Se a carga acabar, o crucifixo fica bloqueado durante os 15 s em que volta a encher;
+um toque dado até 0,1 s antes do fim do bloqueio também conta. Depois de baixar com carga, fica
+pelo menos 0,35 s em baixo, para que toques rápidos não façam a luz piscar mais de três vezes por
+segundo (medido: sem este tempo, toques a cada dois frames erguiam-no 60 vezes em 2 s).
 
-Só um toque dado durante o jogo ergue o crucifixo. Um botão que já vinha premido, da espera, do
+Só um toque dado durante o jogo ergue o crucifixo. Um botão que já vinha premido, do bloqueio, do
 menu principal ou da pausa, não o ergue até ser largado e premido outra vez. Assim, o jogador
 decide sempre o momento e, se puser o crucifixo no botão esquerdo do rato no perfil Custom, o clique
 nos menus, que passa a ser o mesmo botão, nunca o ergue por engano. Durante a pausa, o tempo de uso
@@ -218,8 +222,9 @@ Erguido, o crucifixo:
   ar, e ficam 0,3 s parados onde aterram. De muito perto, o empurrão soma-se ao arremesso enquanto
   o demónio está no raio, e ele vai parar a cerca de 300 px;
 - cura 5 SP por segundo, que se somam à regeneração (ver "SP");
-- acende uma luz quente cujo alcance mostra o raio do afastamento. No último segundo e meio de uso,
-  a luz pulsa duas vezes por segundo, cada vez mais fundo, como aviso de que o crucifixo vai baixar.
+- acende uma luz quente cujo alcance mostra o raio do afastamento. Quando resta segundo e meio de
+  carga, a luz pulsa duas vezes por segundo, cada vez mais fundo, como aviso de que o crucifixo vai
+  baixar.
   A descida mais funda, para 40 % do brilho, coincide com o instante em que o crucifixo baixa. O som
   do crucifixo erguido treme com a luz e, com comando, a vibração cresce ao mesmo tempo. Duas vezes
   por segundo fica abaixo do limite de três dos critérios 2.3.1 e 2.3.2 da WCAG 2.2, para quem tem
@@ -227,9 +232,10 @@ Erguido, o crucifixo:
   ([Understanding 2.3.1](https://www.w3.org/WAI/WCAG22/Understanding/three-flashes-or-below-threshold.html)),
   e a luz nunca se apaga.
 
-A duração limitada e a espera fixa obrigam a escolher quando usar a única defesa: largar o botão
-cedo não poupa tempo de espera. Ao contrário do deslize na parede, o crucifixo obriga a manter o
-botão premido: o esforço de o segurar faz parte da mecânica, e cada uso está limitado a 5 s. Uma
+A carga limitada obriga a escolher quando usar a única defesa. Um uso curto custa só o seu tempo,
+mas esvaziar a carga custa o bloqueio inteiro: o aviso do último segundo e meio pede ao jogador que
+largue o botão a tempo (ADR 0066). Ao contrário do deslize na parede, o crucifixo obriga a manter o
+botão premido: o esforço de o segurar faz parte da mecânica, e cada uso está limitado à carga. Uma
 opção para o erguer e baixar com toques, em vez de manter o botão premido, fica para as opções de
 acessibilidade.
 
@@ -927,10 +933,10 @@ vez de pararem de repente.
 A vibração contínua pulsa, para não se tornar um zumbido liso. Começa num nível que ainda se sente,
 porque um motor pedido muito baixo mal roda. A do agarrão corre sobretudo no motor forte e cresce
 enquanto a personagem afunda. A do crucifixo corre no motor fraco e cresce durante o aviso de que o
-crucifixo vai baixar, ao mesmo tempo que a luz pulsa. Se o uso se esgotar com o botão ainda premido,
-a vibração do crucifixo dá lugar a um impulso que desce até zero ao longo de meio segundo, em vez de
-parar de repente; largado antes, o crucifixo baixa sem impulso. Cada vez que algo que o crucifixo
-empurra entra na luz dele, como um cão que corre para a personagem, vibra uma pancada curta no motor
+crucifixo vai baixar, ao mesmo tempo que a luz pulsa. Se a carga se esgotar, a vibração do
+crucifixo dá lugar a um impulso que desce até zero ao longo de meio segundo, em vez de parar de
+repente, e assim o bloqueio sente-se sempre; largado antes, o crucifixo baixa sem impulso. Cada vez
+que algo que o crucifixo empurra entra na luz dele, como um cão que corre para a personagem, vibra uma pancada curta no motor
 fraco, por cima da vibração contínua. Vários a entrar no mesmo instante dão uma só pancada, e o
 desbloqueador de um portão, que o crucifixo alcança mas não empurra, não dá nenhuma. Depois da
 morte, o crucifixo fica erguido até a sala recomeçar, mas o que ele faz já não vibra. Um impulso faz
@@ -1069,8 +1075,9 @@ são usados.
 |---|---|---|
 | Speed Multiplier | 0,25 | a fração da velocidade máxima que se mantém com o crucifixo erguido |
 | Raise Buffer Time | 0,1 s | o tempo durante o qual um toque fica guardado enquanto o crucifixo não se pode erguer, como antes de aterrar ou no fim da espera (0 desliga) |
-| Max Use Time | 5 s | o tempo máximo de cada uso |
-| Cooldown Time | 15 s | a espera depois de cada uso, qualquer que tenha sido a sua duração |
+| Max Use Time | 5 s | a carga: o tempo máximo erguido a partir da carga cheia; cada segundo erguido gasta um segundo |
+| Cooldown Time | 15 s | o tempo que a carga leva a encher de vazia a cheia com o crucifixo em baixo (cada segundo gasto volta em 3 s); se a carga acabar, o crucifixo fica bloqueado este tempo |
+| Min Down Time | 0,35 s | o tempo mínimo em baixo depois de baixar com carga: toques rápidos erguem-no no máximo uma vez a cada 22 frames, menos de três vezes por segundo, o limite da WCAG 2.3.1 para a luz não piscar; um toque dado neste tempo fica guardado até ele acabar |
 | Repel Radius | 200 px | a distância à qual os demónios e as almas perdidas são afastados, e o alcance da luz |
 | Repel Speed | 1500 px/s | a velocidade a que são empurrados para fora desse raio |
 | Heal Per Second | 5 SP/s | a cura por cada segundo com o crucifixo erguido |
@@ -1674,15 +1681,18 @@ indústria:
   altura é proporcional ao quadrado dessa velocidade.
 - **Ativação ao premir, com tolerância.** O crucifixo ergue-se no passo em que o botão é premido
   (`is_crucifix_just_pressed`) e mantém-se enquanto continua premido (`is_crucifix_held`), como é
-  habitual nas habilidades. Isto resolve, sem estado extra, os botões que já vinham premidos da
-  espera, do menu principal ou da pausa: nenhum deles é um toque novo. Para um toque dado um pouco
+  habitual nas habilidades. Isto resolve, sem estado extra, os botões que já vinham premidos do
+  bloqueio, do menu principal ou da pausa: nenhum deles é um toque novo. Para um toque dado um pouco
   cedo não se perder, fica guardado durante o Raise Buffer Time, à semelhança da tolerância do
   salto.
 - **Máquina de estados com tempos em passos de física.** O crucifixo tem três fases: pronto,
-  erguido e em espera (`READY`, `RAISED`, `COOLDOWN`). O tempo de uso, a espera e a tolerância
-  contam-se em passos de física inteiros, como as tolerâncias do salto, para que os testes os
-  verifiquem ao passo exato. Os sinais `cooldown_started` e `cooldown_finished`, e o tempo restante
-  de cada fase, servem o HUD.
+  erguido e bloqueado depois de esvaziar (`READY`, `RAISED`, `COOLDOWN`). A carga, o bloqueio e a
+  tolerância contam-se em passos de física inteiros, como as tolerâncias do salto, para que os
+  testes os verifiquem ao passo exato. A carga guarda-se em unidades inteiras: cada passo erguido
+  gasta tantas quantos os passos do Cooldown Time, e cada passo em baixo devolve tantas quantos os
+  do Max Use Time, para a carga encher de vazia a cheia exatamente no Cooldown Time, sem
+  arredondamentos. Os sinais `cooldown_started` e `cooldown_finished`, a carga (`get_charge()`) e o
+  tempo restante do bloqueio servem o HUD.
 - **Componente `Repellable`** (`scenes/characters/components/repellable.tscn`), à semelhança dos *hitboxes* e
   *hurtboxes*. É uma `Area2D` que se coloca nos demónios e nas almas perdidas, com a camada
   `repellable` definida na cena. O crucifixo empurra apenas o que tem este componente e não conhece
@@ -1764,7 +1774,8 @@ solução mais simples; se um nível juntar muitos mais demónios num só raio, 
 O `test_crucifix.gd` verifica os modificadores (a combinação, uma mudança com o modificador
 colocado, a fração da altura do salto e a da velocidade no salto da parede), o abrandamento, o
 bloqueio do salto, a tolerância antes de aterrar e antes do fim da espera, o toque dado demasiado
-cedo, a parede, a saída do chão, a duração máxima, a espera fixa, a pausa, a perda, a cura, o
+cedo, a parede, a saída do chão, a duração máxima, a carga gasta e recuperada ao passo exato, o
+bloqueio ao esvaziar, o tempo mínimo em baixo entre toques rápidos, a pausa, a perda, a cura, o
 afastamento, a camada da cena `Repellable` e a afinação com o jogo a correr. Usa um demónio de
 substituição, que flutua à altura do crucifixo; o afastamento de um demónio no chão verifica-se no
 `test_demon.gd`, com o crucifixo da personagem. O `test_crucifix_menus.gd` usa a cena principal,
