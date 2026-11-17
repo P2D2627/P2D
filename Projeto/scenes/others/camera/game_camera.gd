@@ -74,6 +74,10 @@ func _ready() -> void:
 	if not is_instance_valid(player):
 		set_physics_process(false)
 		return
+	# Its ActivityTracker keeps awake what is by the man, too, while this camera glides to him.
+	var activity: ActivityTracker = get_node_or_null(^"%ActivityTracker") as ActivityTracker
+	if activity != null:
+		activity.focus = player
 	_gather_zones()
 	if not is_instance_valid(level_tiles):
 		level_tiles = _find_level_tiles()

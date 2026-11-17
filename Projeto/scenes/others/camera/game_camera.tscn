@@ -2,6 +2,7 @@
 
 [ext_resource type="Script" path="res://scenes/others/camera/game_camera.gd" id="1_script"]
 [ext_resource type="Resource" path="res://scenes/others/camera/camera_stats.tres" id="2_stats"]
+[ext_resource type="Script" path="res://scenes/others/activity/activity_tracker.gd" id="3_tracker"]
 [ext_resource type="Script" path="res://scenes/others/camera/camera_shake.gd" id="3_shake"]
 [ext_resource type="Resource" path="res://scenes/others/camera/camera_shake_stats.tres" id="4_shake_stats"]
 [ext_resource type="Script" path="res://scenes/others/feedback/impact_feedback.gd" id="5_feedback"]
@@ -15,6 +16,10 @@ process_callback = 0
 editor_draw_limits = true
 script = ExtResource("1_script")
 stats = ExtResource("2_stats")
+
+[node name="ActivityTracker" type="Node" parent="."]
+unique_name_in_owner = true
+script = ExtResource("3_tracker")
 
 [node name="CameraShake" type="Node" parent="." node_paths=PackedStringArray("camera")]
 script = ExtResource("3_shake")

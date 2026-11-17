@@ -123,14 +123,20 @@ func _there_is_one_way_out(level: Node) -> bool:
 
 
 ## With the man far away, the dogs patrol for a while, and none falls off the floor it started on, not even those on
-## a one-way platform: a dog never goes down.
+## a one-way platform: a dog never goes down. The level's ActivityTracker is off meanwhile: on, it would put the
+## dogs far off the screen to sleep, and those would not patrol at all.
 func _the_dogs_stay_on_their_floors(level: Node) -> bool:
 	var dogs: Array[Node] = level.get_node("Dogs").get_children()
 	var heights: Array[float] = []
 	for dog: Node in dogs:
 		heights.append((dog as Node2D).global_position.y)
+	var tracker: ActivityTracker = level.get_tree().get_first_node_in_group(ActivityTracker.TRACKER_GROUP) as ActivityTracker
+	if tracker != null:
+		tracker.enabled = false
 	for _frame: int in PATROL_FRAMES:
 		await physics_frame
+	if tracker != null:
+		tracker.enabled = true
 	var fallen: Array[String] = []
 	for index: int in dogs.size():
 		var dog: Node2D = dogs[index] as Node2D

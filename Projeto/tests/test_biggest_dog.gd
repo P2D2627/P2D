@@ -31,6 +31,7 @@ func _initialize() -> void:
 	results.append(await _the_ring_opens_its_gates_once_the_man_comes_inside())
 	results.append(_the_biggest_dog_is_the_dog_eight_times_over())
 	results.append(await _the_biggest_dog_hands_his_gates_to_his_ring())
+	results.append(await _the_biggest_dog_is_awake_round_his_whole_ring())
 	finish(results)
 
 
@@ -108,3 +109,18 @@ func _the_biggest_dog_hands_his_gates_to_his_ring() -> bool:
 	big.queue_free()
 	gate.queue_free()
 	return report(handed, "Opens: the ring opens %s" % [ring.gates])
+
+
+## The ActivityTracker keeps a demon awake while the rect it answers is near the screen; the man, always on the
+## screen, inside the ring of a biggest dog asleep would open nothing. So his rect holds his whole ring.
+func _the_biggest_dog_is_awake_round_his_whole_ring() -> bool:
+	var big: BiggestDemon = BIGGEST_SCENE.instantiate() as BiggestDemon
+	big.position = Vector2(FLOOR_RIGHT - 1200.0, 0.0)
+	root.add_child(big)
+	await physics_frame
+	var ring: ProximityUnlocker = big.get_node(^"GateRing") as ProximityUnlocker
+	var ring_box: Rect2 = Rect2(ring.global_position - Vector2.ONE * ring.reach, Vector2.ONE * 2.0 * ring.reach)
+	var awake_for: Rect2 = big.get_activity_rect()
+	big.queue_free()
+	return report(awake_for.encloses(ring_box),
+			"Awake round the ring: activity rect %s, the ring's box %s" % [awake_for, ring_box])
