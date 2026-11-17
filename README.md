@@ -3091,8 +3091,8 @@ mesmo sítio, a primeira chega à terceira morte. A regra vive numa classe sem n
 estatísticas, para que a morte não a apague. Morrer não conta para a moral; só a resposta à oferta
 conta.
 
-A Asmodeu é um nó próprio (`scenes/characters/demon/asmodeus.tscn`), provisório até chegar a arte: um polígono
-cor-de-rosa escuro com o nome por cima. Não combate. Quando fala, aparece ao lado do homem, prende-o
+A Asmodeu é um nó próprio (`scenes/characters/demon/asmodeus.tscn`), desenhada com a figura dela da
+visual novel de CDJ, com 150 px de altura, e com o nome por cima. Não combate. Quando fala, aparece ao lado do homem, prende-o
 como a Velvet (sem correr, saltar nem erguer o crucifixo), fala no balão do jogo e desaparece.
 Enquanto fala, os cães do nível ficam parados (Asmodeus › Stills), para que nenhum morda o homem
 preso. O que acontece a seguir decidem as falas, através das ofertas.
@@ -3270,6 +3270,8 @@ iniciado por nada no jogo. A estação de cada uma acrescenta-se quando a mecân
 - `velvet_walk_sheet.png`, em `Projeto/assets/sprites/velvet/`: a Velvet a andar, 8 frames,
   desenhada pela Sofia, do grupo, com o fundo branco tornado transparente e reduzida da folha
   original (#263).
+- `asmodeus.png`, em `Projeto/assets/sprites/asmodeus/`: a figura da Asmodeu, desenhada pelo Cisco,
+  do grupo, para a visual novel de CDJ, recortada e reduzida do PNG original (#263).
 - Tinos, de The Tinos Project Authors. SIL Open Font License 1.1. Letra de reserva dos menus, com as
   medidas da Times New Roman, em `Projeto/assets/fonts/` (com a licença em `Tinos-OFL.txt`).
   https://github.com/googlefonts/tinos

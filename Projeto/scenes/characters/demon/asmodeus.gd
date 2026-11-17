@@ -1,7 +1,7 @@
 class_name Asmodeus
 extends Node2D
 
-## Asmodeus, the boss of Lust, as a stand-in until her art comes (S3): she never fights. The level
+## Asmodeus, the boss of Lust, drawn with her figure from the visual novel: she never fights. The level
 ## calls talk() with a cue of lust.dialogue, at the start of a phase, when his deaths bring an offer
 ## or at the end of the level, and she appears, talks and goes. While she talks the man stands
 ## still, with no run, no jump and no crucifix, as with Velvet; he moves again on the physics frame
