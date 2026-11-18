@@ -17,7 +17,7 @@ uniform vec4 core_color : source_color = vec4(1.0, 0.92, 0.96, 1.0);
 uniform vec4 halo_color : source_color = vec4(1.0, 0.45, 0.78, 1.0);
 uniform float intensity : hint_range(0.0, 3.0) = 1.0;
 // How much of the light is added at most: it is there, but does not take over.
-uniform float opacity : hint_range(0.0, 1.0) = 0.5;
+uniform float opacity : hint_range(0.0, 1.0) = 0.3;
 // The flat bands of tone it is cut into.
 uniform float bands : hint_range(1.0, 6.0) = 3.0;
 uniform float body_share : hint_range(0.1, 1.0) = 0.55;

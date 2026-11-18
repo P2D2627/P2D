@@ -25,8 +25,8 @@ const BODY_SIZE := Vector2(48.0, 96.0)
 const MESH_MARGIN: float = 1.35
 ## A point lives Lifetime s or until he has gone Max Length px past it, whichever comes first; the
 ## ribbon's width follows (1 - life) to Taper Power, so the tail ends in a point.
-const LIFETIME: float = 0.3
-const MAX_LENGTH: float = 260.0
+const LIFETIME: float = 0.22
+const MAX_LENGTH: float = 170.0
 const TAPER_POWER: float = 0.8
 ## Momentum. In the air: none below Air From px/s, all of it at Air Full (a jump leaves the floor at
 ## ~1070 px/s, a running one at ~1220, and a fall reaches 1400). On the floor: Run Strength once he
@@ -76,7 +76,7 @@ const NOISE_OCTAVES: int = 3
 ## Flakes: one about every Flake Spacing px of his path while a ribbon grows, each living a random
 ## time in Flake Life s, rising Flake Rise px/s and carried back by Flake Drag of his velocity;
 ## Flake Size is its length and width at birth, in px.
-const FLAKE_SPACING: float = 16.0
+const FLAKE_SPACING: float = 28.0
 const FLAKE_LIFE := Vector2(0.3, 0.6)
 const FLAKE_RISE: float = 70.0
 const FLAKE_DRAG: float = 0.12
@@ -85,7 +85,7 @@ const FLAKE_POOL: int = 64
 ## His glow: its size around his body, in px, and its alpha at rest and with full momentum.
 const GLOW_SIZE := Vector2(96.0, 150.0)
 const GLOW_REST: float = 0.07
-const GLOW_MOVING: float = 0.2
+const GLOW_MOVING: float = 0.12
 const GLOW_TEXTURE_SIZE: int = 64
 
 ## One ribbon: his body's middle at each kept point, oldest first.
