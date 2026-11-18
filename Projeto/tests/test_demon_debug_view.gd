@@ -1,6 +1,7 @@
 # Smoke test of the demon debug view of the test room. The room has the view, shown and running from
-# the start and linked to the room's four demons and its player. Toggle Debug Overlay, on F3, hides
-# the view and stops its processing along with the overlay, and F3 again brings both back. Each
+# the start and linked to the room's four demons and its player. The view follows the overlay's
+# pages on Toggle Debug Overlay (F3): shown on the lighting page, hidden and idle with the overlay on
+# the next press, and back with the numbers on the one after. Each
 # demon's text names the state it is in and follows it when it changes, its seconds starting over
 # and stopping in a pause. With two steps on a demon's way back, the view numbers them in the order
 # the demon undoes them, the last step 1, and draws them with no error. The room's hiding wall hides the man right behind it from the nearest
@@ -55,11 +56,15 @@ func _the_test_room_shows_its_demons_and_the_man() -> bool:
 			% [count, linked, running])
 
 
-## F3 hides the view and stops its processing, with the overlay, and F3 again brings both back.
+## The view follows the overlay through its pages: shown on the lighting page, after the numbers;
+## hidden and idle with it, on the next F3; and back with the numbers on the one after.
 func _f3_hides_and_shows_it_with_the_overlay() -> bool:
 	var room: Node2D = await _make_room()
 	var view: DemonDebugView = _view_of(room)
 	var overlay: DebugOverlay = room.get_node(^"DebugOverlay") as DebugOverlay
+	_press_f3()
+	await wait_frames(TEXT_FRAMES)
+	var on_lighting: bool = view.visible and view.is_processing() and overlay.visible
 	_press_f3()
 	await wait_frames(TEXT_FRAMES)
 	var hidden: bool = not view.visible and not view.is_processing() and not overlay.visible
@@ -67,7 +72,9 @@ func _f3_hides_and_shows_it_with_the_overlay() -> bool:
 	await wait_frames(TEXT_FRAMES)
 	var shown: bool = view.visible and view.is_processing() and overlay.visible
 	await _clear(room)
-	return report(hidden and shown, "F3: view and overlay hidden %s, back %s" % [hidden, shown])
+	return report(on_lighting and hidden and shown,
+			"F3: view and overlay shown on the lighting page %s, hidden %s, back %s"
+			% [on_lighting, hidden, shown])
 
 
 ## Each demon's text starts with the name of the state it is in, also after the state changes to

@@ -72,9 +72,15 @@ func new_main(levels: Variant = null) -> Node:
 	return main
 
 
-## A main scene with its first level started from the menu: Play, then the first level's button.
+## A main scene with a level started from the menu: Play, then the level's button. The level is the
+## test room, given as the only one, so the menus' tests do not hang on what the main scene's menu
+## offers.
 func new_main_in_a_level() -> Node:
-	var main: Node = await new_main()
+	var room: LevelEntry = LevelEntry.new()
+	room.title = "Test room"
+	room.scene = load("res://scenes/levels/test_room/test_room.tscn") as PackedScene
+	var levels: Array[LevelEntry] = [room]
+	var main: Node = await new_main(levels)
 	await tap(KEY_ENTER)
 	await tap(KEY_ENTER)
 	return main

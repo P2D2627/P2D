@@ -4,8 +4,8 @@
 # that phase; in the run the save keeps it, since a restart there goes back to the save. The first
 # phase starts after the tutorial. A phase the level lacks does nothing, and a level of one phase has
 # none to jump to, so the gym keeps its number keys. On its own (F6), the level
-# reloads itself at the phase. In the debug overlay, the keys 1 to 3 jump only while its text shows,
-# and not while paused.
+# reloads itself at the phase. In the debug overlay, the keys 1 to 3 jump only on its numbers page,
+# not hidden, not on the lighting page, and not while paused.
 # The tests use a save file of their own, never the player's.
 # Run from the repository root; the exit code is 0 on pass and 1 on fail:
 # godot --headless --fixed-fps 60 --path Projeto --script res://tests/test_debug_phase_jump.gd
@@ -39,6 +39,7 @@ func _initialize() -> void:
 	results.append(await _a_phase_the_level_lacks_does_nothing())
 	results.append(await _on_its_own_the_level_reloads_at_the_phase())
 	results.append(await _the_keys_jump_only_with_the_text_shown_and_not_paused())
+	results.append(await _on_the_lighting_page_the_keys_do_not_jump())
 	results.append(await _a_level_that_does_not_run_does_not_jump())
 	results.append(await _a_key_of_the_player_s_controls_stays_his())
 	results.append(await _a_second_press_keeps_the_fade_and_takes_the_last_phase())
@@ -203,14 +204,28 @@ func _a_level_that_does_not_run_does_not_jump() -> bool:
 			% [paused_jumps, disabled_jumps, same])
 
 
+## On the overlay's lighting page, the keys do not jump: they are the numbers page's.
+func _on_the_lighting_page_the_keys_do_not_jump() -> bool:
+	_delete_save()
+	var main: Node = await _main_in_a_new_game()
+	var level: Level = level_in(main) as Level
+	(level.get_node(^"DebugOverlay") as DebugOverlay).show_page(DebugOverlay.Page.LIGHTING)
+	await tap(KEY_2)
+	await wait_frames(NO_JUMP_FRAMES)
+	var stays: bool = level_in(main) == level and not _progress().has_event(PHASE_2_EVENT)
+	await remove_main(main)
+	_delete_save()
+	return report(stays, "Lighting page: 2 leaves the level as it was %s" % stays)
+
+
 ## With 3 given to Jump, as a Custom profile can, 3 is a jump and not a jump to phase 3, though the
-## text shows. At the level's start, where nothing else takes the keys (see the keys' case); a line
-## on screen would take them all.
+## numbers page shows. At the level's start, where nothing else takes the keys (see the keys' case);
+## a line on screen would take them all.
 func _a_key_of_the_player_s_controls_stays_his() -> bool:
 	_delete_save()
 	var main: Node = await _main_in_a_new_game()
 	var level: Level = level_in(main) as Level
-	(level.get_node(^"DebugOverlay") as DebugOverlay).visible = true
+	(level.get_node(^"DebugOverlay") as DebugOverlay).show_page(DebugOverlay.Page.NUMBERS)
 	var key: InputEventKey = InputEventKey.new()
 	key.physical_keycode = KEY_3
 	InputMap.action_add_event(&"jump", key)

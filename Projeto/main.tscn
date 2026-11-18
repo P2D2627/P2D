@@ -14,11 +14,13 @@
 script = ExtResource("2_level_entry")
 title = "Test room"
 scene = ExtResource("3_test_room")
+in_menu = false
 
 [sub_resource type="Resource" id="Resource_lust_level"]
 script = ExtResource("2_level_entry")
 title = "Level 1: Lust (old blockout)"
 scene = ExtResource("7_lust_level")
+in_menu = false
 
 [sub_resource type="Resource" id="Resource_level1"]
 script = ExtResource("2_level_entry")
@@ -30,6 +32,7 @@ starts_game = true
 script = ExtResource("2_level_entry")
 title = "Gym (training room)"
 scene = ExtResource("8_gym")
+in_menu = false
 
 [node name="Main" type="Node" unique_id=790412383]
 process_mode = 3

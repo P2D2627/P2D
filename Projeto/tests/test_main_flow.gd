@@ -3,7 +3,9 @@
 # first one selected; with no levels, only Back, selected. Back and Esc go back to Play, selected,
 # and that Esc goes no further. On the gamepad, A opens the list and B goes back.
 # Each level's button starts that level's scene and hides the menu. A level left empty, or with no
-# scene, is left out of the list, and the others still work. Inside the level, Esc goes past
+# scene, is left out of the list, and the others still work. A level with In Menu off gets no
+# button but stays in Main's list, and the main scene keeps the development rooms (test room, old
+# blockout, gym) that way, with level 1 in the menu. Inside the level, Esc goes past
 # the hidden menu and pauses, and Space then presses Resume: the menu stays hidden, with nothing of
 # it selected, and one level in the slot. All the menu's text takes its size from the UI theme (its
 # own, or a variation the theme sizes, as the biggest first option's), with
@@ -23,6 +25,8 @@ func _initialize() -> void:
 	results.append(await _with_the_gamepad_a_opens_the_list_and_b_goes_back())
 	results.append(await _each_level_s_button_starts_its_scene_and_hides_the_menu())
 	results.append(await _broken_levels_are_left_out_and_the_rest_work())
+	results.append(await _a_level_out_of_the_menu_gets_no_button())
+	results.append(await _the_development_rooms_stay_in_the_list_out_of_the_menu())
 	results.append(await _esc_and_space_in_the_level_reach_no_menu_button())
 	results.append(await _the_menu_text_takes_its_size_from_the_ui_theme())
 	finish(results)
@@ -162,6 +166,55 @@ func _broken_levels_are_left_out_and_the_rest_work() -> bool:
 			"Broken levels left out: the list shows %s, the good one starts %s" % [shown, started])
 
 
+## A level with In Menu off gets no button; the one after it is still the one its button starts.
+## That the main scene keeps such levels in its list is the next case's.
+func _a_level_out_of_the_menu_gets_no_button() -> bool:
+	var hidden_room: LevelEntry = LevelEntry.new()
+	hidden_room.title = "Hidden room"
+	hidden_room.scene = load("res://scenes/levels/test_room/test_room.tscn") as PackedScene
+	hidden_room.in_menu = false
+	var gym: LevelEntry = LevelEntry.new()
+	gym.title = "Gym"
+	gym.scene = load("res://scenes/levels/gym/gym.tscn") as PackedScene
+	var levels: Array[LevelEntry] = [hidden_room, gym]
+	var main: Node = await new_main(levels)
+	var menu: CanvasLayer = _menu(main)
+	await tap(KEY_ENTER)
+	var shown: PackedStringArray = []
+	for button: Button in _level_buttons(menu):
+		shown.append(button.text)
+	await tap(KEY_ENTER)
+	var started: bool = (levels_in(main) == 1
+			and level_in(main).scene_file_path == gym.scene.resource_path)
+	await remove_main(main)
+	return report(shown == PackedStringArray(["Gym"]) and started,
+			"In Menu off: the list shows %s, the shown one starts %s" % [shown, started])
+
+
+## The rooms made for development stay in the main scene's list, out of the menu; level 1 is in it.
+func _the_development_rooms_stay_in_the_list_out_of_the_menu() -> bool:
+	const OUT_OF_THE_MENU: PackedStringArray = [
+		"res://scenes/levels/test_room/test_room.tscn",
+		"res://scenes/levels/lust/LustLevel_Phase1_Cave.tscn",
+		"res://scenes/levels/gym/gym.tscn",
+	]
+	const IN_THE_MENU: String = "res://scenes/levels/lust/level1.tscn"
+	var probe: Node = (await main_scene()).instantiate()
+	var found: Dictionary[String, bool] = {}
+	for level: Variant in _all_levels_of(probe):
+		var entry: LevelEntry = level as LevelEntry
+		if entry != null and entry.scene != null:
+			found[entry.scene.resource_path] = entry.in_menu
+	probe.free()
+	var all_out: bool = true
+	for path: String in OUT_OF_THE_MENU:
+		all_out = all_out and found.has(path) and not found[path]
+	var level1_in: bool = found.get(IN_THE_MENU, false)
+	return report(all_out and level1_in,
+			"Development rooms kept and out of the menu %s, level 1 in it %s (In Menu by scene: %s)"
+			% [all_out, level1_in, found])
+
+
 ## Esc must go past the hidden menu to the pause, and Space then presses Resume, not a menu button.
 func _esc_and_space_in_the_level_reach_no_menu_button() -> bool:
 	var main: Node = await new_main_in_a_level()
@@ -226,8 +279,19 @@ func _level_buttons(menu: CanvasLayer) -> Array[Button]:
 	return buttons
 
 
-## Main's levels; empty if it has none, or no such list.
+## Main's levels the menu offers: those with a scene and In Menu on. Empty if it has none, or no
+## such list.
 func _levels_of(main: Node) -> Array:
+	var offered: Array = []
+	for level: Variant in _all_levels_of(main):
+		var entry: LevelEntry = level as LevelEntry
+		if entry != null and entry.scene != null and entry.in_menu:
+			offered.append(entry)
+	return offered
+
+
+## Main's levels, those out of the menu included; empty if it has none, or no such list.
+func _all_levels_of(main: Node) -> Array:
 	var levels: Variant = main.get(&"levels")
 	return levels if levels is Array else []
 

@@ -3,18 +3,6 @@
 [ext_resource type="Script" path="res://scenes/levels/prototypes/lighting/lighting_level1.gd" id="1_wrapper"]
 [ext_resource type="PackedScene" path="res://scenes/levels/lust/level1.tscn" id="2_level1"]
 
-[node name="LightingLevel1" type="Node2D" node_paths=PackedStringArray("hud_label")]
+[node name="LightingLevel1" type="Node2D"]
 script = ExtResource("1_wrapper")
 level_scene = ExtResource("2_level1")
-hud_label = NodePath("Hud/Label")
-
-[node name="Hud" type="CanvasLayer" parent="."]
-layer = 10
-
-[node name="Label" type="Label" parent="Hud"]
-offset_left = 16.0
-offset_top = 60.0
-offset_right = 1700.0
-offset_bottom = 140.0
-theme_override_colors/font_outline_color = Color(0, 0, 0, 1)
-theme_override_constants/outline_size = 6

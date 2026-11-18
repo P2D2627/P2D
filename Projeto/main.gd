@@ -19,14 +19,15 @@ extends Node
 ## them.
 
 ## The levels the main menu offers, in this order: each one a title and a scene. One left empty, or
-## with no scene, stays out of the menu, with a warning.
+## with no scene, stays out of the menu, with a warning; one with In Menu off, as the rooms made for
+## development, stays out with none.
 @export var levels: Array[LevelEntry] = []
 ## Whether a level pauses when the game's window loses the focus, as with Alt+Tab.
 @export var pause_on_focus_loss: bool = true
 ## The time the screen takes to go black at a phase's exit, and again to come back in the next one.
 @export_range(0.0, 2.0, 0.05, "suffix:s") var fade_time: float = 0.25
 
-## The levels the menu shows, in its order: those in levels that have a scene.
+## The levels the menu shows, in its order: those in levels that have a scene and In Menu on.
 var _playable_levels: Array[LevelEntry] = []
 ## True from a phase's exit until the next phase has faded in. Meanwhile the level is frozen and the
 ## game does not pause.
@@ -52,6 +53,8 @@ func _ready() -> void:
 		var level: LevelEntry = levels[index]
 		if level == null or level.scene == null:
 			push_warning("Main: entry %d of Levels has no scene, so the menu leaves it out." % index)
+			continue
+		if not level.in_menu:
 			continue
 		_playable_levels.append(level)
 		titles.append(level.title)

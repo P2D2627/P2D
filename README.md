@@ -28,26 +28,28 @@ cada sala) está em `docs/nivel1_desenho.md`, e os artigos que o fundamentam em 
 2. No Project Manager, importar `Projeto/project.godot`. O projeto Godot encontra-se na subpasta
    `Projeto/`, e não na raiz do repositório.
 3. Premir F5. O jogo abre no menu principal: New Game mostra a lista de níveis, Settings abre as opções
-   e Quit fecha o jogo. Uma cena aberta com F6 corre sozinha, sem menus nem pausa.
-4. A sala de teste tem um bloco elevado, com duas bordas, para experimentar os saltos a partir de
+   e Quit fecha o jogo. Uma cena aberta com F6 corre sozinha, sem menus nem pausa. A sala de teste,
+   o blockout antigo e a sala de treino servem o desenvolvimento e ficam fora do menu: abrem-se com
+   F6 (ver "Estrutura", em "Para quem programa").
+4. A sala de teste (`scenes/levels/test_room/test_room.tscn`, com F6) tem um bloco elevado, com duas bordas, para experimentar os saltos a partir de
    uma borda, e uma chaminé de 120 px entre a parede esquerda e um pilar suspenso, por baixo do qual
    se entra a andar. A sala é maior do que o ecrã, e a câmara segue a personagem desde o início. Para
    a direita há uma corrida longa, uma escada de quatro degraus de 200 px, uma segunda chaminé de
    120 px junto à parede direita e, no topo desta, uma passagem que termina numa queda de 1500 px.
    Há dois demónios, um no chão da corrida longa e outro na passagem do topo (ver "Demónios").
-   Durante o jogo, a tecla F3 mostra e esconde o texto de depuração descrito em "Overlay de
-   depuração", e a tecla F4 retira 10 SP à personagem, como um golpe, para experimentar a
-   regeneração descrita em "SP".
+   Durante o jogo, a tecla F3 passa pelas páginas do texto de depuração descrito em "Overlay de
+   depuração" (números, luz e shaders, escondido), e a tecla F4 retira 10 SP à personagem, como um
+   golpe, para experimentar a regeneração descrita em "SP".
 5. O nível 1 (New Game ▸ Level 1: Lust) é uma só cena, `scenes/levels/lust/level1.tscn`, com o tutorial e as
    fases 1, 2 e 3, e é ele que inicia uma partida nova. No início das fases 2 e 3, a Asmodeu
    aparece e oferece o atalho; depois de várias mortes nessas fases, volta a oferecê-lo à entrada
    da zona onde ele morre (ver "Ofertas por mortes"). Na saída, depois da fase 3 ou pelo atalho,
    ela oferece o dom e despede-se, e o jogo volta ao menu principal. O blockout antigo, com uma cena
-   por fase, continua na lista como Level 1: Lust (old blockout), sem iniciar partida. Cada cena
-   também corre sozinha com F6, sem gravar nada.
+   por fase, continua na lista Levels do Main como Level 1: Lust (old blockout), fora do menu e sem
+   iniciar partida. Cada cena também corre sozinha com F6, sem gravar nada.
 6. Entrar numa fase grava o jogo, o que é indicado por "Saving..." no canto do ecrã, e o menu
    principal passa a mostrar Continue, descrito em "Gravação do jogo".
-7. A sala de treino (New Game ▸ Gym (training room)) põe à prova, uma de cada vez, as mecânicas que já
+7. A sala de treino (`scenes/levels/gym/gym.tscn`, com F6) põe à prova, uma de cada vez, as mecânicas que já
    existem: movimento, paredes e chaminés, câmara, zona fixa da câmara, cães, matilha e agarrão,
    crucifixo, SP e morte. Cada estação ocupa um ecrã e tem uma placa que explica o que experimentar.
    As teclas 1 a 9 levam ao início da estação com esse número, e o 0 à décima. Quem morre recomeça
@@ -69,7 +71,7 @@ RT, LS ← para o stick esquerdo); mudam no momento em que o comando se liga ou 
 
 O terceiro perfil, Custom, começa igual ao predefinido, e cada ação pode receber outra tecla ou
 botão do rato. O Esc e as teclas de depuração (F3, F4, F7, F8 e F9) estão reservados; o 1, o 2 e o
-3, que com o texto de depuração visível recomeçam numa fase, não estão. As teclas W,
+3, que na página dos números do texto de depuração recomeçam numa fase, não estão. As teclas W,
 E, A, S e D do perfil das setas ficam livres para os upgrades.
 
 | Ação | Teclado | Comando |
@@ -77,9 +79,9 @@ E, A, S e D do perfil das setas ficam livres para os upgrades.
 | Pausar e retomar | Esc | Start |
 | Confirmar nos menus | Enter / Espaço | A / Cross |
 | Voltar nos menus | Esc | B / Circle |
-| Mostrar e esconder o texto de depuração | F3 | — |
+| Passar à página seguinte do texto de depuração (números, luz e shaders, escondido) | F3 | — |
 | Retirar 10 SP à personagem (só na versão de depuração) | F4 | — |
-| Recomeçar o nível na fase 1, 2 ou 3 (com o texto de depuração visível) | 1 / 2 / 3 | — |
+| Recomeçar o nível na fase 1, 2 ou 3 (na página dos números do texto de depuração) | 1 / 2 / 3 | — |
 
 ## Mecânicas implementadas
 
@@ -1272,7 +1274,11 @@ sem erros num clone novo.
 
 Para um nível aparecer no New Game, acrescenta-se à lista Levels do Main, no Inspector do `main.tscn`
 (Add Element › New LevelEntry, com o título e a cena). A ordem da lista é a dos botões. Um elemento
-deixado vazio, ou sem cena, fica fora do menu, com um aviso no Output.
+deixado vazio, ou sem cena, fica fora do menu, com um aviso no Output. Um elemento com In Menu
+desligado também fica fora do menu, sem aviso, mas continua na lista, e voltar a ligá-lo devolve-lhe
+o botão. É o caso das salas feitas para o desenvolvimento: a sala de teste, o blockout antigo do
+nível 1 e a sala de treino. Assim, quem joga não as encontra, e o grupo continua a abri-las com F6.
+O `test_main_flow.gd` verifica que as três continuam na lista, fora do menu, e que o nível 1 está nele.
 
 O nó raiz de cada nível tem o script `scenes/levels/level.gd` (`Level`), com a personagem do nível no campo
 Player do Inspector. Quando a personagem morre, este script espera 0,7 s, para que a morte se veja,
@@ -1313,6 +1319,7 @@ godot --headless --fixed-fps 60 --path Projeto --script res://tests/test_wall_ju
 godot --headless --fixed-fps 60 --path Projeto --script res://tests/test_ledge_assist.gd
 godot --headless --fixed-fps 60 --path Projeto --script res://tests/test_jump_signals.gd
 godot --headless --fixed-fps 60 --path Projeto --script res://tests/test_debug_overlay.gd
+godot --headless --fixed-fps 60 --path Projeto --script res://tests/test_lighting_debug_page.gd
 godot --headless --fixed-fps 60 --path Projeto --script res://tests/test_demon_debug_view.gd
 godot --headless --fixed-fps 60 --path Projeto --script res://tests/test_game_camera.gd
 godot --headless --fixed-fps 60 --path Projeto --script res://tests/test_camera_window.gd
@@ -1700,7 +1707,7 @@ teclado, e não pela letra impressa, pelo que o WASD se mantém num teclado AZER
 | `debug_damage` | F4 | — |
 | `debug_accept_offer` / `debug_refuse_offer` | F7 / F8 | — |
 | `debug_reset_run` | F9 | — |
-| `debug_phase_1` / `debug_phase_2` / `debug_phase_3` | 1 / 2 / 3 (só com o overlay visível) | — |
+| `debug_phase_1` / `debug_phase_2` / `debug_phase_3` | 1 / 2 / 3 (só na página dos números do overlay) | — |
 | `ui_accept` | Enter, Espaço | A / Cross |
 | `ui_cancel` | Escape | B / Circle |
 
@@ -2632,8 +2639,24 @@ tolerâncias usadas, em passos de física, e a altura atingida. Um salto complet
 240 px, o mesmo valor que os testes medem. Com a câmara ligada, mostra ainda a zona de câmara em que
 a personagem está e as distâncias atuais da antecipação e do olhar para baixo, e quantos membros do
 `ActivityTracker` estão acordados (ver "Atividade fora do ecrã"). Mostra ainda os SP,
-a velocidade atual da regeneração e se os SP estão baixos ou acabaram. A tecla F3 mostra e esconde
-o texto.
+a velocidade atual da regeneração e se os SP estão baixos ou acabaram.
+
+O texto tem páginas, e a tecla F3 passa à seguinte: escondido, números (tudo o que se descreve
+nesta secção), luz e shaders, e de novo escondido. Por cima de cada página aparece o nome dela e o
+da seguinte. Escondido, o overlay não gasta nada por frame. O nível 1 começa com o texto escondido
+e a sala de teste com os números; a página escolhida com o F3 mantém-se quando o mesmo nível
+recomeça, depois de uma morte ou de um salto de fase.
+
+A página da luz mostra os valores do protótipo de iluminação do nível 1 e é a única que lhe passa
+as teclas F1 a F12, com e sem Ctrl: fora dela, essas teclas não mudam a luz, e numa exportação de
+release não chegam ao protótipo. Antes das páginas, o protótipo lia as teclas sozinho e antes do
+overlay, pelo que ficava com o F3, o F4 e o F7 a F9, e as teclas de depuração correspondentes não
+funcionavam no nível com a luz. Agora, na página da luz, o protótipo continua a ter prioridade
+sobre essas teclas, menos o F3 sozinho, que muda de página; a sombra pintada passou do F3 para o
+Alt+F3. Nas outras páginas, as teclas de depuração funcionam também nesse nível. As teclas da luz
+chegam ao protótipo mesmo com uma fala no ecrã, porque o overlay as recebe antes do balão. O
+protótipo deixou de escrever texto próprio no ecrã. Num nível sem o protótipo, a página da luz diz
+que não há iluminação para afinar. Teste: `test_lighting_debug_page.gd`, com o protótipo verdadeiro.
 
 A tecla F4 retira à personagem o valor Debug Damage do overlay (10 SP, no Inspector), como um golpe,
 para experimentar a regeneração e os avisos antes de haver demónios. Cada toque conta uma vez,
@@ -2650,7 +2673,7 @@ crucifixo. O overlay mostra a oferta em causa, se já foi aceite, as recusas, o 
 homem ainda tem o crucifixo. As três teclas estão reservadas nos perfis de controlos, pelas mesmas
 razões do F4.
 
-Com o overlay visível (F3), as teclas 1, 2 e 3 recomeçam o nível no início dessa fase, atrás do
+Na página dos números do overlay (F3), as teclas 1, 2 e 3 recomeçam o nível no início dessa fase, atrás do
 mesmo escurecer de uma morte. No momento do recomeço, o nível (`Level.jump_to_phase`) percorre os
 seus pontos de gravação pela ordem da cena, que é a do percurso, marca no GameState os que ficam
 para trás e esquece os seguintes, pelo que a cópia nova põe a personagem no ponto dessa fase, como
@@ -2660,7 +2683,7 @@ de quem jogou até lá. Numa partida, o Main grava esse estado por cima do save,
 volta sempre ao save. Não fazem nada uma fase que o nível não tenha, um nível de uma só fase (como
 a sala de treino, onde os números escolhem as estações), o jogo em pausa e a troca de fase. Uma
 segunda tecla durante o escurecer não o recomeça e fica a última fase pedida. Estas teclas não
-estão reservadas: com o overlay escondido são do jogador, e uma tecla que o perfil Custom dê a
+estão reservadas: fora da página dos números são do jogador, e uma tecla que o perfil Custom dê a
 uma ação continua a ser só dessa ação, porque a personagem lê as ações enquanto estão premidas.
 Um teste verifica que, em cada nível do menu, os pontos que começam uma fase estão por ordem na
 cena. Teste: `test_debug_phase_jump.gd`.
@@ -2689,7 +2712,7 @@ estados), e uma seta para onde está virado. Ao longo do chão, desenha o
 posto e o troço da ronda. Enquanto o demónio persegue ou procura, marca com uma cruz o último sítio
 onde viu a personagem, e enquanto a vê, uma linha até ela. Serve para experimentar e afinar os
 estados dos demónios enquanto o retângulo provisório não os mostra, sem mudar o demónio nem os
-níveis, que não a têm. Aparece e desaparece com o F3, junto com o overlay, e remove-se a si própria
+níveis, que não a têm. Aparece com o overlay, em qualquer das duas páginas, e desaparece quando ele se esconde, e remove-se a si própria
 fora das versões de depuração. Para experimentar a procura, a sala tem uma parede de esconderijo no
 chão, em x 1700, à esquerda do demónio do chão (x 2400), com 144 px de altura, mais do que a
 personagem (96 px) e menos do que o seu salto (240 px). Ficou desse lado porque, mais à direita,
