@@ -177,8 +177,6 @@ func _the_end_of_the_cooldown_plays_the_available_sound() -> bool:
 	sounds.available_sound = AVAILABLE_STAND_IN
 	var stand_in: StandInInput = put_a_stand_in(player)
 	stand_in.crucifix_held = true
-	await wait_frames(SETTLE_FRAMES + SHORT_HOLD_FRAMES)
-	stand_in.crucifix_held = false
 	var cooling: bool = await _wait_for_the_cooldown(crucifix)
 	var ready_again: bool = await wait_until(func() -> bool:
 		return crucifix.get_phase() == Crucifix.Phase.READY,
@@ -203,9 +201,8 @@ func _a_press_in_the_cooldown_plays_the_unavailable_sound() -> bool:
 	crucifix.refused.connect(func() -> void: refusals[0] += 1)
 	var stand_in: StandInInput = put_a_stand_in(player)
 	stand_in.crucifix_held = true
-	await wait_frames(SETTLE_FRAMES + SHORT_HOLD_FRAMES)
-	stand_in.crucifix_held = false
 	var cooling: bool = await _wait_for_the_cooldown(crucifix)
+	stand_in.crucifix_held = false
 	await wait_frames(SETTLE_FRAMES)
 	stand_in.crucifix_held = true
 	await wait_frames(SETTLE_FRAMES)
@@ -246,9 +243,9 @@ func _the_scene_holds_the_cooldown_sounds() -> bool:
 			"The crucifix scene's cooldown, available and unavailable sounds: %s" % [files])
 
 
-## Uses the crucifix briefly, presses and holds Crucifix with frames_left frames of cooldown left,
-## and gives back [whether that moment came, how many refusals, whether it went up], or [] if the
-## player never landed.
+## Runs the crucifix empty, presses and holds Crucifix with frames_left frames of cooldown left, and
+## gives back [whether that moment came, how many refusals, whether it went up], or [] if the player
+## never landed.
 func _press_with_cooldown_frames_left(frames_left: int) -> Array:
 	var player: Player = await spawn_on_floor(FLOOR_START)
 	if player == null:
@@ -259,7 +256,7 @@ func _press_with_cooldown_frames_left(frames_left: int) -> Array:
 	crucifix.refused.connect(func() -> void: refusals[0] += 1)
 	var stand_in: StandInInput = put_a_stand_in(player)
 	stand_in.crucifix_held = true
-	await wait_frames(SETTLE_FRAMES + SHORT_HOLD_FRAMES)
+	await _wait_for_the_cooldown(crucifix)
 	stand_in.crucifix_held = false
 	# Each wait ends just before a frame runs, so the press counts on a frame that starts with
 	# frames_left frames of cooldown.

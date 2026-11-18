@@ -8,10 +8,12 @@ extends Node
 ## too. It gives the drawing its own material, with sink.gdshader, so each character sinks on its
 ## own; a shader the art needs later joins that one. Depth is in the world's px: the shader moves
 ## the drawing in its own px, so Depth is divided by the drawing's scale on screen, and art drawn big
-## and scaled down sinks as far as a stand-in.
+## and scaled down sinks as far as a stand-in. The same material also flashes the drawing white
+## (set_flash), as at the man's death in brambles (#263).
 
 const SHADER: Shader = preload("res://scenes/others/shaders/sink.gdshader")
 const DEPTH_PARAMETER: StringName = &"sink_depth"
+const FLASH_PARAMETER: StringName = &"flash"
 
 @export var drawing: CanvasItem
 ## World px the drawing goes down when fully sunk: its height on screen, so none of it shows.
@@ -33,3 +35,8 @@ func set_sink(sink: float) -> void:
 	var scale_y: float = absf(drawing.get_global_transform().get_scale().y)
 	var own_depth: float = depth / scale_y if scale_y > 0.0 else depth
 	_material.set_shader_parameter(DEPTH_PARAMETER, clampf(sink, 0.0, 1.0) * own_depth)
+
+
+## Whitens the drawing, from 0 (as drawn) to 1 (all white, its shape kept).
+func set_flash(amount: float) -> void:
+	_material.set_shader_parameter(FLASH_PARAMETER, clampf(amount, 0.0, 1.0))

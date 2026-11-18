@@ -4,9 +4,10 @@
 [ext_resource type="Resource" uid="uid://cpsgq8t821mct" path="res://dialogue/lust.dialogue" id="2_lust"]
 [ext_resource type="PackedScene" path="res://scenes/screens/dialogue_balloon.tscn" id="3_balloon"]
 [ext_resource type="PackedScene" path="res://scenes/levels/key_prompt.tscn" id="4_key_prompt"]
+[ext_resource type="Texture2D" path="res://assets/sprites/velvet/velvet_walk_sheet.png" id="5_walk"]
 
 [sub_resource type="RectangleShape2D" id="RectangleShape2D_g4v7s"]
-size = Vector2(55, 72)
+size = Vector2(66, 54)
 
 [sub_resource type="RectangleShape2D" id="RectangleShape2D_talk"]
 size = Vector2(480, 240)
@@ -22,15 +23,22 @@ script = ExtResource("1_script")
 dialogue_resource = ExtResource("2_lust")
 balloon_scene = ExtResource("3_balloon")
 
-[node name="CharacterBody2D" type="CharacterBody2D" parent="." unique_id=2107806335]
+[node name="Body" type="CharacterBody2D" parent="." unique_id=2107806335]
+unique_name_in_owner = true
 
-[node name="CollisionShape2D" type="CollisionShape2D" parent="CharacterBody2D" unique_id=1689564683]
-position = Vector2(-0.5, -36)
+[node name="CollisionShape2D" type="CollisionShape2D" parent="Body" unique_id=1689564683]
+editor_description = "Her trunk, from the rump to the chest and up to her back; the head and the tail stay out."
+position = Vector2(0, -27)
 shape = SubResource("RectangleShape2D_g4v7s")
 
-[node name="Placeholder" type="Polygon2D" parent="CharacterBody2D" unique_id=2088678931]
-color = Color(0.62, 0.3, 0.6, 1)
-polygon = PackedVector2Array(-28, -72, 28, -72, 28, 0, -28, 0)
+[node name="Sprite" type="Sprite2D" parent="Body" unique_id=2088678931]
+unique_name_in_owner = true
+editor_description = "velvet_walk_sheet.png: 8 frames of 281 x 144, facing right, the feet on the bottom row. Scale 0.5 halves the art, drawn at twice the size for the zoom; Offset puts the middle of her trunk on x = 0 and her feet on y = 0. tutorial_demon.gd turns her by the sign of Scale's x, so she turns about her trunk."
+scale = Vector2(0.5, 0.5)
+texture = ExtResource("5_walk")
+offset = Vector2(-8.5, -72)
+hframes = 8
+frame = 4
 
 [node name="TalkArea" type="Area2D" parent="." unique_id=1942465212]
 unique_name_in_owner = true

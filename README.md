@@ -68,7 +68,8 @@ RT, LS ← para o stick esquerdo); mudam no momento em que o comando se liga ou 
 | Interagir | E | Ctrl | X / Square |
 
 O terceiro perfil, Custom, começa igual ao predefinido, e cada ação pode receber outra tecla ou
-botão do rato. O Esc e as teclas de depuração (F3, F4, F7, F8 e F9) estão reservados. As teclas W,
+botão do rato. O Esc e as teclas de depuração (F3, F4, F7, F8 e F9) estão reservados; o 1, o 2 e o
+3, que com o texto de depuração visível recomeçam numa fase, não estão. As teclas W,
 E, A, S e D do perfil das setas ficam livres para os upgrades.
 
 | Ação | Teclado | Comando |
@@ -78,6 +79,7 @@ E, A, S e D do perfil das setas ficam livres para os upgrades.
 | Voltar nos menus | Esc | B / Circle |
 | Mostrar e esconder o texto de depuração | F3 | — |
 | Retirar 10 SP à personagem (só na versão de depuração) | F4 | — |
+| Recomeçar o nível na fase 1, 2 ou 3 (com o texto de depuração visível) | 1 / 2 / 3 | — |
 
 ## Mecânicas implementadas
 
@@ -139,10 +141,12 @@ será confirmado em playtest. As tolerâncias beneficiam também quem reage mais
   durante o qual o botão é mantido: um toque dado antes da aterragem produz o salto mínimo.
 - Ajuda nos degraus: se a personagem cai contra a parede de um degrau com os pés até 16 px abaixo
   do topo, um sexto da sua altura, a andar para ele ou só encostada, sobe o que falta e pousa.
-  Como o deslize, não obriga a empurrar. Não atua durante a subida do salto, que já a leva por
-  cima, nem quando o jogador empurra para o lado oposto, nem nos demónios, para que os encontros
-  com eles não mudem. Nas plataformas de sentido único também não atua, porque não têm um lado
-  contra o qual a personagem bata.
+  Como o deslize, não obriga a empurrar; mas, sem direção premida e sem velocidade própria em
+  direção à parede, só atua no topo de uma subida ao longo dela, para que a personagem, ao descer
+  ao longo de uma parede com um vão, não fique pousada na quina da parede de baixo. Não atua
+  durante a subida do salto, que já a leva por cima, nem quando o jogador empurra para o lado
+  oposto, nem nos demónios, para que os encontros com eles não mudem. Nas plataformas de sentido
+  único também não atua, porque não têm um lado contra o qual a personagem bata.
 
 Durante a tolerância de borda, a gravidade continua a atuar, para que a personagem não pareça
 caminhar no ar. Por isso, o último salto aceite parte 27,5 px abaixo da borda e sobe 212,5 px acima
@@ -164,6 +168,16 @@ entrar no deslize e para o manter, segue as Game Accessibility Guidelines (s.d.-
 não obrigar o jogador a manter teclas premidas. Antes, só se entrava no deslize a empurrar contra a
 parede, e nos testes com o grupo e com os professores o deslize quase não aparecia.
 
+Sem direção premida, o motor de física só deteta o contacto com a parede pela margem de segurança
+da colisão (0,08 px). A partir de cerca de x = 2048 px (valor medido), os arredondamentos dos
+números de 32 bits fazem esse contacto aparecer e desaparecer: no nível 1, a personagem caía a meio
+de 226 das 322 paredes e, ao saltar a direito encostada a uma parede, não entrava no deslize. Por
+isso, no ar e sem direção premida, a personagem é encostada 1 px por frame a uma parede do nível que
+esteja a essa distância, desde que a parede esteja ao seu lado no início e no fim desse frame, para
+não passar além do fim da parede nem ser levada para a quina de uma parede cujo topo passa ao cair.
+O lado de um demónio fica de fora. Com esta correção, não cai a meio de nenhuma das 322 paredes, e
+o custo é de até quatro testes de colisão por frame, cerca de 10 µs no pior caso.
+
 O salto da parede é dado com a tecla de saltar sempre que a personagem toca numa parede no ar,
 empurrando-a ou não. A personagem sai para o lado oposto à parede, à velocidade máxima da corrida e
 com a altura de um salto completo (240 px). Como a direção do salto é sempre a de afastamento da
@@ -183,13 +197,17 @@ provisórios e serão afinados com a câmara e nos níveis.
 
 Enquanto o jogador recusar os upgrades, o crucifixo é a sua única defesa. Ergue-se ao premir o
 Shift ou o gatilho direito do comando (RT / R2) com a personagem no chão e fica erguido enquanto o
-botão estiver premido, durante no máximo 5 s. Um toque dado até 0,1 s antes de aterrar ainda o
-ergue na aterragem, se o botão continuar premido, à semelhança da tolerância do salto. Baixa
-quando o botão é largado, quando a personagem sai do chão ou quando os 5 s terminam.
-Depois de cada uso, curto ou longo, há uma espera de 15 s até poder ser erguido de novo; um toque
-dado até 0,1 s antes do fim da espera também conta.
+botão estiver premido e houver carga. A carga funciona como uma bateria de 5 s: cada segundo
+erguido gasta um segundo, e largar o botão guarda o resto. Com o crucifixo em baixo, a carga volta a
+encher de vazia a cheia em 15 s, pelo que cada segundo gasto volta em 3 s. Um toque dado até 0,1 s
+antes de aterrar ainda o ergue na aterragem, se o botão continuar premido, à semelhança da
+tolerância do salto. Baixa quando o botão é largado, quando a personagem sai do chão ou quando a
+carga acaba. Se a carga acabar, o crucifixo fica bloqueado durante os 15 s em que volta a encher;
+um toque dado até 0,1 s antes do fim do bloqueio também conta. Depois de baixar com carga, fica
+pelo menos 0,35 s em baixo, para que toques rápidos não façam a luz piscar mais de três vezes por
+segundo (medido: sem este tempo, toques a cada dois frames erguiam-no 60 vezes em 2 s).
 
-Só um toque dado durante o jogo ergue o crucifixo. Um botão que já vinha premido, da espera, do
+Só um toque dado durante o jogo ergue o crucifixo. Um botão que já vinha premido, do bloqueio, do
 menu principal ou da pausa, não o ergue até ser largado e premido outra vez. Assim, o jogador
 decide sempre o momento e, se puser o crucifixo no botão esquerdo do rato no perfil Custom, o clique
 nos menus, que passa a ser o mesmo botão, nunca o ergue por engano. Durante a pausa, o tempo de uso
@@ -206,8 +224,9 @@ Erguido, o crucifixo:
   ar, e ficam 0,3 s parados onde aterram. De muito perto, o empurrão soma-se ao arremesso enquanto
   o demónio está no raio, e ele vai parar a cerca de 300 px;
 - cura 5 SP por segundo, que se somam à regeneração (ver "SP");
-- acende uma luz quente cujo alcance mostra o raio do afastamento. No último segundo e meio de uso,
-  a luz pulsa duas vezes por segundo, cada vez mais fundo, como aviso de que o crucifixo vai baixar.
+- acende uma luz quente cujo alcance mostra o raio do afastamento. Quando resta segundo e meio de
+  carga, a luz pulsa duas vezes por segundo, cada vez mais fundo, como aviso de que o crucifixo vai
+  baixar.
   A descida mais funda, para 40 % do brilho, coincide com o instante em que o crucifixo baixa. O som
   do crucifixo erguido treme com a luz e, com comando, a vibração cresce ao mesmo tempo. Duas vezes
   por segundo fica abaixo do limite de três dos critérios 2.3.1 e 2.3.2 da WCAG 2.2, para quem tem
@@ -215,9 +234,10 @@ Erguido, o crucifixo:
   ([Understanding 2.3.1](https://www.w3.org/WAI/WCAG22/Understanding/three-flashes-or-below-threshold.html)),
   e a luz nunca se apaga.
 
-A duração limitada e a espera fixa obrigam a escolher quando usar a única defesa: largar o botão
-cedo não poupa tempo de espera. Ao contrário do deslize na parede, o crucifixo obriga a manter o
-botão premido: o esforço de o segurar faz parte da mecânica, e cada uso está limitado a 5 s. Uma
+A carga limitada obriga a escolher quando usar a única defesa. Um uso curto custa só o seu tempo,
+mas esvaziar a carga custa o bloqueio inteiro: o aviso do último segundo e meio pede ao jogador que
+largue o botão a tempo (ADR 0066). Ao contrário do deslize na parede, o crucifixo obriga a manter o
+botão premido: o esforço de o segurar faz parte da mecânica, e cada uso está limitado à carga. Uma
 opção para o erguer e baixar com toques, em vez de manter o botão premido, fica para as opções de
 acessibilidade.
 
@@ -425,7 +445,7 @@ toque troca a mão que a personagem tem levantada, para que cada toque se veja. 
 pode juntar-se a meio, e pede mais 6. Com dois, o agarrão fica cheio: nenhuma pancada entra, e os
 outros demónios esperam a cerca de 130 px. Se o jogador parar de premir, o progresso desce: ao fim de 0,25 s sem premir, perde metade
 da barra por segundo, pelo que quem prime 4 vezes por segundo não perde nada. Se não se soltar em
-3 s, a personagem morre, aparece "You died" e o nível recomeça 1,5 s depois. Se morrer por outra
+3 s, a personagem morre, aparece "You died", o ecrã escurece e o nível recomeça 0,7 s depois. Se morrer por outra
 causa enquanto está agarrada, como nos picos letais, o agarrão acaba da mesma forma: os toques
 deixam de contar e aparece "You died".
 
@@ -465,18 +485,43 @@ a meio não perde o progresso, porque os toques e o tempo premido enchem a mesma
 ### Portões, picos letais e plataformas que desabam
 
 Cinco elementos para qualquer nível, cada um numa cena própria, que se coloca na cena do nível e se
-ajusta no Inspector. Por agora são formas provisórias, até chegar a arte.
+ajusta no Inspector. Por agora são formas provisórias, até chegar a arte, exceto os picos, que já
+são silvas.
 
 | Elemento | Cena | Comportamento | Medida |
 |---|---|---|---|
 | Portão | `scenes/objects/gates/gate.tscn` | barra uma passagem à personagem, aos demónios e à visão destes; desbloqueado, sobe a sua própria altura, por trás da rocha; com Slide Way em Left ou Right, é um alçapão e desliza para esse lado a sua própria largura; pode também ser posto aberto de imediato e trancado outra vez, deslizando de volta ao seu lugar, para uma cena de câmara o mostrar a fechar | desliza em 0,8 s (48 passos de física), para abrir e para fechar |
 | Desbloqueador | `scenes/objects/gates/gate_unlocker.tscn` | ativa-se uma vez, com a ação de interagir (E, ou X no comando) ao pé dele, e abre os portões da lista Gates; enquanto a personagem está perto e ele ainda não foi usado, mostra por cima a tecla e a palavra "Unlock", como a Velvet mostra "Talk"; o crucifixo já não o abre; com uma cena de câmara (Cutscene), a câmara vai primeiro ao portão e este só abre quando ela lá chega | área de uso de 400 × 192 px, 200 px para cada lado, o alcance que tinha o crucifixo |
 | Anel de proximidade | `scenes/objects/gates/proximity_unlocker.tscn` | ativa-se uma vez, na primeira vez que a personagem entra no círculo, sem crucifixo, e abre os portões da lista Gates | alcance (Reach) de 288 px por omissão |
-| Picos letais | `scenes/objects/traps/lethal_spikes.tscn` | um toque mata a personagem de imediato, com qualquer valor de SP; os demónios passam por cima sem efeito | parte que mata com 24 px de altura e 4 px de folga em cada ponta, para um salto que passe à vista passar mesmo |
+| Picos letais | `scenes/objects/traps/lethal_spikes.tscn` | um toque mata a personagem de imediato, com qualquer valor de SP, e as silvas puxam-na para dentro (por baixo da tabela). Com Catches ligado (desligado por defeito, ADR 0067), prendem-na em vez disso: corre a 10 % da velocidade, não salta, afunda e perde 150 SP por segundo, e morre se o SP acabar lá dentro (valores no nó `Snag` do `player.tscn`, `test_snag.gd`); os demónios passam por cima sem efeito; desenham-se como silvas, um arbusto e meio por tile, em média (Brambles Per Tile; com um só, a sebe ficava rala), para formarem uma sebe contínua, com a altura e o espelho escolhidos ao acaso a partir da posição da faixa, que fica sempre igual; sem arte (Art), voltam aos dentes | parte que mata com 24 px de altura e 4 px de folga em cada ponta, para um salto que passe à vista passar mesmo; cada arbusto com 40 px de altura, mais ou menos 10 %, que cobre a parte que mata de ponta a ponta (`test_lethal_spikes_art.gd`) |
 | Plataforma que desaba | `scenes/objects/platforms/collapsing_platform.tscn` | usa o mesmo tile das plataformas de sentido único; pousar nela faz com que pisque e desapareça; saltar através dela, de baixo, não a ativa; volta ao fim de Come Back Time, com 0 fica desaparecida até o nível recomeçar | desaparece em 0,6 s (36 passos) e volta ao fim de 3 s |
 
 A largura e a altura destes elementos definem-se em tiles, no Inspector. A morte imediata é o método
-`die()` da personagem, que a imobiliza e fecha a sua caixa de dano, enquanto o nível recomeça. O cão
+`die()` da personagem, que a imobiliza e fecha a sua caixa de dano, enquanto o nível recomeça.
+
+Quando as silvas a matam, o jogo congela 0,1 s, a única paragem do jogo, com a personagem desenhada
+a branco. Durante o congelamento, o jogo corre a 2 % da velocidade e não a zero: com o tempo parado,
+cada script receberia um intervalo de 0 s entre frames, e a câmara e os cães dividem por ele
+(`test_bramble_death.gd` verifica que nunca chega a 0). Depois, as silvas puxam-na para dentro em 0,6 s, cada vez mais depressa. Num chão de
+silvas, afunda-se cortada à altura do chão, como quando os cães a agarram, e o que desce fica atrás
+da rocha: ainda se vê quase inteira 0,2 s depois do congelamento e desaparece aos 0,5 s, quando o
+ecrã já escurece. Numa parede ou num teto, é puxada 10 px para dentro da sebe. A curva acelera para
+que o corpo se veja até ao escuro: com o puxão mais forte no início, desaparecia em 0,3 s e ficava
+meio segundo de silvas vazias. As silvas a menos de três tiles agitam-se com força desde o primeiro
+instante, 16 px no topo, e a agitação cai para cerca de um terço em 0,45 s; ao mesmo tempo,
+inclinam-se para o sítio da morte. Fora da morte, cada arbusto balança devagar, com fase própria
+(2 px, uma oscilação em 2,5 a 4 s), e estremece quando a personagem avança para ele a menos de um
+tile. Os desenhos mudam 20 vezes por segundo, como os outros efeitos. Os valores estão em
+`scenes/characters/player/bramble_death_stats.tres` (a morte) e em
+`scenes/objects/traps/bramble_motion_stats.tres` (o movimento das silvas). O movimento de todas as
+silvas do nível 1 (72 faixas, 465 arbustos) custa 71,9 µs em cada frame dos efeitos, cerca de 24 µs
+por frame a 60 fps; o tempo de frame com as silvas paradas e a mexer fica dentro do ruído (4,1 a
+4,3 ms, `tests/measures/measure_brambles.gd`). Ficam no código, desligadas por omissão, duas versões
+experimentadas e recusadas: a personagem cortada pelos espinhos (Cut Apart) e ramos que a enrolam
+(Vines). Testes: `test_bramble_motion.gd`, `test_bramble_death.gd`, `test_bramble_pull.gd` e
+`test_bramble_cut.gd`.
+
+O cão
 grande (`scenes/characters/demon/big_demon.tscn`), na fase 2 do nível 1, é o demónio normal 1,25 vezes maior: o corpo
 (140 × 70 px), a caixa de ataque, a arte e as verificações aos pés. No ecrã, distingue-se do cão
 normal pelo tamanho e pela arte, escurecida a 60 % do brilho, para que a diferença se leia de
@@ -960,10 +1005,10 @@ vez de pararem de repente.
 A vibração contínua pulsa, para não se tornar um zumbido liso. Começa num nível que ainda se sente,
 porque um motor pedido muito baixo mal roda. A do agarrão corre sobretudo no motor forte e cresce
 enquanto a personagem afunda. A do crucifixo corre no motor fraco e cresce durante o aviso de que o
-crucifixo vai baixar, ao mesmo tempo que a luz pulsa. Se o uso se esgotar com o botão ainda premido,
-a vibração do crucifixo dá lugar a um impulso que desce até zero ao longo de meio segundo, em vez de
-parar de repente; largado antes, o crucifixo baixa sem impulso. Cada vez que algo que o crucifixo
-empurra entra na luz dele, como um cão que corre para a personagem, vibra uma pancada curta no motor
+crucifixo vai baixar, ao mesmo tempo que a luz pulsa. Se a carga se esgotar, a vibração do
+crucifixo dá lugar a um impulso que desce até zero ao longo de meio segundo, em vez de parar de
+repente, e assim o bloqueio sente-se sempre; largado antes, o crucifixo baixa sem impulso. Cada vez
+que algo que o crucifixo empurra entra na luz dele, como um cão que corre para a personagem, vibra uma pancada curta no motor
 fraco, por cima da vibração contínua. Vários a entrar no mesmo instante dão uma só pancada, e o
 desbloqueador de um portão, que já não responde ao crucifixo, não dá nenhuma. Depois da
 morte, o crucifixo fica erguido até a sala recomeçar, mas o que ele faz já não vibra. Um impulso faz
@@ -1102,8 +1147,9 @@ são usados.
 |---|---|---|
 | Speed Multiplier | 0,25 | a fração da velocidade máxima que se mantém com o crucifixo erguido |
 | Raise Buffer Time | 0,1 s | o tempo durante o qual um toque fica guardado enquanto o crucifixo não se pode erguer, como antes de aterrar ou no fim da espera (0 desliga) |
-| Max Use Time | 5 s | o tempo máximo de cada uso |
-| Cooldown Time | 15 s | a espera depois de cada uso, qualquer que tenha sido a sua duração |
+| Max Use Time | 5 s | a carga: o tempo máximo erguido a partir da carga cheia; cada segundo erguido gasta um segundo |
+| Cooldown Time | 15 s | o tempo que a carga leva a encher de vazia a cheia com o crucifixo em baixo (cada segundo gasto volta em 3 s); se a carga acabar, o crucifixo fica bloqueado este tempo |
+| Min Down Time | 0,35 s | o tempo mínimo em baixo depois de baixar com carga: toques rápidos erguem-no no máximo uma vez a cada 22 frames, menos de três vezes por segundo, o limite da WCAG 2.3.1 para a luz não piscar; um toque dado neste tempo fica guardado até ele acabar |
 | Repel Radius | 200 px | a distância à qual os demónios e as almas perdidas são afastados, e o alcance da luz |
 | Repel Speed | 1500 px/s | a velocidade a que são empurrados para fora desse raio |
 | Heal Per Second | 5 SP/s | a cura por cada segundo com o crucifixo erguido |
@@ -1229,10 +1275,24 @@ Para um nível aparecer no New Game, acrescenta-se à lista Levels do Main, no I
 deixado vazio, ou sem cena, fica fora do menu, com um aviso no Output.
 
 O nó raiz de cada nível tem o script `scenes/levels/level.gd` (`Level`), com a personagem do nível no campo
-Player do Inspector. Quando a personagem morre, este script espera 1,5 s, para que a morte se veja,
-e recomeça o nível: no jogo, o Main troca-o por uma cópia nova da mesma cena; aberto com F6, o nível
-recarrega-se a si próprio. Uma cópia nova repõe a personagem, os demónios e a câmara como no início,
-sem que cada sistema precise de código para se repor. Um nível sem este script não recomeça.
+Player do Inspector. Quando a personagem morre, este script espera 0,7 s, para que a morte se veja,
+escurece o ecrã até ao preto nos últimos 0,3 s e recomeça o nível: no jogo, o Main troca-o por uma cópia nova da
+mesma cena; aberto com F6, o nível recarrega-se a si próprio. Uma cópia nova repõe a personagem, os
+demónios e a câmara como no início, sem que cada sistema precise de código para se repor. Um nível
+sem este script não recomeça. Nas silvas, a espera começa depois do congelamento de 0,1 s.
+
+Passados 0,15 s, o salto encurta a espera: o ecrã escurece logo, em 0,3 s, pelo que a troca mais
+cedo continua aos 0,45 s. O preto é puro, sem o tom do nível. O escurecer cresce com o quadrado do
+tempo (Fade Ease = 2): começa ténue, enquanto a morte ainda se vê, e fecha com firmeza. A troca faz-se com o ecrã
+já escuro, porque recomeçar o nível 1 custa cerca de 0,5 s: 41 ms a instanciar, 43 ms a juntar à
+árvore e um frame de cerca de 410 ms a seguir, a maior parte nos tiles (5 rondas,
+`tests/measures/measure_restart.gd`). A cópia nova abre com o ecrã escuro e clareia em 0,35 s, ao contrário do
+escurecer: quase tudo de uma vez e o resto devagar. A personagem joga-se desde o primeiro frame, pelo
+que o clarear não atrasa o regresso ao jogo. Avança no máximo 0,05 s por frame, para que esse primeiro frame longo não salte o clarear. Os
+tempos estão no Inspector do nível (Restart Delay, Skip After) e em
+`scenes/levels/death_iris_stats.tres` (o escurecer). Fica no código, desligada por omissão (Iris),
+uma íris que fecha sobre o corpo e abre sobre a personagem. Testes: `test_level_restart.gd` e
+`test_death_iris.gd`.
 
 Na primeira abertura, o Godot gera a pasta `Projeto/.godot/` com a cache de importação. Esta pasta
 não é versionada e pode ser apagada sem perda de trabalho.
@@ -1272,6 +1332,13 @@ godot --headless --fixed-fps 60 --path Projeto --script res://tests/test_main_fl
 godot --headless --fixed-fps 60 --path Projeto --script res://tests/test_pause.gd
 godot --headless --fixed-fps 60 --path Projeto --script res://tests/test_phase_exit.gd
 godot --headless --fixed-fps 60 --path Projeto --script res://tests/test_lethal_spikes.gd
+godot --headless --fixed-fps 60 --path Projeto --script res://tests/test_snag.gd
+godot --headless --fixed-fps 60 --path Projeto --script res://tests/test_lethal_spikes_art.gd
+godot --headless --fixed-fps 60 --path Projeto --script res://tests/test_bramble_motion.gd
+godot --headless --fixed-fps 60 --path Projeto --script res://tests/test_bramble_death.gd
+godot --headless --fixed-fps 60 --path Projeto --script res://tests/test_bramble_pull.gd
+godot --headless --fixed-fps 60 --path Projeto --script res://tests/test_bramble_cut.gd
+godot --headless --fixed-fps 60 --path Projeto --script res://tests/test_death_iris.gd
 godot --headless --fixed-fps 60 --path Projeto --script res://tests/test_gate.gd
 godot --headless --fixed-fps 60 --path Projeto --script res://tests/test_camera_cutscene.gd
 godot --headless --fixed-fps 60 --path Projeto --script res://tests/test_collapsing_platform.gd
@@ -1316,6 +1383,7 @@ godot --headless --fixed-fps 60 --path Projeto --script res://tests/test_dialogu
 godot --headless --fixed-fps 60 --path Projeto --script res://tests/test_death_offer_pacer.gd
 godot --headless --fixed-fps 60 --path Projeto --script res://tests/test_asmodeus_deaths.gd
 godot --headless --fixed-fps 60 --path Projeto --script res://tests/test_asmodeus.gd
+godot --headless --fixed-fps 60 --path Projeto --script res://tests/test_velvet_walk.gd
 godot --headless --fixed-fps 60 --path Projeto --script res://tests/test_lust_asmodeus.gd
 godot --headless --fixed-fps 60 --path Projeto --script res://tests/test_moral_dialogue.gd
 godot --headless --fixed-fps 60 --path Projeto --script res://tests/test_gym_hint.gd
@@ -1433,7 +1501,18 @@ um componente por objeto".
 godot --headless --fixed-fps 60 --path Projeto --script res://tests/measures/measure_sight_reveal.gd
 ```
 
-O `measure_joypads.gd` precisa de um comando ligado e é o único que corre sem `--headless`, porque
+O `measure_brambles.gd` e o `measure_restart.gd` correm com janela, porque sem ela nada se desenha,
+e também não verificam resultados. O primeiro mede o tempo de frame no nível 1, com a câmara na
+maior faixa de silvas, paradas e a mexer, e o trabalho das faixas num frame dos efeitos; o segundo
+mede o custo de recomeçar o nível 1, em 5 rondas. Os números estão em "Portões, picos letais e
+plataformas que desabam" e na descrição do `Level`.
+
+```
+godot --path Projeto --script res://tests/measures/measure_brambles.gd
+godot --path Projeto --script res://tests/measures/measure_restart.gd
+```
+
+O `measure_joypads.gd` precisa de um comando ligado e também corre sem `--headless`, porque
 sem janela o Godot não lê comandos. Lista os comandos que o motor vê, faz vibrar cada motor e, durante
 20 s, escreve cada ação e cada botão premidos, com a janela em foco. Sai com o código 1 se não houver
 comando.
@@ -1621,6 +1700,7 @@ teclado, e não pela letra impressa, pelo que o WASD se mantém num teclado AZER
 | `debug_damage` | F4 | — |
 | `debug_accept_offer` / `debug_refuse_offer` | F7 / F8 | — |
 | `debug_reset_run` | F9 | — |
+| `debug_phase_1` / `debug_phase_2` / `debug_phase_3` | 1 / 2 / 3 (só com o overlay visível) | — |
 | `ui_accept` | Enter, Espaço | A / Cross |
 | `ui_cancel` | Escape | B / Circle |
 
@@ -1720,15 +1800,18 @@ indústria:
   altura é proporcional ao quadrado dessa velocidade.
 - **Ativação ao premir, com tolerância.** O crucifixo ergue-se no passo em que o botão é premido
   (`is_crucifix_just_pressed`) e mantém-se enquanto continua premido (`is_crucifix_held`), como é
-  habitual nas habilidades. Isto resolve, sem estado extra, os botões que já vinham premidos da
-  espera, do menu principal ou da pausa: nenhum deles é um toque novo. Para um toque dado um pouco
+  habitual nas habilidades. Isto resolve, sem estado extra, os botões que já vinham premidos do
+  bloqueio, do menu principal ou da pausa: nenhum deles é um toque novo. Para um toque dado um pouco
   cedo não se perder, fica guardado durante o Raise Buffer Time, à semelhança da tolerância do
   salto.
 - **Máquina de estados com tempos em passos de física.** O crucifixo tem três fases: pronto,
-  erguido e em espera (`READY`, `RAISED`, `COOLDOWN`). O tempo de uso, a espera e a tolerância
-  contam-se em passos de física inteiros, como as tolerâncias do salto, para que os testes os
-  verifiquem ao passo exato. Os sinais `cooldown_started` e `cooldown_finished`, e o tempo restante
-  de cada fase, servem o HUD.
+  erguido e bloqueado depois de esvaziar (`READY`, `RAISED`, `COOLDOWN`). A carga, o bloqueio e a
+  tolerância contam-se em passos de física inteiros, como as tolerâncias do salto, para que os
+  testes os verifiquem ao passo exato. A carga guarda-se em unidades inteiras: cada passo erguido
+  gasta tantas quantos os passos do Cooldown Time, e cada passo em baixo devolve tantas quantos os
+  do Max Use Time, para a carga encher de vazia a cheia exatamente no Cooldown Time, sem
+  arredondamentos. Os sinais `cooldown_started` e `cooldown_finished`, a carga (`get_charge()`) e o
+  tempo restante do bloqueio servem o HUD.
 - **Componente `Repellable`** (`scenes/characters/components/repellable.tscn`), à semelhança dos *hitboxes* e
   *hurtboxes*. É uma `Area2D` que se coloca nos demónios e nas almas perdidas, com a camada
   `repellable` definida na cena. O crucifixo empurra apenas o que tem este componente e não conhece
@@ -1810,7 +1893,8 @@ solução mais simples; se um nível juntar muitos mais demónios num só raio, 
 O `test_crucifix.gd` verifica os modificadores (a combinação, uma mudança com o modificador
 colocado, a fração da altura do salto e a da velocidade no salto da parede), o abrandamento, o
 bloqueio do salto, a tolerância antes de aterrar e antes do fim da espera, o toque dado demasiado
-cedo, a parede, a saída do chão, a duração máxima, a espera fixa, a pausa, a perda, a cura, o
+cedo, a parede, a saída do chão, a duração máxima, a carga gasta e recuperada ao passo exato, o
+bloqueio ao esvaziar, o tempo mínimo em baixo entre toques rápidos, a pausa, a perda, a cura, o
 afastamento, a camada da cena `Repellable` e a afinação com o jogo a correr. Usa um demónio de
 substituição, que flutua à altura do crucifixo; o afastamento de um demónio no chão verifica-se no
 `test_demon.gd`, com o crucifixo da personagem. O `test_crucifix_menus.gd` usa a cena principal,
@@ -1874,11 +1958,19 @@ dano, em `scenes/characters/demon/big_demon_stats.tres`; os demónios de um nív
 outro ficheiro com os mesmos campos, outros ataques e outra arte, sem código novo.
 
 As personagens dividem-se pelo que fazem, e não pela história: as que perseguem usam esta cena, e as
-que estão paradas e falam (o demónio do tutorial, as almas e os bosses) terão cenas próprias. O que
+que falam sem perseguir (o demónio do tutorial, as almas e os bosses) têm ou terão cenas próprias. O que
 as duas famílias partilham são componentes, como o `Repellable`, e não uma classe-mãe. Uma
 classe-mãe comum ficaria quase vazia e não serviria uma personagem das duas famílias, como uma alma
 que fala e que o crucifixo afasta. Pela mesma razão, o demónio do tutorial, que fala e não persegue,
 não é esta cena com a perseguição desligada.
+
+O demónio do tutorial, a Velvet (`scenes/characters/demon/tutorial_demon.tscn`), é um cão que passeia
+na sua zona: anda 128 px para cada lado do sítio onde está no nível, a 88 px/s, e descansa 1,5 s em
+cada ponta (grupo Walk do Inspector). Enquanto o homem está na Talk Area dela, ou enquanto fala, fica
+parada e virada para ele. A Talk Area não acompanha o passeio, para que o sítio onde a conversa começa
+não dependa do momento em que o homem chega. O frame da folha segue o chão percorrido, 11 px por
+frame, para que as patas não escorreguem a nenhuma velocidade. Ela anda sem colidir, por isso a zona
+tem de ser chão plano. A caixa de colisão cobre o tronco (66 × 54 px), sem a cabeça nem a cauda.
 
 - **Um objeto por estado.** Os catorze estados (`IDLE`, `CHASE`, `WARNING`, `LUNGE`, `RETREAT`,
   `GRAB`, `THROWN`, `REPELLED`, `STUNNED`, `RETURN`, `OUT_OF_REACH`, `PATROL`, `ALERT` e `SEARCH`)
@@ -2558,6 +2650,21 @@ crucifixo. O overlay mostra a oferta em causa, se já foi aceite, as recusas, o 
 homem ainda tem o crucifixo. As três teclas estão reservadas nos perfis de controlos, pelas mesmas
 razões do F4.
 
+Com o overlay visível (F3), as teclas 1, 2 e 3 recomeçam o nível no início dessa fase, atrás do
+mesmo escurecer de uma morte. No momento do recomeço, o nível (`Level.jump_to_phase`) percorre os
+seus pontos de gravação pela ordem da cena, que é a do percurso, marca no GameState os que ficam
+para trás e esquece os seguintes, pelo que a cópia nova põe a personagem no ponto dessa fase, como
+faria o Continue. A fase 1 começa depois do tutorial. Só mudam os pontos de gravação: as falas, as
+ofertas, os upgrades, o crucifixo e o registo moral ficam como estavam, pelo que o estado não é o
+de quem jogou até lá. Numa partida, o Main grava esse estado por cima do save, porque um recomeço
+volta sempre ao save. Não fazem nada uma fase que o nível não tenha, um nível de uma só fase (como
+a sala de treino, onde os números escolhem as estações), o jogo em pausa e a troca de fase. Uma
+segunda tecla durante o escurecer não o recomeça e fica a última fase pedida. Estas teclas não
+estão reservadas: com o overlay escondido são do jogador, e uma tecla que o perfil Custom dê a
+uma ação continua a ser só dessa ação, porque a personagem lê as ações enquanto estão premidas.
+Um teste verifica que, em cada nível do menu, os pontos que começam uma fase estão por ordem na
+cena. Teste: `test_debug_phase_jump.gd`.
+
 Uma linha `run` mostra os números escondidos da partida, que o jogador nunca vê:
 
 - a fase em curso;
@@ -3130,8 +3237,8 @@ mesmo sítio, a primeira chega à terceira morte. A regra vive numa classe sem n
 estatísticas, para que a morte não a apague. Morrer não conta para a moral; só a resposta à oferta
 conta.
 
-A Asmodeu é um nó próprio (`scenes/characters/demon/asmodeus.tscn`), provisório até chegar a arte: um polígono
-cor-de-rosa escuro com o nome por cima. Não combate. Quando fala, aparece ao lado do homem, prende-o
+A Asmodeu é um nó próprio (`scenes/characters/demon/asmodeus.tscn`), desenhada com a figura dela da
+visual novel de CDJ, com 150 px de altura, e com o nome por cima. Não combate. Quando fala, aparece ao lado do homem, prende-o
 como a Velvet (sem correr, saltar nem erguer o crucifixo), fala no balão do jogo e desaparece.
 Enquanto fala, os cães do nível ficam parados (Asmodeus › Stills), para que nenhum morda o homem
 preso. O que acontece a seguir decidem as falas, através das ofertas.
@@ -3460,9 +3567,18 @@ opção de volume, todos a enviar para o Master, e o Alerts, a enviar para o SFX
   Na zona da fase 3 e na sala da Asmodeu, foram repintadas com IA (Claude), por scripts fora do repositório que
   ajustam um modelo às imagens das fases 1 e 2 e só alteram os píxeis por onde essas zonas passam.
   Saem ou refazem-se quando o mapa ou as áreas mudarem.
-- `fire_low_sheet.png` e `fire_upright_sheet.png`, em `Projeto/assets/sprites/fire/`: fogos animados
-  desenhados por von Hafe, do grupo, convertidos dos GIF originais em folhas de frames. Usados pelo
-  protótipo de iluminação (#257).
+- `fire_low_sheet.png`, `fire_bonfire_sheet.png`, `fire_leaning_sheet.png` e
+  `fire_creeping_sheet.png`, em `Projeto/assets/sprites/fire/`: fogos animados desenhados por von
+  Hafe, do grupo, convertidos dos GIF originais em folhas de frames. Usados pelo protótipo de
+  iluminação (#257; os três últimos desde a #263).
+- `bramble.png`, em `Projeto/assets/sprites/traps/`, e `platform_slab.png`, em
+  `Projeto/assets/sprites/environment/`: a silva dos picos letais e a laje das plataformas,
+  desenhadas por von Hafe, do grupo, recortadas e reduzidas dos PNG originais (#263).
+- `velvet_walk_sheet.png`, em `Projeto/assets/sprites/velvet/`: a Velvet a andar, 8 frames,
+  desenhada pela Sofia, do grupo, com o fundo branco tornado transparente e reduzida da folha
+  original (#263).
+- `asmodeus.png`, em `Projeto/assets/sprites/asmodeus/`: a figura da Asmodeu, desenhada pelo Cisco,
+  do grupo, para a visual novel de CDJ, recortada e reduzida do PNG original (#263).
 - Tinos, de The Tinos Project Authors. SIL Open Font License 1.1. Letra de reserva dos menus, com as
   medidas da Times New Roman, em `Projeto/assets/fonts/` (com a licença em `Tinos-OFL.txt`).
   https://github.com/googlefonts/tinos

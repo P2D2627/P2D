@@ -80,10 +80,11 @@ func station_at(x: float) -> int:
 
 ## Whether the controls give the key to an action, whatever modifiers come with it: Shift is held
 ## while the crucifix is up (ADR 0063), and a key the controls give to an action is still that
-## action's with Shift down.
+## action's with Shift down. The debug overlay's phase keys do not count: the gym has one phase, so
+## the overlay lets them through to here.
 func _is_an_action(key: InputEventKey) -> bool:
 	for action: StringName in InputMap.get_actions():
-		if key.is_action(action):
+		if not DebugOverlay.PHASE_ACTIONS.has(action) and key.is_action(action):
 			return true
 	return false
 

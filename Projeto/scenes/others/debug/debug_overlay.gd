@@ -5,9 +5,11 @@ extends CanvasLayer
 ## Toggle Debug Overlay action shows and hides it, and Debug Damage hurts the player. Debug Accept
 ## Offer and Debug Refuse Offer answer the last offer made, or the first not yet accepted, as the
 ## lines would, so a shortcut or a gift can be tried without playing up to it; Debug Reset Run
-## starts the run state over, offers and moral record included. Outside debug builds it frees
-## itself, so a release export never shows it and nothing happens through it. Its scene sets the
-## process mode to Always, so it keeps working while the game is paused.
+## starts the run state over, offers and moral record included. While the text shows, Debug Phase 1
+## to 3 (the keys 1 to 3) start the level over at that phase (Level.jump_to_phase); hidden, or in a
+## level of one phase, as the gym and its stations, the keys go on to the game. Outside debug
+## builds it frees itself, so a release export never shows it and nothing happens through it. Its
+## scene sets the process mode to Always, so it keeps working while the game is paused.
 
 const TOGGLE_ACTION: StringName = &"toggle_debug_overlay"
 const DAMAGE_ACTION: StringName = &"debug_damage"
@@ -19,6 +21,8 @@ const DAMAGE_ACTION: StringName = &"debug_damage"
 const ACCEPT_OFFER_ACTION: StringName = &"debug_accept_offer"
 const REFUSE_OFFER_ACTION: StringName = &"debug_refuse_offer"
 const RESET_RUN_ACTION: StringName = &"debug_reset_run"
+## Debug Phase 1, 2 and 3, in that order: the phase is the place in the list plus one.
+const PHASE_ACTIONS: Array[StringName] = [&"debug_phase_1", &"debug_phase_2", &"debug_phase_3"]
 const MS_PER_SECOND: float = 1000.0
 const SECONDS_PER_MINUTE: int = 60
 
@@ -80,6 +84,8 @@ func _unhandled_input(event: InputEvent) -> void:
 		_progress.reset()
 		if _offers != null:
 			_offers.clear()
+		get_viewport().set_input_as_handled()
+	elif visible and _jump_to_phase(event):
 		get_viewport().set_input_as_handled()
 
 
@@ -149,6 +155,34 @@ func _offer_to_answer() -> OfferData:
 		if offer != null and not _moral.has_taken(offer.id):
 			return offer
 	return null
+
+
+## The phase a Debug Phase key pressed in event asks for; 0 for any other event.
+func _phase_of(event: InputEvent) -> int:
+	for index: int in PHASE_ACTIONS.size():
+		if _is_pressed(event, PHASE_ACTIONS[index]):
+			return index + 1
+	return 0
+
+
+## The level that runs starts over at the phase a Debug Phase key in event asks for; true if it
+## does. Not a key his controls also give to an action, as a Custom profile can: the man reads his
+## actions as they are held, so the key would be both. When it does not, as paused, or in the gym,
+## which has one phase, the key goes on to the game.
+func _jump_to_phase(event: InputEvent) -> bool:
+	var phase: int = _phase_of(event)
+	if phase == 0 or _is_a_control(event):
+		return false
+	var level: Level = get_tree().get_first_node_in_group(Level.GROUP) as Level
+	return level != null and level.jump_to_phase(phase)
+
+
+## Whether event is also one of the actions the controls screen gives the player.
+func _is_a_control(event: InputEvent) -> bool:
+	for action: StringName in InputProfiles.ACTIONS:
+		if event.is_action(action):
+			return true
+	return false
 
 
 ## Whether event presses action, and false, with no error, while the Input Map lacks it.

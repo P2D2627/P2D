@@ -1,7 +1,9 @@
 # Checks the ledge assist. Falling into the side of a ledge with the feet a little below its top,
 # within Ledge Assist Height, while moving toward it or only touching it, the player is lifted onto
 # it by the fewest px, going right or left, onto a ledge of the levels' tiles as onto one that is a
-# body, and also falling at Max Fall Speed while drifting slowly into it. A press of Jump just after
+# body, and also falling at Max Fall Speed while drifting slowly into it. Far from the origin, as
+# most of a level's ledges are, a ledge of tiles is climbed with no direction held too, rising along
+# it or jumping straight up from rest against it. A press of Jump just after
 # the lift jumps from the ledge, not off its face. Further below, with Ledge Assist Height at 0,
 # pushing away from it, against a demon's side, under a ceiling that leaves no room, held still or
 # in a knockback, he is never lifted and falls along the side; a one-way platform has no side, so
@@ -34,6 +36,22 @@ const TILE_LEDGE_COLUMNS: int = 4
 ## The left end of a one-way platform of the levels' tiles, met going right, with its top at
 ## LEDGE_TOP and TILE_LEDGE_COLUMNS tiles long.
 const ONE_WAY_FACE: float = 5300.0
+## The face of another ledge of tiles, as the first, far from the origin as most of a level's ledges
+## are, on its own floor: level 1 reaches x = 17 800, and past x = 2048 the engine's touch of a face
+## read only from the safe margin comes and goes. The floor reaches FAR_FLOOR_REACH px to each side.
+const FAR_TILE_LEDGE_FACE: float = 9600.0
+const FAR_FLOOR_REACH: float = 400.0
+## The face of a far ledge of tiles whose top is REST_PEAK_DEPTH px over a full jump's peak from the
+## floor, in reach of the assist, on its own floor.
+const FAR_HIGH_LEDGE_FACE: float = 12000.0
+const REST_PEAK_DEPTH: float = 8.0
+## Frames a player pushing against a face on the floor keeps pushing once he touches it, and then
+## waits with no direction, so his run has stopped, before he jumps.
+const SETTLE_FRAMES: int = 3
+const STOP_FRAMES: int = 10
+## Less than a hug's step from a face, in px: close enough that pressing him against it could take
+## the place of his own speed toward it.
+const CLOSE_GAP: float = 0.5
 const TILE_SET: TileSet = preload("res://scenes/others/tilesets/cave_placeholder_tiles.tres")
 ## The levels' solid block: a full cell on the physics layer of the levels' walls.
 const SOLID_SOURCE: int = 0
@@ -63,6 +81,11 @@ const RISE_ABOVE: float = 30.0
 ## in px/s: one frame up along it, then the peak, in reach of the assist.
 const SLOW_RISE_DEPTH: float = 10.0
 const SLOW_RISE_SPEED: float = 60.0
+## Rising along a ledge of tiles with no direction held, from this many px below its top, so the
+## feet pass the seam between its first two rows on the way up, to a peak about this many px below
+## its top, in reach of the assist, in px.
+const SEAM_RISE_DEPTH: float = 60.0
+const SEAM_PEAK_DEPTH: float = 8.0
 ## How far below the top the feet start for the smallest lift, in px, and how far over the top a
 ## lift by the fewest px may leave them, in px.
 const SHALLOW_DEPTH: float = 4.0
@@ -81,6 +104,8 @@ var _half_width: float = 0.0
 ## Ledge Assist Height and Max Fall Speed in the player's Stats.
 var _reach: float = 0.0
 var _max_fall_speed: float = 0.0
+## The gravity going up with Jump held, in px/s².
+var _rise_gravity: float = 0.0
 
 
 func _initialize() -> void:
@@ -89,6 +114,8 @@ func _initialize() -> void:
 	_half_width = size.x / 2.0
 	_reach = probe.stats.ledge_assist_height
 	_max_fall_speed = probe.stats.max_fall_speed
+	_rise_gravity = probe.stats.get_rise_gravity()
+	var probe_jump_height: float = probe.stats.jump_height
 	var demon_layers: int = probe.knock_off_layers
 	probe.queue_free()
 	make_platform(FLOOR_LEFT, FLOOR_RIGHT)
@@ -101,6 +128,10 @@ func _initialize() -> void:
 	make_wall(CEILING_LEDGE_FACE - CEILING_REACH, CEILING_LEDGE_FACE,
 			ceiling_bottom - CEILING_THICKNESS, ceiling_bottom)
 	_make_tile_ledge(TILE_LEDGE_FACE)
+	make_platform(FAR_TILE_LEDGE_FACE - FAR_FLOOR_REACH, FAR_TILE_LEDGE_FACE + FAR_FLOOR_REACH)
+	_make_tile_ledge(FAR_TILE_LEDGE_FACE)
+	make_platform(FAR_HIGH_LEDGE_FACE - FAR_FLOOR_REACH, FAR_HIGH_LEDGE_FACE + FAR_FLOOR_REACH)
+	_make_tile_ledge(FAR_HIGH_LEDGE_FACE, -probe_jump_height - REST_PEAK_DEPTH)
 	_make_one_way_platform(ONE_WAY_FACE)
 	make_wall(STEP_FACE, STEP_FACE + BLOCK_WIDTH, -STEP_HEIGHT)
 	await physics_frame
@@ -110,6 +141,9 @@ func _initialize() -> void:
 	results.append(await _a_ledge_of_tiles_is_climbed_as_one_of_bodies())
 	results.append(await _just_below_the_top_the_lift_is_the_smallest())
 	results.append(await _touching_the_face_with_no_direction_climbs_onto_the_ledge())
+	results.append(await _rising_along_far_tiles_with_no_direction_climbs_onto_the_ledge())
+	results.append(await _jumping_from_rest_by_a_far_ledge_climbs_onto_it(probe_jump_height))
+	results.append(await _carried_in_from_close_with_no_direction_climbs_onto_the_ledge())
 	results.append(await _further_below_the_top_falls_along_the_side())
 	results.append(await _with_ledge_assist_height_at_0_falls_along_the_side())
 	results.append(await _pushing_away_falls_along_the_side())
@@ -158,6 +192,60 @@ func _touching_the_face_with_no_direction_climbs_onto_the_ledge() -> bool:
 	return _report_on_the_ledge(approach,
 			"Rising along a ledge's face with no direction held, %.1f px below its top"
 			% SLOW_RISE_DEPTH)
+
+
+## Most of a level's ledges are tiles far from the origin. Carried into one with no direction held,
+## rising along its face past a seam between two rows to a peak a little below its top, he is lifted
+## onto it, as near the origin. Jump is held on the way up, so the rise uses the jump's gravity.
+func _rising_along_far_tiles_with_no_direction_climbs_onto_the_ledge() -> bool:
+	var rise_speed: float = sqrt(2.0 * _rise_gravity * (SEAM_RISE_DEPTH - SEAM_PEAK_DEPTH))
+	var approach: Approach = await _approach(FAR_TILE_LEDGE_FACE, 1.0, SEAM_RISE_DEPTH, 0.0, -1.0,
+			-1.0, -rise_speed)
+	return _report_on_the_ledge(approach,
+			"Rising along a far ledge of tiles with no direction held, from %.1f px below its top"
+			% SEAM_RISE_DEPTH)
+
+
+## Carried by his own speed into a far ledge with no direction held, a little below its top, he is
+## lifted onto it even from less than a hug's step away: his speed toward it counts as a push does.
+func _carried_in_from_close_with_no_direction_climbs_onto_the_ledge() -> bool:
+	var depth: float = _reach - UNDER_REACH
+	var approach: Approach = await _approach(FAR_TILE_LEDGE_FACE, 1.0, depth, 0.0, -1.0, -1.0, 0.0,
+			CLOSE_GAP)
+	return _report_on_the_ledge(approach,
+			"Carried into a far ledge from %.1f px with no direction held, %.1f px below its top"
+			% [CLOSE_GAP, depth])
+
+
+## Getting onto a far ledge takes no push either: standing on the floor against its face, having let
+## go of the direction, a full straight jump that peaks a little below its top lifts him onto it.
+func _jumping_from_rest_by_a_far_ledge_climbs_onto_it(jump_height: float) -> bool:
+	var what: String = ("Jumping straight up from rest by a far ledge %.1f px over the peak"
+			% REST_PEAK_DEPTH)
+	var top: float = -jump_height - REST_PEAK_DEPTH
+	var player: Player = await spawn_on_floor(
+			Vector2(FAR_HIGH_LEDGE_FACE - _half_width - STEP_GAP, -GAP))
+	if player == null:
+		return report(false, "%s: never landed" % what)
+	var stand_in: StandInInput = put_a_stand_in(player)
+	stand_in.run_direction = 1.0
+	var touched: bool = await wait_until_on_wall(player)
+	await wait_frames(SETTLE_FRAMES)
+	stand_in.run_direction = 0.0
+	await wait_frames(STOP_FRAMES)
+	stand_in.hold_jump = true
+	stand_in.press_jump()
+	var left_floor: bool = false
+	for _frame: int in MAX_FRAMES:
+		await physics_frame
+		left_floor = left_floor or not player.is_on_floor()
+		if left_floor and player.is_on_floor():
+			break
+	var end: Vector2 = player.position
+	await remove_player(player)
+	return report(touched and left_floor and absf(end.y - top) <= STAND_TOLERANCE,
+			"%s: landed at y %.1f, the ledge's top at %.1f, the floor's at 0.0%s" % [what, end.y, top,
+			"" if touched and left_floor else " (never touched the face or never jumped)"])
 
 
 ## Feet further below the top than Ledge Assist Height: never lifted, so he falls along the side.
@@ -375,12 +463,12 @@ func _side_name(side: float) -> String:
 
 
 ## A ledge of the levels' solid tiles, TILE_LEDGE_COLUMNS tiles wide, with its left face at x = face
-## and its top at LEDGE_TOP, from there down past the floor's top.
-func _make_tile_ledge(face: float) -> void:
+## and its top at top, LEDGE_TOP unless given, from there down past the floor's top.
+func _make_tile_ledge(face: float, top: float = LEDGE_TOP) -> void:
 	var tiles: TileMapLayer = TileMapLayer.new()
 	tiles.tile_set = TILE_SET
-	tiles.position = Vector2(face, LEDGE_TOP)
-	for row: int in ceili(-LEDGE_TOP / TILE_SIZE):
+	tiles.position = Vector2(face, top)
+	for row: int in ceili(-top / TILE_SIZE):
 		for column: int in TILE_LEDGE_COLUMNS:
 			tiles.set_cell(Vector2i(column, row), SOLID_SOURCE, SOLID_ATLAS)
 	root.add_child(tiles)

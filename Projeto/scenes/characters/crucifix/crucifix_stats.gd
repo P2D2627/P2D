@@ -17,15 +17,21 @@ extends Resource
 ## landing, or before the cooldown ends, still raises it then, if Crucifix is still held. Rounded to
 ## whole physics frames; 0 keeps the press for its own frame only.
 @export_range(0.0, 0.5, 0.01, "suffix:s") var raise_buffer_time: float = 0.1
-## Longest the crucifix stays up in one use, in seconds. Letting go earlier ends the use. Rounded to
-## whole physics frames.
+## The crucifix's charge: the longest it stays up from full, in seconds. Each second up spends a
+## second of it, and letting go keeps the rest. Rounded to whole physics frames.
 @export_range(0.1, 30.0, 0.1, "suffix:s") var max_use_time: float = 5.0
-## Seconds after every use, long or short, before the crucifix can go up again. Rounded to whole
-## physics frames.
+## Seconds the charge takes to fill from empty to full while the crucifix is down, so a second up
+## comes back in Cooldown Time / Max Use Time seconds. Run empty, the crucifix stays down this long,
+## until it is full. Rounded to whole physics frames.
 @export_range(0.0, 60.0, 0.5, "suffix:s") var cooldown_time: float = 15.0
+## Seconds the crucifix stays down after it is lowered with charge left, before it can go up again,
+## so quick taps raise it fewer than three times a second and its light never flashes faster than
+## is safe for players with photosensitive epilepsy. A press in that time is kept until it ends, and
+## raises it then if Crucifix is still held. Rounded to whole physics frames.
+@export_range(0.0, 1.0, 0.05, "suffix:s") var min_down_time: float = 0.35
 
 @export_group("Warning")
-## Seconds before the end of a use from which the crucifix warns that it is about to come down: its
+## Seconds of charge left from which the crucifix, while up, warns that it is about to come down: its
 ## light pulses, deeper as the end comes, and the controller's vibration grows. 0 warns nothing.
 @export_range(0.0, 5.0, 0.1, "suffix:s") var warning_time: float = 1.5
 ## How many times a second the light dims and comes back while it warns: 3 at most, so it never
@@ -63,3 +69,8 @@ func get_max_use_frames() -> int:
 ## cooldown_time in whole physics frames, rounded to the nearest one.
 func get_cooldown_frames() -> int:
 	return roundi(cooldown_time * Engine.physics_ticks_per_second)
+
+
+## min_down_time in whole physics frames, rounded to the nearest one.
+func get_min_down_frames() -> int:
+	return roundi(min_down_time * Engine.physics_ticks_per_second)

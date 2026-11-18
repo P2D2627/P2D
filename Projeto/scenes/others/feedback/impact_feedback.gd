@@ -3,8 +3,9 @@ extends Node
 
 ## Answers each moment and each state the man's body feels with a vibration of the controller, and
 ## the blows and grave moments also with a shake of the screen: a hit from a demon or a hazard; a
-## grab, his sinking while it holds him, each press to break free of it and breaking free; his death,
-## sharper on lethal spikes; a landing, firmer the longer the fall, which also shakes the screen after
+## grab, his sinking while it holds him, each press to break free of it and breaking free; lethal
+## spikes with Catches on catching him and his sinking in them; his death, sharper on lethal spikes; a
+## landing, firmer the longer the fall, which also shakes the screen after
 ## a long one; a jump; his head hitting a ceiling; getting on a wall; raising the crucifix, holding it
 ## up, something it pushes coming into its light, its running out and losing it; and a falling rock
 ## that breaks near him. A rock that falls on him is both: its hazard hits him and it breaks where he
@@ -19,8 +20,10 @@ extends Node
 ## starts, such as taking the crucifix from a man who lost it before, is no impact. _process() only
 ## runs while the crucifix is up.
 
-## The keys of the sustained vibrations in ControllerRumble: the grab's and the crucifix's.
+## The keys of the sustained vibrations in ControllerRumble: the grab's, the spikes' hold and the
+## crucifix's.
 const GRAB_HOLD: StringName = &"grab"
+const SNAG_HOLD: StringName = &"snag"
 const CRUCIFIX_HOLD: StringName = &"crucifix"
 ## No physics frame yet.
 const NO_FRAME: int = -1
@@ -80,6 +83,10 @@ func _listen() -> void:
 	for part: Node in _player.get_children():
 		if not part.is_queued_for_deletion():
 			_listen_to_part(part)
+	if _player.snag != null:
+		_player.snag.caught.connect(_on_snag_caught)
+		_player.snag.sink_changed.connect(_on_snag_sink_changed)
+		_player.snag.freed.connect(_on_snag_freed)
 	_listen_to_level()
 
 
@@ -171,6 +178,7 @@ func _on_died() -> void:
 	_death_frame = Engine.get_physics_frames()
 	shake.add_trauma(stats.death_trauma)
 	rumble.end_sustain(GRAB_HOLD)
+	rumble.end_sustain(SNAG_HOLD)
 	_end_crucifix_hold()
 	rumble.play(rumble_stats.death)
 	if _spikes_frame == _death_frame:
@@ -185,6 +193,25 @@ func _on_spikes_entered(body: Node2D) -> void:
 	_spikes_frame = Engine.get_physics_frames()
 	if _death_frame == _spikes_frame:
 		rumble.play(rumble_stats.spike_death)
+
+
+## Lethal spikes with Catches on catching him jolt like a hit, with his sinking's held vibration
+## starting under it. His death there comes later than his coming in, so it does not stab.
+func _on_snag_caught() -> void:
+	shake.add_trauma(stats.hit_trauma)
+	rumble.play(rumble_stats.hit)
+	rumble.sustain(SNAG_HOLD, rumble_stats.grab_sink)
+
+
+## His sinking in the spikes grows the held vibration as the grab's does, from 0 at the catch to 1 at
+## his death.
+func _on_snag_sink_changed(sink: float) -> void:
+	rumble.sustain(SNAG_HOLD, rumble_stats.grab_sink, sink)
+
+
+## Out of the spikes alive, the held vibration stops.
+func _on_snag_freed() -> void:
+	rumble.end_sustain(SNAG_HOLD)
 
 
 ## Every landing PlayerSounds hears vibrates, from Landing for the shortest to Hard Landing for a hard

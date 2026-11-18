@@ -2,16 +2,16 @@
 
 importer="texture"
 type="CompressedTexture2D"
-uid="uid://bjdf07a1x8tuh"
-path="res://.godot/imported/fire_upright_sheet.png-aa7ce1c390a1fa05b4d21a084f9fc8ee.ctex"
+uid="uid://rht5a1h2uq3t"
+path="res://.godot/imported/fire_leaning_sheet.png-279cc1adfe9156b34eac7153116f7f8e.ctex"
 metadata={
 "vram_texture": false
 }
 
 [deps]
 
-source_file="res://assets/sprites/fire/fire_upright_sheet.png"
-dest_files=["res://.godot/imported/fire_upright_sheet.png-aa7ce1c390a1fa05b4d21a084f9fc8ee.ctex"]
+source_file="res://assets/sprites/fire/fire_leaning_sheet.png"
+dest_files=["res://.godot/imported/fire_leaning_sheet.png-279cc1adfe9156b34eac7153116f7f8e.ctex"]
 
 [params]
 

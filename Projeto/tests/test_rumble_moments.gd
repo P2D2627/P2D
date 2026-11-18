@@ -445,8 +445,9 @@ func _the_crucifix_held_up_holds_a_vibration_that_grows_as_it_runs_out() -> bool
 
 ## Walking into lethal spikes, he dies on them, and his death stabs: while Spike Death lasts, the
 ## weak motor runs at its level, above Death's, with the strong one at Death's; once it is over, Death
-## runs alone, weaker on the weak motor than it was. A death without spikes, in the case of every
-## moment, asks for Death alone.
+## runs alone, weaker on the weak motor than it was. The game's freeze at his death in brambles
+## (#263) holds the stab too, so its time counts from the end of the freeze. A death without spikes,
+## in the case of every moment, asks for Death alone.
 func _his_death_on_spikes_stabs_first() -> bool:
 	var spikes: LethalSpikes = SPIKES_SCENE.instantiate() as LethalSpikes
 	spikes.position = Vector2(START.x + SPIKES_FROM_START, 0.0)
@@ -461,6 +462,13 @@ func _his_death_on_spikes_stabs_first() -> bool:
 	input.run_direction = 1.0
 	var died: bool = await wait_until(scene.player.is_dead)
 	var stabbed: Vector2 = _asked_of(PAD)
+	# The brambles' hitstop slows the game first: the stab is timed from its end. Waited out for a
+	# second at most, so a freeze that never ends fails the case instead of hanging the run.
+	var bramble_death: Node = scene.player.get_node(^"BrambleDeath")
+	for frame: int in Engine.physics_ticks_per_second:
+		if not bramble_death.is_frozen():
+			break
+		await process_frame
 	await _frames(_frames_of(pulses.spike_death))
 	var after_stab: Vector2 = _asked_of(PAD)
 	spikes.queue_free()
