@@ -14,3 +14,10 @@ extends Demon
 func _ready() -> void:
 	super()
 	_ring.gates = opens
+
+
+## For the ActivityTracker: the regular dog's rect and its ring's whole reach, so it is awake whenever the man,
+## always on the screen, could come inside the ring, however far the ring reaches.
+func get_activity_rect() -> Rect2:
+	var ring: Rect2 = Rect2(_ring.global_position - Vector2.ONE * _ring.reach, Vector2.ONE * 2.0 * _ring.reach)
+	return super().merge(ring)

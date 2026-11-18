@@ -10,7 +10,8 @@ extends Node
 ## phase change and each SavePoint save, the Save Indicator says so, and the menu's Continue comes
 ## back there. Until the next save, what the man does is as if he had not done it: a death starts
 ## the phase over from the save, not only the level but GameState too. An accepted upgrade is the
-## exception: it can never be taken back, so it saves at once. A level that does not start the game
+## exception: it can never be taken back, so it saves at once; so does a camera cutscene that plays
+## once in the game, so a death does not show it again. A level that does not start the game
 ## plays outside the run, with nothing saved and nothing put back.
 ## The run's numbers (RunStats: deaths, time) are the other exception, the other way: a death must
 ## count, so they are never put back on a death. They are written beside the save on each save, on
@@ -152,6 +153,12 @@ func _on_save_point_reached() -> void:
 ## so the restart that follows, which goes back to the save, brings him there. The level only jumps
 ## while it runs, so never while a phase change holds it frozen.
 func _on_level_jumped_to_phase(_phase: int) -> void:
+	_save_the_current_phase()
+
+
+## A cutscene that plays once in the game was seen: the save keeps it at once, so a death before the
+## next checkpoint does not show it again.
+func _on_cutscene_seen() -> void:
 	_save_the_current_phase()
 
 
@@ -318,7 +325,8 @@ func _on_main_menu_requested() -> void:
 	_main_menu.open()
 
 
-## Puts level in the slot and listens to the exits of its phases and to its save points.
+## Puts level in the slot and listens to the exits of its phases, to its save points and to its
+## cutscenes that play once.
 func _add_level(level: Node) -> void:
 	_level_slot.add_child(level)
 	for node: Node in get_tree().get_nodes_in_group(PhaseExit.GROUP):
@@ -327,6 +335,9 @@ func _add_level(level: Node) -> void:
 	for node: Node in get_tree().get_nodes_in_group(SavePoint.GROUP):
 		if level.is_ancestor_of(node):
 			(node as SavePoint).reached.connect(_on_save_point_reached)
+	for node: Node in get_tree().get_nodes_in_group(CameraCutscene.GROUP):
+		if level.is_ancestor_of(node):
+			(node as CameraCutscene).event_marked.connect(_on_cutscene_seen)
 
 
 ## The level leaves the tree at once and is freed at the end of the frame, so the level that comes

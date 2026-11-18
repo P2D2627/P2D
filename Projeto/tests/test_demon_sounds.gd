@@ -1,5 +1,5 @@
 # Test of the demon's sounds (ADR 0040). The demon scene has them, linked to the demon and to a cue
-# on the SFX bus, with the alert and search beeps and no bark yet. The alert plays Alert Sound and
+# on the Alerts bus, with the alert and search beeps and no bark yet. The alert plays Alert Sound and
 # the search Search Sound, at the demon's voice moved by at most Pitch Variation; a bark plays Bark
 # Sound, and nothing while its slot is empty; other states play nothing. A take-off plays Take Off
 # Sound and a landing Land Sound, both in the scene, at the demon's voice; a pack leaping on one
@@ -42,11 +42,11 @@ func _the_demon_scene_has_its_sounds() -> bool:
 	var demon: Demon = await _make_demon()
 	var sounds: DemonSounds = _sounds_of(demon)
 	var linked: bool = sounds != null and sounds.demon == demon and sounds.cue != null \
-			and sounds.cue.bus == &"SFX"
+			and sounds.cue.bus == &"Alerts"
 	var filled: bool = linked and sounds.alert_sound != null and sounds.search_sound != null \
 			and sounds.bark_sound == null
 	await _clear(demon)
-	return report(linked and filled, "Demon scene's sounds: linked on SFX %s, beeps in and no bark %s"
+	return report(linked and filled, "Demon scene's sounds: linked on Alerts %s, beeps in and no bark %s"
 			% [linked, filled])
 
 

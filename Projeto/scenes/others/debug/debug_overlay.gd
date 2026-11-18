@@ -50,6 +50,9 @@ var _peak_y: float = 0.0
 @onready var _moral: GameMoral = get_node_or_null(^"/root/Moral") as GameMoral
 @onready var _progress: GameProgress = get_node_or_null(^"/root/GameState") as GameProgress
 @onready var _run_stats: GameRunStats = get_node_or_null(^"/root/RunStats") as GameRunStats
+## The level's ActivityTracker, which its camera has; without one, there is no activity line.
+@onready var _activity: ActivityTracker = get_tree().get_first_node_in_group(
+		ActivityTracker.TRACKER_GROUP) as ActivityTracker
 
 
 func _ready() -> void:
@@ -88,9 +91,10 @@ func _unhandled_input(event: InputEvent) -> void:
 
 ## Rewrites the text on every frame while it shows, with new strings each time, which only debug
 ## builds pay for. Each section is its own function. The player's sections need a player that still
-## exists, and the camera's a camera: none may be linked, or it may have been freed. The offers'
-## section is about his run, so it shows with a player too, and with the autoloads Offers and Moral;
-## the run's numbers, with a player and the autoload RunStats.
+## exists, and the camera's a camera: none may be linked, or it may have been freed. The activity
+## section needs the level's ActivityTracker. The offers' section is about his run, so it shows
+## with a player too, and with the autoloads Offers and Moral; the run's numbers, with a player and
+## the autoload RunStats.
 func _process(_delta: float) -> void:
 	var text: String = _performance_section()
 	if is_instance_valid(player):
@@ -99,6 +103,8 @@ func _process(_delta: float) -> void:
 		text += "\n" + _soul_points_section()
 	if is_instance_valid(camera):
 		text += "\n" + _camera_section()
+	if is_instance_valid(_activity):
+		text += "\n" + _activity_section()
 	if is_instance_valid(player) and not _last_jump.is_empty():
 		text += "\n" + _jump_section()
 	if is_instance_valid(player) and _offers != null and _moral != null:
@@ -199,6 +205,12 @@ func _performance_section() -> String:
 			roundi(Engine.get_frames_per_second()),
 			_monitor_ms(Performance.TIME_PROCESS),
 			_monitor_ms(Performance.TIME_PHYSICS_PROCESS)]
+
+
+## How many of the ActivityTracker's members are awake: the rest are far off the screen and at
+## rest, and cost nothing on a frame.
+func _activity_section() -> String:
+	return "activity: %d of %d awake" % [_activity.get_awake_count(), _activity.get_member_count()]
 
 
 ## The player's state, by its name in Player.State, and its velocity in px/s. In Godot, y grows
