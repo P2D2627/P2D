@@ -9,6 +9,7 @@ resource_local_to_scene = true
 size = Vector2(88, 24)
 
 [node name="LethalSpikes" type="Area2D"]
+z_index = 1
 collision_layer = 0
 collision_mask = 2
 monitorable = false

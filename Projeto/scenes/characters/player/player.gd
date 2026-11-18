@@ -51,6 +51,8 @@ const WALL_HUG_STEP: float = 1.0
 const WALL_SIDES: Array[float] = [-1.0, 1.0]
 ## The brambles' hold on him (ADR 0067).
 const Snag := preload("res://scenes/characters/player/snag.gd")
+## His death in brambles (#263).
+const BrambleDeath := preload("res://scenes/characters/player/bramble_death.gd")
 
 ## Movement values. Every player that uses the same file shares them.
 @export var stats: PlayerMovementStats
@@ -67,6 +69,9 @@ const Snag := preload("res://scenes/characters/player/snag.gd")
 ## The brambles' hold on him, which the strips catch him with; it puts itself here as it gets ready.
 ## With none, as in a bare test player, brambles kill him at one touch.
 var snag: Snag = null
+## How he dies when brambles kill him, which the strips call as they do; it puts itself here as it
+## gets ready. With none, he just dies where he is.
+var bramble_death: BrambleDeath = null
 ## In the air until the first move_and_slide() finds the floor.
 var _state: State = State.IN_AIR
 ## Physics frames left in which Jump still works after leaving the floor without jumping.
@@ -104,6 +109,8 @@ var _was_on_floor: bool = false
 var _was_on_ceiling: bool = false
 ## True once he has died, so he dies once.
 var _is_dead: bool = false
+## True from pin(): he stays exactly where he is, in the air too.
+var _pinned: bool = false
 ## What he died of, as die() was told; empty while alive.
 var _death_cause: StringName = &""
 ## Which one killed him, when that matters, as the strip of spikes; empty while alive or when it
@@ -135,6 +142,9 @@ func _ready() -> void:
 ## body he can't stand on doesn't count: it shoves him off instead. Just before moving, a fall into
 ## a ledge a little below its top lifts him onto it (ADR 0059); a hug into a wall ends with the move.
 func _physics_process(delta: float) -> void:
+	if _pinned:
+		velocity = Vector2.ZERO
+		return
 	_was_rising = velocity.y < 0.0
 	_update_state()
 	_shove_off_what_cannot_be_stood_on()
@@ -258,6 +268,19 @@ func hold_still() -> void:
 ## Ends hold_still(): what he stands on can shove him off again.
 func let_go() -> void:
 	_held_still = false
+
+
+## Holds him exactly where he is, in the air too, with nothing moving him, gravity included, until
+## the room starts over: for a death that catches him, as in brambles (#263). Unlike hold_still(),
+## he does not fall.
+func pin() -> void:
+	_pinned = true
+	velocity = Vector2.ZERO
+
+
+## The way he faces, as his drawing shows: 1 right, -1 left.
+func get_facing() -> float:
+	return 1.0 if _sprite.flip_h else -1.0
 
 
 ## The man dies at once, as on spikes, whatever his SP: he stops where he is, with no run and no jump,

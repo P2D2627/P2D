@@ -17,6 +17,8 @@ shader_type canvas_item;
 const float EIGHTH_TURN = 0.785398;
 
 uniform float sink_depth = 0.0;
+// As in sink.gdshader: whitens the drawing, its shape kept (#263).
+uniform float flash : hint_range(0.0, 1.0) = 0.0;
 // The outline's width in window px (the rig scales it by the stretch) and its colour.
 uniform float outline_px : hint_range(0.0, 12.0) = 0.0;
 uniform vec4 outline_color : source_color = vec4(0.1, 0.05, 0.09, 1.0);
@@ -162,6 +164,7 @@ void fragment() {
 			COLOR = vec4(outline_color.rgb, outline_color.a * tint.a);
 		}
 	}
+	COLOR.rgb = mix(COLOR.rgb, vec3(1.0), flash);
 }
 
 void light() {

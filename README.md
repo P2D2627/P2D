@@ -491,11 +491,35 @@ são silvas.
 | Portão | `scenes/objects/gates/gate.tscn` | barra uma passagem à personagem, aos demónios e à visão destes; desbloqueado, sobe a sua própria altura, por trás da rocha; com Slide Way em Left ou Right, é um alçapão e desliza para esse lado a sua própria largura | desliza em 0,8 s (48 passos de física) |
 | Desbloqueador | `scenes/objects/gates/gate_unlocker.tscn` | ativa-se uma vez, com o crucifixo erguido ao pé dele, e abre os portões da lista Gates; o crucifixo não sabe que ele existe, porque o reconhece como mais um elemento repelível (`scenes/characters/components/crucifix_sensor.gd`), que não se move | alcance de 200 px, o raio do crucifixo |
 | Anel de proximidade | `scenes/objects/gates/proximity_unlocker.tscn` | ativa-se uma vez, na primeira vez que a personagem entra no círculo, sem crucifixo, e abre os portões da lista Gates | alcance (Reach) de 288 px por omissão |
-| Picos letais | `scenes/objects/traps/lethal_spikes.tscn` | um toque mata a personagem de imediato, com qualquer valor de SP. Com Catches ligado (desligado por defeito, ADR 0067), prendem-na em vez disso: corre a 10 % da velocidade, não salta, afunda e perde 150 SP por segundo, e morre se o SP acabar lá dentro (valores no nó `Snag` do `player.tscn`, `test_snag.gd`); os demónios passam por cima sem efeito; desenham-se como silvas, um arbusto por tile, um pouco mais largo do que o tile, para formarem uma sebe contínua, com a altura e o espelho escolhidos ao acaso a partir da posição da faixa, que fica sempre igual; sem arte (Art), voltam aos dentes | parte que mata com 24 px de altura e 4 px de folga em cada ponta, para um salto que passe à vista passar mesmo; cada arbusto com 40 px de altura, mais ou menos 10 %, que cobre a parte que mata de ponta a ponta (`test_lethal_spikes_art.gd`) |
+| Picos letais | `scenes/objects/traps/lethal_spikes.tscn` | um toque mata a personagem de imediato, com qualquer valor de SP, e as silvas puxam-na para dentro (por baixo da tabela). Com Catches ligado (desligado por defeito, ADR 0067), prendem-na em vez disso: corre a 10 % da velocidade, não salta, afunda e perde 150 SP por segundo, e morre se o SP acabar lá dentro (valores no nó `Snag` do `player.tscn`, `test_snag.gd`); os demónios passam por cima sem efeito; desenham-se como silvas, um arbusto e meio por tile, em média (Brambles Per Tile; com um só, a sebe ficava rala), para formarem uma sebe contínua, com a altura e o espelho escolhidos ao acaso a partir da posição da faixa, que fica sempre igual; sem arte (Art), voltam aos dentes | parte que mata com 24 px de altura e 4 px de folga em cada ponta, para um salto que passe à vista passar mesmo; cada arbusto com 40 px de altura, mais ou menos 10 %, que cobre a parte que mata de ponta a ponta (`test_lethal_spikes_art.gd`) |
 | Plataforma que desaba | `scenes/objects/platforms/collapsing_platform.tscn` | usa o mesmo tile das plataformas de sentido único; pousar nela faz com que pisque e desapareça; saltar através dela, de baixo, não a ativa; volta ao fim de Come Back Time, com 0 fica desaparecida até o nível recomeçar | desaparece em 0,6 s (36 passos) e volta ao fim de 3 s |
 
 A largura e a altura destes elementos definem-se em tiles, no Inspector. A morte imediata é o método
-`die()` da personagem, que a imobiliza e fecha a sua caixa de dano, enquanto o nível recomeça. O cão
+`die()` da personagem, que a imobiliza e fecha a sua caixa de dano, enquanto o nível recomeça.
+
+Quando as silvas a matam, o jogo congela 0,1 s, a única paragem do jogo, com a personagem desenhada
+a branco. Durante o congelamento, o jogo corre a 2 % da velocidade e não a zero: com o tempo parado,
+cada script receberia um intervalo de 0 s entre frames, e a câmara e os cães dividem por ele
+(`test_bramble_death.gd` verifica que nunca chega a 0). Depois, as silvas puxam-na para dentro em 0,6 s, cada vez mais depressa. Num chão de
+silvas, afunda-se cortada à altura do chão, como quando os cães a agarram, e o que desce fica atrás
+da rocha: ainda se vê quase inteira 0,2 s depois do congelamento e desaparece aos 0,5 s, quando o
+ecrã já escurece. Numa parede ou num teto, é puxada 10 px para dentro da sebe. A curva acelera para
+que o corpo se veja até ao escuro: com o puxão mais forte no início, desaparecia em 0,3 s e ficava
+meio segundo de silvas vazias. As silvas a menos de três tiles agitam-se com força desde o primeiro
+instante, 16 px no topo, e a agitação cai para cerca de um terço em 0,45 s; ao mesmo tempo,
+inclinam-se para o sítio da morte. Fora da morte, cada arbusto balança devagar, com fase própria
+(2 px, uma oscilação em 2,5 a 4 s), e estremece quando a personagem avança para ele a menos de um
+tile. Os desenhos mudam 20 vezes por segundo, como os outros efeitos. Os valores estão em
+`scenes/characters/player/bramble_death_stats.tres` (a morte) e em
+`scenes/objects/traps/bramble_motion_stats.tres` (o movimento das silvas). O movimento de todas as
+silvas do nível 1 (72 faixas, 465 arbustos) custa 71,9 µs em cada frame dos efeitos, cerca de 24 µs
+por frame a 60 fps; o tempo de frame com as silvas paradas e a mexer fica dentro do ruído (4,1 a
+4,3 ms, `tests/measures/measure_brambles.gd`). Ficam no código, desligadas por omissão, duas versões
+experimentadas e recusadas: a personagem cortada pelos espinhos (Cut Apart) e ramos que a enrolam
+(Vines). Testes: `test_bramble_motion.gd`, `test_bramble_death.gd`, `test_bramble_pull.gd` e
+`test_bramble_cut.gd`.
+
+O cão
 grande (`scenes/characters/demon/big_demon.tscn`), na fase 2 do nível 1, é o demónio normal 1,25 vezes maior: o corpo
 (140 × 70 px), a caixa de ataque, a arte e as verificações aos pés. No ecrã, distingue-se do cão
 normal pelo tamanho e pela arte, escurecida a 60 % do brilho, para que a diferença se leia de
@@ -1264,6 +1288,11 @@ godot --headless --fixed-fps 60 --path Projeto --script res://tests/test_crucifi
 godot --headless --fixed-fps 60 --path Projeto --script res://tests/test_crucifix_menus.gd
 godot --headless --fixed-fps 60 --path Projeto --script res://tests/test_input_profiles.gd
 godot --headless --fixed-fps 60 --path Projeto --script res://tests/test_controls.gd
+godot --headless --fixed-fps 60 --path Projeto --script res://tests/test_bramble_motion.gd
+godot --headless --fixed-fps 60 --path Projeto --script res://tests/test_bramble_death.gd
+godot --headless --fixed-fps 60 --path Projeto --script res://tests/test_bramble_pull.gd
+godot --headless --fixed-fps 60 --path Projeto --script res://tests/test_bramble_cut.gd
+godot --headless --fixed-fps 60 --path Projeto --script res://tests/test_death_iris.gd
 godot --headless --fixed-fps 60 --path Projeto --script res://tests/test_input_map.gd
 godot --headless --fixed-fps 60 --path Projeto --script res://tests/test_background_layer.gd
 godot --headless --fixed-fps 60 --path Projeto --script res://tests/test_soul_points.gd

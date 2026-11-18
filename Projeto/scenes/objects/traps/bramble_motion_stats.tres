@@ -1,0 +1,6 @@
+[gd_resource type="Resource" format=3]
+
+[ext_resource type="Script" path="res://scenes/objects/traps/bramble_motion_stats.gd" id="1_stats"]
+
+[resource]
+script = ExtResource("1_stats")

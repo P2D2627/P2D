@@ -28,6 +28,8 @@
 [ext_resource type="Texture2D" path="res://assets/sprites/player/main_character_jump_384.png" id="15_jump"]
 [ext_resource type="Texture2D" path="res://assets/sprites/player/main_character_escape_384.png" id="16_escape"]
 [ext_resource type="Script" path="res://scenes/others/sight/sight_eyes.gd" id="17_sight_eyes"]
+[ext_resource type="Script" path="res://scenes/characters/player/bramble_death.gd" id="19_bramble_death"]
+[ext_resource type="Resource" path="res://scenes/characters/player/bramble_death_stats.tres" id="20_bramble_death_stats"]
 [ext_resource type="Script" path="res://scenes/characters/player/snag.gd" id="18_snag"]
 
 [sub_resource type="RectangleShape2D" id="RectangleShape2D_player"]
@@ -329,6 +331,12 @@ grab_escape = NodePath("../GrabEscape")
 [node name="Snag" type="Node" parent="." node_paths=PackedStringArray("player")]
 script = ExtResource("18_snag")
 player = NodePath("..")
+
+[node name="BrambleDeath" type="Node" parent="." node_paths=PackedStringArray("player", "sinking")]
+script = ExtResource("19_bramble_death")
+player = NodePath("..")
+sinking = NodePath("../SinkingDrawing")
+stats = ExtResource("20_bramble_death_stats")
 
 [node name="Eyes" type="Marker2D" parent="."]
 position = Vector2(0, -84)

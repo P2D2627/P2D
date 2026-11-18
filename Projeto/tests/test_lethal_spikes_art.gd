@@ -1,5 +1,5 @@
 # Checks the spikes' brambles (#263): with no Art there are none, and the teeth are drawn; with Art
-# there is one per tile, standing on the floor, as tall as the teeth give or take the spread and as
+# there are Brambles Per Tile to a tile, standing on the floor, as tall as the teeth give or take the spread and as
 # wide as the drawing's shape makes it; together they cover the part that kills with no gap and
 # reach above it; a strip looks the same each time it is built at the same spot, and two strips at
 # two spots differ; on a long strip their size and mirroring vary; and the scene's spikes carry the
@@ -27,7 +27,7 @@ func _initialize() -> void:
 			Image.create_empty(ART_SIZE.x, ART_SIZE.y, false, Image.FORMAT_RGBA8))
 	var results: Array[bool] = []
 	results.append(_with_no_art_there_are_no_brambles())
-	results.append(_one_per_tile_stands_on_the_floor_as_tall_as_the_teeth(art))
+	results.append(_so_many_per_tile_stand_on_the_floor_as_tall_as_the_teeth(art))
 	results.append(_together_they_cover_the_part_that_kills_and_reach_above_it(art))
 	results.append(_a_strip_looks_the_same_each_time_and_two_strips_differ(art))
 	results.append(_on_a_long_strip_their_size_and_mirroring_vary(art))
@@ -42,7 +42,7 @@ func _with_no_art_there_are_no_brambles() -> bool:
 	return report(count == 0, "With no art, %d brambles (the teeth are drawn)" % count)
 
 
-func _one_per_tile_stands_on_the_floor_as_tall_as_the_teeth(art: Texture2D) -> bool:
+func _so_many_per_tile_stand_on_the_floor_as_tall_as_the_teeth(art: Texture2D) -> bool:
 	var spikes: LethalSpikes = _strip(art, WIDTH_TILES, SPOT)
 	var brambles: Array[LethalSpikes.Bramble] = spikes.get_brambles()
 	var lowest: float = spikes.tooth_height * (1.0 - spikes.art_size_spread)
@@ -54,10 +54,11 @@ func _one_per_tile_stands_on_the_floor_as_tall_as_the_teeth(art: Texture2D) -> b
 		if absf(bramble.rect.end.y) > SAME or size.y < lowest - SAME or size.y > highest + SAME \
 				or absf(size.x / size.y - shape) > SAME:
 			wrong.append(str(bramble.rect))
+	var expected: int = roundi(WIDTH_TILES * spikes.brambles_per_tile)
 	spikes.free()
-	return report(brambles.size() == WIDTH_TILES and wrong.is_empty(),
-			"%d brambles for %d tiles, %.0f to %.0f px tall; off the floor or the size: %s"
-			% [brambles.size(), WIDTH_TILES, lowest, highest, wrong])
+	return report(brambles.size() == expected and wrong.is_empty(),
+			"%d brambles for %d tiles (%d expected), %.0f to %.0f px tall; off the floor or the size: %s"
+			% [brambles.size(), WIDTH_TILES, expected, lowest, highest, wrong])
 
 
 func _together_they_cover_the_part_that_kills_and_reach_above_it(art: Texture2D) -> bool:
