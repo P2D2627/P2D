@@ -148,6 +148,13 @@ func _on_save_point_reached() -> void:
 	_save_the_current_phase()
 
 
+## A debug key put the level at a phase, as if he had reached its save point: the save keeps that,
+## so the restart that follows, which goes back to the save, brings him there. The level only jumps
+## while it runs, so never while a phase change holds it frozen.
+func _on_level_jumped_to_phase(_phase: int) -> void:
+	_save_the_current_phase()
+
+
 ## An upgrade can never be taken back, so the save keeps it at once: a death before the next
 ## checkpoint does not undo it. In a phase change, the next phase's save keeps it.
 func _on_upgrade_granted(_id: StringName) -> void:
@@ -182,6 +189,7 @@ func _start_level(scene: PackedScene) -> void:
 	if level is Level:
 		(level as Level).restart_requested.connect(_restart_level.bind(level, scene),
 				CONNECT_DEFERRED)
+		(level as Level).jumped_to_phase.connect(_on_level_jumped_to_phase)
 	else:
 		push_warning("Main: %s has no Level script at its root, so it never starts over."
 				% scene.resource_path)

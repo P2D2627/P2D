@@ -68,7 +68,8 @@ RT, LS ← para o stick esquerdo); mudam no momento em que o comando se liga ou 
 | Interagir | E | Ctrl | X / Square |
 
 O terceiro perfil, Custom, começa igual ao predefinido, e cada ação pode receber outra tecla ou
-botão do rato. O Esc e as teclas de depuração (F3, F4, F7, F8 e F9) estão reservados. As teclas W,
+botão do rato. O Esc e as teclas de depuração (F3, F4, F7, F8 e F9) estão reservados; o 1, o 2 e o
+3, que com o texto de depuração visível recomeçam numa fase, não estão. As teclas W,
 E, A, S e D do perfil das setas ficam livres para os upgrades.
 
 | Ação | Teclado | Comando |
@@ -78,6 +79,7 @@ E, A, S e D do perfil das setas ficam livres para os upgrades.
 | Voltar nos menus | Esc | B / Circle |
 | Mostrar e esconder o texto de depuração | F3 | — |
 | Retirar 10 SP à personagem (só na versão de depuração) | F4 | — |
+| Recomeçar o nível na fase 1, 2 ou 3 (com o texto de depuração visível) | 1 / 2 / 3 | — |
 
 ## Mecânicas implementadas
 
@@ -443,7 +445,7 @@ toque troca a mão que a personagem tem levantada, para que cada toque se veja. 
 pode juntar-se a meio, e pede mais 6. Com dois, o agarrão fica cheio: nenhuma pancada entra, e os
 outros demónios esperam a cerca de 130 px. Se o jogador parar de premir, o progresso desce: ao fim de 0,25 s sem premir, perde metade
 da barra por segundo, pelo que quem prime 4 vezes por segundo não perde nada. Se não se soltar em
-3 s, a personagem morre, aparece "You died" e o nível recomeça 1,5 s depois. Se morrer por outra
+3 s, a personagem morre, aparece "You died", o ecrã escurece e o nível recomeça 0,7 s depois. Se morrer por outra
 causa enquanto está agarrada, como nos picos letais, o agarrão acaba da mesma forma: os toques
 deixam de contar e aparece "You died".
 
@@ -1227,10 +1229,24 @@ Para um nível aparecer no New Game, acrescenta-se à lista Levels do Main, no I
 deixado vazio, ou sem cena, fica fora do menu, com um aviso no Output.
 
 O nó raiz de cada nível tem o script `scenes/levels/level.gd` (`Level`), com a personagem do nível no campo
-Player do Inspector. Quando a personagem morre, este script espera 1,5 s, para que a morte se veja,
-e recomeça o nível: no jogo, o Main troca-o por uma cópia nova da mesma cena; aberto com F6, o nível
-recarrega-se a si próprio. Uma cópia nova repõe a personagem, os demónios e a câmara como no início,
-sem que cada sistema precise de código para se repor. Um nível sem este script não recomeça.
+Player do Inspector. Quando a personagem morre, este script espera 0,7 s, para que a morte se veja,
+escurece o ecrã até ao preto nos últimos 0,3 s e recomeça o nível: no jogo, o Main troca-o por uma cópia nova da
+mesma cena; aberto com F6, o nível recarrega-se a si próprio. Uma cópia nova repõe a personagem, os
+demónios e a câmara como no início, sem que cada sistema precise de código para se repor. Um nível
+sem este script não recomeça. Nas silvas, a espera começa depois do congelamento de 0,1 s.
+
+Passados 0,15 s, o salto encurta a espera: o ecrã escurece logo, em 0,3 s, pelo que a troca mais
+cedo continua aos 0,45 s. O preto é puro, sem o tom do nível. O escurecer cresce com o quadrado do
+tempo (Fade Ease = 2): começa ténue, enquanto a morte ainda se vê, e fecha com firmeza. A troca faz-se com o ecrã
+já escuro, porque recomeçar o nível 1 custa cerca de 0,5 s: 41 ms a instanciar, 43 ms a juntar à
+árvore e um frame de cerca de 410 ms a seguir, a maior parte nos tiles (5 rondas,
+`tests/measures/measure_restart.gd`). A cópia nova abre com o ecrã escuro e clareia em 0,35 s, ao contrário do
+escurecer: quase tudo de uma vez e o resto devagar. A personagem joga-se desde o primeiro frame, pelo
+que o clarear não atrasa o regresso ao jogo. Avança no máximo 0,05 s por frame, para que esse primeiro frame longo não salte o clarear. Os
+tempos estão no Inspector do nível (Restart Delay, Skip After) e em
+`scenes/levels/death_iris_stats.tres` (o escurecer). Fica no código, desligada por omissão (Iris),
+uma íris que fecha sobre o corpo e abre sobre a personagem. Testes: `test_level_restart.gd` e
+`test_death_iris.gd`.
 
 Na primeira abertura, o Godot gera a pasta `Projeto/.godot/` com a cache de importação. Esta pasta
 não é versionada e pode ser apagada sem perda de trabalho.
@@ -1272,6 +1288,11 @@ godot --headless --fixed-fps 60 --path Projeto --script res://tests/test_phase_e
 godot --headless --fixed-fps 60 --path Projeto --script res://tests/test_lethal_spikes.gd
 godot --headless --fixed-fps 60 --path Projeto --script res://tests/test_snag.gd
 godot --headless --fixed-fps 60 --path Projeto --script res://tests/test_lethal_spikes_art.gd
+godot --headless --fixed-fps 60 --path Projeto --script res://tests/test_bramble_motion.gd
+godot --headless --fixed-fps 60 --path Projeto --script res://tests/test_bramble_death.gd
+godot --headless --fixed-fps 60 --path Projeto --script res://tests/test_bramble_pull.gd
+godot --headless --fixed-fps 60 --path Projeto --script res://tests/test_bramble_cut.gd
+godot --headless --fixed-fps 60 --path Projeto --script res://tests/test_death_iris.gd
 godot --headless --fixed-fps 60 --path Projeto --script res://tests/test_gate.gd
 godot --headless --fixed-fps 60 --path Projeto --script res://tests/test_collapsing_platform.gd
 godot --headless --fixed-fps 60 --path Projeto --script res://tests/test_lust_phase_2.gd
@@ -1288,11 +1309,6 @@ godot --headless --fixed-fps 60 --path Projeto --script res://tests/test_crucifi
 godot --headless --fixed-fps 60 --path Projeto --script res://tests/test_crucifix_menus.gd
 godot --headless --fixed-fps 60 --path Projeto --script res://tests/test_input_profiles.gd
 godot --headless --fixed-fps 60 --path Projeto --script res://tests/test_controls.gd
-godot --headless --fixed-fps 60 --path Projeto --script res://tests/test_bramble_motion.gd
-godot --headless --fixed-fps 60 --path Projeto --script res://tests/test_bramble_death.gd
-godot --headless --fixed-fps 60 --path Projeto --script res://tests/test_bramble_pull.gd
-godot --headless --fixed-fps 60 --path Projeto --script res://tests/test_bramble_cut.gd
-godot --headless --fixed-fps 60 --path Projeto --script res://tests/test_death_iris.gd
 godot --headless --fixed-fps 60 --path Projeto --script res://tests/test_input_map.gd
 godot --headless --fixed-fps 60 --path Projeto --script res://tests/test_background_layer.gd
 godot --headless --fixed-fps 60 --path Projeto --script res://tests/test_soul_points.gd
@@ -1424,7 +1440,18 @@ um componente por objeto".
 godot --headless --fixed-fps 60 --path Projeto --script res://tests/measures/measure_sight_reveal.gd
 ```
 
-O `measure_joypads.gd` precisa de um comando ligado e é o único que corre sem `--headless`, porque
+O `measure_brambles.gd` e o `measure_restart.gd` correm com janela, porque sem ela nada se desenha,
+e também não verificam resultados. O primeiro mede o tempo de frame no nível 1, com a câmara na
+maior faixa de silvas, paradas e a mexer, e o trabalho das faixas num frame dos efeitos; o segundo
+mede o custo de recomeçar o nível 1, em 5 rondas. Os números estão em "Portões, picos letais e
+plataformas que desabam" e na descrição do `Level`.
+
+```
+godot --path Projeto --script res://tests/measures/measure_brambles.gd
+godot --path Projeto --script res://tests/measures/measure_restart.gd
+```
+
+O `measure_joypads.gd` precisa de um comando ligado e também corre sem `--headless`, porque
 sem janela o Godot não lê comandos. Lista os comandos que o motor vê, faz vibrar cada motor e, durante
 20 s, escreve cada ação e cada botão premidos, com a janela em foco. Sai com o código 1 se não houver
 comando.
@@ -1612,6 +1639,7 @@ teclado, e não pela letra impressa, pelo que o WASD se mantém num teclado AZER
 | `debug_damage` | F4 | — |
 | `debug_accept_offer` / `debug_refuse_offer` | F7 / F8 | — |
 | `debug_reset_run` | F9 | — |
+| `debug_phase_1` / `debug_phase_2` / `debug_phase_3` | 1 / 2 / 3 (só com o overlay visível) | — |
 | `ui_accept` | Enter, Espaço | A / Cross |
 | `ui_cancel` | Escape | B / Circle |
 
@@ -2559,6 +2587,21 @@ sem jogar até lá. A tecla F9 recomeça o estado da partida: ofertas, registo m
 crucifixo. O overlay mostra a oferta em causa, se já foi aceite, as recusas, o estádio moral e se o
 homem ainda tem o crucifixo. As três teclas estão reservadas nos perfis de controlos, pelas mesmas
 razões do F4.
+
+Com o overlay visível (F3), as teclas 1, 2 e 3 recomeçam o nível no início dessa fase, atrás do
+mesmo escurecer de uma morte. No momento do recomeço, o nível (`Level.jump_to_phase`) percorre os
+seus pontos de gravação pela ordem da cena, que é a do percurso, marca no GameState os que ficam
+para trás e esquece os seguintes, pelo que a cópia nova põe a personagem no ponto dessa fase, como
+faria o Continue. A fase 1 começa depois do tutorial. Só mudam os pontos de gravação: as falas, as
+ofertas, os upgrades, o crucifixo e o registo moral ficam como estavam, pelo que o estado não é o
+de quem jogou até lá. Numa partida, o Main grava esse estado por cima do save, porque um recomeço
+volta sempre ao save. Não fazem nada uma fase que o nível não tenha, um nível de uma só fase (como
+a sala de treino, onde os números escolhem as estações), o jogo em pausa e a troca de fase. Uma
+segunda tecla durante o escurecer não o recomeça e fica a última fase pedida. Estas teclas não
+estão reservadas: com o overlay escondido são do jogador, e uma tecla que o perfil Custom dê a
+uma ação continua a ser só dessa ação, porque a personagem lê as ações enquanto estão premidas.
+Um teste verifica que, em cada nível do menu, os pontos que começam uma fase estão por ordem na
+cena. Teste: `test_debug_phase_jump.gd`.
 
 Uma linha `run` mostra os números escondidos da partida, que o jogador nunca vê:
 

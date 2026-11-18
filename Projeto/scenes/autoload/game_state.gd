@@ -40,6 +40,11 @@ func mark_event(event: StringName) -> void:
 		_events.append(event)
 
 
+## Takes event back, as if it had not happened; only the debug jump to a phase needs to (Level).
+func forget_event(event: StringName) -> void:
+	_events.erase(event)
+
+
 func lose_crucifix() -> void:
 	has_crucifix = false
 
