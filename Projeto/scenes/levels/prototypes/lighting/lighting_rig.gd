@@ -1,6 +1,9 @@
 extends Node2D
-## PROTOTYPE (#257): lights level 1 in two ways, to compare by eye and by cost, and is then
-## rewritten, never copied. Add it as the level's last child.
+## PROTOTYPE (#257): lights level 1 in two ways, to compare by eye and by cost. Add it as the
+## level's last child. The game plays it as it is, fenced in (ADR 0068): level1_lit.tscn is
+## level1.tscn with this rig as its last child, the menu's New Game starts it, its keys work only on
+## the debug overlay's lighting page and never in an exported game, and test_level1_lit.gd holds
+## the approved look; each part is rewritten, with tests, when it changes.
 ## A, hybrid (chosen): the level's dark color (CanvasModulate); soft lights without shadows on the
 ## world's and the parallax's light masks, smaller ones on the rock's (tiles and stone rim), so rock
 ## faces glow; a wide, faint fill light on the man.
@@ -521,6 +524,10 @@ func measure_vision_update(times: int) -> float:
 
 func _setup() -> void:
 	_level = get_parent() as Node2D
+	# In level1_lit.tscn the rig is part of the scene, so the level's _ready adds its own nodes (the
+	# restart timer, the death iris) after it: last again, it stands where it does when it is added
+	# to a level that is ready.
+	_level.move_child(self, -1)
 	_tiles = _level.get_node("Tiles") as TileMapLayer
 	_player = _level.get_node("Player") as Node2D
 	_shade = _level.get_node_or_null("Backdrop/Shade") as CanvasItem

@@ -13,7 +13,8 @@ extends "res://tests/support/player_test.gd"
 const SHORTCUT: StringName = &"lust_shortcut"
 const CHARM: StringName = &"charm"
 const CLAIM: StringName = &"claim"
-const LEVEL_1_PATH: String = "res://scenes/levels/lust/level1.tscn"
+## Where Lust's shortcut takes him: level 1 with its light, as New Game plays it.
+const LEVEL_1_PATH: String = "res://scenes/levels/lust/level1_lit.tscn"
 const TENT: StringName = &"asmodeus_tent"
 const TEST_ROOM: PackedScene = preload("res://scenes/levels/test_room/test_room.tscn")
 ## Seconds he listens before refusing, in the listening case, on a clock of the test's own.

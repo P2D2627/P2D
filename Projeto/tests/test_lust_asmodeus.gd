@@ -3,8 +3,9 @@
 #   Refusing, he stays in the level; the camera cutscene of phase 2 plays, with the dogs moving,
 #   and after it he moves again, with the dogs.
 # - An offer his deaths brought waits while he stands outside its zone, and she makes it from
-#   asmodeus_deaths once he walks into it; it waits until he answers. Accepting takes him to the tent at the level's end: he
-#   stands there, not at phase 2's start, though he reached it. No more offers come for his deaths.
+#   asmodeus_deaths once he walks into it; it waits until he answers. Accepting takes him to the tent at the end of level 1
+#   with its light, as New Game plays it: he stands there, not at phase 2's start, though he reached
+#   it. No more offers come for his deaths.
 # - At the tent she gives the gift, then the stairs, and only then the level ends: the main menu
 #   shows, no level in the slot, and the save keeps level 1 at the tent, marked as done. Continue
 #   brings him back to the tent, in the level, with no talk and the dogs still.
@@ -25,6 +26,8 @@ extends "res://tests/support/menu_test.gd"
 
 const SAVE_PATH: String = "user://test_lust_asmodeus.cfg"
 const LEVEL_PATH: String = "res://scenes/levels/lust/level1.tscn"
+## Where Lust's shortcut takes him: level 1 with its light.
+const SHORTCUT_PATH: String = "res://scenes/levels/lust/level1_lit.tscn"
 const SHORTCUT: StringName = &"lust_shortcut"
 const TENT: StringName = &"asmodeus_tent"
 ## The answers of Lust's shortcut cues: the first two accept it, the last two refuse it.
@@ -131,7 +134,7 @@ func _phase_2_then_deaths_then_the_shortcut_and_the_ending() -> Array[bool]:
 	var ended: bool = await wait_until(func() -> bool:
 		return level_in(main) == null and _is_shown(main, ^"%MainPanel"), TALK_FRAMES)
 	results.append(report(changed and at_the_tent and closed
-			and saved_at == "%s at %s" % [LEVEL_PATH, TENT] and gift_said and stairs_said and ended,
+			and saved_at == "%s at %s" % [SHORTCUT_PATH, TENT] and gift_said and stairs_said and ended,
 			("Shortcut: a new level %s, at the tent %s, no more offers %s, saved %s; the gift %s, "
 			+ "the stairs %s, then the level ends to the menu %s")
 			% [changed, at_the_tent, closed, saved_at, gift_said, stairs_said, ended]))
