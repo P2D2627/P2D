@@ -6,10 +6,10 @@
 # brings the custom profile back to the default one. While waiting, a reserved key remaps nothing,
 # the action's button names it as a key that can't be used and the wait goes on; a second one takes
 # its place on the button, and a key with no name is named "That key". On the gamepad, A starts the
-# wait as Enter does; while it waits, a gamepad button but B is refused, with a text that fits the
-# button, and a push of the stick changes nothing. Esc or B stop waiting, change nothing and keep
-# the screen open, after a refused key too, and the next wait starts afresh; in the pause, Esc also
-# keeps the game paused. In a level with Arrows and QWEASD, Q raises the crucifix, Shift (the
+# wait as Enter does; while it waits, the gamepad is refused a push at a time, a button but B, the
+# stick or a trigger, with a text that fits the button. Esc or B stop waiting, change nothing and
+# keep the screen open, after a refused key too, and the next wait starts afresh; in the pause, Esc
+# also keeps the game paused. In a level with Arrows and QWEASD, Q raises the crucifix, Shift (the
 # default profile's key) does not, and Ctrl is Interact. The autoload Settings saves to a test file
 # (see tests/support/menu_test.gd), so the player's file is never touched, and every case starts and
 # ends on the default controls.
@@ -32,7 +32,8 @@ func _initialize() -> void:
 	results.append(await _a_refused_key_is_named_on_the_button_and_the_wait_goes_on())
 	results.append(await _a_second_refused_key_takes_the_first_one_s_place())
 	results.append(await _a_key_with_no_name_is_refused_as_that_key())
-	results.append(await _while_waiting_a_gamepad_button_is_refused_and_the_stick_is_not())
+	results.append(await _while_waiting_the_gamepad_is_refused_a_push_at_a_time())
+	results.append(await _a_stick_let_go_between_two_waits_is_refused_again_in_the_next())
 	results.append(await _esc_while_waiting_changes_nothing_and_stays())
 	results.append(await _esc_after_a_refused_key_stops_the_wait_and_the_next_starts_afresh())
 	results.append(await _in_the_pause_esc_while_waiting_keeps_the_game_paused())
@@ -207,36 +208,75 @@ func _a_key_with_no_name_is_refused_as_that_key() -> bool:
 
 
 ## On the gamepad, A on Jump's button starts the wait, with the waiting text: the A that started it is
-## not refused. A push of the stick leaves the text as it is. A again, as any gamepad button but B,
-## is refused: the button says the gamepad's buttons are fixed, with no need to grow past its width,
-## and the wait goes on with Jump unchanged and the screen open.
-func _while_waiting_a_gamepad_button_is_refused_and_the_stick_is_not() -> bool:
+## not refused. While it waits, the gamepad is refused a push at a time: a push of the stick, with
+## the several events of its way, is refused once, and so are a push of the right trigger and A
+## again. The button says the gamepad stays fixed, with no need to grow past its width, and the wait
+## goes on with Jump unchanged and the screen open.
+func _while_waiting_the_gamepad_is_refused_a_push_at_a_time() -> bool:
 	var main: Node = await _new_main_with_default_controls()
 	var controls: Control = _controls(await _open_controls_in_the_main_menu(main))
 	await _pick_profile(controls, InputProfiles.CUSTOM)
+	var menu: ControlsMenu = controls as ControlsMenu
 	var button: Button = _binding_button(controls, &"jump")
+	var refusals: Array[int] = []
+	menu.input_refused.connect(func() -> void: refusals.append(1))
 	button.grab_focus()
 	await tap_joypad(JOY_BUTTON_A)
 	var started: String = button.text
-	await push_stick()
-	var after_stick: String = button.text
+	var counts: Array[int] = []
+	await push_axis(JOY_AXIS_LEFT_Y)
+	counts.append(refusals.size())
+	await push_axis(JOY_AXIS_TRIGGER_RIGHT)
+	counts.append(refusals.size())
 	await tap_joypad(JOY_BUTTON_A)
+	counts.append(refusals.size())
 	var refused: String = button.text
 	var width: float = button.get_combined_minimum_size().x
-	var still_waiting: bool = (controls as ControlsMenu).is_waiting_for_a_key()
+	var still_waiting: bool = menu.is_waiting_for_a_key()
 	var unchanged: bool = settings.get_bindings(&"jump") == PackedStringArray(
 			[InputProfiles.key(KEY_SPACE)])
 	var still_open: bool = controls.is_visible_in_tree()
 	await tap_joypad(JOY_BUTTON_B)
 	await _back_to_default_controls()
 	await remove_main(main)
-	return report(started == ControlsMenu.WAITING_TEXT and after_stick == ControlsMenu.WAITING_TEXT
+	return report(started == ControlsMenu.WAITING_TEXT and counts == [1, 2, 3]
 			and refused == ControlsMenu.GAMEPAD_REFUSED_TEXT
 			and width <= ControlsMenu.BINDING_WIDTH and still_waiting and unchanged and still_open,
-			("The gamepad while Jump waits: A starts it with '%s'; after the stick '%s'; A again "
-			+ "shows '%s', %.0f px wide (at most %.0f), still waiting %s, Jump unchanged %s, screen "
-			+ "open %s") % [started, after_stick, refused, width, ControlsMenu.BINDING_WIDTH,
-			still_waiting, unchanged, still_open])
+			("The gamepad while Jump waits: A starts it with '%s'; refusals after the stick, the "
+			+ "right trigger and A %s ([1, 2, 3]); the button shows '%s', %.0f px wide (at most "
+			+ "%.0f), still waiting %s, Jump unchanged %s, screen open %s") % [started, counts,
+			refused, width, ControlsMenu.BINDING_WIDTH, still_waiting, unchanged, still_open])
+
+
+## The stick, pushed while Jump waits, is refused; B stops the wait with the stick still held, and the
+## stick is let go only then, unseen. The next wait still refuses a flick of it, so quick that its
+## first event is already past the half: no wait misses a push because the one before saw the last
+## begin.
+func _a_stick_let_go_between_two_waits_is_refused_again_in_the_next() -> bool:
+	var main: Node = await _new_main_with_default_controls()
+	var controls: Control = _controls(await _open_controls_in_the_main_menu(main))
+	await _pick_profile(controls, InputProfiles.CUSTOM)
+	var menu: ControlsMenu = controls as ControlsMenu
+	var refusals: Array[int] = []
+	menu.input_refused.connect(func() -> void: refusals.append(1))
+	_binding_button(controls, &"jump").grab_focus()
+	await tap_joypad(JOY_BUTTON_A)
+	await move_axis(JOY_AXIS_LEFT_Y, 1.0)
+	await tap_joypad(JOY_BUTTON_B)
+	await move_axis(JOY_AXIS_LEFT_Y, 0.0)
+	var in_the_first: int = refusals.size()
+	await tap_joypad(JOY_BUTTON_A)
+	var waiting_again: bool = menu.is_waiting_for_a_key()
+	await move_axis(JOY_AXIS_LEFT_Y, 1.0)
+	await move_axis(JOY_AXIS_LEFT_Y, 0.0)
+	var in_the_second: int = refusals.size() - in_the_first
+	await tap_joypad(JOY_BUTTON_B)
+	await _back_to_default_controls()
+	await remove_main(main)
+	return report(in_the_first == 1 and waiting_again and in_the_second == 1,
+			("The stick held as B stops the wait, let go after: refusals in the first wait %d, waiting "
+			+ "again %s, refusals of a flick in the second %d") % [in_the_first, waiting_again,
+			in_the_second])
 
 
 ## While Jump waits for a key, F3 is refused, and B stops the waiting with Jump unchanged and the

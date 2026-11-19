@@ -5,8 +5,8 @@ extends VBoxContainer
 ## mouse buttons, and the custom profile's Reset. The fixed profiles only show their bindings. In the
 ## custom one, pressing an action's button waits for the next key or mouse button and remaps the
 ## action to it, and says so with rebound; a key it cannot take (one reserved, as the debug overlay's
-## F3, or one with no name) is refused, and so is a gamepad button other than B, as the gamepad's
-## buttons are the same in every profile: the button says so, the wait goes on, and input_refused
+## F3, or one with no name) is refused, and so is the rest of the gamepad but B, a push at a time, as
+## the gamepad is the same in every profile: the button says so, the wait goes on, and input_refused
 ## tells. Esc, or B on the gamepad, stops waiting and changes nothing, goes no further, and says so
 ## with wait_cancelled. The tab shows what the autoload Settings holds and hands every change to it;
 ## Settings applies and saves. The options screen opens and closes it, gives it the focus and closes
@@ -43,6 +43,9 @@ var _binding_buttons: Dictionary[StringName, Button] = {}
 var _waiting_action: StringName = &""
 ## What the waiting action's button says after a refused key; empty until one is.
 var _refused_text: String = ""
+## The gamepad axes past the half of their way during the wait, by device (x) and axis (y), so a push
+## is refused once, as it gets there, and not at each event of its way.
+var _pushed_axes: Dictionary[Vector2i, bool] = {}
 
 @onready var _settings: GameSettings = get_node(SETTINGS_PATH) as GameSettings
 @onready var _profile_option: OptionButton = %ProfileOption
@@ -63,11 +66,18 @@ func _ready() -> void:
 
 ## While an action waits, the next key or mouse button press is its new binding, and nothing else
 ## gets it: not the focused button, nor the pause. Esc and B stop waiting; a key it cannot take is
-## refused, with its name on the button, and so is a gamepad button other than B. The stick and the
-## triggers, the gamepad's axes, are taken and ignored for now, as is the wheel: an axis sends
-## events all along its way, so refusing it once per push would need each axis's state kept.
+## refused, with its name on the button, and so is the rest of the gamepad, a push at a time: a
+## button other than B, or an axis (the stick, a trigger) once per push, however many events the push
+## sends on its way. The wheel is taken and ignored.
 func _input(event: InputEvent) -> void:
-	if _waiting_action == &"" or not event.is_pressed() or event.is_echo():
+	if _waiting_action == &"":
+		return
+	var motion: InputEventJoypadMotion = event as InputEventJoypadMotion
+	if motion != null:
+		get_viewport().set_input_as_handled()
+		_on_axis_moved(motion)
+		return
+	if not event.is_pressed() or event.is_echo():
 		return
 	get_viewport().set_input_as_handled()
 	if event.is_action(&"ui_cancel"):
@@ -151,9 +161,11 @@ func _bindings_text(action: StringName) -> String:
 	return ", ".join(titles)
 
 
+## An axis let go while no action waited was never seen, so the pushed axes start afresh.
 func _start_waiting(action: StringName) -> void:
 	_waiting_action = action
 	_refused_text = ""
+	_pushed_axes.clear()
 	_show_settings()
 
 
@@ -168,6 +180,17 @@ func _refuse(text: String) -> void:
 	_refused_text = text
 	_show_settings()
 	input_refused.emit()
+
+
+## An axis is refused as it gets past the half of its way, where Godot counts it as pressed, and not
+## again until it has come back under it.
+func _on_axis_moved(motion: InputEventJoypadMotion) -> void:
+	var axis: Vector2i = Vector2i(motion.device, motion.axis)
+	if not motion.is_pressed():
+		_pushed_axes.erase(axis)
+	elif not _pushed_axes.has(axis):
+		_pushed_axes[axis] = true
+		_refuse(GAMEPAD_REFUSED_TEXT)
 
 
 ## The key's name, or Unnamed Key for a key that has none.

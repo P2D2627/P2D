@@ -160,14 +160,20 @@ func tap_joypad_in_one_frame(button: JoyButton) -> void:
 	await _wait_tap_frames()
 
 
-## The left stick pushed down all the way and let go, as a player moves through a menu with it.
-func push_stick() -> void:
-	for value: float in [1.0, 0.0]:
-		var motion: InputEventJoypadMotion = InputEventJoypadMotion.new()
-		motion.axis = JOY_AXIS_LEFT_Y
-		motion.axis_value = value
-		Input.parse_input_event(motion)
-		await _wait_tap_frames()
+## A gamepad axis, the left stick's down by default, pushed all the way and let go, with the several
+## events a real push sends on its way, past the half and back.
+func push_axis(axis: JoyAxis = JOY_AXIS_LEFT_Y) -> void:
+	for value: float in [0.3, 0.6, 1.0, 0.6, 0.0]:
+		await move_axis(axis, value)
+
+
+## One event of a gamepad axis: it is now at value.
+func move_axis(axis: JoyAxis, value: float) -> void:
+	var motion: InputEventJoypadMotion = InputEventJoypadMotion.new()
+	motion.axis = axis
+	motion.axis_value = value
+	Input.parse_input_event(motion)
+	await _wait_tap_frames()
 
 
 ## The UI theme's text size, in px; -1 if there is no theme.

@@ -8,7 +8,7 @@
 # (the frame rate's, the profiles') clicks as it opens and as its selection moves, blows as an item
 # is picked, and thuds as Esc closes it; a key that remaps an action blows; a reserved key and a
 # gamepad button, which are refused, sound the refusal, on its own player and not the way back's, a
-# push of the stick sounds nothing, and Esc, which stops the wait, thuds, after a refusal too. The
+# push of the stick sounds it once, and Esc, which stops the wait, thuds, after a refusal too. The
 # refusal's sound is its own, longer than the way back's. No menu's sound is empty. No on the
 # question before a new game over a save thuds, and only thuds. The sounds made in code, when a
 # scene leaves its own empty, keep the move well under the choice.
@@ -206,8 +206,8 @@ func _a_list_clicks_as_it_opens_and_moves_and_answers_as_it_closes() -> bool:
 ## In the custom profile, Enter on an action's button blows, as any button does; F3, reserved for the
 ## debug overlay, is refused with the refusal's sound, which its own player plays, not the way
 ## back's; K remaps the action and blows: the binding took. Enter again starts another wait: A on the
-## gamepad is refused with the same sound, a push of the stick sounds nothing, and Esc stops the wait
-## with the way back's thud.
+## gamepad is refused with the same sound, and so is a push of the stick, once for all the events of
+## its way; Esc stops the wait with the way back's thud.
 func _a_key_that_remaps_blows_and_a_refused_key_or_button_sounds_the_refusal() -> bool:
 	var main: Node = await new_main()
 	settings.reset_to_defaults()
@@ -237,14 +237,14 @@ func _a_key_that_remaps_blows_and_a_refused_key_or_button_sounds_the_refusal() -
 		_now_ms += CALM_PRESS_MS
 		await tap_joypad(JOY_BUTTON_A)
 		_now_ms += CALM_PRESS_MS
-		await push_stick()
+		await push_axis()
 		await _tap_calmly(KEY_ESCAPE)
 		heard.append(_heard.duplicate())
 	settings.reset_custom_bindings()
 	settings.reset_to_defaults()
 	await remove_main(main)
 	var expected: Array[Array] = [[&"confirm"], [&"confirm", &"refuse"],
-			[&"confirm", &"refuse", &"confirm"], [&"confirm", &"refuse", &"back"]]
+			[&"confirm", &"refuse", &"confirm"], [&"confirm", &"refuse", &"refuse", &"back"]]
 	return report(heard == expected and remapped and on_its_own_player,
 			("Enter, F3, K on the first action, heard after each, then Enter, A, the stick and Esc: "
 			+ "%s (%s), remapped to K %s; F3 on the refusal's own player %s")

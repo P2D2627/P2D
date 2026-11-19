@@ -3128,12 +3128,13 @@ e remapeamento por captura da tecla seguinte.
 - No separador Controls (`scenes/screens/controls_menu.gd`), carregar no botão de uma ação do perfil Custom faz o
   ecrã esperar pela próxima tecla ou botão do rato. O Esc ou o B cancelam sem alterar nada. Uma
   tecla que não pode ser usada (as reservadas ao overlay de depuração, como o F3) é recusada: o botão
-  diz qual foi, soa o som de recusa, e a espera continua. Um botão do comando que não seja o B também
-  é recusado, com o texto «Gamepad stays fixed: press a key (B cancels)», porque os botões do comando
-  são os mesmos em todos os perfis. Antes, era ignorado em silêncio, e o jogador não sabia se o jogo o
-  tinha recebido. Por agora, o stick e os gatilhos continuam a ser ignorados: cada eixo envia uma
-  série de eventos ao longo do movimento, e recusá-lo uma só vez por carregão obriga a guardar o
-  estado de cada eixo, o que ficou fora desta alteração. A espera
+  diz qual foi, soa o som de recusa, e a espera continua. O resto do comando, menos o B, também é
+  recusado, com o texto «Gamepad stays fixed: press a key (B cancels)», porque o comando é o mesmo em
+  todos os perfis. Antes, era ignorado em silêncio, e o jogador não sabia se o jogo o tinha recebido.
+  Um botão é recusado a cada carregão. Um eixo (o stick, um gatilho, como o RT do crucifixo) envia
+  uma série de eventos ao longo do movimento, por isso é recusado uma só vez, quando passa de metade
+  do curso, e só volta a sê-lo depois de regressar abaixo dela. Cada espera começa sem eixos
+  registados, porque um eixo largado fora da espera não é visto. A espera
   apanha a tecla antes de qualquer outro nó, pelo que o Esc não fecha a pausa.
 - Conflitos: se a tecla escolhida pertencia a outra ação, essa ação perde-a e, se ficar sem
   nenhuma, recebe as teclas antigas da primeira (troca). Nenhuma ação fica sem tecla. Preferiu-se a
