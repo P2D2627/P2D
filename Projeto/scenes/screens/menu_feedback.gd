@@ -11,8 +11,8 @@ extends Node
 ## ticks at a pitch that follows its value. With no stream of their own, both are the selection's
 ## click, the switch's higher. A list (an OptionButton) clicks as a switch as it opens; inside it, a
 ## move of its selection clicks, an item picked blows, and the list closed with nothing picked
-## thuds. A key that remaps an action on the controls screen (ControlsMenu) blows; a key or a gamepad
-## button it refuses sounds the refusal, two thuds, so it never sounds as Esc, which stops its wait
+## thuds. A key that remaps an action on the controls screen (ControlsMenu) blows; a key or the
+## gamepad it refuses sounds the refusal, two thuds, so it never sounds as Esc, which stops its wait
 ## with one. A dialog's buttons sound only through its answer, never as buttons, so No is a thud
 ## alone. Its scene sets recorded sounds (assets/audio/ui/, made by tools/audio/make_menu_sounds.py,
 ## with their credits in the README), the click's and the choice's as random sets that never play
@@ -288,8 +288,8 @@ func _on_rebound(_action: StringName) -> void:
 		_play_confirm()
 
 
-## A key or a gamepad button the controls screen cannot take: the refusal, while its button says
-## why. It pulses as the way back does.
+## A key, a gamepad button or a push of a gamepad axis that the controls screen cannot take: the
+## refusal, while its button says why. It pulses as the way back does.
 func _on_input_refused() -> void:
 	if _is_showing():
 		_refuse_player.play()

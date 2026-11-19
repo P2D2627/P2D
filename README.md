@@ -3076,8 +3076,8 @@ opções a partir de qualquer separador.
   opção, um golpe ao escolher e um som surdo ao voltar, cada um com um impulso no comando em uso. Um
   interruptor e uma lista fazem um clique próprio; dentro de uma lista, mudar de item faz o clique,
   escolher faz o golpe e fechar sem escolher faz o som de voltar. Uma tecla aceite ao remapear faz o
-  golpe, e o Esc que cancela a espera faz o som de voltar. Uma tecla ou um botão do comando recusados
-  fazem o som de recusa: dois golpes surdos, o segundo mais grave, 230 ms ao todo. Distingue-se do som
+  golpe, e o Esc que cancela a espera faz o som de voltar. Uma tecla ou o comando recusados fazem o
+  som de recusa: dois golpes surdos, o segundo mais grave, 230 ms ao todo. Distingue-se do som
   de voltar pelo número de golpes e não só pela altura, porque cada som se ouve sozinho, sem o outro
   ao lado para comparar, e porque um tom ainda mais grave sairia da gama que as colunas de um
   portátil conseguem tocar. Num diálogo, como a pergunta antes de um
@@ -3133,11 +3133,14 @@ e remapeamento por captura da tecla seguinte.
   todos os perfis. Antes, era ignorado em silêncio, e o jogador não sabia se o jogo o tinha recebido.
   Um botão é recusado a cada carregão. Um eixo (o stick, um gatilho, como o RT do crucifixo) envia
   uma série de eventos ao longo do movimento, por isso é recusado uma só vez, quando passa de metade
-  do curso, e só volta a sê-lo depois de regressar abaixo dela. Cada espera começa sem eixos
-  registados, porque um eixo largado fora da espera não é visto. Um modificador (Shift, Ctrl, Alt) só
-  fica atribuído quando é largado, se entretanto nada mais foi carregado e o jogo não perdeu o foco,
-  porque carregado pode ser o início de um atalho. Antes, um Alt+Tab durante a espera deixava a ação
-  com o Alt. Shift com outra tecla atribui a outra tecla. A espera
+  do curso, num sentido ou no outro, e só volta a sê-lo depois de regressar abaixo de 30 % do curso.
+  Essa folga impede que o ruído de um carregão lento, a oscilar à volta de metade, conte como vários
+  carregões. Cada espera começa sem eixos registados, porque um eixo largado fora da espera não é
+  visto. Um modificador (Shift, Ctrl, Alt e a tecla Windows) só fica atribuído quando é largado, se
+  entretanto nada mais foi carregado e o jogo não perdeu nem recuperou o foco, porque carregado pode
+  ser o início de um atalho. Enquanto está em baixo, o botão diz «Shift: let go to use it». Antes, um
+  Alt+Tab durante a espera deixava a ação com o Alt. Shift com outra tecla atribui a outra tecla. A
+  espera
   apanha a tecla antes de qualquer outro nó, pelo que o Esc não fecha a pausa.
 - Conflitos: se a tecla escolhida pertencia a outra ação, essa ação perde-a e, se ficar sem
   nenhuma, recebe as teclas antigas da primeira (troca). Nenhuma ação fica sem tecla. Preferiu-se a

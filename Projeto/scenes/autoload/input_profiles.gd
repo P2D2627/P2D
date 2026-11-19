@@ -83,9 +83,7 @@ static func mouse(button: MouseButton) -> String:
 static func binding_from_event(event: InputEvent) -> String:
 	var key_event: InputEventKey = event as InputEventKey
 	if key_event != null:
-		var keycode: Key = key_event.physical_keycode
-		if keycode == KEY_NONE:
-			keycode = key_event.keycode
+		var keycode: Key = keycode_of(key_event)
 		# Only a key whose name reads back as the same key makes a binding.
 		var binding: String = key(keycode)
 		var read_back: InputEventKey = event_from_binding(binding) as InputEventKey
@@ -94,6 +92,14 @@ static func binding_from_event(event: InputEvent) -> String:
 	if mouse_event != null and MOUSE_BUTTONS.has(mouse_event.button_index):
 		return mouse(mouse_event.button_index)
 	return ""
+
+
+## The key of key_event by where it is on the keyboard, as bindings keep it, or by its code when the
+## event has no place, as a key made in code may not.
+static func keycode_of(key_event: InputEventKey) -> Key:
+	if key_event.physical_keycode != KEY_NONE:
+		return key_event.physical_keycode
+	return key_event.keycode
 
 
 ## The Input Map event of a binding; null if the text is not a binding on offer.

@@ -18,7 +18,8 @@ extends VBoxContainer
 signal rebound(action: StringName)
 ## The player stopped the wait for a key with Esc or B.
 signal wait_cancelled
-## A key or a gamepad button pressed while waiting cannot be a binding; the wait goes on.
+## A key, a gamepad button or a push of a gamepad axis, while waiting, cannot be a binding; the wait
+## goes on.
 signal input_refused
 
 ## Where the autoload Settings is in the tree, looked up once the screen is ready, as the options
@@ -31,11 +32,18 @@ const WAITING_TEXT: String = "Press a key or mouse button (Esc or B cancels)"
 const REFUSED_TEXT: String = "%s can't be used: press another key"
 ## The name shown for a refused key that has none.
 const UNNAMED_KEY: String = "That key"
-## What the button shows after a gamepad button other than B, with the way out, short enough to fit
-## the button.
+## What the button shows after the gamepad, a button other than B or a push of an axis, with the way
+## out, short enough to fit the button.
 const GAMEPAD_REFUSED_TEXT: String = "Gamepad stays fixed: press a key (B cancels)"
-## The keys that only bind as they are let go, with nothing pressed meanwhile.
+## The keys that only bind as they are let go, with nothing pressed meanwhile; Meta is the Windows
+## key.
 const MODIFIERS: Array[Key] = [KEY_SHIFT, KEY_CTRL, KEY_ALT, KEY_META]
+## What the button shows while a modifier is held, with its name: it binds once let go.
+const HELD_TEXT: String = "%s: let go to use it"
+## How far back an axis must come, as a share of its way, before its next push is refused. A push is
+## refused past the half, where Godot counts the axis as pressed; coming back only to just under it,
+## as the noise of a slow push does, is still the same push.
+const AXIS_RELEASE: float = 0.3
 ## The width of an action's button, in px, so the rows do not jump as the texts change.
 const BINDING_WIDTH: float = 640.0
 ## The theme's looks for an action's name and its button: the size of the other tabs' rows.
@@ -86,7 +94,7 @@ func _input(event: InputEvent) -> void:
 		return
 	var key: InputEventKey = event as InputEventKey
 	if (key != null and not key.pressed and _held_modifier != KEY_NONE
-			and _keycode_of(key) == _held_modifier):
+			and InputProfiles.keycode_of(key) == _held_modifier):
 		get_viewport().set_input_as_handled()
 		_held_modifier = KEY_NONE
 		_answer(key)
@@ -94,22 +102,25 @@ func _input(event: InputEvent) -> void:
 	if not event.is_pressed() or event.is_echo():
 		return
 	get_viewport().set_input_as_handled()
-	_held_modifier = KEY_NONE
+	_drop_held_modifier()
 	if event.is_action(&"ui_cancel"):
 		_stop_waiting()
 		wait_cancelled.emit()
 		return
-	if key != null and _keycode_of(key) in MODIFIERS:
-		_held_modifier = _keycode_of(key)
+	if key != null and InputProfiles.keycode_of(key) in MODIFIERS:
+		_held_modifier = InputProfiles.keycode_of(key)
+		_refused_text = ""
+		_show_settings()
 		return
 	_answer(event)
 
 
 ## Losing the focus, as with Alt+Tab, drops a held modifier: it was the start of a shortcut to
-## another window, not a binding.
+## another window, not a binding. Getting it back drops it too, as the key and the loss of the focus
+## may come in one frame, the key last.
 func _notification(what: int) -> void:
-	if what == NOTIFICATION_APPLICATION_FOCUS_OUT:
-		_held_modifier = KEY_NONE
+	if what == NOTIFICATION_APPLICATION_FOCUS_OUT or what == NOTIFICATION_APPLICATION_FOCUS_IN:
+		_drop_held_modifier()
 
 
 ## Shows the tab with what Settings holds; the options screen gives the focus.
@@ -162,11 +173,16 @@ func _show_settings() -> void:
 	for action: StringName in InputProfiles.ACTIONS:
 		var button: Button = _binding_buttons[action]
 		button.disabled = not custom
-		if action != _waiting_action:
-			button.text = _bindings_text(action)
-		else:
-			button.text = _refused_text if not _refused_text.is_empty() else WAITING_TEXT
+		button.text = _bindings_text(action) if action != _waiting_action else _waiting_text()
 	_reset_button.disabled = not custom
+
+
+## What the waiting action's button says: the held modifier, else the last refusal, else the waiting
+## text.
+func _waiting_text() -> String:
+	if _held_modifier != KEY_NONE:
+		return HELD_TEXT % OS.get_keycode_string(_held_modifier)
+	return _refused_text if not _refused_text.is_empty() else WAITING_TEXT
 
 
 func _bindings_text(action: StringName) -> String:
@@ -181,7 +197,6 @@ func _start_waiting(action: StringName) -> void:
 	_waiting_action = action
 	_refused_text = ""
 	_pushed_axes.clear()
-	_held_modifier = KEY_NONE
 	_show_settings()
 
 
@@ -214,26 +229,30 @@ func _refuse(text: String) -> void:
 	input_refused.emit()
 
 
-## An axis is refused as it gets past the half of its way, where Godot counts it as pressed, and not
-## again until it has come back under it.
+## An axis is refused as it gets past the half of its way, where Godot counts it as pressed, either
+## way, and not again until it has come back under Axis Release. A refused push, as any other press,
+## drops a held modifier.
 func _on_axis_moved(motion: InputEventJoypadMotion) -> void:
 	var axis: Vector2i = Vector2i(motion.device, motion.axis)
-	if not motion.is_pressed():
+	if absf(motion.axis_value) < AXIS_RELEASE:
 		_pushed_axes.erase(axis)
-	elif not _pushed_axes.has(axis):
+	elif motion.is_pressed() and not _pushed_axes.has(axis):
 		_pushed_axes[axis] = true
+		_held_modifier = KEY_NONE
 		_refuse(GAMEPAD_REFUSED_TEXT)
+
+
+## Forgets a held modifier, and the button says so; nothing if none was held.
+func _drop_held_modifier() -> void:
+	if _held_modifier != KEY_NONE:
+		_held_modifier = KEY_NONE
+		_show_settings()
 
 
 ## The key's name, or Unnamed Key for a key that has none.
 func _key_name(key: InputEventKey) -> String:
-	var key_name: String = OS.get_keycode_string(_keycode_of(key))
+	var key_name: String = OS.get_keycode_string(InputProfiles.keycode_of(key))
 	return key_name if not key_name.is_empty() else UNNAMED_KEY
-
-
-## The key by its place on the keyboard, as bindings keep it, or by its code if it has no place.
-func _keycode_of(key: InputEventKey) -> Key:
-	return key.physical_keycode if key.physical_keycode != KEY_NONE else key.keycode
 
 
 func _on_profile_selected(index: int) -> void:

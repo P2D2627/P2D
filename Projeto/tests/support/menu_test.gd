@@ -167,9 +167,10 @@ func push_axis(axis: JoyAxis = JOY_AXIS_LEFT_Y) -> void:
 		await move_axis(axis, value)
 
 
-## One event of a gamepad axis: it is now at value.
-func move_axis(axis: JoyAxis, value: float) -> void:
+## One event of a gamepad axis, of the gamepad numbered device: it is now at value.
+func move_axis(axis: JoyAxis, value: float, device: int = 0) -> void:
 	var motion: InputEventJoypadMotion = InputEventJoypadMotion.new()
+	motion.device = device
 	motion.axis = axis
 	motion.axis_value = value
 	Input.parse_input_event(motion)
