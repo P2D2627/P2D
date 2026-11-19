@@ -3134,7 +3134,10 @@ e remapeamento por captura da tecla seguinte.
   Um botão é recusado a cada carregão. Um eixo (o stick, um gatilho, como o RT do crucifixo) envia
   uma série de eventos ao longo do movimento, por isso é recusado uma só vez, quando passa de metade
   do curso, e só volta a sê-lo depois de regressar abaixo dela. Cada espera começa sem eixos
-  registados, porque um eixo largado fora da espera não é visto. A espera
+  registados, porque um eixo largado fora da espera não é visto. Um modificador (Shift, Ctrl, Alt) só
+  fica atribuído quando é largado, se entretanto nada mais foi carregado e o jogo não perdeu o foco,
+  porque carregado pode ser o início de um atalho. Antes, um Alt+Tab durante a espera deixava a ação
+  com o Alt. Shift com outra tecla atribui a outra tecla. A espera
   apanha a tecla antes de qualquer outro nó, pelo que o Esc não fecha a pausa.
 - Conflitos: se a tecla escolhida pertencia a outra ação, essa ação perde-a e, se ficar sem
   nenhuma, recebe as teclas antigas da primeira (troca). Nenhuma ação fica sem tecla. Preferiu-se a

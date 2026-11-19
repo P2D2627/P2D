@@ -4,11 +4,13 @@ extends VBoxContainer
 ## The options screen's Controls tab: the profile list, a row for each action with its keys and
 ## mouse buttons, and the custom profile's Reset. The fixed profiles only show their bindings. In the
 ## custom one, pressing an action's button waits for the next key or mouse button and remaps the
-## action to it, and says so with rebound; a key it cannot take (one reserved, as the debug overlay's
-## F3, or one with no name) is refused, and so is the rest of the gamepad but B, a push at a time, as
-## the gamepad is the same in every profile: the button says so, the wait goes on, and input_refused
-## tells. Esc, or B on the gamepad, stops waiting and changes nothing, goes no further, and says so
-## with wait_cancelled. The tab shows what the autoload Settings holds and hands every change to it;
+## action to it, and says so with rebound. A modifier (Shift, Ctrl, Alt) binds only as it is let go,
+## with nothing pressed meanwhile and the game still in focus: held, it may start a shortcut, as Alt
+## starts Alt+Tab. A key it cannot take (one reserved, as the debug overlay's F3, or one with no
+## name) is refused, and so is the rest of the gamepad but B, a push at a time, as the gamepad is
+## the same in every profile: the button says so, the wait goes on, and input_refused tells. Esc,
+## or B on the gamepad, stops waiting and changes nothing, goes no further, and says so with
+## wait_cancelled. The tab shows what the autoload Settings holds and hands every change to it;
 ## Settings applies and saves. The options screen opens and closes it, gives it the focus and closes
 ## itself on Esc or B.
 
@@ -32,6 +34,8 @@ const UNNAMED_KEY: String = "That key"
 ## What the button shows after a gamepad button other than B, with the way out, short enough to fit
 ## the button.
 const GAMEPAD_REFUSED_TEXT: String = "Gamepad stays fixed: press a key (B cancels)"
+## The keys that only bind as they are let go, with nothing pressed meanwhile.
+const MODIFIERS: Array[Key] = [KEY_SHIFT, KEY_CTRL, KEY_ALT, KEY_META]
 ## The width of an action's button, in px, so the rows do not jump as the texts change.
 const BINDING_WIDTH: float = 640.0
 ## The theme's looks for an action's name and its button: the size of the other tabs' rows.
@@ -46,6 +50,8 @@ var _refused_text: String = ""
 ## The gamepad axes past the half of their way during the wait, by device (x) and axis (y), so a push
 ## is refused once, as it gets there, and not at each event of its way.
 var _pushed_axes: Dictionary[Vector2i, bool] = {}
+## The modifier held down during the wait, which binds as it is let go; KEY_NONE while none is.
+var _held_modifier: Key = KEY_NONE
 
 @onready var _settings: GameSettings = get_node(SETTINGS_PATH) as GameSettings
 @onready var _profile_option: OptionButton = %ProfileOption
@@ -68,7 +74,8 @@ func _ready() -> void:
 ## gets it: not the focused button, nor the pause. Esc and B stop waiting; a key it cannot take is
 ## refused, with its name on the button, and so is the rest of the gamepad, a push at a time: a
 ## button other than B, or an axis (the stick, a trigger) once per push, however many events the push
-## sends on its way. The wheel is taken and ignored.
+## sends on its way. The wheel is taken and ignored. A modifier is held until it is let go, and any
+## other press drops it.
 func _input(event: InputEvent) -> void:
 	if _waiting_action == &"":
 		return
@@ -77,24 +84,32 @@ func _input(event: InputEvent) -> void:
 		get_viewport().set_input_as_handled()
 		_on_axis_moved(motion)
 		return
+	var key: InputEventKey = event as InputEventKey
+	if (key != null and not key.pressed and _held_modifier != KEY_NONE
+			and _keycode_of(key) == _held_modifier):
+		get_viewport().set_input_as_handled()
+		_held_modifier = KEY_NONE
+		_answer(key)
+		return
 	if not event.is_pressed() or event.is_echo():
 		return
 	get_viewport().set_input_as_handled()
+	_held_modifier = KEY_NONE
 	if event.is_action(&"ui_cancel"):
 		_stop_waiting()
 		wait_cancelled.emit()
 		return
-	var binding: String = InputProfiles.binding_from_event(event)
-	if binding.is_empty():
-		if event is InputEventKey:
-			_refuse(REFUSED_TEXT % _key_name(event as InputEventKey))
-		elif event is InputEventJoypadButton:
-			_refuse(GAMEPAD_REFUSED_TEXT)
+	if key != null and _keycode_of(key) in MODIFIERS:
+		_held_modifier = _keycode_of(key)
 		return
-	var action: StringName = _waiting_action
-	_settings.set_custom_binding(action, binding)
-	_stop_waiting()
-	rebound.emit(action)
+	_answer(event)
+
+
+## Losing the focus, as with Alt+Tab, drops a held modifier: it was the start of a shortcut to
+## another window, not a binding.
+func _notification(what: int) -> void:
+	if what == NOTIFICATION_APPLICATION_FOCUS_OUT:
+		_held_modifier = KEY_NONE
 
 
 ## Shows the tab with what Settings holds; the options screen gives the focus.
@@ -166,13 +181,30 @@ func _start_waiting(action: StringName) -> void:
 	_waiting_action = action
 	_refused_text = ""
 	_pushed_axes.clear()
+	_held_modifier = KEY_NONE
 	_show_settings()
 
 
 func _stop_waiting() -> void:
 	_waiting_action = &""
 	_refused_text = ""
+	_held_modifier = KEY_NONE
 	_show_settings()
+
+
+## Binds what event pressed, or let go for a modifier, to the waiting action, or refuses it.
+func _answer(event: InputEvent) -> void:
+	var binding: String = InputProfiles.binding_from_event(event)
+	if binding.is_empty():
+		if event is InputEventKey:
+			_refuse(REFUSED_TEXT % _key_name(event as InputEventKey))
+		elif event is InputEventJoypadButton:
+			_refuse(GAMEPAD_REFUSED_TEXT)
+		return
+	var action: StringName = _waiting_action
+	_settings.set_custom_binding(action, binding)
+	_stop_waiting()
+	rebound.emit(action)
 
 
 ## The waiting action's button says text, why what was pressed cannot be used, and the wait goes on.
@@ -195,9 +227,13 @@ func _on_axis_moved(motion: InputEventJoypadMotion) -> void:
 
 ## The key's name, or Unnamed Key for a key that has none.
 func _key_name(key: InputEventKey) -> String:
-	var keycode: Key = key.physical_keycode if key.physical_keycode != KEY_NONE else key.keycode
-	var key_name: String = OS.get_keycode_string(keycode)
+	var key_name: String = OS.get_keycode_string(_keycode_of(key))
 	return key_name if not key_name.is_empty() else UNNAMED_KEY
+
+
+## The key by its place on the keyboard, as bindings keep it, or by its code if it has no place.
+func _keycode_of(key: InputEventKey) -> Key:
+	return key.physical_keycode if key.physical_keycode != KEY_NONE else key.keycode
 
 
 func _on_profile_selected(index: int) -> void:
