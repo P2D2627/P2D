@@ -1220,7 +1220,7 @@ Remote; os restantes valores são lidos sempre que são usados.
     │   ├── levels/      uma pasta por nível: a sala de teste (test_room/), a sala de treino (gym/) e o nível 1 (lust/, com os construtores e os mapas em texto em builders/); na raiz, as peças e os scripts comuns e o fundo de que os níveis partem (background/)
     │   ├── objects/     peças com comportamento: portões (gates/), plataformas (platforms/) e armadilhas (traps/)
     │   ├── others/      câmara (camera/), atividade fora do ecrã (activity/, o ActivityTracker, que adormece o que está parado longe do ecrã), som ambiente (ambience/, as camadas de sons soltos), depuração (debug/), resposta aos impactos (feedback/), todos os shaders (shaders/) e conjuntos de tiles (tilesets/)
-    │   └── screens/     menus, ecrã das opções, o balão de diálogo e indicador de gravação
+    │   └── screens/     menus, ecrã das opções, o balão de diálogo, indicador de gravação e a barra de alma (soul_hud/)
     ├── tests/         testes automáticos (test_*.gd), que correm sem janela
     │   ├── launchers/ abrem o jogo num ponto escolhido, para ver à mão (por agora, o fim da fase 2)
     │   ├── measures/  medições, que imprimem números em vez de verificar resultados
@@ -1412,6 +1412,7 @@ godot --headless --fixed-fps 60 --path Projeto --script res://tests/test_activit
 godot --headless --fixed-fps 60 --path Projeto --script res://tests/test_demon_activity.gd
 godot --headless --fixed-fps 60 --path Projeto --script res://tests/test_parallax_activity.gd
 godot --headless --fixed-fps 60 --path Projeto --script res://tests/test_resources_load.gd
+godot --headless --fixed-fps 60 --path Projeto --script res://tests/test_soul_hud.gd
 ```
 
 O `test_input_profiles.gd` escreve seis ERROR, das tentativas de atribuir teclas inválidas, todos
@@ -1559,7 +1560,7 @@ A personagem não lê o teclado diretamente. Um nó filho, `PlayerInput` (`scene
 o único que lê as ações da personagem no Input Map, e responde em cada passo de física a cinco
 perguntas: a direção da corrida e, para os botões de saltar e do crucifixo, se acabaram de ser
 premidos e se continuam premidos. A personagem recebe
-este nó pelo Inspector, no campo Input. Uma inteligência artificial, uma cena animada ou um teste
+este nó pelo Inspector, no campo Input. Um controlador automático, uma cena animada ou um teste
 controlam a personagem colocando nesse campo outro nó que estenda `PlayerInput`, sem alterar o
 movimento. É o primeiro passo do padrão Component descrito por Nystrom (2014, capítulo
 "Component"), que separa a entrada do resto do objeto. Quando existirem, a pausa, o diálogo e a
@@ -1805,7 +1806,7 @@ indústria:
 
 - **Componente** (Nystrom, 2014, capítulo "Component"). O crucifixo é uma cena própria
   (`scenes/characters/crucifix/crucifix.tscn`), filha da personagem. Lê o botão através do mesmo `PlayerInput` da
-  personagem, pelo que uma inteligência artificial, uma cena animada ou um teste também o controlam.
+  personagem, pelo que um controlador automático, uma cena animada ou um teste também o controlam.
 - **Modificadores de movimento.** A personagem não sabe que o crucifixo existe. Aceita
   modificadores (`MovementModifier`), cada um com uma fração da velocidade, uma fração da altura do
   salto e a indicação de que impede o salto, guardados pelo nome de quem os colocou. As frações
@@ -3720,9 +3721,9 @@ opção de volume, todos a enviar para o Master, e o Alerts, a enviar para o SFX
   `Projeto/assets/audio/sfx/`: bips provisórios gerados por síntese de ondas sinusoidais, sem
   material de terceiros. Saem quando chegarem os sons definitivos.
 - `level1_cave_map.png` e `level1_cave_shade.png`, em `Projeto/assets/sprites/backgrounds/`:
-  imagens provisórias geradas com IA (Claude) a partir do mapa do nível 1, sem material de
+  imagens provisórias feitas a partir do mapa do nível 1, sem material de
   terceiros. A primeira dá a cor de cada área do fundo e a segunda escurece o fundo junto à rocha.
-  Na zona da fase 3 e na sala da Asmodeu, foram repintadas com IA (Claude), por scripts fora do repositório que
+  Na zona da fase 3 e na sala da Asmodeu, foram repintadas por scripts fora do repositório que
   ajustam um modelo às imagens das fases 1 e 2 e só alteram os píxeis por onde essas zonas passam.
   Saem ou refazem-se quando o mapa ou as áreas mudarem.
 - `fire_low_sheet.png`, `fire_bonfire_sheet.png`, `fire_leaning_sheet.png` e
@@ -3737,6 +3738,9 @@ opção de volume, todos a enviar para o Master, e o Alerts, a enviar para o SFX
   original (#263).
 - `asmodeus.png`, em `Projeto/assets/sprites/asmodeus/`: a figura da Asmodeu, desenhada pelo Cisco,
   do grupo, para a visual novel de CDJ, recortada e reduzida do PNG original (#263).
+- `soul_frame.png`, `soul_aura_1.png` a `soul_aura_8.png`, `cross_ready.png`, `cross_spent.png` e
+  `power_arrow.png`, em `Projeto/assets/sprites/hud/`: a barra de alma (moldura, aura animada, as duas
+  cruzes do crucifixo e a seta dos poderes), desenhadas pelo grupo, usadas tal como foram entregues.
 - Sons dos menus, em `Projeto/assets/audio/ui/` (#267), todos de domínio público (CC0), cortados,
   filtrados e misturados pelo `tools/audio/make_menu_sounds.py`, cada um à intensidade do seu evento
   (ver "Aspeto dos menus"):

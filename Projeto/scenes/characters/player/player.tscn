@@ -31,6 +31,7 @@
 [ext_resource type="Script" path="res://scenes/characters/player/bramble_death.gd" id="19_bramble_death"]
 [ext_resource type="Resource" path="res://scenes/characters/player/bramble_death_stats.tres" id="20_bramble_death_stats"]
 [ext_resource type="Script" path="res://scenes/characters/player/snag.gd" id="18_snag"]
+[ext_resource type="Texture2D" path="res://assets/sprites/player/main_character_wall_slide_384.png" id="21_wall_slide"]
 
 [sub_resource type="RectangleShape2D" id="RectangleShape2D_player"]
 size = Vector2(48, 96)
@@ -135,6 +136,14 @@ region = Rect2(768, 0, 384, 384)
 atlas = ExtResource("16_escape")
 region = Rect2(1152, 0, 384, 384)
 
+[sub_resource type="AtlasTexture" id="AtlasTexture_wall_slide0"]
+atlas = ExtResource("21_wall_slide")
+region = Rect2(0, 0, 384, 384)
+
+[sub_resource type="AtlasTexture" id="AtlasTexture_wall_slide1"]
+atlas = ExtResource("21_wall_slide")
+region = Rect2(384, 0, 384, 384)
+
 [sub_resource type="SpriteFrames" id="SpriteFrames_g4v7s"]
 animations = [{
 "frames": [{
@@ -231,6 +240,17 @@ animations = [{
 "loop": 0,
 "name": &"jump",
 "speed": 5.0
+}, {
+"frames": [{
+"duration": 1.0,
+"texture": SubResource("AtlasTexture_wall_slide0")
+}, {
+"duration": 1.0,
+"texture": SubResource("AtlasTexture_wall_slide1")
+}],
+"loop": true,
+"name": &"wall_slide",
+"speed": 6.0
 }]
 
 [node name="Player" type="CharacterBody2D" unique_id=1108148048 node_paths=PackedStringArray("input", "soul_points")]

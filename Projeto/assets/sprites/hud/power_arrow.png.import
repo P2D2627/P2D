@@ -2,16 +2,16 @@
 
 importer="texture"
 type="CompressedTexture2D"
-uid="uid://os4tjjavioqi"
-path="res://.godot/imported/dog_idle_cell.png-f8e03eb74b95cf66cf805b803d78587f.ctex"
+uid="uid://do0tkpxljr2ur"
+path="res://.godot/imported/power_arrow.png-598bc09efb2d8dae48dec987323c1e5e.ctex"
 metadata={
 "vram_texture": false
 }
 
 [deps]
 
-source_file="res://assets/sprites/demon_lust/dog_idle_cell.png"
-dest_files=["res://.godot/imported/dog_idle_cell.png-f8e03eb74b95cf66cf805b803d78587f.ctex"]
+source_file="res://assets/sprites/hud/power_arrow.png"
+dest_files=["res://.godot/imported/power_arrow.png-598bc09efb2d8dae48dec987323c1e5e.ctex"]
 
 [params]
 

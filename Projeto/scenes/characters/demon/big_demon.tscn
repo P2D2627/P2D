@@ -27,6 +27,7 @@ scale = Vector2(0.625, 0.625)
 
 [node name="DemonAnimation" parent="." index="3"]
 stride_length = 325.0
+walk_stride_length = 225.0
 
 [node name="Mark" parent="." index="4"]
 position = Vector2(0, -140)
