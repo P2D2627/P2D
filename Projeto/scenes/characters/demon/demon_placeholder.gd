@@ -36,8 +36,10 @@ extends Polygon2D
 ## demons', so one pacing by never hides the warning, and a lunge over one of them reads as a leap
 ## past it, not into it (ADR 0053).
 @export var attack_z_index: int = 1
-## The rectangle's Z Index while the demon holds the man: above his, which the level draws after
-## its demons, so he reads as held in its jaws, not standing in front of it.
+## The rectangle's Z Index while the demon holds the man: above his, so he reads as held in its jaws,
+## not standing in front of it, whatever the order of the two in the level. Level 1 draws the man and
+## its demons before the rock, so where the lighting raises the rock to 1 too, a demon raised for an
+## attack or a hold stays behind it (#271).
 @export var grab_z_index: int = 1
 ## Px the rectangle hops up as the demon barks at a man out of its reach, so the bark shows with no
 ## sound, and higher where the demon hops at a wall or the end of its floor (ADR 0039). Only the

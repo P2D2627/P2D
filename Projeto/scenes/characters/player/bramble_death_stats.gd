@@ -44,7 +44,8 @@ extends Resource
 ## How far down a floor hedge pulls him, with Pull Clips off: his height and a quarter.
 @export_range(0.0, 400.0, 1.0, "suffix:px") var pull_depth: float = 120.0
 ## His drawing's z while pulled, with Pull Clips off: above the floor's rock and its rim (0), and,
-## later in the tree, still behind the hedge (1).
+## later in the tree, still behind the hedge (1). Level 1's lighting raises the rock and the rim to 1
+## too, and there they come after him in the tree, so they are drawn over him (#271).
 @export_range(-10, 10) var pull_z: int = 1
 ## How long the vines take to draw back into the hedge once he has gone under.
 @export_range(0.0, 1.0, 0.01, "suffix:s") var retract_time: float = 0.1

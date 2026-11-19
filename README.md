@@ -2286,6 +2286,29 @@ tem de ser chão plano. A caixa de colisão cobre o tronco (66 × 54 px), sem a 
   sobreposições de passagem (cruzamentos ao recuar) ou sem espaço, como num buraco de um corpo. Na
   caça, com a personagem à vista, um demónio em movimento passa pelos outros, e só um encostado a
   ela o trava (ADR 0053); parado, afasta-se como os outros, e no vaivém vira junto de um parado.
+  Com corpos de tamanhos diferentes, como o cão normal e o cão grande, cada distância conta a metade
+  de cada um dos dois corpos, para que o espaço entre eles seja sempre Pack Spacing (#271). Antes,
+  cada demónio tomava o vizinho por um do seu tamanho: o cão normal não reconhecia o grande como
+  encostado à personagem e atravessava-o, e o grande parava a 38 px de um normal em vez de 24
+  (`test_mixed_pack.gd`).
+- **Sem tremer num aperto (#271).** Com três cães entre uma parede e a personagem encurralada contra
+  outra, não há posição que cumpra a separação, a distância de recuo e a vez de atacar ao mesmo
+  tempo, e as regras alternavam a cada passo: cada cão voltava para trás 48 a 59 vezes em 10 s,
+  algumas de um passo para o seguinte. Agora, enquanto a personagem fica do mesmo lado, um demónio
+  não volta para trás antes de Min Turn Time (0,15 s, nos `DemonStats`) desde a última volta, e
+  fica parado até lá. A investida, o arremesso, o salto, a descida, o recuo depois de uma mordida e
+  a passagem da personagem para o outro lado continuam a virá-lo de imediato. O valor fica acima
+  das voltas do tremor (1 a 6 passos) e abaixo do troço mais curto do vaivém (0,22 s: 60 px à
+  velocidade mais alta que a variação dá à ronda), por isso o vaivém nunca espera. Com 0,25 s, a
+  matilha mordia 10 % menos. No mesmo caso, cada cão volta agora 39 a 43 vezes em 10 s, e a volta
+  mais rápida passou a 9 passos (`test_wedged_dogs.gd`). O cão deixa de tremer, mas o conflito
+  continua: no aperto, ainda volta cerca de 4 vezes por segundo e fica sobreposto a outro.
+  Resolver o conflito entre as regras, uma a uma, mexia nos ADR 0046 e 0052 a 0055 e ficou de fora
+  (ADR 0070). Custo das duas mudanças, medido pelo `measure_demon.gd` (três execuções de cada
+  versão, alternadas, no mesmo computador): com 50 demónios no ecrã, +9 a +16 % por passo (a
+  perseguir, 3291 para 3761 µs; em ronda, 1849 para 2150 µs); com 10, +2 a +11 %; com 50 parados
+  fora do ecrã, nada (996 para 999 µs). Cerca de um terço vem da espera nas voltas e o resto da
+  conta com os dois corpos em cada par de demónios. Entre execuções, o mesmo caso varia até 10 %.
 - **Ninguém fica em cima de ninguém (ADR 0047).** O componente `KnockOff`
   (`scenes/characters/components/knock_off.gd`) diz para que lado empurrar quem está de pé em cima da personagem ou
   de um demónio; quem o usa põe a velocidade (600 px/s nos dois). Antes, o demónio não tinha
@@ -2896,9 +2919,18 @@ outra por acaso:
 | Ordem | O que se desenha | Como |
 |---|---|---|
 | 1 | camadas Far, Middle e Near do fundo | primeiro nó da cena do nível, com Z Index 0 |
-| 2 | plano de jogo: tiles, peças, personagem, demónios | nós seguintes do nível, com Z Index 0 |
+| 2 | plano de jogo: portões, personagem, demónios, tiles e as outras peças, por esta ordem | nós seguintes do nível, com Z Index 0 |
 | 3 | camada Front do fundo | Z Index 10 |
 | 4 | interface e overlay de depuração | `CanvasLayer`, por cima de tudo |
+
+No plano de jogo, os tiles vêm depois da personagem e dos demónios, para que a rocha tape a parte
+da arte que passa do corpo, como a cauda de um cão encostado a uma parede (#271). A personagem vem
+antes dos demónios, porque estes se movem depois dela em cada passo de física (a mordida nas costas
+conta com isso). Um demónio que avisa, investe ou agarra sobe para Z Index 1, para ficar por cima
+da personagem e dos outros demónios. A iluminação do nível 1 põe a rocha também em 1, e com o mesmo
+Z Index vale a ordem dos nós, por isso esse demónio continua por baixo da rocha; sem a iluminação, a
+rocha fica em 0 e ele passa por cima dela. O `test_dogs_behind_rock.gd` verifica a ordem com a
+iluminação, e também que a marca de alerta e os picos continuam por cima da rocha.
 
 #### Linha de vista: um componente por objeto
 
