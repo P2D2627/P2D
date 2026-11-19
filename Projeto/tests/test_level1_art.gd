@@ -26,10 +26,12 @@ func _the_art_is_in_level1_over_the_tiles_the_man_and_the_dogs(level: Node) -> b
 	var dogs: Node = level.get_node_or_null(^"Dogs")
 	if art == null or tiles == null or player == null or dogs == null:
 		return _report(false, "the art is over the tiles, the man and the dogs (a node is missing)")
+	# Right after the last of the three, whatever their order; the man before the dogs, which move
+	# after him on each frame (#271).
+	var last: int = maxi(tiles.get_index(), maxi(player.get_index(), dogs.get_index()))
 	var ok: bool = art is Node2D and art.scene_file_path.is_empty() \
-			and tiles.get_index() < player.get_index() and tiles.get_index() < dogs.get_index() \
-			and art.get_index() == maxi(player.get_index(), dogs.get_index()) + 1
-	return _report(ok, "the art is a plain node of level 1, over the tiles, the man and the dogs (Art '%s' at %d; Tiles %d, Player %d, Dogs %d)" % [
+			and player.get_index() < dogs.get_index() and art.get_index() == last + 1
+	return _report(ok, "the art is a plain node of level 1, right after the tiles, the man and the dogs, the man before the dogs (Art '%s' at %d; Tiles %d, Player %d, Dogs %d)" % [
 			art.scene_file_path, art.get_index(), tiles.get_index(), player.get_index(), dogs.get_index()])
 
 

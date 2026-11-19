@@ -64,12 +64,14 @@ func _add_level_parts(root: Node2D, player: Player) -> void:
 	root.move_child(backdrop, root.get_node(^"Background").get_index() + 1)
 	var art: Node2D = art_from_old_scene()
 	root.add_child(art)
-	# Right over the rock, then the man and the dogs, then the art: they walk behind the stones of the rim, and the
-	# traps and the rest stay in front.
-	var over_tiles: int = root.get_node(^"Tiles").get_index() + 1
-	root.move_child(player, over_tiles)
-	root.move_child(root.get_node(^"Dogs"), over_tiles + 1)
-	root.move_child(art, over_tiles + 2)
+	# The man, then the dogs, right before the rock, so the rock covers what of their art passes their bodies, as a
+	# dog's tail at a wall, also a dog raised as it warns, lunges or holds where the lighting puts the rock as high
+	# (#271); the man stays before the dogs, which move after him on each physics frame. Then the art, right after the
+	# rock: they walk behind the stones of the rim, and the traps and the rest stay in front.
+	var tiles: Node = root.get_node(^"Tiles")
+	root.move_child(player, tiles.get_index())
+	root.move_child(root.get_node(^"Dogs"), player.get_index() + 1)
+	root.move_child(art, tiles.get_index() + 1)
 	var tutorial: Node2D = _tutorial(player)
 	root.add_child(tutorial)
 	# Behind the man, as in its old scene, so he walks in front of the prompts.

@@ -9,6 +9,9 @@ size = Vector2(140, 70)
 [sub_resource type="RectangleShape2D" id="RectangleShape2D_hit"]
 size = Vector2(200, 70)
 
+[sub_resource type="RectangleShape2D" id="RectangleShape2D_back"]
+size = Vector2(60, 60)
+
 [node name="BigDemon" instance=ExtResource("1_demon")]
 editor_description = "The regular dog a quarter bigger: body, hit box, art (with its stride and how deep it sinks) and the checks at its feet, with its art drawn darker so it reads apart at a glance (the Sprite's Self Modulate; its Modulate is the Placeholder's tint, set on every frame). Its stats are the regular dog's but for the damage of each attack."
 stats = ExtResource("2_stats")
@@ -60,3 +63,11 @@ shape = SubResource("RectangleShape2D_body")
 [node name="HitboxShape" parent="Hitbox"]
 position = Vector2(0, -35)
 shape = SubResource("RectangleShape2D_hit")
+
+[node name="BackBiteShape" parent="BackBite"]
+position = Vector2(0, -152.5)
+shape = SubResource("RectangleShape2D_back")
+
+[node name="BackBiteHitboxShape" parent="BackBite/BackBiteHitbox"]
+position = Vector2(0, -152.5)
+shape = SubResource("RectangleShape2D_back")
