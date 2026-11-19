@@ -2,9 +2,17 @@
 
 [sub_resource type="AudioEffectCompressor" id="AudioEffectCompressor_alerts"]
 resource_name = "Compressor"
-threshold = -20.0
+threshold = -24.7
 release_ms = 500.0
+mix = 0.75
 sidechain = &"Alerts"
+
+[sub_resource type="AudioEffectCompressor" id="AudioEffectCompressor_j3pel"]
+resource_name = "Compressor"
+threshold = -26.0
+release_ms = 517.0
+mix = 0.25
+sidechain = &"SFX"
 
 [resource]
 bus/1/name = &"Music"
@@ -23,10 +31,12 @@ bus/3/name = &"Ambience"
 bus/3/solo = false
 bus/3/mute = false
 bus/3/bypass_fx = false
-bus/3/volume_db = 0.0
+bus/3/volume_db = -8.241915
 bus/3/send = &"Master"
 bus/3/effect/0/effect = SubResource("AudioEffectCompressor_alerts")
 bus/3/effect/0/enabled = true
+bus/3/effect/1/effect = SubResource("AudioEffectCompressor_j3pel")
+bus/3/effect/1/enabled = true
 bus/4/name = &"UI"
 bus/4/solo = false
 bus/4/mute = false

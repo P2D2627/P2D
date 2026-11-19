@@ -1,0 +1,8 @@
+[gd_scene format=3]
+
+[ext_resource type="Script" path="res://scenes/others/ambience/rising_embers.gd" id="1_script"]
+
+[node name="RisingEmbers" type="CanvasLayer"]
+layer = 1
+follow_viewport_enabled = true
+script = ExtResource("1_script")

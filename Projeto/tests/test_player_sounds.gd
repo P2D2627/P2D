@@ -1,8 +1,8 @@
 # Checks the player's sounds. Running on the floor plays a step every Step Length of the walk cycle,
 # on the walk's planted frames, the first on the frame the player starts to run from standing still,
-# and standing still or being in the air plays none. Each step is one of the three
-# sounds, never the same twice in a row, with its pitch and amplitude inside the variations set in
-# PlayerSounds. The wall slide sound plays while sliding down a wall and stops on landing. The sounds
+# and standing still or being in the air plays none. Each step sound holds one impact, all of them
+# are as loud as each other, and each step is one of them, never the same twice in a row, at
+# Footstep Volume, with its pitch and amplitude inside the variations set in PlayerSounds. The wall slide sound plays while sliding down a wall and stops on landing. The sounds
 # come from where the player is, so they are heard anywhere in a level and not only near its origin.
 # A jump, off the floor or off a wall, plays the jump sound. Landing after a normal jump or a wall
 # slide is soft and cuts the jump sound off, after a long fall hard, with both hard sounds in use,
@@ -46,6 +46,22 @@ const RANDOM_SEED: int = 2026
 const LANDING_FRAMES: int = 2
 ## Rounding room for the pitch and amplitude limits.
 const LIMIT_TOLERANCE: float = 0.0001
+## A step sound's impact: a moment within IMPACT_DB of its loudest. It ends once the sound falls
+## SILENCE_DB below the loudest, so a second impact needs a quiet gap before it, as in the old
+## files, where it came 143 to 145 ms after the first, after a gap at -50 dB.
+const IMPACT_DB: float = 20.0
+const SILENCE_DB: float = 30.0
+## How finely a step sound is read: the loudest sample of each millisecond.
+const ENVELOPE_MS: float = 1.0
+## A start into the jump's file unlike the default, in s, so the case can tell it was used.
+const TEST_START: float = 0.05
+## How a step sound's loudness is read: its loudest window of LEVEL_WINDOW_MS, in RMS. The step
+## sounds may differ by LEVEL_SPREAD_DB at most, so none is lost under the ambience where the others
+## are heard.
+const LEVEL_WINDOW_MS: float = 10.0
+const LEVEL_SPREAD_DB: float = 1.0
+## A Footstep Volume unlike the default, in dB, so the case can tell it was used.
+const TEST_VOLUME_DB: float = 4.0
 
 
 func _initialize() -> void:
@@ -55,10 +71,13 @@ func _initialize() -> void:
 	results.append(await _first_step_plays_as_running_starts())
 	results.append(await _running_steps_every_step_distance())
 	results.append(await _standing_still_and_falling_make_no_steps())
+	results.append(_each_step_sound_is_one_impact())
+	results.append(_step_sounds_are_equally_loud())
 	results.append(await _steps_vary_the_sound_pitch_and_amplitude())
 	results.append(await _wall_slide_sound_plays_while_sliding_down_only())
 	results.append(await _sounds_come_from_where_the_player_is())
 	results.append(await _jump_plays_the_jump_sound())
+	results.append(await _jump_plays_from_jump_start())
 	results.append(await _wall_jump_plays_the_jump_sound())
 	results.append(await _landing_from_a_few_px_is_silent())
 	results.append(await _landing_after_a_normal_jump_is_soft())
@@ -135,13 +154,54 @@ func _standing_still_and_falling_make_no_steps() -> bool:
 			% [standing, falling.size()])
 
 
-## Over a long run, every sound is heard, none twice in a row, and each step's pitch and amplitude
-## stay within the variations around 1.
+## The bug: each of the three step files held two impacts, the second 143 to 145 ms after the
+## first, so a run heard an extra hit between every two drawn steps. Each step sound in the scene,
+## read from its source file, holds one.
+func _each_step_sound_is_one_impact() -> bool:
+	var player: Player = spawn_player(RUN_START)
+	var sounds: PlayerSounds = _sounds(player)
+	var counts: Array[String] = []
+	var all_one: bool = not sounds.footstep_sounds.is_empty()
+	for stream: AudioStream in sounds.footstep_sounds:
+		var impacts: int = _impacts_in(stream)
+		counts.append("%s %d" % [stream.resource_path.get_file(), impacts])
+		all_one = all_one and impacts == 1
+	player.queue_free()
+	return report(all_one, "Impacts in each step sound (expected 1 each): %s" % ", ".join(counts))
+
+
+## The bug: the six step files spread over 7 dB (their loudest 10 ms from -34.0 to -27.1 dBFS), so
+## in level 1 the quiet ones sat 3 dB over the ambience and were lost while the others were heard.
+## Read from their source files, they are as loud as each other.
+func _step_sounds_are_equally_loud() -> bool:
+	var player: Player = spawn_player(RUN_START)
+	var sounds: PlayerSounds = _sounds(player)
+	var levels: Array[String] = []
+	var quietest: float = INF
+	var loudest: float = -INF
+	for stream: AudioStream in sounds.footstep_sounds:
+		var level: float = _loudest_window_db(stream)
+		levels.append("%s %.1f" % [stream.resource_path.get_file(), level])
+		quietest = minf(quietest, level)
+		loudest = maxf(loudest, level)
+	player.queue_free()
+	return report(loudest - quietest <= LEVEL_SPREAD_DB,
+			"Loudest %.0f ms of each step sound, in dBFS: %s; spread %.1f dB, at most %.1f"
+			% [LEVEL_WINDOW_MS, ", ".join(levels), loudest - quietest, LEVEL_SPREAD_DB])
+
+
+## Over a long run, every sound is heard, none twice in a row, and each step plays at Footstep
+## Volume, here set to a test value, with its pitch and amplitude within the variations around it.
+## The seed makes the random picks repeatable: with six sounds, a run of about 27 steps could
+## otherwise miss one by chance.
 func _steps_vary_the_sound_pitch_and_amplitude() -> bool:
+	seed(RANDOM_SEED)
 	var player: Player = await spawn_on_floor(RUN_START)
 	if player == null:
 		return report(false, "the player never landed for the long run")
 	var sounds: PlayerSounds = _sounds(player)
+	sounds.footstep_volume_db = TEST_VOLUME_DB
+	var base: float = db_to_linear(TEST_VOLUME_DB)
 	var indices: Array[int] = []
 	var pitch_ok: Array[bool] = [true]
 	var volume_ok: Array[bool] = [true]
@@ -149,7 +209,7 @@ func _steps_vary_the_sound_pitch_and_amplitude() -> bool:
 		indices.append(index)
 		if absf(sounds.footstep.pitch_scale - 1.0) > sounds.pitch_variation + LIMIT_TOLERANCE:
 			pitch_ok[0] = false
-		if absf(sounds.footstep.volume_linear - 1.0) \
+		if absf(sounds.footstep.volume_linear / base - 1.0) \
 				> sounds.footstep_volume_variation + LIMIT_TOLERANCE:
 			volume_ok[0] = false)
 	Input.action_press(&"move_right")
@@ -166,9 +226,9 @@ func _steps_vary_the_sound_pitch_and_amplitude() -> bool:
 			used += 1
 	return report(repeats == 0 and used == sounds.footstep_sounds.size()
 			and pitch_ok[0] and volume_ok[0],
-			"%d steps: %d of %d sounds used, %d repeats in a row, pitch in range %s, amplitude in range %s"
+			"%d steps: %d of %d sounds used, %d repeats in a row, pitch in range %s, amplitude in range around Footstep Volume %.0f dB %s"
 			% [indices.size(), used, sounds.footstep_sounds.size(), repeats, pitch_ok[0],
-			volume_ok[0]])
+			TEST_VOLUME_DB, volume_ok[0]])
 
 
 ## Pushing into the wall from the air: the sound plays once the player slides down, and stops on
@@ -223,6 +283,25 @@ func _jump_plays_the_jump_sound() -> bool:
 	player.queue_free()
 	return report(jumps[0] == 1 and in_range,
 			"Jump off the floor: %d jump sound(s), expected 1, pitch in range %s" % [jumps[0], in_range])
+
+
+## The bug: the jump's file is quiet for its first 30 ms and loudest at 60 ms, so its loud part came
+## after he had left the floor. It plays from Jump Start. jump_played comes right after the play, so
+## the sound player still gives back the start it was told.
+func _jump_plays_from_jump_start() -> bool:
+	var player: Player = await spawn_on_floor(RUN_START)
+	if player == null:
+		return report(false, "the player never landed to jump from Jump Start")
+	var sounds: PlayerSounds = _sounds(player)
+	sounds.jump_start = TEST_START
+	var starts: Array[float] = []
+	sounds.jump_played.connect(func() -> void: starts.append(sounds.jump.get_playback_position()))
+	Input.action_press(&"jump")
+	await _wait_frames(PRESS_DELAY_FRAMES + 1)
+	Input.action_release(&"jump")
+	player.queue_free()
+	return report(starts.size() == 1 and absf(starts[0] - TEST_START) <= LIMIT_TOLERANCE,
+			"Jump from Jump Start %.2f s: started from %s s" % [TEST_START, starts])
 
 
 func _wall_jump_plays_the_jump_sound() -> bool:
@@ -323,6 +402,68 @@ func _landing_after_a_long_fall_is_hard_with_both_sounds() -> bool:
 	return report(hard_falls == LONG_FALLS and both_used and pitches_in_range,
 			"%d falls of %.0f px: %d hard landings, both hard sounds used %s, pitch in range %s"
 			% [LONG_FALLS, LONG_FALL_HEIGHT, hard_falls, both_used, pitches_in_range])
+
+
+## A sound's source file as plain 16-bit samples, or null when it is not a WAV that reads so.
+func _pcm(stream: AudioStream) -> AudioStreamWAV:
+	var wav: AudioStreamWAV = AudioStreamWAV.load_from_file(stream.resource_path,
+			{"compress/mode": 0})
+	if wav == null or wav.format != AudioStreamWAV.FORMAT_16_BITS:
+		return null
+	return wav
+
+
+## The loudest LEVEL_WINDOW_MS of a sound's source file, in RMS dBFS over all its channels, with
+## windows every half window. -INF when it does not read.
+func _loudest_window_db(stream: AudioStream) -> float:
+	var wav: AudioStreamWAV = _pcm(stream)
+	if wav == null:
+		return -INF
+	var channels: int = 2 if wav.stereo else 1
+	var window: int = roundi(wav.mix_rate * LEVEL_WINDOW_MS / 1000.0) * channels
+	var data: PackedByteArray = wav.data
+	var squares: PackedFloat64Array = []
+	for i: int in data.size() / 2:
+		var sample: float = data.decode_s16(i * 2) / 32768.0
+		squares.append(sample * sample)
+	var loudest: float = 0.0
+	for start: int in range(0, squares.size() - window, window / 2):
+		var sum: float = 0.0
+		for i: int in range(start, start + window):
+			sum += squares[i]
+		loudest = maxf(loudest, sqrt(sum / window))
+	return linear_to_db(loudest)
+
+
+## How many impacts a sound holds, read from its source file as plain 16-bit samples, one loudest
+## sample per ENVELOPE_MS.
+func _impacts_in(stream: AudioStream) -> int:
+	var wav: AudioStreamWAV = _pcm(stream)
+	if wav == null:
+		return 0
+	var channels: int = 2 if wav.stereo else 1
+	var per_ms: int = maxi(roundi(wav.mix_rate * ENVELOPE_MS / 1000.0), 1)
+	var data: PackedByteArray = wav.data
+	var envelope: PackedFloat32Array = []
+	var loudest: float = 0.0
+	var sample_count: int = data.size() / 2
+	for start: int in range(0, sample_count, per_ms * channels):
+		var peak: float = 0.0
+		for i: int in range(start, mini(start + per_ms * channels, sample_count)):
+			peak = maxf(peak, absf(data.decode_s16(i * 2)))
+		envelope.append(peak)
+		loudest = maxf(loudest, peak)
+	var impact_level: float = loudest * db_to_linear(-IMPACT_DB)
+	var silence_level: float = loudest * db_to_linear(-SILENCE_DB)
+	var impacts: int = 0
+	var in_impact: bool = false
+	for peak: float in envelope:
+		if not in_impact and peak >= impact_level:
+			impacts += 1
+			in_impact = true
+		elif in_impact and peak < silence_level:
+			in_impact = false
+	return impacts
 
 
 func _pitch_in_range(sounds: PlayerSounds, sound: AudioStreamPlayer2D) -> bool:

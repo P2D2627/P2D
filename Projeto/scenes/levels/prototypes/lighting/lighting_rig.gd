@@ -118,6 +118,12 @@ const FIRE_COLOR := Color(1.0, 0.36, 0.78)
 const FIRE_ENERGY: float = 0.6
 const FIRE_RADIUS: float = 950.0
 const FIRE_LIGHT_HEIGHT: float = 50.0
+## Each fire's sound, heard as the man nears it, and the embers its crackles throw.
+const FIRE_SOUND: PackedScene = preload("res://scenes/others/ambience/fire_sound.tscn")
+## Where those embers leave from: the middle Width share of the flame, between the shares of its
+## height (x, y) above its base.
+const FIRE_EMBER_WIDTH: float = 0.5
+const FIRE_EMBER_HEIGHT := Vector2(0.5, 0.85)
 ## Where fires go, over the whole level: in the middle of each floor at least Min Floor tiles wide,
 ## so on ground he walks and not on a step he jumps to, with Open Above open tiles over it inside the
 ## map (the rock round the cave has open air above its top row); a long floor gets one every
@@ -674,11 +680,24 @@ func _add_fires() -> void:
 		fire.add_lights(_falloff, FIRE_COLOR, FIRE_ENERGY, FIRE_RADIUS, FIRE_LIGHT_HEIGHT,
 				MASK_WORLD | MASK_PARALLAX | MASK_MAN, MASK_ROCK)
 		fire.hide_when_unseen()
+		_add_fire_sound(fire)
 		_fires.append(fire)
 	var screen: Vector2 = _screen_in_world()
 	var densest: Vector2i = _densest_screen(spots, screen)
 	print("ProtoFires: %d fires, placed in %.0f ms; at most %d light one %d x %d screen, from fire %d"
 			% [spots.size(), placed_ms, densest.x, screen.x, screen.y, densest.y])
+
+
+## The fire's sound (fire_sound.tscn), at its base: its embers leave from the flame's body and take
+## the fire's opacity, so a fire the man cannot see throws none that show, though he hears it.
+func _add_fire_sound(fire: ProtoFire) -> void:
+	var sound: SoundEmitter = FIRE_SOUND.instantiate() as SoundEmitter
+	fire.add_child(sound)
+	var flame: Vector2 = fire.get_flame_rect().size
+	var embers: RisingEmbers = sound.get_node(^"%RisingEmbers") as RisingEmbers
+	embers.fade_with = fire
+	embers.emit_area = Rect2(-flame.x * FIRE_EMBER_WIDTH * 0.5, -flame.y * FIRE_EMBER_HEIGHT.y,
+			flame.x * FIRE_EMBER_WIDTH, flame.y * (FIRE_EMBER_HEIGHT.y - FIRE_EMBER_HEIGHT.x))
 
 
 ## The fire spots, left to right (see Fire Start Gap).

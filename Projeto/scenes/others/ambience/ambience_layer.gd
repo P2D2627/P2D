@@ -4,14 +4,22 @@ extends Node2D
 ## One layer of a level's ambience: one-shot sounds, such as thunder, gusts of wind or whispers,
 ## played one at a time, at random moments and from random places around the screen, so the
 ## ambience never settles into a loop the ear can learn. A level takes one layer per kind of sound,
-## each with its own gaps. The long beds under them, such as a steady wind, are plain looping sound
-## players on the Ambience bus and need no script.
+## each with its own gaps. The long beds under them, such as a steady wind, are AmbienceBed nodes.
+## Some sounds keep their own stereo instead: Unpanned Sounds, such as a gust whose sweep from one
+## side to the other is already in the file, or a rumble mixed to the centre, play as they are,
+## with no place and no panning of Godot's.
 ## It counts down in its frame, so whatever stops its frame stops it too: inside a level, under the
 ## LevelSlot, the pause holds both the countdown and the sound playing.
 
-## A sound started to play from position, in the world. A lightning flash or a camera shake can
-## follow it.
-signal sound_played(position: Vector2)
+## A sound started to play from position, in the world, travelling across the screen as travel
+## says: 1 from left to right, -1 from right to left, 0 neither. An unpanned sound travels as
+## Unpanned Travel says, from the centre of the screen; a placed one from its side of the screen
+## towards the other, as a gust heard on the left blows to the right. A lightning flash, a camera
+## shake or embers in the wind can follow it.
+signal sound_played(position: Vector2, travel: int)
+
+## Which way the unpanned sounds travel across the screen, as their own panning carries them.
+enum Travel { NONE, LEFT_TO_RIGHT, RIGHT_TO_LEFT }
 
 ## The sounds to pick from. An AudioStreamRandomizer with Playback Mode Random (Avoid Repetitions)
 ## picks a different one each time and varies its pitch and its volume, with Random Pitch and
@@ -23,6 +31,20 @@ signal sound_played(position: Vector2)
 ## Starts the countdown to the first sound on entering the tree. Without it, the layer waits for
 ## start(), from a zone or an event.
 @export var autostart: bool = true
+
+@export_group("Unpanned")
+## Sounds that keep their own stereo: Godot neither places them nor pans them. An
+## AudioStreamRandomizer can hold several. It replaces the stream of Unpanned Player.
+@export var unpanned_sounds: AudioStream
+## Plays the unpanned sounds, as they are: not a 2D player, so neither the camera nor a distance
+## changes them. Its bus and its volume are set in it; -6 dB matches a 2D sound at the centre of
+## the screen, which Godot plays at half in each speaker.
+@export var unpanned_player: AudioStreamPlayer
+## The share of the sounds that come from Unpanned Sounds when there are Sounds too. Two unpanned
+## sounds never play in a row, so it goes up to one in two. Without Sounds, every sound is unpanned.
+@export_range(0.0, 0.5, 0.01) var unpanned_share: float = 0.33
+## Which way the unpanned sounds travel across the screen, told with sound_played.
+@export var unpanned_travel: Travel = Travel.NONE
 
 @export_group("Timing")
 ## The shortest wait from the start of one sound to the start of the next, and from start() to the
@@ -42,17 +64,19 @@ signal sound_played(position: Vector2)
 
 ## Seconds until the next sound plays.
 var _time_left: float = 0.0
+## Whether the last sound was an unpanned one, so the next is not.
+var _last_unpanned: bool = false
 
 
 func _ready() -> void:
 	set_process(false)
-	if player == null:
-		push_warning("AmbienceLayer %s: no Player to play the sounds." % name)
-		return
-	if sounds == null:
-		push_warning("AmbienceLayer %s: no Sounds to play." % name)
-	else:
+	if player != null and sounds != null:
 		player.stream = sounds
+	if unpanned_player != null and unpanned_sounds != null:
+		unpanned_player.stream = unpanned_sounds
+	if not _has_placed() and not _has_unpanned():
+		push_warning("AmbienceLayer %s: no Sounds or Unpanned Sounds, with their player, to play."
+				% name)
 	if autostart:
 		start()
 
@@ -80,13 +104,51 @@ func is_running() -> bool:
 
 
 func _play_one() -> void:
-	if player == null or sounds == null:
+	if _next_is_unpanned():
+		_last_unpanned = true
+		unpanned_player.play()
+		sound_played.emit(_screen_centre(), _unpanned_travel_sign())
 		return
+	if not _has_placed():
+		return
+	_last_unpanned = false
 	var offset := Vector2(randf_range(-horizontal_spread, horizontal_spread),
 			randf_range(-vertical_spread, vertical_spread))
 	player.global_position = _screen_centre() + offset
 	player.play()
-	sound_played.emit(player.global_position)
+	# From its side towards the other: heard on the left (offset below 0), it travels to the right.
+	sound_played.emit(player.global_position, -int(signf(offset.x)))
+
+
+## Whether the next sound comes from Unpanned Sounds. After a placed one, at odds of
+## share / (1 - share), and never after an unpanned one: in the long run, Unpanned Share of the
+## sounds, since q / (1 + q) is share for q = share / (1 - share).
+func _next_is_unpanned() -> bool:
+	if not _has_unpanned():
+		return false
+	if not _has_placed():
+		return true
+	if _last_unpanned:
+		return false
+	var share: float = clampf(unpanned_share, 0.0, 0.5)
+	return randf() < share / (1.0 - share)
+
+
+func _has_placed() -> bool:
+	return player != null and sounds != null
+
+
+func _has_unpanned() -> bool:
+	return unpanned_player != null and unpanned_sounds != null
+
+
+func _unpanned_travel_sign() -> int:
+	match unpanned_travel:
+		Travel.LEFT_TO_RIGHT:
+			return 1
+		Travel.RIGHT_TO_LEFT:
+			return -1
+	return 0
 
 
 func _next_gap() -> float:

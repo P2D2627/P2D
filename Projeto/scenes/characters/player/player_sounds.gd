@@ -29,14 +29,25 @@ signal land_played(hard: bool)
 ## Where the steps come from: a step plays each time its walk plants a foot, so the sound lands with
 ## the drawing. How far apart they are, and where the first one falls, is the walk cycle's, there.
 @export var animation: PlayerAnimation
-## The step sounds. Each step picks one at random, never the same as the step before.
+## The step sounds. Each step picks one at random, never the same as the step before. Each file
+## holds one impact, and all are as loud as each other: a second impact in a file sounds as an extra
+## step between the drawn ones, and a quieter file is lost under the ambience while the rest are
+## heard.
 @export var footstep_sounds: Array[AudioStream] = []
-## How far each step's amplitude can move from the normal, either way: 0.01 is 1% up or down.
+## The steps' volume. Set here and not on Footstep, whose own volume each step replaces with this
+## one and its variation. Measured in level 1, a step reaches the SFX bus 8 to 13 dB below its file:
+## the distance to the middle of the screen takes 2 to 5 dB, and the 2D panning about 6 more, since
+## Godot plays a centred 2D sound at half its level in each speaker.
+@export_range(-24.0, 12.0, 0.5, "suffix:dB") var footstep_volume_db: float = 0.0
+## How far each step's amplitude can move from Footstep Volume, either way: 0.01 is 1% up or down.
 @export_range(0.0, 0.5, 0.005) var footstep_volume_variation: float = 0.01
 
 @export_group("Jump and landing")
 ## Plays the jump, off the floor and off a wall, with the stream set in it.
 @export var jump: AudioStreamPlayer2D
+## How far into its file the jump starts. The file rises for 60 ms to its loudest (its first 10 ms
+## are 23 dB below it), so from 0 the loud part comes after he has left the floor. 0 plays it whole.
+@export_range(0.0, 0.2, 0.005, "suffix:s") var jump_start: float = 0.03
 ## Plays the landings. Its own stream is replaced by the soft or a hard landing each time.
 @export var land: AudioStreamPlayer2D
 ## The landing after a short fall, such as a normal jump.
@@ -120,7 +131,8 @@ func _update_wall_slide() -> void:
 func _play_footstep() -> void:
 	var index: int = _next_footstep_index()
 	footstep.stream = footstep_sounds[index]
-	footstep.volume_linear = 1.0 + randf_range(-footstep_volume_variation, footstep_volume_variation)
+	footstep.volume_linear = db_to_linear(footstep_volume_db) * (1.0
+			+ randf_range(-footstep_volume_variation, footstep_volume_variation))
 	_play(footstep)
 	footstep_played.emit(index)
 
@@ -138,10 +150,10 @@ func _next_footstep_index() -> int:
 	return index
 
 
-## Plays a sound from the start with its pitch moved a little at random.
-func _play(sound: AudioStreamPlayer2D) -> void:
+## Plays a sound from from_position s into its file, with its pitch moved a little at random.
+func _play(sound: AudioStreamPlayer2D, from_position: float = 0.0) -> void:
 	sound.pitch_scale = 1.0 + randf_range(-pitch_variation, pitch_variation)
-	sound.play()
+	sound.play(from_position)
 
 
 ## How hard the last landing heard was: 1 for a hard one, and for a soft one its fall's share of the
@@ -162,7 +174,7 @@ func _on_wall_slide_finished() -> void:
 
 
 func _on_jumped() -> void:
-	_play(jump)
+	_play(jump, jump_start)
 	jump_played.emit()
 
 

@@ -1,7 +1,9 @@
 # Checks the player's options. The project has the five audio buses with a volume option, each
 # sending to Master, then Alerts, which sends to SFX and so follows its option, and
 # the options as the autoload Settings. With no file, every option is its default, and applied. A
-# change applies at once: the bus volume and the frame rate cap. Full screen and V-Sync do nothing
+# change applies at once: the bus volume and the frame rate cap. A volume option scales the bus's
+# mix, its volume in the bus layout: 100% leaves the bus there and 50% puts it 6 dB under, also for
+# a second settings node after the autoload has set the buses. Full screen and V-Sync do nothing
 # without a window (from the first frame on, the engine reports the headless window as minimized
 # and ignores a new mode), so only their values are checked, and the rest is checked by hand with
 # F5. Each change is saved, with the file's version, and a new settings node reads the same values
@@ -23,6 +25,10 @@ const VOLUME_TOLERANCE: float = 0.0001
 ## The buses after the ones with a volume option, each with the bus it sends to and whose option it
 ## follows: Alerts holds the sounds that turn the ambience down, and follows SFX.
 const SUB_BUSES: Dictionary[StringName, StringName] = {&"Alerts": &"SFX"}
+const BUS_LAYOUT_PATH: String = "res://default_bus_layout.tres"
+## A volume option at half, 6.02 dB under the mix, and how far a bus's dB may be from the expected.
+const HALF_VOLUME: float = 0.5
+const DB_TOLERANCE: float = 0.01
 
 
 func _initialize() -> void:
@@ -31,6 +37,7 @@ func _initialize() -> void:
 	results.append(_the_project_has_the_buses_and_the_settings_autoload())
 	results.append(await _with_no_file_every_option_is_its_default_and_applied())
 	results.append(await _a_change_applies_at_once())
+	results.append(await _a_volume_option_scales_the_bus_layouts_mix())
 	results.append(await _each_change_is_saved_and_read_back())
 	results.append(await _a_broken_file_gives_the_defaults())
 	results.append(await _wrong_values_in_the_file_are_put_right())
@@ -78,7 +85,7 @@ func _a_change_applies_at_once() -> bool:
 	settings.set_vsync(false)
 	settings.set_fps_cap(120)
 	var music: float = AudioServer.get_bus_volume_linear(AudioServer.get_bus_index(&"Music"))
-	var music_right: bool = absf(music - 0.25) < VOLUME_TOLERANCE
+	var music_right: bool = absf(music - 0.25 * db_to_linear(_layout_db(&"Music"))) < VOLUME_TOLERANCE
 	var cap_right: bool = Engine.max_fps == 120
 	var kept: bool = settings.is_fullscreen() and not settings.is_vsync_on()
 	settings.reset_to_defaults()
@@ -86,6 +93,29 @@ func _a_change_applies_at_once() -> bool:
 	return report(music_right and cap_right and kept,
 			"A change applies: Music at %.2f, max FPS 120 %s; full screen on and V-Sync off kept %s"
 			% [music, cap_right, kept])
+
+
+## The bus layout holds the mix, what the editor's Audio panel sets: an option at 1 leaves each bus at
+## its volume there, and 0.5 puts it 6 dB under. The autoload has already set the buses, so a second
+## settings node that took the buses' volumes for the mix would put them under it twice.
+func _a_volume_option_scales_the_bus_layouts_mix() -> bool:
+	_delete_test_file()
+	var settings: GameSettings = await _new_settings()
+	var off: Array[String] = []
+	for volume: float in [GameSettings.DEFAULT_VOLUME, HALF_VOLUME]:
+		for bus: StringName in GameSettings.BUSES:
+			settings.set_volume(bus, volume)
+			var expected: float = _layout_db(bus) + linear_to_db(volume)
+			var actual: float = AudioServer.get_bus_volume_db(AudioServer.get_bus_index(bus))
+			if absf(actual - expected) > DB_TOLERANCE:
+				off.append("%s at %.2f: %.2f dB, not %.2f" % [bus, volume, actual, expected])
+	settings.reset_to_defaults()
+	settings.queue_free()
+	var mixes: Array = GameSettings.BUSES.map(func(bus: StringName) -> String:
+			return "%s %.2f dB" % [bus, _layout_db(bus)])
+	return report(off.is_empty(),
+			"Each bus at its mix in the layout (%s) plus its option, at 100%% and 50%% (off: %s)"
+			% [", ".join(mixes), ", ".join(off)])
 
 
 ## One change at a time, each from no file: every setter saves the whole file, so a setter that did
@@ -258,9 +288,17 @@ func _has_the_defaults(settings: GameSettings) -> bool:
 func _is_applied(settings: GameSettings) -> bool:
 	for bus: StringName in GameSettings.BUSES:
 		var volume: float = AudioServer.get_bus_volume_linear(AudioServer.get_bus_index(bus))
-		if absf(volume - settings.get_volume(bus)) > VOLUME_TOLERANCE:
+		var expected: float = settings.get_volume(bus) * db_to_linear(_layout_db(bus))
+		if absf(volume - expected) > VOLUME_TOLERANCE:
 			return false
 	return Engine.max_fps == settings.get_fps_cap()
+
+
+## The bus's volume in the project's bus layout, in dB, read from the file: 0 when it is not set.
+func _layout_db(bus: StringName) -> float:
+	var layout: AudioBusLayout = load(BUS_LAYOUT_PATH) as AudioBusLayout
+	var stored: Variant = layout.get("bus/%d/volume_db" % AudioServer.get_bus_index(bus))
+	return stored if stored is float else 0.0
 
 
 func _write_test_file(text: String) -> void:

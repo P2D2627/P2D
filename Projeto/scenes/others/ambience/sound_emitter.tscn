@@ -1,0 +1,15 @@
+[gd_scene format=3]
+
+[ext_resource type="Script" path="res://scenes/others/ambience/sound_emitter.gd" id="1_script"]
+
+[node name="SoundEmitter" type="Node2D" node_paths=PackedStringArray("loop_player", "one_shot_player")]
+script = ExtResource("1_script")
+loop_player = NodePath("LoopPlayer")
+one_shot_player = NodePath("OneShotPlayer")
+
+[node name="LoopPlayer" type="AudioStreamPlayer2D" parent="."]
+bus = &"Ambience"
+
+[node name="OneShotPlayer" type="AudioStreamPlayer2D" parent="."]
+max_polyphony = 2
+bus = &"Ambience"

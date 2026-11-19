@@ -42,6 +42,7 @@
 [ext_resource type="Texture2D" uid="uid://dvy8d8xp0tx6d" path="res://assets/sprites/environment/rocha8.png" id="bd_rocha8"]
 [ext_resource type="Script" uid="uid://bvio450dsgpu4" path="res://scenes/others/camera/camera_cutscene.gd" id="cs_cutscene"]
 [ext_resource type="Script" uid="uid://b56uwsmxam57t" path="res://scenes/others/camera/camera_shot.gd" id="cs_shot"]
+[ext_resource type="PackedScene" path="res://scenes/levels/lust/lust_ambience.tscn" id="lust_ambience"]
 [ext_resource type="Script" uid="uid://bgkod5pssmkft" path="res://scenes/levels/stone_rim.gd" id="st_rim"]
 
 [sub_resource type="CanvasItemMaterial" id="CanvasItemMaterial_shade"]
@@ -48568,6 +48569,8 @@ offset_bottom = 8136.0
 mouse_filter = 2
 border_color = Color(1, 0.8, 0.2, 1)
 border_width = 24.0
+
+[node name="Ambience" parent="." unique_id=1313194536 instance=ExtResource("lust_ambience")]
 
 [connection signal="talk_ended" from="Asmodeus" to="Cutscenes/Phase2Intro" method="play_after_talk"]
 [connection signal="started" from="Cutscenes/Phase2Intro" to="Gates/GateB" method="open_now"]

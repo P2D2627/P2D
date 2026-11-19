@@ -31,6 +31,9 @@
 [ext_resource type="Script" path="res://scenes/characters/player/bramble_death.gd" id="19_bramble_death"]
 [ext_resource type="Resource" path="res://scenes/characters/player/bramble_death_stats.tres" id="20_bramble_death_stats"]
 [ext_resource type="Script" path="res://scenes/characters/player/snag.gd" id="18_snag"]
+[ext_resource type="AudioStream" path="res://assets/audio/sfx/footstep_4.wav" id="21_footstep_4"]
+[ext_resource type="AudioStream" path="res://assets/audio/sfx/footstep_5.wav" id="22_footstep_5"]
+[ext_resource type="AudioStream" path="res://assets/audio/sfx/footstep_6.wav" id="23_footstep_6"]
 
 [sub_resource type="RectangleShape2D" id="RectangleShape2D_player"]
 size = Vector2(48, 96)
@@ -273,7 +276,7 @@ player = NodePath("..")
 wall_slide = NodePath("WallSlide")
 footstep = NodePath("Footstep")
 animation = NodePath("../PlayerAnimation")
-footstep_sounds = Array[AudioStream]([ExtResource("6_footstep_1"), ExtResource("7_footstep_2"), ExtResource("8_footstep_3")])
+footstep_sounds = Array[AudioStream]([ExtResource("6_footstep_1"), ExtResource("7_footstep_2"), ExtResource("8_footstep_3"), ExtResource("21_footstep_4"), ExtResource("22_footstep_5"), ExtResource("23_footstep_6")])
 jump = NodePath("Jump")
 land = NodePath("Land")
 soft_land_sound = ExtResource("10_soft_land")
