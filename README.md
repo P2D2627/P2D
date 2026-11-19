@@ -77,7 +77,8 @@ quando se usa o outro aparelho, quando se liga um comando e quando se desliga o 
 | Interagir | E | Ctrl | X / Square |
 
 O terceiro perfil, Custom, começa igual ao predefinido, e cada ação pode receber outra tecla ou
-botão do rato. O Esc e as teclas de depuração (F3, F4, F7, F8 e F9) estão reservados; o 1, o 2 e o
+botão do rato. O Esc, as teclas de depuração (F3, F4, F7, F8 e F9) e a tecla Windows, que ao ser
+largada abre o menu Iniciar e tira o foco ao jogo, estão reservados; o 1, o 2 e o
 3, que na página dos números do texto de depuração recomeçam numa fase, não estão. As teclas W,
 E, A, S e D do perfil das setas ficam livres para os upgrades.
 
@@ -3127,7 +3128,7 @@ e remapeamento por captura da tecla seguinte.
   Map. Como nenhum script lê teclas diretamente, a personagem e o crucifixo não mudaram.
 - No separador Controls (`scenes/screens/controls_menu.gd`), carregar no botão de uma ação do perfil Custom faz o
   ecrã esperar pela próxima tecla ou botão do rato. O Esc ou o B cancelam sem alterar nada. Uma
-  tecla que não pode ser usada (as reservadas ao overlay de depuração, como o F3) é recusada: o botão
+  tecla que não pode ser usada (as reservadas, como o F3 do overlay de depuração ou a tecla Windows) é recusada: o botão
   diz qual foi, soa o som de recusa, e a espera continua. O resto do comando, menos o B, também é
   recusado, com o texto «Gamepad stays fixed: press a key (B cancels)», porque o comando é o mesmo em
   todos os perfis. Antes, era ignorado em silêncio, e o jogador não sabia se o jogo o tinha recebido.
@@ -3136,12 +3137,14 @@ e remapeamento por captura da tecla seguinte.
   do curso, num sentido ou no outro, e só volta a sê-lo depois de regressar abaixo de 30 % do curso.
   Essa folga impede que o ruído de um carregão lento, a oscilar à volta de metade, conte como vários
   carregões. Cada espera começa sem eixos registados, porque um eixo largado fora da espera não é
-  visto. Um modificador (Shift, Ctrl, Alt e a tecla Windows) só fica atribuído quando é largado, se
+  visto. Um modificador (Shift, Ctrl, Alt) só fica atribuído quando é largado, se
   entretanto nada mais foi carregado e o jogo não perdeu nem recuperou o foco, porque carregado pode
   ser o início de um atalho. Enquanto está em baixo, o botão diz «Shift: let go to use it». Antes, um
   Alt+Tab durante a espera deixava a ação com o Alt. Shift com outra tecla atribui a outra tecla. A
-  espera
-  apanha a tecla antes de qualquer outro nó, pelo que o Esc não fecha a pausa.
+  tecla Windows não conta como modificador: está reservada e é recusada logo ao ser carregada,
+  porque largá-la abre o menu Iniciar e tira o foco ao jogo; atribuída, abriria o Iniciar sempre que
+  fosse usada a jogar. A espera apanha a tecla antes de qualquer outro nó, pelo que o Esc não fecha a
+  pausa.
 - Conflitos: se a tecla escolhida pertencia a outra ação, essa ação perde-a e, se ficar sem
   nenhuma, recebe as teclas antigas da primeira (troca). Nenhuma ação fica sem tecla. Preferiu-se a
   troca a um aviso de conflito, porque não deixa o jogador num estado em que uma ação não funciona.

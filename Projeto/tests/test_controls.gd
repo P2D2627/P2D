@@ -41,6 +41,7 @@ func _initialize() -> void:
 	results.append(await _alt_tab_while_waiting_remaps_nothing_and_the_wait_goes_on())
 	results.append(await _a_modifier_remaps_as_it_is_let_go_with_nothing_pressed_meanwhile())
 	results.append(await _each_modifier_alone_remaps_as_it_is_let_go())
+	results.append(await _the_windows_key_is_refused_as_it_goes_down())
 	results.append(await _esc_while_waiting_changes_nothing_and_stays())
 	results.append(await _esc_after_a_refused_key_stops_the_wait_and_the_next_starts_afresh())
 	results.append(await _in_the_pause_esc_while_waiting_keeps_the_game_paused())
@@ -398,8 +399,8 @@ func _a_modifier_remaps_as_it_is_let_go_with_nothing_pressed_meanwhile() -> bool
 			+ "(expected %s)") % [outcomes, expected])
 
 
-## While Jump waits, each modifier alone, Ctrl, Alt and Meta (Shift has the case above), remaps Jump
-## to itself as it is let go.
+## While Jump waits, each modifier alone, Ctrl and Alt (Shift has the case above), remaps Jump to
+## itself as it is let go.
 func _each_modifier_alone_remaps_as_it_is_let_go() -> bool:
 	var main: Node = await _new_main_with_default_controls()
 	var controls: Control = _controls(await _open_controls_in_the_main_menu(main))
@@ -407,7 +408,7 @@ func _each_modifier_alone_remaps_as_it_is_let_go() -> bool:
 	var jump: Button = _binding_button(controls, &"jump")
 	var bound: Array[String] = []
 	var expected: Array[String] = []
-	for modifier: Key in [KEY_CTRL, KEY_ALT, KEY_META]:
+	for modifier: Key in [KEY_CTRL, KEY_ALT]:
 		jump.grab_focus()
 		await tap(KEY_ENTER)
 		await tap(modifier)
@@ -419,8 +420,32 @@ func _each_modifier_alone_remaps_as_it_is_let_go() -> bool:
 	await _back_to_default_controls()
 	await remove_main(main)
 	return report(bound == expected,
-			"Ctrl, Alt and Meta alone, each let go while Jump waits: Jump %s (expected %s)"
+			"Ctrl and Alt alone, each let go while Jump waits: Jump %s (expected %s)"
 			% [bound, expected])
+
+
+## While Jump waits, the Windows key (Meta), reserved as letting it go opens the Start menu, is
+## refused as it goes down, as F3 is, not held as a modifier; let go, it changes nothing, and the
+## wait goes on.
+func _the_windows_key_is_refused_as_it_goes_down() -> bool:
+	var main: Node = await _new_main_with_default_controls()
+	var controls: Control = _controls(await _open_controls_in_the_main_menu(main))
+	await _pick_profile(controls, InputProfiles.CUSTOM)
+	var jump: Button = _binding_button(controls, &"jump")
+	jump.grab_focus()
+	await tap(KEY_ENTER)
+	await press_key(KEY_META, true)
+	var down: String = jump.text
+	await press_key(KEY_META, false)
+	var still_waiting: bool = (controls as ControlsMenu).is_waiting_for_a_key()
+	var bindings: PackedStringArray = settings.get_bindings(&"jump")
+	await tap(KEY_ESCAPE)
+	await _back_to_default_controls()
+	await remove_main(main)
+	return report(down == ControlsMenu.REFUSED_TEXT % OS.get_keycode_string(KEY_META)
+			and still_waiting and bindings == PackedStringArray([InputProfiles.key(KEY_SPACE)]),
+			"The Windows key while Jump waits: down, the button shows '%s'; let go, still waiting %s, Jump %s"
+			% [down, still_waiting, bindings])
 
 
 ## A key held down long, as the keyboard repeats it: times presses marked as echoes.

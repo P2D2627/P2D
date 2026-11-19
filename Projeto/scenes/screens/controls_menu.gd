@@ -35,9 +35,9 @@ const UNNAMED_KEY: String = "That key"
 ## What the button shows after the gamepad, a button other than B or a push of an axis, with the way
 ## out, short enough to fit the button.
 const GAMEPAD_REFUSED_TEXT: String = "Gamepad stays fixed: press a key (B cancels)"
-## The keys that only bind as they are let go, with nothing pressed meanwhile; Meta is the Windows
-## key.
-const MODIFIERS: Array[Key] = [KEY_SHIFT, KEY_CTRL, KEY_ALT, KEY_META]
+## The keys that only bind as they are let go, with nothing pressed meanwhile. The Windows key is not
+## one: it is reserved (InputProfiles.RESERVED_KEYS), so it is refused as it goes down.
+const MODIFIERS: Array[Key] = [KEY_SHIFT, KEY_CTRL, KEY_ALT]
 ## What the button shows while a modifier is held, with its name: it binds once let go.
 const HELD_TEXT: String = "%s: let go to use it"
 ## How far back an axis must come, as a share of its way, before its next push is refused. A push is
