@@ -11,15 +11,16 @@ extends Node
 ## ticks at a pitch that follows its value. With no stream of their own, both are the selection's
 ## click, the switch's higher. A list (an OptionButton) clicks as a switch as it opens; inside it, a
 ## move of its selection clicks, an item picked blows, and the list closed with nothing picked
-## thuds. A key that remaps an action on the controls screen (ControlsMenu) blows; a key it refuses
-## thuds, and so does Esc, which stops its wait. A dialog's buttons sound only through its answer, never as buttons, so No
-## is a thud alone. Its scene sets
-## recorded sounds (assets/audio/ui/, made by tools/audio/make_menu_sounds.py, with their credits in
-## the README), the click's and the choice's as random sets that never play the same one twice in a
-## row; a sound left empty is made in code (MenuSoundSynth), once a run, and played with its own mix
-## (MADE_MIX_DB) on top of the scene's volume, as the made sounds all come out at one peak.
+## thuds. A key that remaps an action on the controls screen (ControlsMenu) blows; a key or a gamepad
+## button it refuses sounds the refusal, two thuds, so it never sounds as Esc, which stops its wait
+## with one. A dialog's buttons sound only through its answer, never as buttons, so No is a thud
+## alone. Its scene sets recorded sounds (assets/audio/ui/, made by tools/audio/make_menu_sounds.py,
+## with their credits in the README), the click's and the choice's as random sets that never play
+## the same one twice in a row; a sound left empty is made in code (MenuSoundSynth), once a run, and
+## played with its own mix (MADE_MIX_DB) on top of the scene's volume, as the made sounds all come
+## out at one peak.
 
-## A sound was played: &"move", &"switch", &"slider", &"confirm" or &"back".
+## A sound was played: &"move", &"switch", &"slider", &"confirm", &"back" or &"refuse".
 signal played(sound: StringName)
 
 const Synth := preload("res://scenes/screens/menu_sound_synth.gd")
@@ -33,11 +34,12 @@ const NAVIGATION: Array[StringName] = [&"ui_up", &"ui_down", &"ui_left", &"ui_ri
 ## The audio bus the menus play on, the one the Interface volume sets.
 const BUS: StringName = &"UI"
 ## How many of each sound may ring at once: the clicks overlap in a fast run, a choice may follow a
-## choice, and the way back never stacks.
+## choice, and neither the way back nor the refusal ever stacks.
 const MOVE_POLYPHONY: int = 3
 const SWITCH_POLYPHONY: int = 2
 const CONFIRM_POLYPHONY: int = 2
 const BACK_POLYPHONY: int = 1
+const REFUSE_POLYPHONY: int = 1
 ## A time long before the first input, in ms, so no gap holds back the first sound.
 const LONG_AGO_MS: int = -1000
 ## The mix of the sounds made in code, added to the scene's volumes, which suit the recorded files:
@@ -58,11 +60,16 @@ const MADE_MIX_DB: Dictionary[StringName, float] = {&"move": -14.0, &"confirm": 
 @export var tick_stream: AudioStream
 ## A switch's click; empty, the selection's click at Switch Pitch.
 @export var switch_stream: AudioStream
+## The refusal's two thuds, for a key or a gamepad button the controls screen refuses; empty, the way
+## back's thud.
+@export var refuse_stream: AudioStream
 @export_range(-40.0, 6.0, 0.5, "suffix:dB") var move_volume_db: float = -14.0
 @export_range(-40.0, 6.0, 0.5, "suffix:dB") var confirm_volume_db: float = -3.0
 @export_range(-40.0, 6.0, 0.5, "suffix:dB") var back_volume_db: float = -8.0
 @export_range(-40.0, 6.0, 0.5, "suffix:dB") var tick_volume_db: float = -14.0
 @export_range(-40.0, 6.0, 0.5, "suffix:dB") var switch_volume_db: float = -10.0
+## Only for a Refuse Stream of its own, which holds its mix, as the recorded files do.
+@export_range(-40.0, 6.0, 0.5, "suffix:dB") var refuse_volume_db: float = 0.0
 ## How far each click made in code strays in pitch, up or down, so a run of them never sounds the
 ## same. A Move Stream of its own strays as its Random Pitch says.
 @export_range(0.0, 2.0, 0.05, "suffix:semitones") var move_pitch_spread: float = 0.6
@@ -104,6 +111,8 @@ var _tick_player: AudioStreamPlayer
 var _switch_player: AudioStreamPlayer
 var _confirm_player: AudioStreamPlayer
 var _back_player: AudioStreamPlayer
+## The refusal's own player, or the way back's when there is no Refuse Stream.
+var _refuse_player: AudioStreamPlayer
 var _rumble: ControllerRumble
 
 
@@ -132,6 +141,8 @@ func _ready() -> void:
 	_back_player = (_new_player(back_stream, back_volume_db, BACK_POLYPHONY) if back_stream
 			else _new_player(_made_stream(&"back"), back_volume_db + MADE_MIX_DB[&"back"],
 			BACK_POLYPHONY))
+	_refuse_player = (_new_player(refuse_stream, refuse_volume_db, REFUSE_POLYPHONY) if refuse_stream
+			else _back_player)
 	_rumble = ControllerRumble.new()
 	add_child(_rumble)
 	if menu == null:
@@ -188,7 +199,7 @@ func _listen_to(node: Node) -> void:
 	elif node is ControlsMenu and not (node as ControlsMenu).rebound.is_connected(_on_rebound):
 		(node as ControlsMenu).rebound.connect(_on_rebound)
 		(node as ControlsMenu).wait_cancelled.connect(_on_wait_cancelled)
-		(node as ControlsMenu).key_refused.connect(_on_key_refused)
+		(node as ControlsMenu).input_refused.connect(_on_input_refused)
 
 
 ## Whether button belongs to a dialog (its OK and Cancel are its own internal children), which
@@ -277,10 +288,13 @@ func _on_rebound(_action: StringName) -> void:
 		_play_confirm()
 
 
-## A key the controls screen cannot take: the way back's thud, a «no», while its button says why.
-func _on_key_refused() -> void:
+## A key or a gamepad button the controls screen cannot take: the refusal, while its button says
+## why. It pulses as the way back does.
+func _on_input_refused() -> void:
 	if _is_showing():
-		_play_back()
+		_refuse_player.play()
+		_rumble.play(back_pulse)
+		played.emit(&"refuse")
 
 
 ## The thud of the way back; the Esc that stopped the wait no longer counts as a way back for the

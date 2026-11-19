@@ -6,9 +6,11 @@
 # sliders as it opens does not; a list run through fast stays clicks a gap apart; and with the menu
 # hidden, in a level, nothing sounds. On the options screen, a move from tab to tab clicks; a list
 # (the frame rate's, the profiles') clicks as it opens and as its selection moves, blows as an item
-# is picked, and thuds as Esc closes it; a key that remaps an action blows, a reserved one, which
-# is refused, thuds, and so does Esc, which stops the wait. No menu's sound is empty. No on
-# the question before a new game over a save thuds, and only thuds. The sounds made in code, when a
+# is picked, and thuds as Esc closes it; a key that remaps an action blows; a reserved key and a
+# gamepad button, which are refused, sound the refusal, on its own player and not the way back's, a
+# push of the stick sounds nothing, and Esc, which stops the wait, thuds, after a refusal too. The
+# refusal's sound is its own, longer than the way back's. No menu's sound is empty. No on the
+# question before a new game over a save thuds, and only thuds. The sounds made in code, when a
 # scene leaves its own empty, keep the move well under the choice.
 # Run from the repository root; the exit code is 0 on pass and 1 on fail:
 # godot --headless --fixed-fps 60 --path Projeto --script res://tests/test_menu_feedback.gd
@@ -43,7 +45,8 @@ func _initialize() -> void:
 	results.append(await _a_hidden_menu_makes_no_sound())
 	results.append(await _a_move_from_tab_to_tab_clicks())
 	results.append(await _a_list_clicks_as_it_opens_and_moves_and_answers_as_it_closes())
-	results.append(await _a_key_that_remaps_blows_and_a_refused_one_thuds())
+	results.append(await _a_key_that_remaps_blows_and_a_refused_key_or_button_sounds_the_refusal())
+	results.append(await _the_refusal_plays_a_sound_of_its_own_longer_than_the_way_back())
 	results.append(await _no_menu_sound_is_empty())
 	results.append(await _no_to_replacing_the_save_only_thuds())
 	results.append(await _the_made_sounds_keep_the_move_under_the_choice())
@@ -201,9 +204,11 @@ func _a_list_clicks_as_it_opens_and_moves_and_answers_as_it_closes() -> bool:
 
 
 ## In the custom profile, Enter on an action's button blows, as any button does; F3, reserved for the
-## debug overlay, is refused with the way back's thud; K remaps the action and blows: the binding
-## took. Enter again starts another wait, and Esc stops it with the way back's thud.
-func _a_key_that_remaps_blows_and_a_refused_one_thuds() -> bool:
+## debug overlay, is refused with the refusal's sound, which its own player plays, not the way
+## back's; K remaps the action and blows: the binding took. Enter again starts another wait: A on the
+## gamepad is refused with the same sound, a push of the stick sounds nothing, and Esc stops the wait
+## with the way back's thud.
+func _a_key_that_remaps_blows_and_a_refused_key_or_button_sounds_the_refusal() -> bool:
 	var main: Node = await new_main()
 	settings.reset_to_defaults()
 	settings.set_input_profile(InputProfiles.CUSTOM)
@@ -214,26 +219,54 @@ func _a_key_that_remaps_blows_and_a_refused_one_thuds() -> bool:
 	var button: Control = options.find_child("%sButton" % String(action).to_pascal_case(), true,
 			false) as Control
 	_listen_on_the_test_clock(main)
+	var feedback: MenuFeedbackNode = _feedback_of(main)
 	var heard: Array[Array] = []
 	var remapped: bool = false
+	var on_its_own_player: bool = false
 	if button != null:
 		button.grab_focus()
 		for key: Key in [KEY_ENTER, KEY_F3, KEY_K]:
 			await _tap_calmly(key)
 			heard.append(_heard.duplicate())
+			if key == KEY_F3:
+				on_its_own_player = (_is_playing(feedback, feedback.refuse_stream)
+						and not _is_playing(feedback, feedback.back_stream))
 		remapped = settings.get_bindings(action).has(InputProfiles.key(KEY_K))
 		_heard.clear()
-		for key: Key in [KEY_ENTER, KEY_ESCAPE]:
-			await _tap_calmly(key)
+		await _tap_calmly(KEY_ENTER)
+		_now_ms += CALM_PRESS_MS
+		await tap_joypad(JOY_BUTTON_A)
+		_now_ms += CALM_PRESS_MS
+		await push_stick()
+		await _tap_calmly(KEY_ESCAPE)
 		heard.append(_heard.duplicate())
 	settings.reset_custom_bindings()
 	settings.reset_to_defaults()
 	await remove_main(main)
-	var expected: Array[Array] = [[&"confirm"], [&"confirm", &"back"],
-			[&"confirm", &"back", &"confirm"], [&"confirm", &"back"]]
-	return report(heard == expected and remapped,
-			("Enter, F3, K on the first action, heard after each, then Enter and Esc: %s (%s), "
-			+ "remapped to K %s") % [heard, expected, remapped])
+	var expected: Array[Array] = [[&"confirm"], [&"confirm", &"refuse"],
+			[&"confirm", &"refuse", &"confirm"], [&"confirm", &"refuse", &"back"]]
+	return report(heard == expected and remapped and on_its_own_player,
+			("Enter, F3, K on the first action, heard after each, then Enter, A, the stick and Esc: "
+			+ "%s (%s), remapped to K %s; F3 on the refusal's own player %s")
+			% [heard, expected, remapped, on_its_own_player])
+
+
+## The main menu's MenuFeedback has a player for the refusal's own sound, the one its scene sets, and
+## that sound lasts longer than the way back's: two thuds, never the way back's one.
+func _the_refusal_plays_a_sound_of_its_own_longer_than_the_way_back() -> bool:
+	var main: Node = await new_main()
+	var feedback: MenuFeedbackNode = _feedback_of(main)
+	var refuse: AudioStream = feedback.refuse_stream
+	var own_player: bool = false
+	for child: Node in feedback.get_children():
+		var player: AudioStreamPlayer = child as AudioStreamPlayer
+		own_player = own_player or (player != null and refuse != null and player.stream == refuse)
+	var refuse_ms: float = _shortest_length(refuse) * 1000.0
+	var back_ms: float = _shortest_length(feedback.back_stream) * 1000.0
+	await remove_main(main)
+	return report(own_player and refuse_ms > back_ms,
+			"The refusal: a player of its own %s; %.0f ms, the way back %.0f ms"
+			% [own_player, refuse_ms, back_ms])
 
 
 ## Every menu's MenuFeedback, the main menu's and the pause's, has something to play for each sound:
@@ -281,7 +314,7 @@ func _the_made_sounds_keep_the_move_under_the_choice() -> bool:
 	var menu: CanvasLayer = CanvasLayer.new()
 	var feedback: MenuFeedbackNode = FEEDBACK_SCENE.instantiate() as MenuFeedbackNode
 	for sound: StringName in [&"move_stream", &"confirm_stream", &"back_stream", &"tick_stream",
-			&"switch_stream"]:
+			&"switch_stream", &"refuse_stream"]:
 		feedback.set(sound, null)
 	feedback.menu = menu
 	menu.add_child(feedback)
@@ -318,6 +351,15 @@ func _listen_on_the_test_clock(main: Node) -> void:
 	_listen(main)
 	_now_ms = 100000
 	_feedback_of(main).clock = func() -> int: return _now_ms
+
+
+## Whether one of feedback's players with stream is playing; false with no stream.
+func _is_playing(feedback: Node, stream: AudioStream) -> bool:
+	for child: Node in feedback.get_children():
+		var player: AudioStreamPlayer = child as AudioStreamPlayer
+		if player != null and stream != null and player.stream == stream and player.playing:
+			return true
+	return false
 
 
 ## A tap a while after the last, on the test's clock.

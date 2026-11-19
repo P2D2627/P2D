@@ -11,6 +11,7 @@
 [ext_resource type="AudioStream" path="res://assets/audio/ui/menu_back_1.wav" id="9_back_1"]
 [ext_resource type="AudioStream" path="res://assets/audio/ui/menu_tick.wav" id="10_tick"]
 [ext_resource type="AudioStream" path="res://assets/audio/ui/menu_switch.wav" id="11_switch"]
+[ext_resource type="AudioStream" path="res://assets/audio/ui/menu_refuse.wav" id="12_refuse"]
 
 [sub_resource type="AudioStreamRandomizer" id="AudioStreamRandomizer_move"]
 random_pitch = 1.035
@@ -52,6 +53,7 @@ confirm_stream = SubResource("AudioStreamRandomizer_confirm")
 back_stream = ExtResource("9_back_1")
 tick_stream = ExtResource("10_tick")
 switch_stream = ExtResource("11_switch")
+refuse_stream = ExtResource("12_refuse")
 move_volume_db = 0.0
 confirm_volume_db = 0.0
 back_volume_db = 0.0

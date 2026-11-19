@@ -11,12 +11,19 @@
 # it selected, and one level in the slot. All the menu's text takes its size from the UI theme (its
 # own, or a variation the theme sizes, as the biggest first option's), with
 # no size set on a single node.
-# Quit fades the screen to black and only then ends the game, once, however often it is pressed
-# meanwhile, with the menu left without the focus; the end is the test's own, as the real one would
-# end this test with exit code 0.
+# Quit fades the screen to black, in a time of its own that outlasts the choice's blow, and only
+# then ends the game, once, however often it is pressed meanwhile, with the menu left without the
+# focus; the end is the test's own, as the real one would end this test with exit code 0
+# (menu_test.gd fails a test that ends so). A click on Options during the fade opens nothing, where
+# the same click without Quit opens the options.
 # Run from the repository root; the exit code is 0 on pass and 1 on fail:
 # godot --headless --fixed-fps 60 --path Projeto --script res://tests/test_main_flow.gd
 extends "res://tests/support/menu_test.gd"
+
+## Quit's fade in the case that tells it from the phases', in s: twice the default.
+const SLOW_QUIT_FADE: float = 0.5
+## When that case looks at the game during the fade, in s: past the default, short of the slow one.
+const EARLY_LOOK: float = 0.3
 
 
 func _initialize() -> void:
@@ -34,16 +41,26 @@ func _initialize() -> void:
 	results.append(await _esc_and_space_in_the_level_reach_no_menu_button())
 	results.append(await _the_menu_text_takes_its_size_from_the_ui_theme())
 	results.append(await _quit_fades_to_black_and_only_then_ends_the_game())
+	results.append(await _a_click_during_quit_s_fade_opens_nothing())
 	finish(results)
 
 
 ## Quit, asked twice, as Main hears it from the menu: at first the game goes on and the screen starts
 ## to go black, with nothing of the menu selected; once the fade is done, the screen is black and the
-## game ends, once.
+## game ends, once. The fade takes Quit's own time, whatever the phases' Fade Time: with Quit Fade
+## Time at Slow Quit Fade and Fade Time at 2 s, the game still goes on at Early Look and has ended
+## once Slow Quit Fade is over. Quit Fade Time, and the least the Inspector lets it be, outlast the
+## choice's longest blow, which Quit plays, so the window never closes on it.
 func _quit_fades_to_black_and_only_then_ends_the_game() -> bool:
 	var main: Node = await new_main()
 	var ends: Array[int] = []
 	main.quit_game = func() -> void: ends.append(1)
+	var blow: float = _longest_choice_blow(main)
+	var quit_fade: float = main.quit_fade_time
+	var least: float = _least_quit_fade_time(main)
+	var outlasts: bool = blow > 0.0 and quit_fade >= blow and least >= blow
+	main.fade_time = 2.0
+	main.quit_fade_time = SLOW_QUIT_FADE
 	var fade: ColorRect = main.get_node(^"%Fade") as ColorRect
 	main._on_quit_requested()
 	main._on_quit_requested()
@@ -51,13 +68,76 @@ func _quit_fades_to_black_and_only_then_ends_the_game() -> bool:
 	var ended_at_once: bool = not ends.is_empty()
 	var fading: bool = fade.color.a > 0.0 and fade.color.a < 1.0
 	var nothing_selected: bool = root.gui_get_focus_owner() == null
-	await wait_frames(ceili(main.fade_time * Engine.physics_ticks_per_second) + 10)
+	await wait_frames(ceili(EARLY_LOOK * Engine.physics_ticks_per_second))
+	var ended_early: bool = not ends.is_empty()
+	await wait_frames(ceili((SLOW_QUIT_FADE - EARLY_LOOK) * Engine.physics_ticks_per_second) + 10)
 	var black: bool = is_equal_approx(fade.color.a, 1.0)
 	var ended: int = ends.size()
 	await remove_main(main)
-	return report(not ended_at_once and fading and nothing_selected and black and ended == 1,
-			("Quit twice: ended at once %s, fading %s, nothing selected %s; after the fade, black %s, "
-			+ "ended %d times") % [ended_at_once, fading, nothing_selected, black, ended])
+	return report(not ended_at_once and fading and nothing_selected and not ended_early and black
+			and ended == 1 and outlasts,
+			("Quit twice: ended at once %s, fading %s, nothing selected %s, ended at %.1f s %s; after "
+			+ "the fade, black %s, ended %d times; Quit Fade Time %.2f s and its least %.2f s against "
+			+ "the longest blow %.3f s") % [ended_at_once, fading, nothing_selected, EARLY_LOOK,
+			ended_early, black, ended, quit_fade, least, blow])
+
+
+## The longest of the main menu's choice sounds, the blow Quit plays, in s; 0 with none.
+func _longest_choice_blow(main: Node) -> float:
+	var feedback: Node = main_menu_node(main, ^"MenuFeedback")
+	var stream: AudioStream = feedback.get(&"confirm_stream") as AudioStream if feedback else null
+	var randomizer: AudioStreamRandomizer = stream as AudioStreamRandomizer
+	if randomizer == null:
+		return stream.get_length() if stream != null else 0.0
+	var longest: float = 0.0
+	for index: int in randomizer.streams_count:
+		longest = maxf(longest, randomizer.get_stream(index).get_length())
+	return longest
+
+
+## The least Quit Fade Time the Inspector takes: the first number of its range; 0 with no range.
+func _least_quit_fade_time(main: Node) -> float:
+	for property: Dictionary in main.get_property_list():
+		if property["name"] == "quit_fade_time":
+			return String(property["hint_string"]).get_slice(",", 0).to_float()
+	return 0.0
+
+
+## A left click on the main menu's Options opens the options; the same click, once Quit has started
+## to fade the screen out, opens nothing. The window takes the viewport's size for the case, so the
+## click lands on the button it aims at: without a window the screen is 1920 × 1920 px (see
+## test_crucifix_menus). A new size takes effect on the next frame.
+func _a_click_during_quit_s_fade_opens_nothing() -> bool:
+	var window_before: Vector2i = root.size
+	root.size = Vector2i(int(ProjectSettings.get_setting("display/window/size/viewport_width")),
+			int(ProjectSettings.get_setting("display/window/size/viewport_height")))
+	await process_frame
+	var opened: bool = await _a_click_on_options_opens_them(false)
+	var opened_while_quitting: bool = await _a_click_on_options_opens_them(true)
+	root.size = window_before
+	await process_frame
+	return report(opened and not opened_while_quitting,
+			"A click on Options: opens the options %s; during Quit's fade %s"
+			% [opened, opened_while_quitting])
+
+
+## A click on the main menu's Options, after Quit if quitting; true if the options opened. The fade
+## is let finish before the main scene goes, so Quit's wait never outlives it.
+func _a_click_on_options_opens_them(quitting: bool) -> bool:
+	var main: Node = await new_main()
+	main.quit_game = func() -> void: pass
+	var button: Control = main_menu_node(main, ^"%OptionsButton") as Control
+	var at: Vector2 = button.get_global_rect().get_center() if button != null else Vector2.ZERO
+	if quitting:
+		main._on_quit_requested()
+		await process_frame
+	await click(MOUSE_BUTTON_LEFT, at)
+	var options: Control = main_menu_node(main, ^"%OptionsMenu") as Control
+	var opened: bool = options != null and options.is_visible_in_tree()
+	if quitting:
+		await wait_frames(ceili(main.quit_fade_time * Engine.physics_ticks_per_second) + 10)
+	await remove_main(main)
+	return opened
 
 
 func _the_menu_opens_with_the_game_s_name_and_play_selected() -> bool:

@@ -1437,7 +1437,9 @@ Os testes dos menus estendem `tests/support/menu_test.gd`, que cria a cena princ
 teclas, botões do comando e botões do rato como o jogador, e reúne o acesso aos nós dos menus, ao
 foco e à personagem do nível. Usam um ficheiro de opções próprio e terminam com duas verificações:
 o botão Quit não foi carregado e o ficheiro de opções do jogador ficou igual (texto e data de
-gravação). O caso do ficheiro estragado do `test_settings.gd` escreve um ERROR e um WARNING, ambos
+gravação). Um teste que termine antes dessas verificações, por exemplo porque o jogo fechou por si
+em vez de usar o fecho substituto do teste, sai com código 1. Sem esta guarda, o Godot sairia com
+código 0 e o teste passaria sem ter verificado nada. O caso do ficheiro estragado do `test_settings.gd` escreve um ERROR e um WARNING, ambos
 esperados.
 
 O `measure_movement.gd` não verifica resultados: imprime as medidas da secção "Medidas para o
@@ -3074,18 +3076,26 @@ opções a partir de qualquer separador.
   opção, um golpe ao escolher e um som surdo ao voltar, cada um com um impulso no comando em uso. Um
   interruptor e uma lista fazem um clique próprio; dentro de uma lista, mudar de item faz o clique,
   escolher faz o golpe e fechar sem escolher faz o som de voltar. Uma tecla aceite ao remapear faz o
-  golpe, e o Esc que cancela a espera faz o som de voltar. Num diálogo, como a pergunta antes de um
+  golpe, e o Esc que cancela a espera faz o som de voltar. Uma tecla ou um botão do comando recusados
+  fazem o som de recusa: dois golpes surdos, o segundo mais grave, 230 ms ao todo. Distingue-se do som
+  de voltar pelo número de golpes e não só pela altura, porque cada som se ouve sozinho, sem o outro
+  ao lado para comparar, e porque um tom ainda mais grave sairia da gama que as colunas de um
+  portátil conseguem tocar. Num diálogo, como a pergunta antes de um
   jogo novo por cima de uma gravação, só a resposta soa: o No dá apenas o som de voltar. O Quit
-  escurece o ecrã durante o mesmo tempo dos outros fades (Main › Fade Time, 0,25 s) e só depois fecha
-  o jogo, para o golpe se ouvir e a janela fechar a partir do preto e não do menu aceso; os números
-  da partida gravam-se antes do fade. O clique e o golpe sorteiam entre variantes sem repetir a anterior
+  escurece o ecrã durante um tempo próprio (Main › Quit Fade Time, 0,25 s) e só depois fecha o jogo,
+  para o golpe se ouvir e a janela fechar a partir do preto e não do menu aceso; os números da
+  partida gravam-se antes do fade. Esse tempo é separado do das fases (Main › Fade Time), para um
+  fade de fase mais lento ou mais rápido não mudar o Quit, e não desce abaixo de 0,15 s, porque a
+  variante mais longa do golpe dura 140 ms e o fecho não a pode cortar (o `test_main_flow.gd`
+  verifica-o). O clique e o golpe sorteiam entre variantes sem repetir a anterior
   (`AudioStreamRandomizer`), para uma série de cliques não soar a máquina. A seleção que o próprio
   jogo muda (um ecrã a abrir) não faz som: só conta a que vem até 150 ms depois de uma tecla do
   jogador. Dois cliques ficam a pelo menos 35 ms um do outro, para uma lista percorrida depressa não
   virar um zumbido. A mistura está nos ficheiros: o
   `tools/audio/make_menu_sounds.py` corta, filtra e põe cada som à intensidade do seu evento (o
-  máximo de 50 ms de RMS: mudar −27 dBFS, escolher −18, voltar −22, barra −29, interruptor −25, que
-  fica em −27,5 porque o pico não passa de −1 dBFS), e todos os volumes da cena ficam a 0 dB. Assim o
+  máximo de 50 ms de RMS: mudar −27 dBFS, escolher −18, voltar −22, recusa −23, barra −29,
+  interruptor −25, que fica em −27,5 porque o pico não passa de −1 dBFS), e todos os volumes da cena
+  ficam a 0 dB. Assim o
   clique fica 9 dB abaixo do golpe. O script reproduz os ficheiros do repositório byte a byte. Se
   faltar um som na cena, o jogo usa um feito em código (`menu_sound_synth.gd`), com a sua própria
   mistura: o clique 11 dB abaixo do golpe.
@@ -3118,7 +3128,12 @@ e remapeamento por captura da tecla seguinte.
 - No separador Controls (`scenes/screens/controls_menu.gd`), carregar no botão de uma ação do perfil Custom faz o
   ecrã esperar pela próxima tecla ou botão do rato. O Esc ou o B cancelam sem alterar nada. Uma
   tecla que não pode ser usada (as reservadas ao overlay de depuração, como o F3) é recusada: o botão
-  diz qual foi, soa o som de voltar, e a espera continua. A espera
+  diz qual foi, soa o som de recusa, e a espera continua. Um botão do comando que não seja o B também
+  é recusado, com o texto «Gamepad stays fixed: press a key (B cancels)», porque os botões do comando
+  são os mesmos em todos os perfis. Antes, era ignorado em silêncio, e o jogador não sabia se o jogo o
+  tinha recebido. Por agora, o stick e os gatilhos continuam a ser ignorados: cada eixo envia uma
+  série de eventos ao longo do movimento, e recusá-lo uma só vez por carregão obriga a guardar o
+  estado de cada eixo, o que ficou fora desta alteração. A espera
   apanha a tecla antes de qualquer outro nó, pelo que o Esc não fecha a pausa.
 - Conflitos: se a tecla escolhida pertencia a outra ação, essa ação perde-a e, se ficar sem
   nenhuma, recebe as teclas antigas da primeira (troca). Nenhuma ação fica sem tecla. Preferiu-se a
@@ -3725,6 +3740,8 @@ opção de volume, todos a enviar para o Master, e o Alerts, a enviar para o SFX
     um com «Mute Bass Drum.wav», de Lynx_5969 (https://freesound.org/s/418725/), saturado para se
     ouvir em colunas pequenas.
   - `menu_back_1.wav` (voltar): o primeiro clique de rato, mais grave, com o mesmo bombo, mais baixo.
+  - `menu_refuse.wav` (recusa ao remapear): o som de voltar duas vezes, a segunda 90 ms depois e
+    mais grave.
   - `menu_tick.wav` (barras deslizantes): `tick_001`, do pacote «Interface Sounds», de Kenney
     (https://opengameart.org/content/interface-sounds).
   - `menu_switch.wav` (interruptores): «Small_Flashlight_Click_on_02.wav», de Rudmer_Rotteveel

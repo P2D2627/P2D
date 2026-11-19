@@ -31,7 +31,7 @@ RATE = 44100
 CEILING_DB = -1.0
 # Each event's loudness, in dBFS (loudest 50 ms of RMS), at a player volume of 0 dB.
 TARGETS: dict[str, float] = {"move": -27.0, "confirm": -18.0, "back": -22.0, "tick": -29.0,
-                             "switch": -25.0}
+                             "switch": -25.0, "refuse": -23.0}
 # The window the loudness is measured over, in s.
 LOUDNESS_WINDOW = 0.05
 # How hard the low hit is driven into its soft clipping.
@@ -157,9 +157,14 @@ def to_target(x: np.ndarray, target_db: float) -> np.ndarray:
 
 def sounds(sources: Path) -> dict[str, list[np.ndarray]]:
     """Each event's variants. Those of one event come from one family of sound, mouse clicks for
-    the moves, so they read as the same event."""
+    the moves, so they read as the same event. The refusal is the way back's thud twice, the second
+    lower, a «no» told from the way back by the count of its hits."""
     def mouse(name: str) -> np.ndarray:
         return click(sources, name, 60, hp=400.0, fade=25.0)
+
+    def thud(click_factor: float, kick_factor: float) -> np.ndarray:
+        return mix([(click(sources, "mouse", 70, hp=300.0, fade=30.0, factor=click_factor), 0, 0),
+                    (low(sources, "kick", 140, lp=900.0, factor=kick_factor), 0, -9)])
 
     return {
         "move": [mouse("mouse"), mouse("mouse2"), mouse("mouse3"), mouse("kenney_mouse")],
@@ -169,10 +174,10 @@ def sounds(sources: Path) -> dict[str, list[np.ndarray]]:
             mix([(click(sources, "mouse2", 70, hp=400.0, fade=30.0), 0, -1),
                  (low(sources, "kick", 190, factor=0.97), 0, 0)]),
         ],
-        "back": [mix([(click(sources, "mouse", 70, hp=300.0, fade=30.0, factor=0.8), 0, 0),
-                      (low(sources, "kick", 140, lp=900.0, factor=0.85), 0, -9)])],
+        "back": [thud(0.8, 0.85)],
         "tick": [click(sources, "kenney_tick", 30, hp=1000.0, fade=10.0)],
         "switch": [click(sources, "torch", 190, hp=400.0, fade=40.0)],
+        "refuse": [mix([(thud(0.8, 0.85), 0, 0), (thud(0.68, 0.72), 90, -2)])],
     }
 
 

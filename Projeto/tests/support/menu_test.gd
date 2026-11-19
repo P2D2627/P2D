@@ -5,8 +5,9 @@
 # rest of the game. It keeps the tests away from the player's settings and from quitting:
 # the autoload Settings saves to a test file, and Quit, instead of closing the game, counts as a
 # failure. finish adds two checks: Quit was never pressed, and the player's settings file is as it
-# was, by its text and the time it was last written. A test extends this file instead of SceneTree,
-# with
+# was, by its text and the time it was last written. A test that ends before finish fails: the
+# game's own quit, run in a test instead of the one the test puts, would end it with exit code 0
+# and its checks unrun. A test extends this file instead of SceneTree, with
 # extends "res://tests/support/menu_test.gd"
 extends "res://tests/support/player_test.gd"
 
@@ -27,12 +28,21 @@ var _quit_presses: int = 0
 ## The player's settings file when the first main scene was made, as player_file_state() gives
 ## it.
 var _player_file_before: Array = []
+## True once finish has given the verdict.
+var _finished: bool = false
 
 
 ## This file only holds what the menu tests share, so on its own it says so and stops.
 func _initialize() -> void:
 	printerr("menu_test.gd only holds shared setup: run one of the tests/test_*.gd files.")
 	quit(1)
+
+
+## Runs as the test ends, however it ends. Without a verdict from finish, the exit code becomes 1.
+func _finalize() -> void:
+	if not _finished:
+		printerr("FAIL: the test ended before finish gave its verdict, as when the game quits itself.")
+		quit(1)
 
 
 ## Before the verdict: Quit was never pressed, and the player's settings file is as it was. The test
@@ -50,6 +60,7 @@ func finish(results: Array[bool]) -> void:
 			% same))
 	if FileAccess.file_exists(SETTINGS_TEST_PATH):
 		DirAccess.remove_absolute(ProjectSettings.globalize_path(SETTINGS_TEST_PATH))
+	_finished = true
 	super(results)
 
 
@@ -147,6 +158,16 @@ func tap_joypad_in_one_frame(button: JoyButton) -> void:
 	Input.parse_input_event(_joypad_event(button, true))
 	Input.parse_input_event(_joypad_event(button, false))
 	await _wait_tap_frames()
+
+
+## The left stick pushed down all the way and let go, as a player moves through a menu with it.
+func push_stick() -> void:
+	for value: float in [1.0, 0.0]:
+		var motion: InputEventJoypadMotion = InputEventJoypadMotion.new()
+		motion.axis = JOY_AXIS_LEFT_Y
+		motion.axis_value = value
+		Input.parse_input_event(motion)
+		await _wait_tap_frames()
 
 
 ## The UI theme's text size, in px; -1 if there is no theme.
