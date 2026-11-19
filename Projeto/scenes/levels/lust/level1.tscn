@@ -16,6 +16,7 @@
 [ext_resource type="Resource" uid="uid://cklqmx1wj5cx7" path="res://scenes/characters/demon/tutorial_blocker_stats.tres" id="13_84uny"]
 [ext_resource type="PackedScene" uid="uid://b1g88pca2y1w4" path="res://scenes/characters/player/player.tscn" id="14_my875"]
 [ext_resource type="PackedScene" path="res://scenes/others/debug/debug_overlay.tscn" id="15_2rgxb"]
+[ext_resource type="PackedScene" path="res://scenes/screens/soul_hud/soul_hud.tscn" id="hud_soul"]
 [ext_resource type="Script" uid="uid://djwwuou6xjpnf" path="res://scenes/others/debug/demon_debug_view.gd" id="16_vbrv0"]
 [ext_resource type="Script" uid="uid://bdnxim87jkgcy" path="res://scenes/levels/save_point.gd" id="17_da51d"]
 [ext_resource type="PackedScene" path="res://scenes/others/camera/game_camera.tscn" id="18_pxqua"]
@@ -48402,6 +48403,10 @@ position = Vector2(4440, 960)
 start_visible = false
 player = NodePath("../Player")
 camera = NodePath("../GameCamera")
+
+[node name="SoulHud" parent="." node_paths=PackedStringArray("player", "crucifix") instance=ExtResource("hud_soul")]
+player = NodePath("../Player")
+crucifix = NodePath("../Player/Crucifix")
 
 [node name="DemonDebugView" type="Node2D" parent="." unique_id=1113688018 node_paths=PackedStringArray("overlay", "demons", "player")]
 process_mode = 3
