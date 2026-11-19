@@ -54,7 +54,7 @@ cada sala) está em `docs/nivel1_desenho.md`, e os artigos que o fundamentam em 
    por fase, continua na lista Levels do Main como Level 1: Lust (old blockout), fora do menu e sem
    iniciar partida. Cada cena também corre sozinha com F6, sem gravar nada.
 6. Entrar numa fase grava o jogo, o que é indicado por "Saving..." no canto do ecrã, e o menu
-   principal passa a mostrar Continue, descrito em "Gravação do jogo".
+   principal passa a mostrar Continue e Load, descritos em "Gravação do jogo", com os três slots.
 7. A sala de treino (`scenes/levels/gym/gym.tscn`, com F6) põe à prova, uma de cada vez, as mecânicas que já
    existem: movimento, paredes e chaminés, câmara, zona fixa da câmara, cães, matilha e agarrão,
    crucifixo, SP e morte. Cada estação ocupa um ecrã e tem uma placa que explica o que experimentar.
@@ -1393,6 +1393,9 @@ godot --headless --fixed-fps 60 --path Projeto --script res://tests/test_grab_es
 godot --headless --fixed-fps 60 --path Projeto --script res://tests/test_crucifix_block.gd
 godot --headless --fixed-fps 60 --path Projeto --script res://tests/test_sinking_drawing.gd
 godot --headless --fixed-fps 60 --path Projeto --script res://tests/test_level_restart.gd
+godot --headless --fixed-fps 60 --path Projeto --script res://tests/test_save_game.gd
+godot --headless --fixed-fps 60 --path Projeto --script res://tests/test_save_slots.gd
+godot --headless --fixed-fps 60 --path Projeto --script res://tests/test_save_slots_menu.gd
 godot --headless --fixed-fps 60 --path Projeto --script res://tests/test_moral_record.gd
 godot --headless --fixed-fps 60 --path Projeto --script res://tests/test_run_record.gd
 godot --headless --fixed-fps 60 --path Projeto --script res://tests/test_deaths_log.gd
@@ -1420,7 +1423,11 @@ esperados. O `test_soul_points.gd` escreve quatro ERROR, das quantidades de dano
 inválidas, também esperados. O `test_moral_record.gd` escreve seis WARNING, de uma tentação
 desconhecida (aceite e consultada), de um tom desconhecido e de três tempos de escuta inválidos,
 igualmente esperados. O `test_run_record.gd` escreve três WARNING, de mortes sem nível, sem zona e
-na fase 0, também esperados.
+na fase 0, também esperados. O `test_save_game.gd`, o `test_save_slots.gd` e o
+`test_save_slots_menu.gd` criam de propósito gravações danificadas, de uma versão futura e com
+campos do tipo errado: cada leitura de um ficheiro danificado dá um ERROR de leitura do Godot, e
+cada leitura de uma gravação que o jogo não pode usar dá um WARNING. O `test_save_slots.gd`
+escreve ainda dois ERROR, de pedir os slots 0 e 4, que não existem.
 
 Todos os scripts de testes e de medidas estendem `tests/support/base_test.gd`, diretamente ou
 através de outro ficheiro de suporte. Antes de o autoload `Settings` estar pronto, esse ficheiro
@@ -3439,17 +3446,16 @@ conversas.
 
 #### Gravação do jogo
 
-O jogo tem uma só gravação automática, sem pontos de gravação visíveis no cenário: chegar ao fim de
-uma fase é o checkpoint. Um jogo novo e cada entrada numa fase gravam, e o tutorial conta como uma
-fase: ao passar dele para a sala inicial, o nó `SavePoint` grava, e dali em diante a fase 1 começa
-nessa sala. O Continue do menu principal, que só aparece quando há uma gravação utilizável, regressa
-ao ponto da última gravação. O fluxo está no
-`main.gd`; os dados estão em `user://save.cfg`, um `ConfigFile`, o mesmo recurso do Godot que guarda
-as opções.
+O jogo tem três gravações automáticas, os slots, sem pontos de gravação visíveis no cenário:
+chegar ao fim de uma fase é o checkpoint. Um jogo novo e cada entrada numa fase gravam no slot em
+jogo, e o tutorial conta como uma fase: ao passar dele para a sala inicial, o nó `SavePoint` grava,
+e dali em diante a fase 1 começa nessa sala. O fluxo está no `main.gd`; cada slot é um
+`ConfigFile`, o mesmo recurso do Godot que guarda as opções.
 
 | Guarda-se | Porquê |
 |---|---|
-| A fase | É o ponto para onde o Continue regressa. |
+| A cena da fase | É o ponto para onde o Continue regressa. |
+| O número da fase e a hora da gravação | O menu mostra-os no slot, e a hora decide qual foi o último slot jogado. |
 | O registo moral | O julgamento final depende de tudo o que o homem fez. |
 | Se ainda tem o crucifixo | Perdê-lo é definitivo. |
 | Os upgrades aceites | Os dons dos demónios ficam para os níveis seguintes. |
@@ -3459,10 +3465,10 @@ as opções.
 
 As estatísticas da partida (`RunStats`: mortes e tempo por fase) são a exceção no sentido contrário:
 uma morte tem de ficar contada, por isso a morte nunca as repõe. Guardam-se num ficheiro próprio, ao
-lado da gravação (`user://save_run.cfg`), em cada gravação, em cada morte e ao sair para o menu ou
-fechar o jogo. O Continue repõe-nas e um jogo novo apaga-as. Ficam fora do `save.cfg` para que a
-morte continue a não alterar a gravação: o que lá está volta a ser exatamente o que estava no último
-checkpoint.
+lado da gravação do slot (`save_run.cfg` ao lado do `save.cfg`), com a hora da escrita, em cada
+gravação, em cada morte e ao sair para o menu ou fechar o jogo. O Continue repõe-nas e um jogo novo
+apaga-as. Ficam fora da gravação para que a morte continue a não a alterar: o que lá está volta a
+ser exatamente o que estava no último checkpoint.
 
 Não se guardam os SP, os demónios, a câmara nem as tolerâncias do movimento: cada fase é uma cena
 nova e reconstrói-os. As opções do jogador ficam em ficheiro próprio, porque não pertencem a uma
@@ -3480,10 +3486,34 @@ que ela dá. Sair antes de responder não guarda nada, nem as respostas de tom d
 conversa repete-se no Continue. Um nível que não
 inicia o jogo, como o Test room, fica fora disto: não grava nem repõe nada.
 A gravação escreve primeiro uma cópia e só depois a coloca no lugar da anterior, para que um jogo
-fechado a meio não destrua a última gravação. Uma gravação danificada, de outra versão ou de uma
-cena que já não existe conta como inexistente. Escolher o nível que inicia o jogo (`LevelEntry`,
-Starts Game) começa uma nova partida: havendo gravação, o jogo pede confirmação antes de a substituir,
-com a opção de a manter já selecionada.
+fechado a meio não destrua a última gravação. Uma gravação danificada, de uma versão mais recente
+do que a do jogo ou de uma cena que já não existe não se pode continuar.
+
+**Slots.** O slot 1 é o ficheiro que o jogo já usava antes dos slots, `user://save.cfg`; os slots 2
+e 3 são o `save_2.cfg` e o `save_3.cfg`, cada um com as estatísticas ao lado. Por serem ficheiros
+separados, um slot danificado não esconde os outros. Ficou de lado um ficheiro de índice com o
+resumo dos três: seria uma segunda fonte da mesma informação, que um jogo fechado a meio podia
+deixar desatualizada, e um índice danificado esconderia os três slots.
+
+- **Continue:** aparece quando algum slot tem uma gravação utilizável e abre o último slot jogado,
+  isto é, o da hora mais recente, seja a da gravação, seja a da última escrita das estatísticas.
+  Quem joga sem chegar a um checkpoint e sai volta assim a esse slot, e não a outro gravado depois.
+  A partir daí, tudo o que o jogo grava vai para esse slot.
+- **Load:** aparece por baixo do Continue e lista os três slots, cada um com o nível, a fase, o
+  tempo de jogo, as mortes e a data, escrita como 2026-11-19 17:40 para se ler da mesma forma em
+  qualquer país. Abre com o último slot jogado selecionado. Um slot vazio, ou com um ficheiro que não
+  se lê ("Can't be read"), aparece na lista, mas não se pode escolher. No caso mais comprido medido
+  (10h 33m e 127 mortes), o texto ocupa 534 dos 600 px do botão.
+- **New Game:** sem nenhum ficheiro de gravação, começa logo no slot 1. Caso contrário, mostra os
+  slots com o primeiro vazio selecionado. Um slot ocupado, ou com um ficheiro que não se lê, pede
+  confirmação antes de ser substituído, com a opção de o manter já selecionada.
+
+**Versões.** O ficheiro guarda a versão do formato. A versão 2 é a dos slots e acrescenta a fase e
+a hora. Uma gravação da versão 1, de antes dos slots, continua a abrir como slot 1: sem fase, e com a
+data da alteração mais recente dos seus dois ficheiros, a gravação e as estatísticas. Se for do nível 1 sem luz, abre no nível 1 com luz, que o
+substituiu no menu. A gravação seguinte passa-a à versão 2. A data mostra a hora deste computador
+com o desfasamento de hoje em relação ao UTC, pelo que uma gravação feita do outro lado de uma
+mudança de hora aparece com uma hora de diferença.
 
 #### Sala de treino
 

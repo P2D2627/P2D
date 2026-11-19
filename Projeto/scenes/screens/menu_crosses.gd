@@ -69,13 +69,14 @@ func _process(delta: float) -> void:
 	_last = focused
 
 
-## The width of what the option shows: its text for a button, the whole control otherwise.
+## The width of what the option shows: its text for a button, its widest line if it has more than
+## one, as a save slot's; the whole control otherwise.
 func _text_width(control: Control, font_size: int) -> float:
 	var button: Button = control as Button
 	if button == null or button.text.is_empty():
 		return control.size.x
 	var font: Font = control.get_theme_font(&"font")
-	return font.get_string_size(button.text, HORIZONTAL_ALIGNMENT_LEFT, -1, font_size).x
+	return font.get_multiline_string_size(button.text, HORIZONTAL_ALIGNMENT_LEFT, -1, font_size).x
 
 
 func _place(cross: TextureRect, at: Vector2, cross_size: Vector2, weight: float) -> void:
