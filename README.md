@@ -61,9 +61,10 @@ cada sala) está em `docs/nivel1_desenho.md`, e os artigos que o fundamentam em 
    As teclas 1 a 9 levam ao início da estação com esse número, e o 0 à décima. Quem morre recomeça
    no início da estação onde estava. Ver "Sala de treino".
 Os controlos de teclado e rato escolhem-se em Settings ▸ Controls, entre três perfis. O comando é
-igual em todos. As teclas desenhadas no tutorial (`scenes/levels/key_prompt.gd`) mostram a tecla do
-perfil escolhido e, com um comando ligado, o botão do comando, com os nomes de um comando Xbox (A, B,
-RT, LS ← para o stick esquerdo); mudam no momento em que o comando se liga ou desliga.
+igual em todos. No nível 1, os avisos do tutorial aparecem numa faixa em baixo, ao centro, um de
+cada vez (ver "Avisos do tutorial"). Cada aviso mostra a tecla do perfil escolhido ou, se o último
+aparelho usado foi o comando, o ícone do botão de um comando Xbox (A, X, RT, stick esquerdo). Muda
+quando se usa o outro aparelho, quando se liga um comando e quando se desliga o último comando usado.
 
 | Ação | WASD (predefinido) | Setas e QWEASD | Comando |
 |---|---|---|---|
@@ -1208,11 +1209,12 @@ Remote; os restantes valores são lidos sempre que são usados.
     ├── addons/        plugins de terceiros: o Dialogue Manager, que dá as falas
     ├── assets/        arte e som
     │   ├── audio/       som, por tipo: os efeitos sonoros em sfx/
-    │   ├── fonts/       tipos de letra: a Tinos, de reserva para a Times New Roman dos menus
-    │   └── sprites/     uma pasta por grupo: player/, demon_lust/, environment/, backgrounds/, ramps/ e menu/ (a arte dos menus)
+    │   ├── fonts/       tipos de letra: a Tinos, de reserva para a Times New Roman dos menus, e a Atkinson Hyperlegible Next e a Literata dos avisos do tutorial
+    │   ├── sprites/     uma pasta por grupo: player/, demon_lust/, environment/, backgrounds/, ramps/ e menu/ (a arte dos menus)
+    │   └── ui/          imagens da interface: os ícones dos botões do comando nos avisos (prompts/)
     ├── dialogue/      as falas, um ficheiro .dialogue por nível
     ├── scenes/        cenas, scripts e ficheiros de dados, por tipo e, dentro de cada tipo, por sistema
-    │   ├── autoload/    serviços globais: as opções do jogador (Settings), o registo moral (Moral), o progresso do jogo (GameState), as estatísticas da partida (RunStats), as tentações (Offers, em offers/, com o ritmo das ofertas por mortes), a gravação e os perfis de controlos
+    │   ├── autoload/    serviços globais: as opções do jogador (Settings), o registo moral (Moral), o progresso do jogo (GameState), as estatísticas da partida (RunStats), as tentações (Offers, em offers/, com o ritmo das ofertas por mortes), o último aparelho usado, teclado ou comando (LastDevice), a gravação e os perfis de controlos
     │   ├── characters/  a personagem (player/), o crucifixo (crucifix/), os demónios (demon/, com os estados em states/, e os que falam, Velvet e Asmodeu) e os componentes que mais de um sistema usa (components/)
     │   ├── levels/      uma pasta por nível: a sala de teste (test_room/), a sala de treino (gym/) e o nível 1 (lust/, com os construtores e os mapas em texto em builders/); na raiz, as peças e os scripts comuns e o fundo de que os níveis partem (background/)
     │   ├── objects/     peças com comportamento: portões (gates/), plataformas (platforms/) e armadilhas (traps/)
@@ -3136,6 +3138,53 @@ e remapeamento por captura da tecla seguinte.
 O tamanho da letra e os espaços entre elementos estão num único tema, `themes/ui_theme.tres`, e nenhum
 nó define o seu próprio tamanho de letra: uma futura opção de tamanho do texto altera apenas o tema.
 
+#### Avisos do tutorial: faixa em baixo e último aparelho
+
+Os avisos do tutorial do nível 1 (andar, saltar, salto na parede e crucifixo) aparecem numa faixa em
+baixo, ao centro, e não no cenário. O sítio, as letras e as medidas resultam de uma pesquisa e de
+capturas das quatro zonas do tutorial no nível com luz.
+
+- Sítio. A faixa (`scenes/levels/prompt_band.tscn`) fica a 40 px do fundo do ecrã e tem 80 px de
+  altura. Nas quatro zonas, em duas capturas, fica 41 a 82 px abaixo dos pés do homem, sobre o preto
+  por baixo do chão, sem tapar o homem nem os buracos.
+- Um aviso de cada vez: o primeiro, da esquerda para a direita, que a câmara vê e que o homem ainda
+  não passou. Cada aviso fica pelo menos 2 s (`min_show_time` do nó Tutorial), para não piscar
+  numa corrida. Este valor é uma estimativa, a confirmar num playtest. Enquanto a Velvet fala, a
+  faixa esconde-se, para não ficar por baixo do balão.
+- Leitura. A legenda usa a Literata (peso 600, 36 px) e o nome da tecla usa a Atkinson Hyperlegible
+  Next (peso 700), uma letra desenhada para leitores com baixa visão. A placa é escura e
+  semitransparente. O contraste da legenda medido nas capturas é de 16:1. Sobre um fundo branco
+  seria de 6,8:1, acima do mínimo de 4,5:1 que a WCAG recomenda para texto.
+- Teclado e comando. No teclado, o aviso desenha uma tecla com o nome da tecla do perfil escolhido.
+  No comando, mostra o ícone do botão (Kenney Input Prompts, tingido com o bege da interface). Um
+  botão sem ícone mostra o nome numa tecla. As letras, as cores e as molduras estão no tema
+  (`themes/ui_theme.tres`, variações `Prompt*`); os ícones e o seu tamanho (56 px) estão no
+  `scenes/levels/prompt_glyph.tscn`. Assim, a arte do grupo pode substituí-los sem mexer no código.
+- Limite: os ícones são sempre os de um comando Xbox. Num comando PlayStation ou Nintendo, os
+  botões estão no mesmo sítio, mas o desenho muda: o X da Xbox, que fala com a Velvet, é o quadrado
+  da PlayStation. Reconhecer a família do comando fica para uma tarefa à parte.
+- Troca automática. O autoload `LastDevice` (`scenes/autoload/last_device.gd`) guarda o último
+  aparelho usado, porque o Godot 4.7 não tem uma função para isso. Conta apenas o que faria uma
+  ação: uma tecla, botão ou gatilho premido, ou um stick inclinado para lá da zona morta dessa ação
+  (0,2 no andar). Ecos, teclas largadas, o rato a mexer e um stick em repouso não contam, para que um
+  stick com folga não faça os avisos trocar. Ligar um comando passa ao comando; desligar o último
+  comando usado volta ao teclado.
+- O `LastDevice` ouve o sinal `window_input` da janela, que recebe todos os eventos antes de qualquer
+  nó, também em pausa, antes de qualquer menu os tratar. A alternativa, o `_input` de um nó, perdia
+  os eventos que outro nó marcasse como tratados e os que uma lista aberta engolisse.
+- Custo medido por evento: 0,5 a 0,7 µs com o aparelho em uso, porque um evento desse aparelho não
+  pode mudar nada e sai logo; cerca de 11 µs para um stick em repouso com o teclado em uso, que tem
+  de ser comparado com todas as ações.
+- No `project.godot`, a opção `ignore_joypad_on_unfocused_application` está ligada, para que um
+  comando pousado não mexa no jogo com a janela em segundo plano.
+- A tecla da Velvet e a do portão continuam no cenário, com o desenho da faixa e a mesma troca: o
+  `KeyPrompt` usa o mesmo `PromptGlyph`. Por isso, todas as teclas do cenário passaram de 80 px, com
+  a letra dos menus, para 56 px, com a Atkinson Hyperlegible Next. Sem faixa, o `TutorialHints`
+  desenha os avisos no cenário, como antes, e é o que acontece nas cenas antigas do nível 1.
+- Testes: `test_last_device.gd` (o que conta, o que não conta, a pausa e os comandos) e
+  `test_prompt_band.gd` (a tecla e o ícone, o sítio da faixa, o contraste, um aviso de cada vez e a
+  Velvet).
+
 #### Registo moral: escondido, uma soma e dois limiares
 
 O jogo julga o homem pela forma como se joga, sem o mostrar. O autoload `Moral` guarda esse registo
@@ -3686,6 +3735,15 @@ opção de volume, todos a enviar para o Master, e o Alerts, a enviar para o SFX
 - Tinos, de The Tinos Project Authors. SIL Open Font License 1.1. Letra de reserva dos menus, com as
   medidas da Times New Roman, em `Projeto/assets/fonts/` (com a licença em `Tinos-OFL.txt`).
   https://github.com/googlefonts/tinos
+- Atkinson Hyperlegible Next, de The Atkinson Hyperlegible Next Project Authors, e Literata, de The
+  Literata Project Authors. SIL Open Font License 1.1. Letras dos avisos do tutorial, em
+  `Projeto/assets/fonts/` (com as licenças em `AtkinsonHyperlegibleNext-OFL.txt` e
+  `Literata-OFL.txt`), copiadas do repositório google/fonts (https://github.com/google/fonts), que
+  as publica a partir dos repositórios de origem: https://github.com/googlefonts/atkinson-hyperlegible-next
+  e https://github.com/googlefonts/literata
+- Kenney Input Prompts 1.5A, de Kenney (www.kenney.nl). Domínio público (CC0). Ícones dos botões A,
+  X e RT e do stick esquerdo de um comando Xbox, a 128 px, em `Projeto/assets/ui/prompts/` (com a
+  licença em `Kenney-License.txt`). https://kenney.nl/assets/input-prompts
 
 ## Licença
 
