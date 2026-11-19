@@ -27,7 +27,7 @@ cada sala) está em `docs/nivel1_desenho.md`, e os artigos que o fundamentam em 
 1. Instalar o Godot 4.7.x, versão standard (não a versão .NET).
 2. No Project Manager, importar `Projeto/project.godot`. O projeto Godot encontra-se na subpasta
    `Projeto/`, e não na raiz do repositório.
-3. Premir F5. O jogo abre no menu principal: New Game mostra a lista de níveis, Settings abre as opções
+3. Premir F5. O jogo abre no menu principal: New Game começa o nível 1, Settings abre as opções
    e Quit fecha o jogo. Uma cena aberta com F6 corre sozinha, sem menus nem pausa. A sala de teste,
    o blockout antigo e a sala de treino servem o desenvolvimento e ficam fora do menu: abrem-se com
    F6 (ver "Estrutura", em "Para quem programa").
@@ -40,8 +40,14 @@ cada sala) está em `docs/nivel1_desenho.md`, e os artigos que o fundamentam em 
    Durante o jogo, a tecla F3 passa pelas páginas do texto de depuração descrito em "Overlay de
    depuração" (números, luz e shaders, escondido), e a tecla F4 retira 10 SP à personagem, como um
    golpe, para experimentar a regeneração descrita em "SP".
-5. O nível 1 (New Game ▸ Level 1: Lust) é uma só cena, `scenes/levels/lust/level1.tscn`, com o tutorial e as
-   fases 1, 2 e 3, e é ele que inicia uma partida nova. No início das fases 2 e 3, a Asmodeu
+5. O nível 1 é uma só cena, `scenes/levels/lust/level1.tscn`, com o tutorial e as fases 1, 2 e 3,
+   e é ele que inicia uma partida nova. O New Game abre-o com a iluminação aprovada no protótipo,
+   pela cena `scenes/levels/lust/level1_lit.tscn`, que herda o nível e lhe junta o `LightingRig`.
+   O código do protótipo entra sem reescrita. O `test_level1_lit.gd` verifica que o nível arranca
+   sem erros, com os mesmos nós do protótipo, que os efeitos ligados por defeito são os aprovados e
+   que o recomeço e o atalho da Asmodeu mantêm a luz. As duas cenas contam como o mesmo nível nas
+   estatísticas da partida (`id` = `level1`), para que passar de uma para a outra não reponha as
+   mortes nem volte a abrir as ofertas por mortes. No início das fases 2 e 3, a Asmodeu
    aparece e oferece o atalho; depois de várias mortes nessas fases, volta a oferecê-lo à entrada
    da zona onde ele morre (ver "Ofertas por mortes"). Na saída, depois da fase 3 ou pelo atalho,
    ela oferece o dom e despede-se, e o jogo volta ao menu principal. O blockout antigo, com uma cena
@@ -1279,6 +1285,8 @@ desligado também fica fora do menu, sem aviso, mas continua na lista, e voltar 
 o botão. É o caso das salas feitas para o desenvolvimento: a sala de teste, o blockout antigo do
 nível 1 e a sala de treino. Assim, quem joga não as encontra, e o grupo continua a abri-las com F6.
 O `test_main_flow.gd` verifica que as três continuam na lista, fora do menu, e que o nível 1 está nele.
+Com um só nível no menu, como agora, o New Game começa-o logo, sem mostrar a lista; com dois ou
+mais, mostra a lista.
 
 O nó raiz de cada nível tem o script `scenes/levels/level.gd` (`Level`), com a personagem do nível no campo
 Player do Inspector. Quando a personagem morre, este script espera 0,7 s, para que a morte se veja,
@@ -3019,15 +3027,66 @@ O menu principal e a pausa seguem a maqueta do grupo: fundo preto, a personagem 
 esquerda, iluminada por uma luz que entra pelo canto superior direito, e as opções à direita, em
 maiúsculas, com uma cruz de cada lado da opção selecionada. A pausa tem a mesma composição, mas o
 preto fica a 60 % de opacidade, para se continuar a ver o jogo por trás. As opções e os controlos
-abrem na mesma coluna, com o mesmo estilo.
+abrem na mesma coluna, com o mesmo estilo. As opções abrem num ecrã com quatro separadores em linha
+(Audio, Display, Controls e Accessibility), com o primeiro já escolhido, para o jogador nunca ver
+todas as opções de uma vez. As setas ou o D-pad percorrem os separadores, que dão a volta do último
+ao primeiro, e a página muda de imediato; a seta para baixo, ou o Enter, entra na página. O
+separador escolhido fica a branco e sublinhado, e a área das páginas tem a altura da maior, para o
+ecrã não saltar ao trocar de separador. A seleção é marcada por uma faixa clara atrás da linha, do
+separador ou do botão, que desliza para a nova seleção. A faixa tem uma barra clara de 3 px à
+esquerda: medida num frame gravado, a barra tem um contraste de 17:1 com o fundo, enquanto a faixa
+sozinha fica em 1,6:1 (o tema `OptionsRowHighlight`). A barra cumpre assim o contraste de 3:1 que o
+critério 1.4.11 das WCAG 2.2 (nível AA) pede aos indicadores de foco. O critério 2.4.13 (nível AAA),
+que pede também uma área mínima à volta do elemento, não foi o objetivo. Neste ecrã a faixa substitui as cruzes do
+menu principal, para haver uma só marca de seleção, também nas linhas de três colunas. O rato por
+cima de um separador não o escolhe, para não trocar de página a caminho de uma opção; o separador
+escolhe-se com um clique. Por baixo das
+páginas, uma linha explica a opção selecionada. Reset to defaults e Back ficam numa barra à parte,
+em baixo e em letra mais pequena, com as teclas do Back ao lado (Esc / B). O Esc ou o B fecham as
+opções a partir de qualquer separador.
 
 - **Fundo partilhado** (`scenes/screens/menu_backdrop.tscn`): o preto (Background Alpha), os raios
   de luz e a personagem. Os raios são um shader (`scenes/others/shaders/god_rays.gdshader`), somado
   ao que está por trás, que ondula lentamente; a cor, a intensidade, a direção, o alcance e o brilho
   junto à origem afinam-se no material do nó Rays.
 - **Personagem:** desenhada pelo grupo já com a luz e as sombras pintadas
-  (`assets/sprites/menu/menu_character.png`), e mostrada tal como está. O
+  (`assets/sprites/menu/menu_character.png`). O
   `scenes/screens/builders/build_menu_art.gd` traz a personagem e a cruz para o projeto, recortadas.
+  O ecrã nunca está parado: a personagem respira (cresce 0,6 % a partir dos pés, a cada 4,2 s) e
+  afunda até 8 px a cada 6,5 s; os dois períodos não são múltiplos um do outro, para o olho não
+  apanhar a repetição. Um fogo por baixo, à esquerda, ilumina-a de baixo e solta fumo em três camadas
+  e brasas em quatro (`scenes/screens/menu_embers.gd`: faíscas, cinza e discos desfocados junto à
+  lente). Uma só chama comanda a luz, o brilho, o fumo e as brasas, com uma oscilação lenta, de até
+  30 % da luz do fogo, e uma rápida, de 3 %. Com as opções
+  abertas, a personagem recua para a esquerda e escurece, e cada camada do fogo recua com a sua
+  profundidade (as de trás menos, as da frente mais), o que dá relevo à cena. Tudo se afina no
+  Inspector do nó MenuBackdrop (grupos Idle, Fire, Recede, Depth e Rays) e de cada camada de brasas.
+  Medido a 18/11 no PC do Joaquim: as brasas custam 0,34 ms de CPU por frame e o fundo inteiro 0,73 a
+  0,78 ms de GPU. Medido a 19/11 em 10 s de menu gravado, com as regras de flashes das WCAG 2.2
+  (`tools/accessibility/wcag_flashes.py`, que diz também como gravar os frames):
+  cada brasa pode piscar num píxel, mas só 0,05 % do ecrã passa de 3 flashes por segundo (cerca de
+  1100 px a 1920 × 1080). O limite são 21 824 px, 25 % de um campo de visão de 10° num ecrã de
+  1024 × 768 ([técnica G176 da W3C](https://www.w3.org/WAI/WCAG22/Techniques/general/G176)). Não há
+  flashes vermelhos, porque nenhum píxel chega a vermelho saturado.
+- **Sons e vibração** (`scenes/screens/menu_feedback.gd`, um nó por menu): um clique ao mudar de
+  opção, um golpe ao escolher e um som surdo ao voltar, cada um com um impulso no comando em uso. Um
+  interruptor e uma lista fazem um clique próprio; dentro de uma lista, mudar de item faz o clique,
+  escolher faz o golpe e fechar sem escolher faz o som de voltar. Uma tecla aceite ao remapear faz o
+  golpe, e o Esc que cancela a espera faz o som de voltar. Num diálogo, como a pergunta antes de um
+  jogo novo por cima de uma gravação, só a resposta soa: o No dá apenas o som de voltar. O Quit
+  escurece o ecrã durante o mesmo tempo dos outros fades (Main › Fade Time, 0,25 s) e só depois fecha
+  o jogo, para o golpe se ouvir e a janela fechar a partir do preto e não do menu aceso; os números
+  da partida gravam-se antes do fade. O clique e o golpe sorteiam entre variantes sem repetir a anterior
+  (`AudioStreamRandomizer`), para uma série de cliques não soar a máquina. A seleção que o próprio
+  jogo muda (um ecrã a abrir) não faz som: só conta a que vem até 150 ms depois de uma tecla do
+  jogador. Dois cliques ficam a pelo menos 35 ms um do outro, para uma lista percorrida depressa não
+  virar um zumbido. A mistura está nos ficheiros: o
+  `tools/audio/make_menu_sounds.py` corta, filtra e põe cada som à intensidade do seu evento (o
+  máximo de 50 ms de RMS: mudar −27 dBFS, escolher −18, voltar −22, barra −29, interruptor −25, que
+  fica em −27,5 porque o pico não passa de −1 dBFS), e todos os volumes da cena ficam a 0 dB. Assim o
+  clique fica 9 dB abaixo do golpe. O script reproduz os ficheiros do repositório byte a byte. Se
+  faltar um som na cena, o jogo usa um feito em código (`menu_sound_synth.gd`), com a sua própria
+  mistura: o clique 11 dB abaixo do golpe.
 - **Cruzes** (`scenes/screens/menu_crosses.gd`): seguem o foco, de teclado, comando ou rato, e
   deslizam para a opção selecionada; o rato por cima de um botão dá-lhe o foco. Ficam só nos botões:
   um slider mostra a sua própria seleção.
@@ -3054,8 +3113,10 @@ e remapeamento por captura da tecla seguinte.
   W, E, A, S e D livres para os upgrades. O Custom começa como cópia do predefinido.
 - O `Settings` guarda o perfil escolhido e as teclas do perfil personalizado e aplica-os ao Input
   Map. Como nenhum script lê teclas diretamente, a personagem e o crucifixo não mudaram.
-- No ecrã Controls (`scenes/screens/controls_menu.gd`), carregar no botão de uma ação do perfil Custom faz o
-  ecrã esperar pela próxima tecla ou botão do rato. O Esc ou o B cancelam sem alterar nada. A espera
+- No separador Controls (`scenes/screens/controls_menu.gd`), carregar no botão de uma ação do perfil Custom faz o
+  ecrã esperar pela próxima tecla ou botão do rato. O Esc ou o B cancelam sem alterar nada. Uma
+  tecla que não pode ser usada (as reservadas ao overlay de depuração, como o F3) é recusada: o botão
+  diz qual foi, soa o som de voltar, e a espera continua. A espera
   apanha a tecla antes de qualquer outro nó, pelo que o Esc não fecha a pausa.
 - Conflitos: se a tecla escolhida pertencia a outra ação, essa ação perde-a e, se ficar sem
   nenhuma, recebe as teclas antigas da primeira (troca). Nenhuma ação fica sem tecla. Preferiu-se a
@@ -3065,8 +3126,8 @@ e remapeamento por captura da tecla seguinte.
   `mouse:left`), e nunca como números nem como objetos do Godot. Assim, o ficheiro lê-se e corrige-se
   à mão, acrescentar ou reordenar perfis não troca o perfil de quem já o tinha escolhido, e um
   ficheiro alterado à mão não cria objetos arbitrários. Um perfil ou uma tecla inválidos dão os
-  valores predefinidos. O botão Reset to defaults das opções não mexe nos controlos; o ecrã Controls
-  tem o seu próprio Reset.
+  valores predefinidos. O botão Reset to defaults das opções não mexe nos controlos; o separador
+  Controls tem o seu próprio Reset.
 - O `Settings` só altera uma ação no Input Map quando as teclas mudam: retirar uma tecla a uma ação
   solta essa ação, o que largaria uma tecla que o jogador estivesse a premir.
 - Nos testes, o `Settings` guarda as opções só em memória e não lê nem escreve o ficheiro do
@@ -3602,6 +3663,26 @@ opção de volume, todos a enviar para o Master, e o Alerts, a enviar para o SFX
   original (#263).
 - `asmodeus.png`, em `Projeto/assets/sprites/asmodeus/`: a figura da Asmodeu, desenhada pelo Cisco,
   do grupo, para a visual novel de CDJ, recortada e reduzida do PNG original (#263).
+- Sons dos menus, em `Projeto/assets/audio/ui/` (#267), todos de domínio público (CC0), cortados,
+  filtrados e misturados pelo `tools/audio/make_menu_sounds.py`, cada um à intensidade do seu evento
+  (ver "Aspeto dos menus"):
+  - `menu_move_1.wav` a `menu_move_4.wav` (mudar de opção): cliques de rato: «mouse_click.wav», de
+    Six Ways (https://freesound.org/s/223445/), «mouse-click-single-00.flac», de pbimal
+    (https://freesound.org/s/534103/), «Mouse 2 Button Fast Click», de aphom000
+    (https://freesound.org/s/687107/), e `mouseclick1`, do pacote «51 UI sound effects (buttons,
+    switches and clicks)», de Kenney
+    (https://opengameart.org/content/51-ui-sound-effects-buttons-switches-and-clicks).
+  - `menu_confirm_1.wav` e `menu_confirm_2.wav` (escolher): os dois primeiros cliques de rato, cada
+    um com «Mute Bass Drum.wav», de Lynx_5969 (https://freesound.org/s/418725/), saturado para se
+    ouvir em colunas pequenas.
+  - `menu_back_1.wav` (voltar): o primeiro clique de rato, mais grave, com o mesmo bombo, mais baixo.
+  - `menu_tick.wav` (barras deslizantes): `tick_001`, do pacote «Interface Sounds», de Kenney
+    (https://opengameart.org/content/interface-sounds).
+  - `menu_switch.wav` (interruptores): «Small_Flashlight_Click_on_02.wav», de Rudmer_Rotteveel
+    (https://freesound.org/s/457463/).
+
+  Os sons do Freesound vêm das pré-visualizações (OGG); os originais em WAV pedem uma conta no site
+  e substituem-nas na versão final.
 - Tinos, de The Tinos Project Authors. SIL Open Font License 1.1. Letra de reserva dos menus, com as
   medidas da Times New Roman, em `Projeto/assets/fonts/` (com a licença em `Tinos-OFL.txt`).
   https://github.com/googlefonts/tinos

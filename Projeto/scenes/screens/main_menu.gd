@@ -4,12 +4,14 @@ extends CanvasLayer
 ## The first screen, over the MenuBackdrop (the character in the light), with the crosses marking
 ## the selected option. The main panel has Continue while there is a save to come back to, New Game
 ## (PlayButton), Settings (OptionsButton) and Quit; the first of them is always the biggest. The
-## game's name is kept in Title, hidden. New Game opens the level panel, with a button for each
-## level and Back, and Settings opens the options screen. The
+## game's name is kept in Title, hidden. New Game starts the level at once when there is only one,
+## and otherwise opens the level panel, with a button for each level and Back; Settings opens the
+## options screen. The
 ## menu only says what was chosen, through its signals, and the scene it is in decides what that
 ## does. Each panel opens with its first button selected, so the arrow keys and Enter work without
 ## the mouse; Esc on the level panel goes back, and coming back selects the button the player left
-## from.
+## from. The panels sit on the right third of the screen, across from the character, centred from
+## top to bottom.
 
 signal level_chosen(index: int)
 signal continue_requested
@@ -34,6 +36,7 @@ var _asked_level: int = 0
 @onready var _level_buttons: Container = %LevelButtons
 @onready var _back_button: Button = %BackButton
 @onready var _options_menu: OptionsMenu = %OptionsMenu
+@onready var _backdrop: MenuBackdrop = $MenuBackdrop
 @onready var _replace_save_dialog: ConfirmationDialog = %ReplaceSaveDialog
 @onready var _crosses: MenuCrosses = $Crosses
 @onready var _blur: ColorRect = $Blur
@@ -42,7 +45,7 @@ var _asked_level: int = 0
 func _ready() -> void:
 	_title.text = ProjectSettings.get_setting("application/config/name") as String
 	_continue_button.pressed.connect(continue_requested.emit)
-	_play_button.pressed.connect(_show_level_panel)
+	_play_button.pressed.connect(_on_play_pressed)
 	_options_button.pressed.connect(_show_options)
 	_quit_button.pressed.connect(quit_requested.emit)
 	_back_button.pressed.connect(_show_main_panel.bind(_play_button))
@@ -111,8 +114,21 @@ func _on_replace_save_confirmed() -> void:
 	new_game_confirmed.emit(_asked_level)
 
 
+## Back to the button the question came from: the level's on the level panel, or New Game when it
+## started the only level at once.
 func _on_replace_save_canceled() -> void:
-	(_level_buttons.get_child(_asked_level) as Control).grab_focus()
+	if _level_panel.visible:
+		(_level_buttons.get_child(_asked_level) as Control).grab_focus()
+	else:
+		_play_button.grab_focus()
+
+
+## With a single level there is nothing to choose: New Game starts it, as the list would.
+func _on_play_pressed() -> void:
+	if _level_buttons.get_child_count() == 1:
+		level_chosen.emit(0)
+	else:
+		_show_level_panel()
 
 
 func _first_button() -> Button:
@@ -126,10 +142,11 @@ func _size_options() -> void:
 		button.theme_type_variation = FIRST_OPTION if button == first else OPTION
 
 
-## The main panel alone, with the given button selected. The options screen hides itself when it
-## closes.
+## The main panel alone, with the given button selected, and the character in front again. The
+## options screen hides itself when it closes.
 func _show_main_panel(selected: Button) -> void:
 	_level_panel.hide()
+	_backdrop.recede(false)
 	_main_panel.show()
 	selected.grab_focus()
 
@@ -144,6 +161,8 @@ func _show_level_panel() -> void:
 		_back_button.grab_focus()
 
 
+## The character steps back while the options show, so the two do not fight for the eye.
 func _show_options() -> void:
 	_main_panel.hide()
+	_backdrop.recede(true)
 	_options_menu.open()

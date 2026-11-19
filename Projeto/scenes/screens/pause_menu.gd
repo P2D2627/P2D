@@ -4,7 +4,8 @@ extends CanvasLayer
 ## The pause screen, over the game seen through the MenuBackdrop (the character in the light, on a
 ## black that lets the game show), with the crosses on the selected option: Resume, the biggest,
 ## Settings (OptionsButton) and Main Menu, and the options
-## screen, the same one as in the main menu. Its scene starts it hidden and runs it while the game
+## screen, the same one as in the main menu, both placed as the main menu's (on the right third,
+## centred from top to bottom). Its scene starts it hidden and runs it while the game
 ## is paused (process mode Always). It only says which button was pressed, through its signals; Main
 ## pauses and resumes the game and decides what each button does.
 
@@ -20,6 +21,7 @@ var _back_went_down_here: bool = false
 @onready var _options_button: Button = %OptionsButton
 @onready var _main_menu_button: Button = %MainMenuButton
 @onready var _options_menu: OptionsMenu = %OptionsMenu
+@onready var _backdrop: MenuBackdrop = $MenuBackdrop
 
 
 func _ready() -> void:
@@ -49,16 +51,20 @@ func _unhandled_input(event: InputEvent) -> void:
 func open() -> void:
 	_back_went_down_here = false
 	_options_menu.hide()
+	_backdrop.recede(false, true)
 	_panel.show()
 	show()
 	_resume_button.grab_focus()
 
 
+## The character steps back while the options show, so the two do not fight for the eye.
 func _show_options() -> void:
 	_panel.hide()
+	_backdrop.recede(true)
 	_options_menu.open()
 
 
 func _on_options_closed() -> void:
+	_backdrop.recede(false)
 	_panel.show()
 	_options_button.grab_focus()

@@ -1,6 +1,7 @@
 # Checks the main scene's menu. It opens with the game's name and Play selected, and nothing in the
-# level slot. Play opens the level list: a button for each of Main's levels, in order, with the
-# first one selected; with no levels, only Back, selected. Back and Esc go back to Play, selected,
+# level slot. With two levels or more, Play opens the level list: a button for each of Main's
+# levels, in order, with the first one selected; with only one, Play starts it at once, with no
+# list; with no levels, the list shows only Back, selected. Back and Esc go back to Play, selected,
 # and that Esc goes no further. On the gamepad, A opens the list and B goes back.
 # Each level's button starts that level's scene and hides the menu. A level left empty, or with no
 # scene, is left out of the list, and the others still work. A level with In Menu off gets no
@@ -10,7 +11,9 @@
 # it selected, and one level in the slot. All the menu's text takes its size from the UI theme (its
 # own, or a variation the theme sizes, as the biggest first option's), with
 # no size set on a single node.
-# Quit closes the game, which would also end this test with exit code 0, so it is checked by hand.
+# Quit fades the screen to black and only then ends the game, once, however often it is pressed
+# meanwhile, with the menu left without the focus; the end is the test's own, as the real one would
+# end this test with exit code 0.
 # Run from the repository root; the exit code is 0 on pass and 1 on fail:
 # godot --headless --fixed-fps 60 --path Projeto --script res://tests/test_main_flow.gd
 extends "res://tests/support/menu_test.gd"
@@ -20,6 +23,7 @@ func _initialize() -> void:
 	var results: Array[bool] = []
 	results.append(await _the_menu_opens_with_the_game_s_name_and_play_selected())
 	results.append(await _play_opens_the_level_list_with_the_first_level_selected())
+	results.append(await _with_one_level_play_starts_it_at_once())
 	results.append(await _with_no_levels_play_opens_a_list_with_only_back_selected())
 	results.append(await _back_and_esc_go_back_to_play())
 	results.append(await _with_the_gamepad_a_opens_the_list_and_b_goes_back())
@@ -29,7 +33,31 @@ func _initialize() -> void:
 	results.append(await _the_development_rooms_stay_in_the_list_out_of_the_menu())
 	results.append(await _esc_and_space_in_the_level_reach_no_menu_button())
 	results.append(await _the_menu_text_takes_its_size_from_the_ui_theme())
+	results.append(await _quit_fades_to_black_and_only_then_ends_the_game())
 	finish(results)
+
+
+## Quit, asked twice, as Main hears it from the menu: at first the game goes on and the screen starts
+## to go black, with nothing of the menu selected; once the fade is done, the screen is black and the
+## game ends, once.
+func _quit_fades_to_black_and_only_then_ends_the_game() -> bool:
+	var main: Node = await new_main()
+	var ends: Array[int] = []
+	main.quit_game = func() -> void: ends.append(1)
+	var fade: ColorRect = main.get_node(^"%Fade") as ColorRect
+	main._on_quit_requested()
+	main._on_quit_requested()
+	await process_frame
+	var ended_at_once: bool = not ends.is_empty()
+	var fading: bool = fade.color.a > 0.0 and fade.color.a < 1.0
+	var nothing_selected: bool = root.gui_get_focus_owner() == null
+	await wait_frames(ceili(main.fade_time * Engine.physics_ticks_per_second) + 10)
+	var black: bool = is_equal_approx(fade.color.a, 1.0)
+	var ended: int = ends.size()
+	await remove_main(main)
+	return report(not ended_at_once and fading and nothing_selected and black and ended == 1,
+			("Quit twice: ended at once %s, fading %s, nothing selected %s; after the fade, black %s, "
+			+ "ended %d times") % [ended_at_once, fading, nothing_selected, black, ended])
 
 
 func _the_menu_opens_with_the_game_s_name_and_play_selected() -> bool:
@@ -48,7 +76,7 @@ func _the_menu_opens_with_the_game_s_name_and_play_selected() -> bool:
 
 
 func _play_opens_the_level_list_with_the_first_level_selected() -> bool:
-	var main: Node = await new_main()
+	var main: Node = await new_main(_two_levels())
 	var menu: CanvasLayer = _menu(main)
 	await tap(KEY_ENTER)
 	var titles: PackedStringArray = _titles_of(main)
@@ -62,6 +90,25 @@ func _play_opens_the_level_list_with_the_first_level_selected() -> bool:
 	return report(opened and not titles.is_empty() and shown == titles and first_selected,
 			"Play: the level list open %s, buttons %s for Main's levels %s, the first selected %s"
 			% [opened, shown, titles, first_selected])
+
+
+## The game has one level in the menu, and a list with one button would be a step for nothing.
+func _with_one_level_play_starts_it_at_once() -> bool:
+	var room: LevelEntry = LevelEntry.new()
+	room.title = "Room"
+	room.scene = load("res://scenes/levels/test_room/test_room.tscn") as PackedScene
+	var levels: Array[LevelEntry] = [room]
+	var main: Node = await new_main(levels)
+	var menu: CanvasLayer = _menu(main)
+	await tap(KEY_ENTER)
+	var started: bool = (levels_in(main) == 1
+			and level_in(main).scene_file_path == room.scene.resource_path)
+	var no_list: bool = not _is_shown(menu, ^"%LevelPanel")
+	var hidden: bool = menu != null and not menu.visible
+	await remove_main(main)
+	return report(started and no_list and hidden,
+			"One level: Play starts it %s, with no list %s, the menu hidden %s"
+			% [started, no_list, hidden])
 
 
 func _with_no_levels_play_opens_a_list_with_only_back_selected() -> bool:
@@ -83,7 +130,7 @@ func _with_no_levels_play_opens_a_list_with_only_back_selected() -> bool:
 func _back_and_esc_go_back_to_play() -> bool:
 	var back_counter: BackCounter = BackCounter.new()
 	root.add_child(back_counter)
-	var main: Node = await new_main()
+	var main: Node = await new_main(_two_levels())
 	var menu: CanvasLayer = _menu(main)
 	await tap(KEY_ENTER)
 	for _level: int in _titles_of(main).size():
@@ -104,7 +151,7 @@ func _back_and_esc_go_back_to_play() -> bool:
 
 ## A is the gamepad's bottom button (Xbox A, Sony Cross) and B the right one (Xbox B, Sony Circle).
 func _with_the_gamepad_a_opens_the_list_and_b_goes_back() -> bool:
-	var main: Node = await new_main()
+	var main: Node = await new_main(_two_levels())
 	var menu: CanvasLayer = _menu(main)
 	await tap_joypad(JOY_BUTTON_A)
 	var buttons: Array[Button] = _level_buttons(menu)
@@ -198,7 +245,7 @@ func _the_development_rooms_stay_in_the_list_out_of_the_menu() -> bool:
 		"res://scenes/levels/lust/LustLevel_Phase1_Cave.tscn",
 		"res://scenes/levels/gym/gym.tscn",
 	]
-	const IN_THE_MENU: String = "res://scenes/levels/lust/level1.tscn"
+	const IN_THE_MENU: String = "res://scenes/levels/lust/level1_lit.tscn"
 	var probe: Node = (await main_scene()).instantiate()
 	var found: Dictionary[String, bool] = {}
 	for level: Variant in _all_levels_of(probe):
@@ -244,6 +291,18 @@ func _the_menu_text_takes_its_size_from_the_ui_theme() -> bool:
 	return report(expected > 0 and texts.size() > 0 and other_sizes.is_empty(),
 			"Text size: theme %d px; %d labels and buttons, off the theme: %s"
 			% [expected, texts.size(), other_sizes])
+
+
+## Two light rooms, so Play opens the list: with one level it starts it at once.
+func _two_levels() -> Array[LevelEntry]:
+	var room: LevelEntry = LevelEntry.new()
+	room.title = "Room"
+	room.scene = load("res://scenes/levels/test_room/test_room.tscn") as PackedScene
+	var gym: LevelEntry = LevelEntry.new()
+	gym.title = "Gym"
+	gym.scene = load("res://scenes/levels/gym/gym.tscn") as PackedScene
+	var levels: Array[LevelEntry] = [room, gym]
+	return levels
 
 
 func _menu(main: Node) -> CanvasLayer:

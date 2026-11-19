@@ -24,8 +24,13 @@ extends Node
 @export var levels: Array[LevelEntry] = []
 ## Whether a level pauses when the game's window loses the focus, as with Alt+Tab.
 @export var pause_on_focus_loss: bool = true
-## The time the screen takes to go black at a phase's exit, and again to come back in the next one.
+## The time the screen takes to go black at a phase's exit, and again to come back in the next one;
+## Quit takes it too, to go black before the game ends. Under about 0.14 s, Quit cuts off the blow
+## of the choice.
 @export_range(0.0, 2.0, 0.05, "suffix:s") var fade_time: float = 0.25
+
+## What ends the game once Quit has faded the screen out; a test puts its own, so it never closes.
+var quit_game: Callable = _end_the_game
 
 ## The levels the menu shows, in its order: those in levels that have a scene and In Menu on.
 var _playable_levels: Array[LevelEntry] = []
@@ -36,6 +41,8 @@ var _changing_phase: bool = false
 var _save_file: SaveFile = SaveFile.new()
 ## True while the level in the slot is part of the saved game: from a new game or from Continue.
 var _in_the_run: bool = false
+## True from Quit until the game ends, so a second Quit is ignored.
+var _quitting: bool = false
 
 @onready var _level_slot: Node = %LevelSlot
 @onready var _main_menu: MainMenu = %MainMenu
@@ -315,8 +322,21 @@ func _change_phase(next_scene_path: String, arrival: StringName) -> void:
 	_changing_phase = false
 
 
+## The run's numbers are kept at once; then the screen goes black, so the choice's blow is heard and
+## the window closes on black rather than on the lit menu; only then does the game end. Meanwhile
+## the menu loses the focus and the fade stops the mouse, so no other option can be chosen.
 func _on_quit_requested() -> void:
+	if _quitting:
+		return
+	_quitting = true
 	_save_the_run()
+	get_viewport().gui_release_focus()
+	_fade.mouse_filter = Control.MOUSE_FILTER_STOP
+	await _fade_to(1.0)
+	quit_game.call()
+
+
+func _end_the_game() -> void:
 	get_tree().quit()
 
 
