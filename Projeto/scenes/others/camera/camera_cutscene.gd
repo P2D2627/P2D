@@ -11,8 +11,12 @@ extends Node
 ## ActivityTracker is shown the way), so the dogs there run and the parallax slides. With an
 ## Event, it plays once in the game: it marks the event in GameState as it starts and says so with
 ## event_marked, so Main saves and a death does not undo it, and a level that starts with the event
-## already marked never plays it. Skip Action, after Skip Delay, ends it at once: the shots not reached
-## yet still say arrived, so what hangs from them happens, and the camera cuts back to the man.
+## already marked never plays it. With a Replay Phase and a Replay Event, once seen it plays again,
+## once: Replay Delay after the level starts over in Replay Phase with a death there in RunStats
+## (which a death does not put back), so after the first death there; it marks Replay Event as it
+## starts, as it does Event, so a second death does not bring it back. Skip Action, after Skip
+## Delay, ends it at once: the shots not reached yet still say arrived, so what hangs from them
+## happens, and the camera cuts back to the man.
 ## The camera moves with a sine ease in and out, and zooms evenly in scale, so a zoom from far out
 ## does not rush at the end. With Zoom Out To Travel, a move between two places that do not fit on
 ## one screen together pulls back half way, until both screens would show, and closes in again, so
@@ -65,6 +69,15 @@ const WAY_MOST: int = 64
 ## The longest streak, in px of the screen, however fast the camera goes.
 @export_range(0.0, 200.0, 1.0, "suffix:px") var max_blur: float = 40.0
 
+@export_group("Replay")
+## The phase whose first death shows it once more, as the level starts over there. 0: never.
+@export_range(0, 9) var replay_phase: int = 0
+## The GameState event that says it was shown again, so only the first death brings it back. Empty:
+## it never plays again.
+@export var replay_event: StringName = &""
+## Seconds after the level starts before it plays again, so the screen is back from black first.
+@export_range(0.0, 5.0, 0.05, "suffix:s") var replay_delay: float = 0.8
+
 ## True while it plays.
 var _playing: bool = false
 ## True while Trigger Zone can still start it.
@@ -95,6 +108,7 @@ var _last_centre: Vector2 = Vector2.ZERO
 var _modifier: MovementModifier = MovementModifier.new(0.0, 1.0, true)
 
 @onready var _progress: GameProgress = get_node_or_null(^"/root/GameState") as GameProgress
+@onready var _run_stats: GameRunStats = get_node_or_null(^"/root/RunStats") as GameRunStats
 
 
 ## Joins the group on entering the tree, so Main finds it as soon as it adds the level.
@@ -109,6 +123,9 @@ func _ready() -> void:
 	assert(not _shots.is_empty(), "CameraCutscene %s: add CameraShot children." % name)
 	_watching = trigger_zone != null and not was_seen()
 	set_physics_process(_watching)
+	if replay_phase > 0 and not replay_event.is_empty():
+		# Paused with the level, and counted in physics frames, as the cutscene moves.
+		get_tree().create_timer(replay_delay, false, true).timeout.connect(replay)
 
 
 func _physics_process(delta: float) -> void:
@@ -137,12 +154,35 @@ func play_after_talk(cue: String) -> void:
 ## Starts it, and says whether it did. It does not when it is playing, was seen, has no camera, man
 ## or shots, the man is dead or held by a demon, or another cutscene has the camera.
 func play() -> bool:
-	if not _can_play():
+	if was_seen() or not _can_start():
 		return false
+	_begin(event)
+	return true
+
+
+## Plays it once more, as Replay Delay after the level starts does, and says whether it did: only
+## while is_replay_due(), and then as play() does, but marking Replay Event.
+func replay() -> bool:
+	if not is_replay_due() or not _can_start():
+		return false
+	_begin(replay_event)
+	return true
+
+
+## True while replay() would show it again, the camera and the man allowing: it was seen, Replay
+## Event is not marked yet, and RunStats has him in Replay Phase with a death there.
+func is_replay_due() -> bool:
+	return (replay_phase > 0 and not replay_event.is_empty() and was_seen() and _progress != null
+			and not _progress.has_event(replay_event) and _run_stats != null
+			and _run_stats.get_phase() == replay_phase and _run_stats.deaths_in_phase(replay_phase) > 0)
+
+
+## The camera leaves the man, and mark, when one is given, is marked in GameState.
+func _begin(mark: StringName) -> void:
 	_playing = true
 	_watching = false
-	if not event.is_empty() and _progress != null:
-		_progress.mark_event(event)
+	if not mark.is_empty() and _progress != null:
+		_progress.mark_event(mark)
 		event_marked.emit()
 	_home_centre = camera.global_position
 	_home_zoom = camera.zoom.x
@@ -156,11 +196,10 @@ func play() -> bool:
 	_start_move()
 	set_physics_process(true)
 	started.emit()
-	return true
 
 
-func _can_play() -> bool:
-	return (not _playing and not was_seen() and not _shots.is_empty() and is_instance_valid(camera)
+func _can_start() -> bool:
+	return (not _playing and not _shots.is_empty() and is_instance_valid(camera)
 			and is_instance_valid(player) and not player.is_dead() and not player.is_grabbed()
 			and not camera.is_directed())
 

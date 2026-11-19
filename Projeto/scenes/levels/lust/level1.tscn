@@ -48497,32 +48497,6 @@ home = NodePath("../AsmodeusHome")
 
 [node name="Cutscenes" type="Node" parent="." unique_id=88872331]
 
-[node name="Phase1Overview" type="Node" parent="Cutscenes" unique_id=1795047208 node_paths=PackedStringArray("camera", "player", "trigger_zone")]
-script = ExtResource("cs_cutscene")
-camera = NodePath("../../GameCamera")
-player = NodePath("../../Player")
-trigger_zone = NodePath("../../CameraZones/ZoneP1UnderLeg")
-event = &"lust_phase_1_overview_seen"
-return_time = 1.8
-zoom_out_to_travel = false
-motion_blur = 0.2
-max_blur = 24.0
-
-[node name="Exit" type="Node2D" parent="Cutscenes/Phase1Overview" unique_id=1024857579]
-script = ExtResource("cs_shot")
-travel_time = 1.8
-hold_time = 1.4
-keep_zoom = true
-
-[node name="View" type="ReferenceRect" parent="Cutscenes/Phase1Overview/Exit" unique_id=1296512746]
-offset_left = 15648.0
-offset_top = 11808.0
-offset_right = 17376.0
-offset_bottom = 12780.0
-mouse_filter = 2
-border_color = Color(1, 0.8, 0.2, 1)
-border_width = 24.0
-
 [node name="Phase2Intro" type="Node" parent="Cutscenes" unique_id=1558534225 node_paths=PackedStringArray("camera", "player")]
 script = ExtResource("cs_cutscene")
 camera = NodePath("../../GameCamera")
@@ -48533,6 +48507,8 @@ return_time = 0.9
 zoom_out_to_travel = false
 motion_blur = 0.2
 max_blur = 24.0
+replay_phase = 2
+replay_event = &"lust_phase_2_intro_replayed"
 
 [node name="GateB" type="Node2D" parent="Cutscenes/Phase2Intro" unique_id=2143851147]
 script = ExtResource("cs_shot")
@@ -48553,13 +48529,16 @@ border_width = 24.0
 script = ExtResource("cs_cutscene")
 camera = NodePath("../../GameCamera")
 player = NodePath("../../Player")
-event = &"lust_gate_b_opening_seen"
-return_time = 1.5
+return_time = 0.9
+zoom_out_to_travel = false
+motion_blur = 0.2
+max_blur = 24.0
 
 [node name="GateB" type="Node2D" parent="Cutscenes/GateBOpening" unique_id=672713211]
 script = ExtResource("cs_shot")
-travel_time = 1.5
-hold_time = 1.6
+travel_time = 0.9
+hold_time = 1.2
+keep_zoom = true
 
 [node name="View" type="ReferenceRect" parent="Cutscenes/GateBOpening/GateB" unique_id=1646138367]
 offset_left = 15360.0

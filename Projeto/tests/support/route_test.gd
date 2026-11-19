@@ -2,8 +2,9 @@
 # dogs. A stand-in input repeats, move by move, the way a paper check found (a .json made by the tools outside the
 # repository, which only know the movement's numbers). Before each jump he is put on that floor or wall, so a hop
 # that fails is reported on its own and the rest still run. At an unlocker it presses Interact, sees the gate open
-# and goes through, and it ends walking into the way out. The level's camera cutscenes count as seen, so none
-# stops the replay. A "walkback" move goes off an edge, falls straight
+# and goes through, and it ends walking into the way out. The level's camera cutscenes that play once count as
+# seen, so none stops the replay; one an unlocker plays at every use is waited out. A "walkback" move goes off an
+# edge, falls straight
 # and, from a given frame, pushes back the other way. It says how many moves worked as the check said,
 # and fails if the man dies, an unlocker or gate does not work, or a move does not get where it should. A test
 # extends this file, with
@@ -203,7 +204,12 @@ func _use_unlocker(leg: Dictionary) -> bool:
 	Input.action_press(&"interact")
 	var used: bool = await wait_until(unlocker.is_activated, WAIT_FRAMES)
 	Input.action_release(&"interact")
-	return report(used, "%s: used with Interact %s" % [leg["unlocker"], used])
+	# A cutscene that plays at every use, as gate B's, holds him until it ends, as it would a player.
+	var cutscene: CameraCutscene = unlocker.cutscene
+	var waited: bool = cutscene == null or await wait_until(func() -> bool: return not cutscene.is_playing(),
+			WAIT_FRAMES)
+	return report(used and waited, "%s: used with Interact %s, its cutscene over %s"
+			% [leg["unlocker"], used, waited])
 
 
 ## Marks every camera cutscene of level as seen in GameState, so none plays while the route is replayed.
