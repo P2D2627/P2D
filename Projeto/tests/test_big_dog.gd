@@ -45,7 +45,7 @@ func _initialize() -> void:
 
 
 ## Every node of the regular dog, also those it gains later, is in the big dog where it is times SIZE,
-## with its box times SIZE, but for SET_BY_CODE and FEET_CHECKS; and its art, stride and sinking depth
+## with its box times SIZE, but for SET_BY_CODE and FEET_CHECKS; and its art, strides and sinking depth
 ## are times SIZE too.
 func _the_big_dog_is_the_dog_a_quarter_bigger() -> bool:
 	var dog: Demon = DOG_SCENE.instantiate() as Demon
@@ -71,6 +71,9 @@ func _the_big_dog_is_the_dog_a_quarter_bigger() -> bool:
 	var small_stride: float = (dog.get_node(^"DemonAnimation") as DemonAnimation).stride_length
 	if not is_equal_approx((big.get_node(^"DemonAnimation") as DemonAnimation).stride_length, small_stride * SIZE):
 		wrong.append("DemonAnimation stride_length")
+	var small_walk: float = (dog.get_node(^"DemonAnimation") as DemonAnimation).walk_stride_length
+	if not is_equal_approx((big.get_node(^"DemonAnimation") as DemonAnimation).walk_stride_length, small_walk * SIZE):
+		wrong.append("DemonAnimation walk_stride_length")
 	var small_depth: float = (dog.get_node(^"SinkingDrawing") as SinkingDrawing).depth
 	if not is_equal_approx((big.get_node(^"SinkingDrawing") as SinkingDrawing).depth, small_depth * SIZE):
 		wrong.append("SinkingDrawing depth")
