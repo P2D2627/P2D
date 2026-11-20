@@ -1,9 +1,12 @@
 # Checks the bite on a dog's back (ADR 0056): a demon with Bites Who Lands On It bites the man who
-# lands on it, as in an attack, so he can't ride a pack. Landing on one bites him once, with the SP
-# of its bite, and throws him up and further than a bite does: off it and, from the middle of a
-# pack, clear of the pack. Between two dogs, only one bites; on a dog's edge, down to 1 px of him
-# over it, it bites from any height; on the same dog again, it bites again, also when its throw is
-# too small to take him off it. Touching its side, jumping beside it, passing through it on the
+# lands on it, as in an attack, so he can't ride a pack. Landing on one bites him at once, with the
+# SP of its bite, and hops him in place; staying on a back, he is bitten again every Back Bite
+# Interval, exactly, and never more than three times a second whatever the stats say, also by
+# another dog, and neither a shove nor a bite carries him along it, so a pack bites him until he
+# gets off or a grab takes him down (#271). Walking onto a back from a floor at its height bites. A bite on the back that
+# throws him along the floor, as a demon's stats can still have, throws him off the dog. Between
+# two dogs, only one bites; on a dog's edge, down to 1 px of him over it, it bites from any height;
+# on the same dog again, it bites again. Touching its side, jumping beside it, passing through it on the
 # floor and jumping out of it, or standing on a ledge just above it, does not bite. Without it, a
 # demon only shoves him off its top (ADR 0022). With his SP low, or when it would take them all,
 # the bite grabs him, as any hit, and he falls through the dog to the floor and sinks there, never
@@ -39,13 +42,27 @@ const DROP_HEIGHT: float = 24.0
 const STACK_TOLERANCE: float = 2.0
 ## How many frames a case watches for: three seconds.
 const WATCH_FRAMES: int = 180
-## A Sight Distance too short to see the man anywhere, so the dogs never chase nor attack him.
-const SHORT_SIGHT: float = 10.0
 ## The bite of the cases' dogs, which gives the bite on the back its SP.
 const BITE_DAMAGE: float = 10.0
-## The most frames the man may stand on dogs' backs once their bite is on: the frame he lands, the
-## next one if the bite lands on it, and one to spare.
-const MOST_FRAMES_ON_BACKS: int = 3
+## Bites watched in the case of the man who stays on a back, and how many frames more than Back
+## Bite Interval two of them are apart while he stays: the frame an armed bite takes to land.
+const BITES_ON_THE_BACK: int = 3
+const ARM_TO_LAND_FRAMES: int = 1
+## A Back Bite Interval under Min Back Bite Interval, in seconds, which must count as that; and the
+## most bites in a second that this allows, the limit for flashes in the WCAG (2.3.1).
+const UNDER_MIN_INTERVAL: float = 0.2
+const MOST_BITES_A_SECOND: int = 3
+## Where the man starts on the floor beside a dog, at the height of its back, in the walk-on case,
+## in px before its back; and the frames he runs onto the back for at most.
+const WALK_ON_START: float = 60.0
+const WALK_ON_FRAMES: int = 120
+## A bite on the back that throws the man along the floor, as the dogs' did before #271 and a
+## demon's stats still can, for the cases about where it throws him: the dogs' own hops him in
+## place. How far and how high, in px.
+const THROW_DISTANCE: float = 300.0
+const THROW_HEIGHT: float = 100.0
+## How far the man may drift along the floor while a pack's bites hop him in place, in px.
+const MOST_DRIFT: float = 1.0
 ## Without the bite, the most frames in a row the man rests on a demon (test_stacked_bodies.gd).
 const MOST_FRAMES_STACKED: int = 20
 ## Share of a knockback's height the man must rise above the top he was thrown from.
@@ -79,10 +96,10 @@ const MOST_PRESSES: int = 40
 ## Frames the man and the dog have, once he breaks free, to be apart and collide again.
 const APART_FRAMES: int = 120
 ## The hole of the hole case: a body's width and a little more, so the man falls in onto the dog,
-## and deep enough that the bite's throw can't take him out of it; and the frames to wait for the
-## grab in it.
+## and deep enough that the bite's throw can't take him out of it: the dog's height, Back Bite
+## Knockback Height and HOLE_RIM_ABOVE_THROW px more; and the frames to wait for the grab in it.
 const HOLE_SLACK: float = 4.0
-const HOLE_DEPTH_IN_BODIES: float = 2.5
+const HOLE_RIM_ABOVE_THROW: float = 40.0
 const HOLE_WATCH_FRAMES: int = 600
 ## How much more room than the man's width is between the dog and the wall in the wall case, in px:
 ## under 0, he can't come down beside the dog there, down to half a pixel short; over 0, he can. And
@@ -118,10 +135,18 @@ const SECOND_BITE_DAMAGE: float = 30.0
 const LUNGE_DAMAGE: float = 20.0
 ## Where the man is dropped between two dogs, besides the middle of the gap: nearer the left one.
 const BETWEEN_NEARER_X: float = 30.0
-## How far from a dog's middle the man's middle is in the edge case, in px, with 8 px, 4 px and 1 px
-## of him over its back, and the heights above its top he is dropped from there, in px.
-const EDGE_OFFSETS: Array[float] = [40.0, 44.0, 47.0]
+## How much of the man is over the end of a dog's back in the edge case and in the case of its ends,
+## in px; the heights above its top he is dropped from in the edge case, in px; and the frames the
+## case of its ends watches each drop for: the fall from DROP_HEIGHT and the bite, with room.
+const END_OVERLAPS: Array[float] = [8.0, 4.0, 1.0]
 const EDGE_DROP_HEIGHTS: Array[float] = [24.0, 76.0, 89.0, 102.0, 115.0, 128.0]
+const END_WATCH_FRAMES: int = 30
+
+## The cases' dogs' Sight Distance, too short to see the man anywhere, his feet on a back included,
+## so they never chase nor attack him: half the way from their eyes up to their back, read from
+## demon.tscn the first time it is asked for (_blind_sight). A fixed 10 px reached a man on the
+## back once the dog's body was made lower.
+var _blind_sight_distance: float = 0.0
 
 
 func _initialize() -> void:
@@ -130,8 +155,10 @@ func _initialize() -> void:
 	results.append(await _a_pack_does_not_carry_the_man_across())
 	results.append(await _landing_between_two_dogs_bites_once())
 	results.append(await _landing_on_a_dog_s_edge_bites_from_any_height())
+	results.append(await _landing_on_either_end_of_a_dog_s_back_bites())
 	results.append(await _landing_again_on_the_same_dog_bites_again())
-	results.append(await _every_landing_bites_also_without_leaving_the_dog())
+	results.append(await _staying_on_a_dog_s_back_is_bitten_every_interval())
+	results.append(await _walking_onto_a_dog_s_back_bites())
 	results.append(await _touching_a_dog_s_side_or_passing_through_it_does_not_bite())
 	results.append(await _standing_on_a_ledge_above_a_dog_does_not_bite())
 	results.append(await _a_dog_without_the_bite_only_shoves_the_man_off())
@@ -150,15 +177,16 @@ func _initialize() -> void:
 	finish(results)
 
 
-## The man is dropped onto a dog a little to either side of its middle. Its back bites him once,
-## with the SP of its bite and the knockback of the bite on the back, and throws him to that side:
-## up, at least RISE_SHARE of Back Bite Knockback Height above its top, and down on the floor at
-## least Back Bite Knockback Distance from its middle, further than a bite of its own throws him.
+## The man is dropped onto a dog whose bite on the back throws (_make_throwing_stats), a little to
+## either side of its middle. Its back bites him once, with the SP of its bite and the knockback of
+## the bite on the back, and throws him to that side: up, at least RISE_SHARE of Back Bite
+## Knockback Height above its top, and down on the floor at least Back Bite Knockback Distance from
+## its middle.
 func _landing_on_a_dog_bites_once_and_throws_the_man_off() -> bool:
 	var passed: bool = true
 	for side: float in [1.0, -1.0]:
 		var ground: StaticBody2D = make_platform(FLOOR_LEFT, FLOOR_RIGHT)
-		var stats: DemonStats = _make_stats(true)
+		var stats: DemonStats = _make_throwing_stats()
 		var dog: Demon = await _spawn_dog_on_floor(0.0, stats)
 		var top: float = dog.position.y - _height(dog)
 		var man: Player = spawn_player(Vector2(side * DROP_OFF_CENTRE, top - DROP_HEIGHT))
@@ -185,10 +213,11 @@ func _landing_on_a_dog_bites_once_and_throws_the_man_off() -> bool:
 	return passed
 
 
-## PACK_SIZE dogs stand in a row, Pack Spacing apart, and the man is dropped a little to either side
-## of the middle one's middle. Its back bites him once and throws him clear of the pack: he stands
-## on their backs MOST_FRAMES_ON_BACKS frames at most, not carried from one to the next, and lands
-## on the floor past the pack's end on that side.
+## PACK_SIZE dogs stand in a row, Pack Spacing apart, with the bite on the back of the game's dogs,
+## and the man is dropped a little to either side of the middle one's middle. For WATCH_FRAMES its
+## back bites him again and again, BITES_ON_THE_BACK times at least, never two bites closer than
+## Back Bite Interval, and neither a shove nor a bite carries him from one back to the next: he
+## stays where he landed, MOST_DRIFT px at most, until he moves or a grab takes him down (#271).
 func _a_pack_does_not_carry_the_man_across() -> bool:
 	var passed: bool = true
 	for side: float in [1.0, -1.0]:
@@ -211,40 +240,38 @@ func _a_pack_does_not_carry_the_man_across() -> bool:
 		var hits: Array[Hitbox] = []
 		var sp_after: Array[float] = []
 		_record_hits(man, hits, sp_after)
-		var frames_on_backs: int = 0
-		var landed_x: float = NAN
+		var hit_frames: Array[int] = _record_hit_frames(man)
+		var frames_shoved: int = 0
+		var drift: float = 0.0
 		for _frame: int in WATCH_FRAMES:
 			await physics_frame
-			for dog: Demon in pack:
-				if _is_stacked(man, dog):
-					frames_on_backs += 1
-					break
-			if _is_on_the_floor(man):
-				landed_x = man.position.x
-				break
-		var past_the_end: float = (PACK_SIZE - 1) / 2.0 * apart + _body_width()
-		var clear: bool = side * landed_x >= past_the_end
+			if man.is_shoved_off():
+				frames_shoved += 1
+			drift = maxf(drift, absf(man.position.x - side * DROP_OFF_CENTRE))
+		var interval: int = pack[0].stats.get_back_bite_interval_frames()
+		var closest: int = _closest(hit_frames)
 		await _clear(made)
-		passed = report(hits.size() == 1 and frames_on_backs <= MOST_FRAMES_ON_BACKS and clear,
-				("Man dropped onto the middle of %d dogs %.0f px apart, %+.0f px off its middle: %d "
-				+ "hits (1), on their backs %d frames (at most %d), landed on the floor at x = %.1f, "
-				+ "clear of the pack (past %.0f on that side) %s") % [PACK_SIZE, PACK_SPACING,
-				side * DROP_OFF_CENTRE, hits.size(), frames_on_backs, MOST_FRAMES_ON_BACKS,
-				landed_x, side * past_the_end, clear]) and passed
+		passed = report(hits.size() >= BITES_ON_THE_BACK and closest >= interval
+				and frames_shoved == 0 and drift <= MOST_DRIFT,
+				("Man dropped onto the middle of %d dogs %.0f px apart, %+.0f px off its middle, for "
+				+ "%d frames: %d hits (at least %d), the closest %d frames apart (at least %d), "
+				+ "shoved %d frames (none), drifted %.1f px (at most %.0f)") % [PACK_SIZE,
+				PACK_SPACING, side * DROP_OFF_CENTRE, WATCH_FRAMES, hits.size(), BITES_ON_THE_BACK,
+				closest, interval, frames_shoved, drift, MOST_DRIFT]) and passed
 	return passed
 
 
 ## Two dogs side by side, Pack Spacing apart, and the man dropped between their middles: at the
-## middle of the gap and nearer the left one, so he stands on both backs at once. Only one bites,
-## once, and throws him off.
+## middle of the gap and nearer the left one, so he stands on both backs at once. Their bites on the
+## back throw (_make_throwing_stats): only one bites, once, and throws him off.
 func _landing_between_two_dogs_bites_once() -> bool:
 	var passed: bool = true
 	var apart: float = _body_width() + PACK_SPACING
 	for x: float in [apart / 2.0, BETWEEN_NEARER_X]:
 		var ground: StaticBody2D = make_platform(FLOOR_LEFT, FLOOR_RIGHT)
-		var left_stats: DemonStats = _make_stats(true)
+		var left_stats: DemonStats = _make_throwing_stats()
 		left_stats.pack_spacing = PACK_SPACING
-		var right_stats: DemonStats = _make_stats(true)
+		var right_stats: DemonStats = _make_throwing_stats()
 		right_stats.pack_spacing = PACK_SPACING
 		var left: Demon = await _spawn_dog_on_floor(0.0, left_stats)
 		var right: Demon = await _spawn_dog_on_floor(apart, right_stats)
@@ -261,18 +288,23 @@ func _landing_between_two_dogs_bites_once() -> bool:
 	return passed
 
 
-## The man is dropped onto a dog with only its edge under him, his middle EDGE_OFFSETS px from the
-## dog's, from each of EDGE_DROP_HEIGHTS above its top, onto a new dog each time: every landing
-## bites once, however fast he falls, though the shove takes him off the edge on the next frame.
+## The man is dropped onto a dog with only its right edge under him, END_OVERLAPS px of him over
+## its back, from the widths of their bodies, from each of EDGE_DROP_HEIGHTS above its top, onto a
+## new dog each time: every landing bites once, however fast he falls, and its throw
+## (_make_throwing_stats) takes him off.
 func _landing_on_a_dog_s_edge_bites_from_any_height() -> bool:
 	var passed: bool = true
-	for offset: float in EDGE_OFFSETS:
+	var reach: float = _body_width() / 2.0
+	for overlap: float in END_OVERLAPS:
 		var counts: Array[int] = []
+		var offset: float = 0.0
 		for height: float in EDGE_DROP_HEIGHTS:
 			var ground: StaticBody2D = make_platform(FLOOR_LEFT, FLOOR_RIGHT)
-			var dog: Demon = await _spawn_dog_on_floor(0.0, _make_stats(true))
+			var dog: Demon = await _spawn_dog_on_floor(0.0, _make_throwing_stats())
 			var top: float = dog.position.y - _height(dog)
-			var man: Player = spawn_player(Vector2(offset, top - height))
+			var man: Player = spawn_player(Vector2(0.0, top - height))
+			offset = reach + _half_width(man) - overlap
+			man.position.x = offset
 			var hits: Array[Hitbox] = []
 			var sp_after: Array[float] = []
 			_record_hits(man, hits, sp_after)
@@ -280,16 +312,46 @@ func _landing_on_a_dog_s_edge_bites_from_any_height() -> bool:
 			counts.append(hits.size())
 			await _clear([ground, dog, man])
 		passed = report(counts.all(func(count: int) -> bool: return count == 1),
-				("Man dropped onto a dog's edge, his middle %.0f px from its middle, from %s px "
-				+ "above it: hits %s (1 each)") % [offset, EDGE_DROP_HEIGHTS, counts]) and passed
+				("Man dropped onto a dog's edge, %.0f px of him over it, his middle %.0f px from "
+				+ "its middle, from %s px above it: hits %s (1 each)") % [overlap, offset,
+				EDGE_DROP_HEIGHTS, counts]) and passed
 	return passed
 
 
-## The man dropped onto a dog is bitten and thrown off. Once on the floor and no longer blinking, he
-## is put above the same dog and dropped onto it again: it bites him again.
+## The man is dropped onto either end of a dog's back with only END_OVERLAPS px of him over it,
+## from the widths of their bodies: the space the bite looks in covers the whole back, so each of
+## these landings bites once, and its throw (_make_throwing_stats) takes him off (#271). It was once
+## as narrow as the upright demon it was made for, 48 px, and a man on either end of the dog's back
+## was never bitten.
+func _landing_on_either_end_of_a_dog_s_back_bites() -> bool:
+	var passed: bool = true
+	var reach: float = _body_width() / 2.0
+	for side: float in [1.0, -1.0]:
+		var counts: Array[int] = []
+		for overlap: float in END_OVERLAPS:
+			var ground: StaticBody2D = make_platform(FLOOR_LEFT, FLOOR_RIGHT)
+			var dog: Demon = await _spawn_dog_on_floor(0.0, _make_throwing_stats())
+			var top: float = dog.position.y - _height(dog)
+			var man: Player = spawn_player(Vector2(0.0, top - DROP_HEIGHT))
+			man.position.x = side * (reach + _half_width(man) - overlap)
+			var hits: Array[Hitbox] = []
+			var sp_after: Array[float] = []
+			_record_hits(man, hits, sp_after)
+			await wait_frames(END_WATCH_FRAMES)
+			counts.append(hits.size())
+			await _clear([ground, dog, man])
+		passed = report(counts.all(func(count: int) -> bool: return count == 1),
+				("Man dropped onto the %s end of a dog's back with %s px of him over it: hits %s (1 "
+				+ "each)") % ["right" if side > 0.0 else "left", END_OVERLAPS, counts]) and passed
+	return passed
+
+
+## The man dropped onto a dog whose bite on the back throws (_make_throwing_stats) is bitten and
+## thrown off. Once on the floor and no longer blinking, he is put above the same dog and dropped
+## onto it again: it bites him again.
 func _landing_again_on_the_same_dog_bites_again() -> bool:
 	var ground: StaticBody2D = make_platform(FLOOR_LEFT, FLOOR_RIGHT)
-	var dog: Demon = await _spawn_dog_on_floor(0.0, _make_stats(true))
+	var dog: Demon = await _spawn_dog_on_floor(0.0, _make_throwing_stats())
 	var top: float = dog.position.y - _height(dog)
 	var man: Player = spawn_player(Vector2(DROP_OFF_CENTRE, top - DROP_HEIGHT))
 	var hurtbox: Hurtbox = man.get_node(^"Hurtbox") as Hurtbox
@@ -309,14 +371,25 @@ func _landing_again_on_the_same_dog_bites_again() -> bool:
 
 
 ## The bite on a dog's back throws the man only BOUNCE_HEIGHT up, straight up, with Back Bite
-## Knockback Distance 0, so he lands on the dog again without having left the space above its top
-## it looks in: that landing bites him again and takes the SP of its bite again, as every landing
-## does, not only the first since he came.
-func _every_landing_bites_also_without_leaving_the_dog() -> bool:
+## Knockback Distance 0, so he stays on the dog, in the space above its top it looks in. It bites
+## him again every Back Bite Interval he stays, exactly that and the frame a bite takes to land,
+## and takes the SP of its bite each time, and nothing shoves him along its back meanwhile:
+## BITES_ON_THE_BACK bites are watched. With a Back Bite Interval under Min Back Bite Interval, the
+## bites come every Min Back Bite Interval, never more than MOST_BITES_A_SECOND in a second.
+func _staying_on_a_dog_s_back_is_bitten_every_interval() -> bool:
+	var stats: DemonStats = _make_stats(true)
+	var passed: bool = await _stay_on_a_back(stats.back_bite_interval, stats.back_bite_interval)
+	return await _stay_on_a_back(UNDER_MIN_INTERVAL, DemonStats.MIN_BACK_BITE_INTERVAL) and passed
+
+
+## One run of the case above, with Back Bite Interval at interval, whose bites must come every
+## expected seconds.
+func _stay_on_a_back(interval: float, expected: float) -> bool:
 	var ground: StaticBody2D = make_platform(FLOOR_LEFT, FLOOR_RIGHT)
 	var stats: DemonStats = _make_stats(true)
 	stats.back_bite_knockback_distance = 0.0
 	stats.back_bite_knockback_height = BOUNCE_HEIGHT
+	stats.back_bite_interval = interval
 	var dog: Demon = await _spawn_dog_on_floor(0.0, stats)
 	var back: Area2D = dog.get_node(^"BackBite") as Area2D
 	var top: float = dog.position.y - _height(dog)
@@ -324,19 +397,61 @@ func _every_landing_bites_also_without_leaving_the_dog() -> bool:
 	var hits: Array[Hitbox] = []
 	var sp_after: Array[float] = []
 	_record_hits(man, hits, sp_after)
+	var hit_frames: Array[int] = _record_hit_frames(man)
 	var damage: Array[float] = _record_damage(man)
 	var stayed: bool = true
+	var frames_shoved: int = 0
 	for _frame: int in WATCH_FRAMES:
 		await physics_frame
-		if hits.size() >= 2:
+		if hits.size() >= BITES_ON_THE_BACK:
 			break
 		if not hits.is_empty():
 			stayed = stayed and back.overlaps_body(man)
+		if man.is_shoved_off():
+			frames_shoved += 1
 	await _clear([ground, dog, man])
-	return report(hits.size() == 2 and stayed and damage.size() == 2 and damage[1] == BITE_DAMAGE,
-			("Man thrown %.0f px straight up by a dog's back: bitten %d times (2), never left the "
-			+ "space above it between bites %s, SP taken %s (%.0f each)") % [BOUNCE_HEIGHT,
-			hits.size(), stayed, damage, BITE_DAMAGE])
+	var ticks: int = Engine.physics_ticks_per_second
+	var apart: int = roundi(expected * ticks) + ARM_TO_LAND_FRAMES
+	var gaps: Array[int] = _gaps(hit_frames)
+	var timed: bool = gaps.size() == BITES_ON_THE_BACK - 1 and gaps.all(func(gap: int) -> bool:
+			return gap == apart and gap * MOST_BITES_A_SECOND >= ticks)
+	var each: bool = damage.size() == BITES_ON_THE_BACK and damage.all(func(amount: float) -> bool:
+			return amount == BITE_DAMAGE)
+	return report(timed and stayed and frames_shoved == 0 and each,
+			("Man thrown %.0f px straight up by a dog's back with Back Bite Interval %.2f s and "
+			+ "staying on it: bitten %d times, %s frames apart (%d each, at most %d bites a "
+			+ "second), never left the space above it between bites %s, shoved %d frames (none), "
+			+ "SP taken %s (%.0f each)") % [BOUNCE_HEIGHT, interval, hits.size(), gaps, apart,
+			MOST_BITES_A_SECOND, stayed, frames_shoved, damage, BITE_DAMAGE])
+
+
+## A floor at the height of a dog's back runs up to its side, and the man, on that floor
+## WALK_ON_START px before the back, runs onto it: standing on the back bites him, however he got
+## there, and the bite is the back's.
+func _walking_onto_a_dog_s_back_bites() -> bool:
+	var ground: StaticBody2D = make_platform(FLOOR_LEFT, FLOOR_RIGHT)
+	var dog: Demon = await _spawn_dog_on_floor(0.0, _make_stats(true))
+	var top: float = dog.position.y - _height(dog)
+	var back_left: float = dog.position.x - _half_width(dog)
+	var step: StaticBody2D = make_wall(FLOOR_LEFT, back_left, top)
+	var man: Player = await spawn_on_floor(Vector2(back_left - WALK_ON_START, top + SPAWN_Y))
+	if man == null:
+		await _clear([ground, step, dog])
+		return report(false, "Man on a floor at the height of a dog's back never landed on it")
+	var stand_in: StandInInput = put_a_stand_in(man)
+	var hits: Array[Hitbox] = []
+	var sp_after: Array[float] = []
+	_record_hits(man, hits, sp_after)
+	var back_bite: Hitbox = (dog.get_node(^"BackBite") as DemonBackBite).hitbox
+	stand_in.run_direction = 1.0
+	var bitten: bool = await wait_until(func() -> bool: return not hits.is_empty(), WALK_ON_FRAMES)
+	stand_in.run_direction = 0.0
+	var by_the_back: bool = bitten and hits[0] == back_bite
+	await _clear([ground, step, dog, man])
+	return report(by_the_back,
+			("Man running onto a dog's back from a floor at its height, %.0f px before it: bitten "
+			+ "within %d frames %s, by the bite on the back %s") % [WALK_ON_START, WALK_ON_FRAMES,
+			bitten, by_the_back])
 
 
 ## The man runs into a dog's side, and once against it, jumps straight up beside it and lands beside
@@ -597,17 +712,18 @@ func _breaking_free_of_the_bite_on_the_back_throws_the_dog_off() -> bool:
 			+ "off %s, the two colliding again %s") % [grabbed, free, thrown, colliding])
 
 
-## A dog stands at the bottom of a hole one body wide, HOLE_DEPTH_IN_BODIES deep, too deep for the
-## bite's throw to take the man out of it. Dropped onto the dog, he is bitten each time he falls
-## back onto it, until his SP are low; then its bite grabs him, and he falls through it and is held
-## on the hole's floor within HOLE_WATCH_FRAMES: he is never thrown up and down in it for ever.
+## A dog whose bite on the back throws (_make_throwing_stats) stands at the bottom of a hole one
+## body wide, too deep for the throw to take the man out of it, and with no room for him beside the
+## dog on either side. Dropped onto the dog, he is bitten each time he falls back onto it, until
+## his SP are low; then its bite grabs him, and he falls through it and is held on the hole's floor
+## within HOLE_WATCH_FRAMES: he is never thrown up and down in it for ever.
 func _in_a_hole_too_deep_to_be_thrown_out_of_a_grab_ends_the_bites() -> bool:
 	var box: Vector2 = _demon_box()
+	var stats: DemonStats = _make_throwing_stats()
 	var half: float = (box.x + HOLE_SLACK) / 2.0
-	var depth: float = HOLE_DEPTH_IN_BODIES * box.y
+	var depth: float = box.y + stats.back_bite_knockback_height + HOLE_RIM_ABOVE_THROW
 	var made: Array[Node] = [make_wall(FLOOR_LEFT, -half, 0.0, depth),
 			make_wall(half, FLOOR_RIGHT, 0.0, depth), make_platform(-half, half, depth)]
-	var stats: DemonStats = _make_stats(true)
 	var dog: Demon = _spawn_demon(Vector2(0.0, depth + SPAWN_Y), stats)
 	made.append(dog)
 	await wait_until(dog.is_on_floor)
@@ -630,9 +746,9 @@ func _in_a_hole_too_deep_to_be_thrown_out_of_a_grab_ends_the_bites() -> bool:
 
 
 ## A dog stands by a wall, the man's width and WALL_GAP_OFFSETS px from it, and the man is dropped
-## onto the dog's half by the wall. With no room for him beside the dog there, its back bites him
-## once and throws him to the open side, onto the floor past the dog, never against the wall and
-## back onto it (ADR 0056); with room, it throws him to the wall side, between the two, as anywhere
+## onto the dog's half by the wall. With no room for him beside the dog there, its back, which
+## throws (_make_throwing_stats), bites him once and throws him to the open side, onto the floor
+## past the dog, never against the wall and back onto it (ADR 0056); with room, it throws him to the wall side, between the two, as anywhere
 ## else. A wall lower than the dog, however near, leaves him room above it: he is thrown over it.
 ## The wall is on either side of the dog.
 func _by_a_wall_the_bite_throws_the_man_to_the_open_side() -> bool:
@@ -648,7 +764,7 @@ func _by_a_wall_the_bite_throws_the_man_to_the_open_side() -> bool:
 ## from it, and lower than the dog when low: whether its bite threw him the way it should.
 func _drop_by_a_wall(side: float, offset: float, low: bool) -> bool:
 	var ground: StaticBody2D = make_platform(FLOOR_LEFT, FLOOR_RIGHT)
-	var stats: DemonStats = _make_stats(true)
+	var stats: DemonStats = _make_throwing_stats()
 	var dog: Demon = await _spawn_dog_on_floor(0.0, stats)
 	var top: float = dog.position.y - _height(dog)
 	var man: Player = spawn_player(Vector2(side * DROP_OFF_CENTRE, top - DROP_HEIGHT))
@@ -673,7 +789,8 @@ func _drop_by_a_wall(side: float, offset: float, low: bool) -> bool:
 ## The man is dropped onto one dog and, FRAMES_BEFORE_SECOND_DOG frames after its bite, within the
 ## blink, put above another and dropped onto it: it bites him too and takes the SP of its bite
 ## again, whether the dogs' attacks pierce the blink (ADR 0055) or not, so a pack bites him on every
-## back he lands on.
+## back he lands on; but no sooner than Back Bite Interval after the first, so the bites never
+## flash more than three times a second (#271).
 func _a_landing_in_the_blink_after_a_bite_is_bitten_again() -> bool:
 	var passed: bool = true
 	for pierces: bool in [true, false]:
@@ -691,6 +808,7 @@ func _a_landing_in_the_blink_after_a_bite_is_bitten_again() -> bool:
 		var sp_after: Array[float] = []
 		_record_hits(man, hits, sp_after)
 		var damage: Array[float] = _record_damage(man)
+		var hit_frames: Array[int] = _record_hit_frames(man)
 		var first_bite: bool = await wait_until(func() -> bool: return not hits.is_empty())
 		await wait_frames(FRAMES_BEFORE_SECOND_DOG)
 		var blinking: bool = hurtbox.is_invulnerable()
@@ -698,24 +816,26 @@ func _a_landing_in_the_blink_after_a_bite_is_bitten_again() -> bool:
 		man.velocity = Vector2.ZERO
 		var landed_on_second: bool = await wait_until(
 				func() -> bool: return _is_stacked(man, second))
-		await wait_frames(WATCH_FRAMES)
+		await wait_until(func() -> bool: return hits.size() >= 2, WATCH_FRAMES)
 		await _clear([ground, first, second, man])
+		var interval: int = second_stats.get_back_bite_interval_frames()
+		var closest: int = _closest(hit_frames)
 		passed = report(first_bite and blinking and landed_on_second and hits.size() == 2
-				and damage.size() == 2 and damage[1] == BITE_DAMAGE,
+				and damage.size() == 2 and damage[1] == BITE_DAMAGE and closest >= interval,
 				("Dogs %s Attacks Invulnerable Man, the man bitten by one %s and, still blinking %s, "
-				+ "dropped onto another %s: %d hits in all (2), SP taken %s (%.0f each)") % [
-				"with" if pierces else "without", first_bite, blinking, landed_on_second,
-				hits.size(), damage, BITE_DAMAGE]) and passed
+				+ "dropped onto another %s: %d hits in all (2), %d frames apart (at least %d), SP "
+				+ "taken %s (%.0f each)") % ["with" if pierces else "without", first_bite, blinking,
+				landed_on_second, hits.size(), closest, interval, damage, BITE_DAMAGE]) and passed
 	return passed
 
 
 ## The man is dropped onto a dog while invulnerable to every hit, as for Invulnerable Time of his
 ## GrabEscape once he breaks free of a grab: the bite on its back lands all the same, within that,
-## takes the SP of its bite and throws him off, up at least RISE_SHARE of Back Bite Knockback Height
-## above its top.
+## takes the SP of its bite and throws him off (_make_throwing_stats), up at least RISE_SHARE of
+## Back Bite Knockback Height above its top.
 func _a_landing_after_breaking_free_of_a_grab_is_bitten() -> bool:
 	var ground: StaticBody2D = make_platform(FLOOR_LEFT, FLOOR_RIGHT)
-	var stats: DemonStats = _make_stats(true)
+	var stats: DemonStats = _make_throwing_stats()
 	var dog: Demon = await _spawn_dog_on_floor(0.0, stats)
 	var top: float = dog.position.y - _height(dog)
 	var man: Player = spawn_player(Vector2(DROP_OFF_CENTRE, top - DROP_HEIGHT))
@@ -791,11 +911,14 @@ func _a_knockback_on_a_demon_s_top_throws_the_man_off_it() -> bool:
 	return passed
 
 
-## A dog made without Bites Who Lands On It is given it in the scene, and the man dropped onto it is
-## bitten; it is taken away again, and the man dropped onto it once more is only shoved off.
+## A dog made without Bites Who Lands On It, with the throw of _make_throwing_stats, is given it in
+## the scene, and the man dropped onto it is bitten and thrown off; it is taken away again, and the
+## man dropped onto it once more is only shoved off.
 func _the_bite_turns_on_and_off_with_its_stats() -> bool:
 	var ground: StaticBody2D = make_platform(FLOOR_LEFT, FLOOR_RIGHT)
 	var stats: DemonStats = _make_stats(false)
+	stats.back_bite_knockback_distance = THROW_DISTANCE
+	stats.back_bite_knockback_height = THROW_HEIGHT
 	var dog: Demon = await _spawn_dog_on_floor(0.0, stats)
 	var top: float = dog.position.y - _height(dog)
 	stats.bites_who_lands_on_it = true
@@ -817,30 +940,26 @@ func _the_bite_turns_on_and_off_with_its_stats() -> bool:
 			landed_off])
 
 
-## Both dogs' stats bite who lands on them, with the SP of their bite, and throw him further and
-## higher than any of their attacks does. A demon's stats have it off. The bite on the back takes
-## the SP of the first bite in Attacks, and none with no bite, whatever the lunges take.
+## Both dogs' stats bite who lands on them, with the SP of their bite, and hop him in place: up,
+## with no throw along the floor, so a pack never carries him (#271). A demon's stats have it off.
+## The bite on the back takes the SP of the first bite in Attacks, and none with no bite, whatever
+## the lunges take.
 func _both_dogs_bite_who_lands_on_them() -> bool:
 	var passed: bool = true
 	for path: String in DOG_STATS_PATHS:
 		var stats: DemonStats = load(path) as DemonStats
 		var bite_damage: float = 0.0
-		var furthest: float = 0.0
-		var highest: float = 0.0
 		for attack: DemonAttack in stats.attacks:
 			if attack.animation == &"bite" and bite_damage == 0.0:
 				bite_damage = attack.damage
-			furthest = maxf(furthest, attack.knockback_distance)
-			highest = maxf(highest, attack.knockback_height)
 		passed = report(stats.bites_who_lands_on_it and bite_damage > 0.0
 				and stats.get_back_bite_damage() == bite_damage
-				and stats.back_bite_knockback_distance > furthest
-				and stats.back_bite_knockback_height > highest,
+				and stats.back_bite_knockback_distance == 0.0
+				and stats.back_bite_knockback_height > 0.0,
 				("%s: bites who lands on it %s, with %.0f SP (its bite's %.0f), throwing him %.0f px "
-				+ "away and %.0f px high (its attacks at most %.0f and %.0f)") % [path.get_file(),
+				+ "away (none) and %.0f px high (above 0)") % [path.get_file(),
 				stats.bites_who_lands_on_it, stats.get_back_bite_damage(), bite_damage,
-				stats.back_bite_knockback_distance, stats.back_bite_knockback_height, furthest,
-				highest]) and passed
+				stats.back_bite_knockback_distance, stats.back_bite_knockback_height]) and passed
 	var no_attacks: DemonStats = DemonStats.new()
 	var lunge_only: DemonStats = DemonStats.new()
 	lunge_only.attacks.append(_make_attack(&"lunge", LUNGE_DAMAGE))
@@ -866,6 +985,31 @@ func _record_hits(man: Player, hits: Array[Hitbox], sp_after: Array[float]) -> v
 	hurtbox.hit_received.connect(func(hitbox: Hitbox) -> void:
 		hits.append(hitbox)
 		sp_after.append(man.soul_points.get_sp()))
+
+
+## The physics frame of every hit the man takes from now on, in order.
+func _record_hit_frames(man: Player) -> Array[int]:
+	var frames: Array[int] = []
+	var hurtbox: Hurtbox = man.get_node(^"Hurtbox") as Hurtbox
+	hurtbox.hit_received.connect(func(_hitbox: Hitbox) -> void:
+		frames.append(Engine.get_physics_frames()))
+	return frames
+
+
+## The frames between each two frames in a row of frames.
+func _gaps(frames: Array[int]) -> Array[int]:
+	var gaps: Array[int] = []
+	for index: int in range(1, frames.size()):
+		gaps.append(frames[index] - frames[index - 1])
+	return gaps
+
+
+## The fewest frames between two frames in a row of frames; WATCH_FRAMES with fewer than two.
+func _closest(frames: Array[int]) -> int:
+	var closest: int = WATCH_FRAMES
+	for gap: int in _gaps(frames):
+		closest = mini(closest, gap)
+	return closest
 
 
 ## Every SP the man loses from now on, in order, one amount for each loss.
@@ -895,11 +1039,33 @@ func _follow_the_throw(man: Player, top: float, hits: Array[Hitbox]) -> Flight:
 ## back_bite, it bites who lands on it.
 func _make_stats(back_bite: bool) -> DemonStats:
 	var stats: DemonStats = DemonStats.new()
-	stats.sight_distance = SHORT_SIGHT
+	stats.sight_distance = _blind_sight()
 	stats.attacks.append(_make_attack(&"bite", BITE_DAMAGE))
 	stats.attacks_invulnerable_man = true
 	stats.bites_who_lands_on_it = back_bite
 	return stats
+
+
+## The cases' dog stats with a bite on the back that throws the man THROW_DISTANCE px along the
+## floor and THROW_HEIGHT px up, for the cases about where it throws him.
+func _make_throwing_stats() -> DemonStats:
+	var stats: DemonStats = _make_stats(true)
+	stats.back_bite_knockback_distance = THROW_DISTANCE
+	stats.back_bite_knockback_height = THROW_HEIGHT
+	return stats
+
+
+## Half the way from a dog's eyes, its SightArea, up to its back, in px, read from demon.tscn once.
+func _blind_sight() -> float:
+	if _blind_sight_distance > 0.0:
+		return _blind_sight_distance
+	var demon: Demon = DEMON_SCENE.instantiate() as Demon
+	var eyes_y: float = (demon.get_node(^"SightArea") as Node2D).position.y
+	var body: CollisionShape2D = demon.get_node(^"CollisionShape2D") as CollisionShape2D
+	var back_y: float = body.position.y - (body.shape as RectangleShape2D).size.y / 2.0
+	demon.free()
+	_blind_sight_distance = (eyes_y - back_y) / 2.0
+	return _blind_sight_distance
 
 
 func _make_attack(animation: StringName, damage: float) -> DemonAttack:

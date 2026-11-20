@@ -39,8 +39,9 @@ const SLIDE_WAYS: Dictionary[String, Gate.SlideWay] = {
 const ART_ARGUMENT: String = "--art"
 ## Passed after --, then the path of the map phase 3 was laid from, to change phase 3 in the scene to the map now.
 const RESHAPE_ARGUMENT: String = "--reshape"
-## What --reshape changes where the two maps differ: tiles and floor spikes. Anything else is done by hand.
-const RESHAPED: String = "#.-^"
+## What --reshape changes where the two maps differ: tiles, floor spikes and collapsing platforms. Anything else is
+## done by hand.
+const RESHAPED: String = "#.-^="
 ## How far, in px, a loose rock's middle may be from the floor or ceiling it stands on: half the tallest drawing.
 const ROCK_REACH: float = 384.0
 const RIM_PATH: NodePath = ^"Art/StoneRim"
@@ -291,8 +292,8 @@ func _lay_art_only(level: Node) -> void:
 
 
 ## Changes phase 3, already in the scene, from the map it was laid from (old_map_path: level1_phase3.txt as it was
-## then) to the map now, where the two differ and only there: the tiles, the floor spikes and the camera zones, each
-## only while it is still as the old map laid it; then the rim's stones and the loose rocks where the rock's outline
+## then) to the map now, where the two differ and only there: the tiles, the floor spikes, the collapsing platforms
+## and the camera zones, each only while it is still as the old map laid it; then the rim's stones and the loose rocks where the rock's outline
 ## changed, as when phase 3 was added. What was edited by hand anywhere else stays as it is. Where the maps differ in
 ## anything else, such as a dog or a gate, it changes nothing, and nothing is saved.
 func _reshape(level: Node2D, old_map_path: String) -> void:
@@ -325,8 +326,8 @@ func _reshape(level: Node2D, old_map_path: String) -> void:
 			if was == now:
 				continue
 			if not RESHAPED.contains(was) or not RESHAPED.contains(now):
-				_problems.append("the maps differ at %s ('%s', now '%s'): only tiles and floor spikes are reshaped"
-						% [Vector2i(column, row), was, now])
+				_problems.append(("the maps differ at %s ('%s', now '%s'): only tiles, floor spikes and collapsing "
+						+ "platforms are reshaped") % [Vector2i(column, row), was, now])
 				continue
 			if _map_kind(was) == _map_kind(now):
 				continue
@@ -341,13 +342,14 @@ func _reshape(level: Node2D, old_map_path: String) -> void:
 						ROCK_ALTERNATIVE if _map_kind(now) == TileKind.ROCK else ONE_WAY_ALTERNATIVE)
 			tiles_changed += 1
 	var spikes_changed: int = _reshape_floor_spikes(level.get_node(^"Spikes"), old_rows)
+	var platforms_changed: int = _reshape_collapsing_platforms(level.get_node(^"CollapsingPlatforms"), old_rows)
 	var zones_changed: int = _reshape_zones(level, old_zones)
 	var stones: Vector2i = _lay_rim(level, before)
 	var rocks: Vector2i = _redo_rocks(level, before)
 	before.free()
-	_summary = ("%d tiles, %d floor spikes and %d camera zones changed; %d rim stones taken away and %d laid; "
-			+ "%d loose rocks taken away and %d laid") % [tiles_changed, spikes_changed, zones_changed, stones.x,
-			stones.y, rocks.x, rocks.y]
+	_summary = ("%d tiles, %d floor spikes, %d collapsing platforms and %d camera zones changed; %d rim stones "
+			+ "taken away and %d laid; %d loose rocks taken away and %d laid") % [tiles_changed, spikes_changed,
+			platforms_changed, zones_changed, stones.x, stones.y, rocks.x, rocks.y]
 
 
 ## TileKind of a character of the map.
@@ -408,6 +410,39 @@ func _reshape_floor_spikes(group: Node, old_rows: PackedStringArray) -> int:
 		group.remove_child(spikes)
 		spikes.free()
 		changed += 1
+	return changed
+
+
+## The collapsing platforms of the old map's grid (old_rows) that the map now no longer has, taken away, each only
+## while it is still as the old map laid it, as wide and on the same tile, even if nudged off the grid by hand, and
+## the ones it has instead, laid. How many changed.
+func _reshape_collapsing_platforms(group: Node, old_rows: PackedStringArray) -> int:
+	var rows_now: PackedStringArray = _rows
+	# _runs reads _rows: the old grid for a moment.
+	_rows = old_rows
+	var old_runs: Array[Rect2i] = _runs(COLLAPSING)
+	_rows = rows_now
+	var new_runs: Array[Rect2i] = _runs(COLLAPSING)
+	var changed: int = 0
+	for run: Rect2i in old_runs:
+		if new_runs.has(run):
+			continue
+		var found: CollapsingPlatform = null
+		for child: Node in group.get_children():
+			var platform: CollapsingPlatform = child as CollapsingPlatform
+			if platform != null and platform.width_tiles == run.size.x \
+					and Vector2i((platform.position / TILE).round()) == run.position + _offset:
+				found = platform
+		if found == null:
+			_problems.append("the collapsing platform at %s is no longer as the old map laid it" % run)
+			continue
+		group.remove_child(found)
+		found.free()
+		changed += 1
+	for run: Rect2i in new_runs:
+		if not old_runs.has(run):
+			_add_collapsing_platform(group, run)
+			changed += 1
 	return changed
 
 
@@ -784,12 +819,17 @@ func _add_gates(group: Node, tiles: TileMapLayer) -> void:
 
 func _add_collapsing_platforms(group: Node) -> void:
 	for run: Rect2i in _runs(COLLAPSING):
-		var platform: CollapsingPlatform = COLLAPSING_SCENE.instantiate(EDIT_STATE) as CollapsingPlatform
-		platform.name = "%sCollapsing%d" % [PREFIX, group.get_child_count() + 1]
-		platform.position = Vector2(run.position + _offset) * TILE
-		platform.width_tiles = run.size.x
-		group.add_child(platform)
-		platform.owner = group.owner
+		_add_collapsing_platform(group, run)
+
+
+## A collapsing platform over run, on phase 3's grid, in group.
+func _add_collapsing_platform(group: Node, run: Rect2i) -> void:
+	var platform: CollapsingPlatform = COLLAPSING_SCENE.instantiate(EDIT_STATE) as CollapsingPlatform
+	platform.name = _free_name(group, "%sCollapsing%d" % [PREFIX, group.get_child_count() + 1])
+	platform.position = Vector2(run.position + _offset) * TILE
+	platform.width_tiles = run.size.x
+	group.add_child(platform)
+	platform.owner = group.owner
 
 
 ## Spikes on floors, as everywhere, and on walls: the same strip turned a quarter round, its base on the wall.

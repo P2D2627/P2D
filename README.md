@@ -357,25 +357,32 @@ Em grupo, cada demónio decide sozinho, mas o conjunto lê-se como uma matilha:
 - enquanto a personagem pisca, depois de uma pancada, continuam a atacar à vez, e os ataques,
   mordidas e saltos, acertam e tiram SP. Com muitos demónios, ela perde o SP depressa e acaba
   agarrada: com cinco, três de um lado e dois do outro, fica com o SP baixo ao fim de 1,7 a 2,1 s,
-  contra 5,4 a 5,9 s com um só, em nove sorteios diferentes. O piscar já não a protege deles, e
+  contra 5,4 a 5,9 s com um só, em nove sorteios diferentes (no sorteio do `test_demon.gd`, 2,3 s
+  desde a mordida contínua nas costas, #271; os nove por medir de novo). O piscar já não a protege deles, e
   para escapar tem de fugir ou erguer o crucifixo. No segundo depois de ela se soltar de um
   agarrão, e com ela agarrada por todos os que a podem agarrar, nenhum ataca, e cada um espera no
   seu vaivém (Attacks Invulnerable Man, ADR 0055). Sem esse valor, como nos outros demónios,
   nenhum ataca enquanto ela pisca;
-- mordem quem lhes cai em cima. A personagem que aterra num cão, mesmo só na borda das costas,
-  leva a mordida dele (10 SP) e é atirada 300 px para longe e 100 px para cima, mais do que numa
-  mordida (150 px e 40 px). Assim nunca desliza de costas em costas por cima de uma matilha: com
-  cinco cães, fica 2 passos de física em cima deles, contra 19 antes, e aterra a 384 px do meio.
-  Cada aterragem morde uma vez, também quando cai entre dois cães, em cima dos dois, e cada
-  aterragem nova volta a morder, também no mesmo cão. A mordida entra em qualquer piscar, também
-  no segundo depois de a personagem se soltar de um agarrão. Com o SP baixo, agarra-a como
-  qualquer pancada, e ela cai através do cão até ao chão, onde se afunda, nunca em cima dele. Num
-  buraco fundo demais para o arremesso a tirar de lá, as mordidas acabam num agarrão: num buraco
-  de 240 px com um cão, 9 mordidas e o agarrão aos 3 s. Com o cão junto a uma parede que não lhe
-  deixa espaço ao lado dele, o arremesso vai para o lado aberto, e não contra a parede e de volta
-  para cima do cão. Só morde quem aterra no cão: encostar-se a ele, saltar ao lado dele ou
-  atravessá-lo, mesmo a saltar para fora dele, não (Bites Who Lands On It, ADR 0056). Sem esse
-  valor, como nos outros demónios, a personagem é só empurrada para fora de cima dele (ADR 0022).
+- mordem quem lhes está em cima. A personagem que aterra num cão, mesmo só na ponta das costas,
+  leva logo a mordida dele (10 SP) e um pequeno salto no sítio, 24 px para cima, e leva outra a
+  cada 0,4 s enquanto lá ficar, deste cão ou de outro (Back Bite Interval, #271). Nada a empurra
+  para fora: tem de sair a andar ou a saltar. Se ficar, o SP baixa e a mordida agarra-a como
+  qualquer pancada, e ela cai através do cão até ao chão, onde se afunda, nunca em cima dele. Em
+  cima de cinco cães seguidos, leva 8 mordidas em 3 s, sempre a 25 passos de física umas das
+  outras, sem sair do sítio. O intervalo nunca desce de 0,34 s, para que os clarões das mordidas
+  fiquem abaixo de três por segundo (WCAG 2.3.1). Antes, o empurrão fazia-a deslizar pelas costas
+  da matilha, e cada aterragem dava uma só mordida, que a atirava 300 px para longe. Com as
+  mordidas seguidas, esse arremesso levava-a de costas em costas numa matilha cerrada e, em campo
+  aberto, tirava-a do meio dos cães: a matilha do `test_demon.gd` deixava-a com o SP baixo ao fim
+  de 245 passos de física. Com o salto no sítio, são 138, contra 127 antes da mudança. A mordida entra em qualquer piscar, também no segundo depois de a
+  personagem se soltar de um agarrão. Entre dois cães, em cima dos dois, só um morde de cada vez.
+  A área que a procura cobre as costas todas: antes tinha os 48 px do demónio de pé para que foi
+  feita, e nas pontas das costas do cão ninguém era mordido. Só morde quem está em cima do cão:
+  encostar-se a ele, saltar ao lado dele ou atravessá-lo, mesmo a saltar para fora dele, não
+  (Bites Who Lands On It, ADR 0056). Um demónio pode ainda atirar a personagem ao longo do chão
+  (Back Bite Knockback Distance), e junto a uma parede que não lhe deixa espaço ao lado atira-a
+  para o lado aberto. Sem a mordida, como nos outros demónios, a personagem é só empurrada para
+  fora de cima dele (ADR 0022).
 
 Todos os saltos de um demónio caem com a mesma gravidade e com o mesmo ângulo, como um salto dado
 com menos força: um salto mais curto é mais baixo e mais rápido. O de 420 px sobe 32 px e dura
@@ -524,18 +531,50 @@ experimentadas e recusadas: a personagem cortada pelos espinhos (Cut Apart) e ra
 O cão
 grande (`scenes/characters/demon/big_demon.tscn`), na fase 2 do nível 1, é o demónio normal 1,25 vezes maior: o corpo
 (140 × 70 px), a caixa de ataque, a arte e as verificações aos pés. No ecrã, distingue-se do cão
-normal pelo tamanho e pela arte, escurecida a 60 % do brilho, para que a diferença se leia de
-relance e não dependa só do tamanho; os avisos de ataque clareiam-na na mesma proporção que no cão
-normal. Tem valores próprios (`scenes/characters/demon/big_demon_stats.tres`), iguais aos do cão normal
+normal pelo tamanho e pela arte, num tom verde pálido próprio (Self Modulate do `Sprite`, 0,8; 1;
+0,85), para que a diferença se leia de relance e não dependa só do tamanho; os avisos de ataque
+clareiam-na na mesma proporção que no cão normal. O tom tem 95 % do brilho do cão normal e fica longe
+do amarelo dos avisos, para que o cão grande parado não pareça um cão a avisar. Antes, a arte estava
+escurecida a 60 % do brilho, e na gruta, onde o mais escuro se desenha mais longe, o cão grande
+parecia estar atrás dos outros, entalado entre eles (#271). Tem valores próprios (`scenes/characters/demon/big_demon_stats.tres`), iguais aos do cão normal
 exceto no dano: 25 SP no salto e 12,5 SP na mordida, contra 20 e 10. A fase 2 fica assim mais
 exigente: com 100 SP e sem tempo para regenerar, o quarto salto do cão grande já agarra a personagem,
 em vez do quinto. O `test_big_dog.gd` falha se os valores dos dois cães diferirem em algo além do
 dano, para que nenhuma afinação do cão normal fique por passar para o grande. Falha também se a arte
-do cão grande deixar de ser mais escura, parado, a avisar ou atordoado. O maior cão
-(`scenes/characters/demon/biggest_demon.tscn`), no fim da fase 3 do nível 1, é o demónio normal oito
-vezes maior (corpo de 896 × 448 px, caixa de ataque, arte e verificações aos pés) com um anel de
-proximidade de 736 px de alcance à volta do meio do corpo: chegar perto dele abre os portões da sua
-lista Opens. Por agora não faz mais nada de diferente de um cão normal.
+do cão grande, parado, a avisar ou atordoado, perder o tom próprio (saturação abaixo de 0,15), se o
+tom ficar a menos de 60° do matiz de um aviso ou se descer abaixo de 90 % do brilho do cão normal.
+O maior cão
+(`scenes/characters/demon/biggest_demon.tscn`), no fim da fase 3 do nível 1, é o demónio normal 1,5
+vezes maior (corpo de 168 × 84 px, caixa de ataque, arte e verificações aos pés), um pouco maior do
+que o cão grande, com um anel de proximidade de 736 px de alcance à volta do meio do corpo: chegar
+perto dele abre os portões da sua lista Opens. É o cão que persegue a personagem até ao fim (#271):
+depois de a notar no ecrã, nunca desiste dela (Never Gives Up), esteja ela escondida, fora do ecrã ou
+longe, e vai sempre para onde ela está; só o ataque depende de a ver. O salto dele vai até à altura
+do salto dela (Jump Height de 240 px; medido: sobe um degrau de 224 px e não um de 280 px), e o Max
+Drop de 1536 px cobre a descida mais funda do caminho de fuga, a chaminé atrás do portão 3 (1488 px),
+com um tile de folga (medido: desce 700 px de uma beira em campo aberto). A fuga pensada é esse
+caminho: a personagem encontra-o no salão do fundo, volta para oeste, sobe a coluna até ao portão 3,
+que o anel dele abriu, segue o corredor e cai pela chaminé no salão, com ele atrás, até à saída. Para
+que ele a possa seguir, o fundo oeste do salão sobe em quatro degraus de 192, 192, 144 e 96 px (antes,
+dois de 384 e 240 px), as plataformas da coluna deixaram de cair e a chaminé passou de 3 para 4 tiles
+de largura (192 px, para um corpo de 168 px). O `test_level1_escape_loop.gd` verifica estas medidas
+na cena e que o Max Drop chega ao fundo da chaminé. O cão ainda não faz este caminho, e é o passo
+seguinte da #271: vai direito à personagem, pelo que não segue uma subida em ziguezague, e a descida
+dele é um salto em arco, que numa chaminé ou num poço estreito bate na parede do outro lado. Nada
+obriga ainda a este caminho: o chão do salão continua livre até à saída, e saltar por cima do cão
+custa uma mordida. Antes era oito vezes maior (896 × 448 px) e tapava o salão. Os
+valores dos cães medem a distância à personagem a partir do meio do
+corpo, o que num corpo maior deixa os ataques curtos: a 1,5 vezes, encosta-se a ela a 108 px, e a
+mordida do cão normal só chega a 100. Tem por isso valores próprios
+(`scenes/characters/demon/biggest_demon_stats.tres`), os do cão normal com cada distância à
+personagem medida a partir da cara, 28 px mais longe do meio, arredondados à dezena: vê-a até 1130 px, perde-a a 1630 px,
+morde a 130 px, salta a 390 px e recua para 160 px; a variação da matilha (Pack Variation) desce para
+0,08, para que o recuo varie os mesmos 13 px que no cão normal. A área da mordida nas costas tem as
+medidas dele (168 × 72 px). O `test_biggest_dog.gd` falha se os valores dele diferirem dos do cão
+normal em algo além destas distâncias, da perseguição sem fim, do salto e da descida, ou se estas
+distâncias deixarem de ser as do cão medidas a partir da cara, a visão incluída; falha também se não
+notar, morder ou perseguir a personagem como descrito, se as costas dele não morderem ou se a atacar
+escondida atrás de uma parede.
 
 ### Linha de vista
 
@@ -786,6 +825,20 @@ deslocadas por parte de um tile, e o texto põe-nas nos tiles mais próximos. O 
 pela verificação em papel, que, para essas faixas, conta como pico cada tile em que tocam, e a personagem real
 percorre-o. Duas zonas de câmara passaram a mostrar menos por baixo, para não deixarem ver o nível de baixo entre as
 plataformas novas: a do salão desce 48 px em vez de 96, e a de cima do T não desce.
+
+Para a fuga ao maior cão (#271), o caminho de volta do salão do fundo até ao portão 3 passou a servir também ao cão,
+que tem de o seguir. A cena foi alterada com a opção `-- --reshape`, que agora troca também plataformas que desabam:
+68 tiles mudaram. As 8 plataformas que desabam da coluna, entre o salão e o portão 3, passaram a fixas (28 tiles), para
+que as que a personagem pisa ao subir continuem lá para o cão. A chaminé atrás do portão 3 passou de 3 para 4 tiles de
+largura (12 tiles), para caber o corpo do cão (168 px). Dois blocos de 4 tiles de largura (28 tiles) dividem o fundo
+oeste do salão em quatro degraus de 192, 192, 144 e 96 px, que a personagem alcança sempre sem parede e o cão salta;
+antes eram dois, de 384 e 240 px. O contorno de pedras (8 pedras trocadas por 19) e as rochas soltas (33 trocadas por
+71) foram refeitos à volta dos tiles alterados; uma pedra que o `--reshape` não reconheceu, e que ficou a flutuar
+dentro da chaminé alargada, foi retirada à mão. Uma das plataformas tinha sido deslocada 1 px no editor; o
+`--reshape` reconhece agora cada plataforma pelo tile em que está. O `test_level1_escape_loop.gd` verifica os
+degraus, as plataformas e a chaminé na cena. A verificação das zonas de câmara que mostram o nível de baixo, no
+`test_level1.gd`, passa a apontar também a zona da coluna: conta como rocha a plataforma fixa logo abaixo dela, e o
+espaço por baixo, que é o da sala do fundo, como nível de baixo.
 
 O caminho que este teste repete foi encontrado por uma verificação em papel, fora do repositório, que simula o
 movimento da personagem fotograma a fotograma. A primeira versão divergia do jogo: aplicava a gravidade no fotograma
@@ -1350,6 +1403,7 @@ godot --headless --fixed-fps 60 --path Projeto --script res://tests/test_big_dog
 godot --headless --fixed-fps 60 --path Projeto --script res://tests/test_biggest_dog.gd
 godot --headless --fixed-fps 60 --path Projeto --script res://tests/test_level1_phase3.gd
 godot --headless --fixed-fps 60 --path Projeto --script res://tests/test_level1_phase3_route.gd
+godot --headless --fixed-fps 60 --path Projeto --script res://tests/test_level1_escape_loop.gd
 godot --headless --fixed-fps 60 --path Projeto --script res://tests/test_settings.gd
 godot --headless --fixed-fps 60 --path Projeto --script res://tests/test_options.gd
 godot --headless --fixed-fps 60 --path Projeto --script res://tests/test_crucifix.gd
@@ -2105,13 +2159,16 @@ tem de ser chão plano. A caixa de colisão cobre o tronco (66 × 54 px), sem a 
   (ADR 0056). A mordida nas costas usa as mesmas peças. O `DemonBackBite`
   (`scenes/characters/demon/demon_back_bite.gd`) procura o corpo da personagem num espaço com a largura do cão e
   48 px de altura, por cima das costas, alto o bastante para a encontrar antes de ela aterrar, mesmo
-  a cair à velocidade máxima. Liga a sua `Hitbox` em cada passo em que ela aterra no cão, segundo a
-  colisão do último movimento dela, e por isso nunca morde quem só lhe toca de lado ou por baixo,
-  nem quem o atravessa. Se ela entrar nas costas a andar, de um chão à altura delas, é empurrada
-  para fora antes de ser encontrada: não é mordida, mas também não fica em cima. A primeira mordida
-  a acertar arruma as que outros cães tenham ligado para ela, e nenhuma outra se liga até ela sair
-  do chão. Assim, entre dois cães, só um morde, também quando ela, agarrada, cai através de um para
-  as costas do outro. Ao ligar a mordida, vê se ela cabe ao lado do cão, do lado para onde seria
+  a cair à velocidade máxima. Liga a sua `Hitbox` em cada passo em que ela está em cima do cão,
+  segundo a colisão do último movimento dela, desde que tenha passado Back Bite Interval desde a
+  última mordida nas costas que a acertou, de qualquer cão (#271). Guarda esse passo num registo
+  partilhado por todos os cães, pelo identificador da personagem, e por isso dois cães nunca a
+  mordem mais depressa do que um. Nunca morde quem só lhe toca de lado ou por baixo, nem quem o
+  atravessa. A primeira mordida a acertar arruma as que outros cães tenham ligado para ela, e assim,
+  entre dois cães, só um morde de cada vez. Enquanto a mordida está ligada, o cão está no grupo
+  `can_be_stood_on` do `KnockOff`, e a personagem não é empurrada para fora dele. Só a personagem
+  pede ao `KnockOff` que poupe esse grupo; os demónios só verificam a camada da personagem, que
+  nunca está no grupo. Ao ligar a mordida, vê se ela cabe ao lado do cão, do lado para onde seria
   atirada; se uma parede não deixar, a `Hitbox` atira-a para o outro lado (`knockback_side`). A
   `Hitbox` só entra na física enquanto está ligada, e num demónio sem a mordida o `DemonBackBite`
   fica todo fora da física. Um cão que ainda não a tinha visto e a agarra pelas costas fica com ela
@@ -2327,7 +2384,9 @@ tem de ser chão plano. A caixa de colisão cobre o tronco (66 × 54 px), sem a 
   mordida (ADR 0056). Quem está agarrado também não é empurrado: atravessa logo o corpo em que está
   de pé, e o seguinte, se estiver em cima de dois, para que nenhum agarrão a segure em cima de um
   cão; cai até ao chão e afunda-se lá (ADR 0056). Por isso o `KnockOff` atravessa vários corpos ao
-  mesmo tempo, cada um até as caixas se afastarem.
+  mesmo tempo, cada um até as caixas se afastarem. A personagem também não é empurrada de cima de
+  um cão que morde quem lhe está em cima: leva uma mordida a cada 0,4 s até sair a andar ou a
+  saltar, e já não desliza pelas costas da matilha (#271).
 
 Antes de decidir se a perseguição precisava de ser otimizada, fixaram-se dois limites para 50
 demónios a perseguir ao mesmo tempo, muitos mais do que um ecrã terá: um limite para a média por
@@ -2546,6 +2605,11 @@ a mordida não paga nada. A primeira versão, com duas áreas em todos os demón
 também a esses. Ficou de lado procurar a personagem pela área de visão que o cão já tem: poupava a
 área, mas obrigava a uma visão maior do que o cão e a refazer os testes.
 
+A mordida contínua nas costas (#271; 2026-11-19) não mudou o custo de forma mensurável. Em três
+execuções alternadas com a versão anterior, as medianas das dez partes da medida variaram entre
+−11 % e +26 %, e as execuções da mesma versão já diferem até 34 % entre si. O custo novo só existe
+com a personagem por cima de um cão, e a medida nunca a põe lá.
+
 O `test_demon.gd` verifica, com a personagem e o crucifixo verdadeiros, a visão (a distância e as
 paredes), a perseguição e a desistência, a paragem nas bordas e nos degraus, o aviso e o seu tempo,
 a altura, a distância e a direção do salto, também num salto mais rápido e num de metade da
@@ -2636,9 +2700,13 @@ descolar e aterrar. O `test_demon_path.gd` (6 casos) verifica a pilha do caminho
 `test_stacked_bodies.gd` (10 casos) verifica que nem a personagem nem um demónio ficam um em cima
 do outro: saem para o lado, nunca para cima, também num buraco de um corpo, num canto, durante um
 agarrão e com o demónio a andar, e com os corpos sobrepostos nenhum ataque acerta. O
-`test_dog_back_bite.gd` (21 casos) verifica a mordida nas costas dos cães: uma por aterragem, com o
-SP e o arremesso certos, também entre dois cães e na borda das costas, até 1 px, de seis alturas, e
-outra a cada aterragem no mesmo cão; a matilha que deixa de a levar por cima; nada de lado, a
+`test_dog_back_bite.gd` (23 casos) verifica a mordida nas costas dos cães: logo ao aterrar, com o
+SP certo, e outra a cada Back Bite Interval enquanto ela fica, nem antes nem depois, também de outro
+cão e sem empurrão; com um intervalo abaixo de 0,34 s nos Stats, as mordidas vêm a cada 0,34 s,
+nunca mais de três por segundo; subir para as costas a andar, de um chão à altura delas, também
+morde; a matilha que não a leva por cima, nem pelo empurrão nem pela mordida; as duas pontas
+das costas, até 1 px; com um arremesso ao longo do chão, o arremesso certo, também entre dois cães
+e na borda das costas, de seis alturas, e outra mordida a cada aterragem no mesmo cão; nada de lado, a
 atravessar nem numa plataforma logo acima de um cão; o agarrão com o SP baixo, que a faz cair
 através do cão, também em cima de dois cães, onde só um a morde e a segura, e a fuga; o buraco
 fundo, onde as mordidas acabam num agarrão; o cão junto a uma parede, que a atira para o lado

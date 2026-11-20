@@ -234,6 +234,12 @@ func is_knocked_back() -> bool:
 	return _knockback_frames_left > 0
 
 
+## True while a shove carries him off a body he can't stand on (ADR 0022), as of his last physics
+## frame.
+func is_shoved_off() -> bool:
+	return _knock_off.is_shoving()
+
+
 ## A demon's grab (ADR 0021): from the next physics frame he is GRABBED until release(). He stops
 ## at once and a knockback under way ends; in that state he can't run or jump, in the air he rises
 ## no more and comes down straight, no faster than Grabbed Fall Speed, against a wall too, and nothing shoves
@@ -363,9 +369,11 @@ func _update_facing() -> void:
 ## says: along its top at Knock Off Speed, as a knockback that lasts until he lands on something
 ## else. Landing is not the only way onto one: a shove that is stopped, or a demon that gets under
 ## him, leaves him there too (ADR 0022). Held still, he is not shoved: he falls through it (ADR
-## 0056).
+## 0056). On a demon in KnockOff's Stand On Group, as a dog whose back bites, he is not shoved
+## either: its bites keep at him until he walks or jumps off (#271).
 func _shove_off_what_cannot_be_stood_on() -> void:
-	var direction: float = _knock_off.update(knock_off_layers, _held_still or _grabbed)
+	var direction: float = _knock_off.update(knock_off_layers, _held_still or _grabbed,
+			KnockOff.STAND_ON_GROUP)
 	if direction == 0.0:
 		return
 	velocity = Vector2(direction * stats.knock_off_speed, 0.0)

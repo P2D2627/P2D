@@ -803,16 +803,23 @@ func has_target() -> bool:
 ## goes to look for him where it last saw him (ADR 0035). With out_of_reach, as with him out of its
 ## reach, he has to be hidden for Out Of Reach Wait instead, since he is up or down where it saw him
 ## go and a ledge's corner hides him on and off; while it sees him, it never gives up (ADR 0044).
+## With Never Gives Up, none of these stops it, only the man gone from the scene does; it still
+## keeps track of whether it sees him, so it attacks him only while it does (#271).
 func keeps_after_target(out_of_reach: bool = false) -> bool:
+	if not _target.has_man():
+		_stop_chasing()
+		return false
 	var man: Node2D = _target.get_man()
-	if not _target.has_man() or not may_keep_on_from_here() \
-			or global_position.distance_to(man.global_position) > stats.lose_distance:
+	if not stats.never_gives_up and (not may_keep_on_from_here()
+			or global_position.distance_to(man.global_position) > stats.lose_distance):
 		_stop_chasing()
 		return false
 	if _senses.can_see(man):
 		_target.saw_him(Engine.get_physics_frames())
 	else:
 		_target.missed_him()
+	if stats.never_gives_up:
+		return true
 	var blind_frames: int = stats.get_out_of_reach_frames() if out_of_reach \
 			else stats.get_give_up_frames()
 	if _target.get_unseen_frames() >= blind_frames:

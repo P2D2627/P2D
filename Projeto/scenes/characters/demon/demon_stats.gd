@@ -9,6 +9,10 @@ extends Resource
 ## off, at once, also while the game runs and they are changed in the Remote tab; the others are
 ## read each time they are used.
 
+## The shortest Back Bite Interval, in seconds, whatever the field says: the bites on a back flash
+## fewer than three times a second, the limit for flashes in the WCAG (2.3.1).
+const MIN_BACK_BITE_INTERVAL: float = 0.34
+
 @export_group("Senses")
 ## How near, in px, the man has to come for the demon to see him, with no wall in between.
 @export_range(0.0, 2000.0, 10.0, "suffix:px") var sight_distance: float = 480.0:
@@ -21,6 +25,12 @@ extends Resource
 ## Seconds the demon keeps chasing a man it cannot see, behind a wall, before it gives up, or with
 ## Search Time goes to look for him where it last saw him.
 @export_range(0.0, 10.0, 0.1, "suffix:s") var give_up_time: float = 1.5
+## Whether the demon, once it chases the man, never gives up on him (#271): it keeps after him
+## wherever he goes, seen or hidden, on the screen or off it, however far, as Lose Distance, Give Up
+## Time, Out Of Reach Wait and Chases Only On Screen no longer end the chase, which only the man
+## gone from the scene ends. Chases Only On Screen still holds for starting it, and it attacks him
+## only while it sees him. The level starts over when he dies, so it never chases him back to a save.
+@export var never_gives_up: bool = false
 ## Seconds the demon stands, turned to the man, once it notices him and before it chases him: the
 ## alert (ADR 0035), which DemonMark shows with a "!" and DemonSounds with a beep (ADR 0040). At 0
 ## it chases him at once, with no alert, so with no mark and no beep either.
@@ -89,7 +99,7 @@ extends Resource
 ## of its reach below it (ADR 0042), onto the floor its leap lands on. It leaps as it lunges, pulled
 ## down by its lunge's gravity, so with no lunge in Attacks it never drops. At 0 it never drops, and
 ## stops at the end of its floor.
-@export_range(0.0, 960.0, 1.0, "suffix:px") var max_drop: float = 0.0
+@export_range(0.0, 960.0, 1.0, "or_greater", "suffix:px") var max_drop: float = 0.0
 
 @export_group("Attacks")
 ## The demon's attacks, in order: of those it can start at the man, it starts the first in the
@@ -103,20 +113,30 @@ extends Resource
 @export var attacks_invulnerable_man: bool = false
 
 @export_group("Back Bite")
-## Whether the demon bites whoever lands on it, as in an attack, so the man can't ride a pack
-## (ADR 0056): once on each landing, also on two demons at once, and never from the side nor from
-## inside it. The bite takes the SP of its first bite in Attacks and throws him further than a bite
-## does, through any blink of his, whatever Attacks Invulnerable Man says; with his SP low, it
-## grabs him, as any hit, and he falls through the demon to sink on the floor below it. Off, he is
-## only shoved off its top (ADR 0022).
+## Whether the demon bites whoever stands on it, as in an attack, so the man can't ride a pack
+## (ADR 0056): as he lands, and again every Back Bite Interval he stays on it or on another such
+## demon, one bite at a time also on two demons at once, and never from the side nor from inside
+## it. Nothing shoves him off its top (#271). The bite takes the SP of its first bite in Attacks
+## and hops him in place by default (Back Bite Knockback Distance and Height), through any blink
+## of his, whatever Attacks Invulnerable Man says; with his SP low, it grabs him, as any hit, and
+## he falls through the demon to sink on the floor below it. Off, he is only shoved off its top
+## (ADR 0022).
 @export var bites_who_lands_on_it: bool = false:
 	set(value):
 		bites_who_lands_on_it = value
 		emit_changed()
 ## How far, in px along the floor away from the demon, and how high the bite on its back throws the
-## man: more than a bite's, so he comes off the demon and, mostly, off its pack.
-@export_range(0.0, 1000.0, 10.0, "suffix:px") var back_bite_knockback_distance: float = 300.0
-@export_range(1.0, 400.0, 1.0, "suffix:px") var back_bite_knockback_height: float = 100.0
+## man. By default it only hops him in place, a little up and straight down onto the same back
+## (#271): it never carries him, so a pack bites him again and again until he walks or jumps off,
+## or his SP run low and it grabs him. With the bites again and again, the throw away from the
+## demon it once had carried him clear of a pack on open floor, where the pack then took almost
+## twice as long to bring him low, and from back to back across a packed corridor.
+@export_range(0.0, 1000.0, 10.0, "suffix:px") var back_bite_knockback_distance: float = 0.0
+@export_range(1.0, 400.0, 1.0, "suffix:px") var back_bite_knockback_height: float = 24.0
+## Seconds between two bites on a back, of this demon or any other, while the man stays on backs
+## (#271): long enough that he sees he must get off. Under Min Back Bite Interval it counts as
+## that, so the flash of the bites stays under three a second (WCAG 2.3.1).
+@export_range(MIN_BACK_BITE_INTERVAL, 2.0, 0.01, "suffix:s") var back_bite_interval: float = 0.4
 
 @export_group("Retreat")
 ## How far from the man, in px, the demon backs off after each attack, landed or not, before it
@@ -273,6 +293,12 @@ func get_reach_height() -> float:
 	for attack: DemonAttack in attacks:
 		reach = maxf(reach, attack.max_height_difference)
 	return reach
+
+
+## back_bite_interval, never under Min Back Bite Interval, in whole physics frames, rounded to the
+## nearest one.
+func get_back_bite_interval_frames() -> int:
+	return _to_frames(maxf(back_bite_interval, MIN_BACK_BITE_INTERVAL))
 
 
 ## SP the bite on its back takes: the damage of the first bite in Attacks, so it bites as hard as it
