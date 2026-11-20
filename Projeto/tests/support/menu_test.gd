@@ -16,6 +16,11 @@ const UI_THEME_PATH: String = "res://themes/ui_theme.tres"
 const SETTINGS_TEST_PATH: String = "user://test_menus.cfg"
 ## Process frames after a key or button goes down, and again after it comes up.
 const TAP_FRAMES: int = 2
+## Real time, in ms, for the audio server to free the sounds of the main scenes taken out, as the
+## menus' music, before the test quits; the frames after it let the engine do the freeing. Without
+## it, Godot reports them as leaked at exit.
+const AUDIO_SETTLE_MS: int = 100
+const AUDIO_SETTLE_FRAMES: int = 2
 
 ## The autoload Settings, once a main scene has been made; null before.
 var settings: GameSettings
@@ -33,8 +38,11 @@ func _initialize() -> void:
 
 
 ## Before the verdict: Quit was never pressed, and the player's settings file is as it was. The test
-## file goes away.
+## file goes away, and the audio server is given the time to free the sounds of the main scenes.
 func finish(results: Array[bool]) -> void:
+	OS.delay_msec(AUDIO_SETTLE_MS)
+	for _frame: int in AUDIO_SETTLE_FRAMES:
+		await process_frame
 	results.append(report(_quit_presses == 0, "Quit pressed during the test: %d times"
 			% _quit_presses))
 	if _player_file_before.is_empty():
