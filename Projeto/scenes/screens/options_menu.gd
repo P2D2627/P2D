@@ -62,6 +62,9 @@ const DESCRIPTION_LINES: int = 2
 ## The theme's looks for a tab and for the selected one.
 const TAB: StringName = &"OptionsTab"
 const SELECTED_TAB: StringName = &"OptionsTabSelected"
+## The pad's shoulder buttons step through the tabs, L1 back and R1 on.
+const PREVIOUS_TAB_ACTION: StringName = &"menu_previous_tab"
+const NEXT_TAB_ACTION: StringName = &"menu_next_tab"
 ## The theme type whose panel style is the band behind the selection.
 const HIGHLIGHT: StringName = &"OptionsRowHighlight"
 ## What each volume does, by bus; a bus missing here shows no line.
@@ -220,12 +223,29 @@ func _draw() -> void:
 
 
 ## Esc or B close the screen from any tab while it shows, and the event stops here: in the pause,
-## that Esc goes back to the pause instead of resuming the game. An action waiting for a key in the
-## Controls tab takes its own Esc first.
+## that Esc goes back to the pause instead of resuming the game. L1 and R1 go to the tab before or
+## after, from anywhere on the screen, round from the last to the first, with the focus on that tab.
+## An action waiting for a key in the Controls tab takes its own Esc, L1 and R1 first.
 func _unhandled_input(event: InputEvent) -> void:
-	if is_visible_in_tree() and event.is_action_pressed(&"ui_cancel"):
+	if not is_visible_in_tree():
+		return
+	if event.is_action_pressed(&"ui_cancel"):
 		_close()
 		get_viewport().set_input_as_handled()
+	elif event.is_action_pressed(PREVIOUS_TAB_ACTION):
+		_step_tab(-1)
+		get_viewport().set_input_as_handled()
+	elif event.is_action_pressed(NEXT_TAB_ACTION):
+		_step_tab(1)
+		get_viewport().set_input_as_handled()
+
+
+## Selects the tab steps away from the selected one, round the ends, and puts the focus on it.
+func _step_tab(steps: int) -> void:
+	var count: int = _tabs.get_child_count()
+	var tab: Button = _tabs.get_child(posmod(_selected_tab.get_index() + steps, count)) as Button
+	_select_tab(tab)
+	tab.grab_focus()
 
 
 ## Shows the screen with what Settings holds, on Audio with its tab selected. The pages are measured

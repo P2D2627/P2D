@@ -15,7 +15,7 @@
 [ext_resource type="Texture2D" path="res://assets/sprites/hud/power_arrow.png" id="6_arrow"]
 [ext_resource type="Theme" path="res://themes/ui_theme.tres" id="7_theme"]
 
-[node name="SoulHud" type="CanvasLayer"]
+[node name="SoulHud" type="CanvasLayer" groups=["hidden_during_dialogue"]]
 process_mode = 3
 layer = 5
 script = ExtResource("1_script")

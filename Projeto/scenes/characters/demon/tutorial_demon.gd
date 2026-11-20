@@ -60,8 +60,15 @@ const MET_EVENT: StringName = &"velvet_met"
 ## Ground her feet cover from one frame of her walk to the next: 22 px of the art at the sprite's
 ## scale of 0.5. Smaller makes her feet slide forward; bigger, back.
 @export_range(1.0, 40.0, 0.5, "suffix:px") var stride_per_frame: float = 11.0
-## The frame of her walk she stands on: the one with four feet on the ground.
+## The frame of her walk each walk starts from: the one with four feet on the ground.
 @export_range(0, 7) var stand_frame: int = 4
+## Her walk, a row of Walk Frames, the same as the other dogs'.
+@export var walk_texture: Texture2D
+@export_range(1, 16) var walk_frames: int = 8
+## What she plays while she stands, a row of Idle Frames, the same as the other dogs'.
+@export var idle_texture: Texture2D
+@export_range(1, 16) var idle_frames: int = 4
+@export_range(1.0, 30.0, 0.5, "suffix:fps") var idle_fps: float = 4.0
 
 var _state: State = State.WAITING
 ## True while the man is inside her Talk Area.
@@ -78,6 +85,8 @@ var _heading: float = 1.0
 var _rest_left: float = 0.0
 ## Ground walked since she last stood, which picks her walk frame.
 var _walked: float = 0.0
+## Seconds she has stood, which picks her idle frame.
+var _stood: float = 0.0
 var _walking: bool = false
 
 @onready var _talk_area: Area2D = %TalkArea
@@ -111,11 +120,25 @@ func _physics_process(delta: float) -> void:
 		_stroll(delta)
 
 
-func _process(_delta: float) -> void:
+func _process(delta: float) -> void:
 	if _walking:
-		_sprite.frame = int(_walked / stride_per_frame) % _sprite.hframes
+		_show_sheet(walk_texture, walk_frames)
+		_stood = 0.0
+		_sprite.frame = int(_walked / stride_per_frame) % walk_frames
+	elif idle_texture != null:
+		_show_sheet(idle_texture, idle_frames)
+		_stood += delta
+		_sprite.frame = int(_stood * idle_fps) % idle_frames
 	else:
+		_show_sheet(walk_texture, walk_frames)
 		_sprite.frame = stand_frame
+
+
+## Puts the sheet texture, frames across, on her sprite, if it is not there already.
+func _show_sheet(texture: Texture2D, frames: int) -> void:
+	if texture != null and _sprite.texture != texture:
+		_sprite.texture = texture
+		_sprite.hframes = frames
 
 
 func get_state() -> State:

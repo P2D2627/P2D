@@ -3,13 +3,16 @@
 # presented all the same, and the lines that went by count in RunStats. At a choice, skipping does
 # nothing. Holding Jump for Skip Hold Time skips once, a short tap does not, and on waking, which
 # has no answers, a skip runs to the end and the balloon goes. The portrait is a stand-in with the
-# speaker's initial while no picture is given.
+# speaker's initial while no picture is given, as for Crumb; Asmodeus has hers, on the right, and
+# its top drawn over the frame too.
 # Run from the repository root; the exit code is 0 on pass and 1 on fail:
 # godot --headless --fixed-fps 60 --path Projeto --script res://tests/test_dialogue_skip.gd
 extends "res://tests/support/player_test.gd"
 
 const BALLOON_SCENE: PackedScene = preload("res://scenes/screens/dialogue_balloon.tscn")
 const LUST: DialogueResource = preload("res://dialogue/lust.dialogue")
+## Crumb, who has no picture yet, opens its crumb cue.
+const GLUTTONY: DialogueResource = preload("res://dialogue/gluttony.dialogue")
 const SHORTCUT: StringName = &"lust_shortcut"
 ## Lines with no choice before the offer's four answers.
 const OFFER_CUE: StringName = &"asmodeus_second_offer"
@@ -35,6 +38,7 @@ func _initialize() -> void:
 	results.append(await _a_hold_skips_and_a_tap_does_not())
 	results.append(await _with_no_answers_a_skip_ends_the_talk())
 	results.append(await _the_stand_in_portrait_shows_the_initial())
+	results.append(await _a_demon_with_a_picture_shows_it_on_the_right())
 	finish(results)
 
 
@@ -109,26 +113,40 @@ func _with_no_answers_a_skip_ends_the_talk() -> bool:
 
 
 func _the_stand_in_portrait_shows_the_initial() -> bool:
-	var balloon: DialogueBalloon = await _open(&"asmodeus_offer")
+	var balloon: DialogueBalloon = await _open(&"crumb", GLUTTONY)
 	var stand_in: ColorRect = balloon.get_node(^"%PortraitStandIn") as ColorRect
 	var initial: Label = balloon.get_node(^"%PortraitInitial") as Label
 	var picture: TextureRect = balloon.get_node(^"%Portrait") as TextureRect
-	var passed: bool = (balloon.dialogue_line.character == "Asmodeus" and stand_in.visible
-			and initial.text == "A" and not picture.visible
-			and stand_in.color == balloon.portrait_colors["Asmodeus"])
-	var what: String = ("Asmodeus's stand-in portrait: shown %s, initial %s, no picture %s"
+	var passed: bool = (balloon.dialogue_line.character == "Crumb" and stand_in.visible
+			and initial.text == "C" and not picture.visible
+			and stand_in.color == DialogueBalloon.DEFAULT_PORTRAIT_COLOR)
+	var what: String = ("Crumb's stand-in portrait: shown %s, initial %s, no picture %s"
 			% [stand_in.visible, initial.text, not picture.visible])
+	await _close(balloon)
+	return report(passed, what)
+
+
+func _a_demon_with_a_picture_shows_it_on_the_right() -> bool:
+	var balloon: DialogueBalloon = await _open(&"asmodeus_offer")
+	var stand_in: ColorRect = balloon.get_node(^"%PortraitStandIn") as ColorRect
+	var picture: TextureRect = balloon.get_node(^"%Portrait") as TextureRect
+	var pop: TextureRect = balloon.get_node(^"%PortraitPop") as TextureRect
+	var passed: bool = (balloon.dialogue_line.character == "Asmodeus" and picture.visible
+			and pop.visible and pop.texture == picture.texture and not stand_in.visible
+			and not balloon.is_on_left())
+	var what: String = ("Asmodeus's picture: shown %s, over the frame too %s, no stand-in %s, on the "
+			+ "right %s") % [picture.visible, pop.visible, not stand_in.visible, not balloon.is_on_left()]
 	await _close(balloon)
 	_offers.clear()
 	return report(passed, what)
 
 
-func _open(cue: StringName) -> DialogueBalloon:
+func _open(cue: StringName, resource: DialogueResource = LUST) -> DialogueBalloon:
 	var balloon: DialogueBalloon = BALLOON_SCENE.instantiate()
 	balloon.next_action = HOLD_ACTION
 	balloon.skip_action = HOLD_ACTION
 	root.add_child(balloon)
-	balloon.start(LUST, String(cue))
+	balloon.start(resource, String(cue))
 	await wait_until(func() -> bool: return balloon.dialogue_line != null, LINE_FRAMES)
 	return balloon
 

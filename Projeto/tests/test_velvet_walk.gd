@@ -1,9 +1,9 @@
 # Checks Velvet's stroll, in the tutorial of level 1. With the man away, she walks to each end of
-# her Walk Reach and back, never past it, turned the way she walks and on her standing frame while
-# she waits at an end; her key goes with her body and her Talk Area stays where she stands in the
-# level. While the man is in her Talk Area she stands still, turned to his side, also when he
-# crosses to her other side; while she talks she stands still even with him away. Once he goes, she
-# walks again.
+# her Walk Reach and back, never past it, turned the way she walks, playing the dogs' idle while she
+# waits at an end and starting each walk on her standing frame; her key goes with her body and her
+# Talk Area stays where she stands in the level. While the man is in her Talk Area she stands still,
+# playing her idle, turned to his side, also when he crosses to her other side; while she talks she
+# stands still even with him away. Once he goes, she walks again.
 # Run from the repository root; the exit code is 0 on pass and 1 on fail:
 # godot --headless --fixed-fps 60 --path Projeto --script res://tests/test_velvet_walk.gd
 extends "res://tests/support/player_test.gd"
@@ -103,6 +103,7 @@ func _she_strolls_both_ways_within_her_reach() -> bool:
 	var frames_seen: Dictionary[int, bool] = {}
 	var last: float = body.global_position.x
 	var was_still: bool = true
+	var last_sheet: Texture2D = sprite.texture
 	for i: int in STROLL_FRAMES:
 		await physics_frame
 		var x: float = body.global_position.x
@@ -110,14 +111,17 @@ func _she_strolls_both_ways_within_her_reach() -> bool:
 		highest = maxf(highest, x - home)
 		if x != last and signf(x - last) != _facing(velvet):
 			turned_wrong += 1
-		if x == last and sprite.frame != velvet.stand_frame:
+		# Her sprite changes in the frame's process, after this physics frame: one still frame late.
+		if x == last and was_still and sprite.texture != velvet.idle_texture:
 			off_frame += 1
-		if x != last and was_still and sprite.frame != velvet.stand_frame:
+		if (sprite.texture == velvet.walk_texture and last_sheet == velvet.idle_texture
+				and sprite.frame != velvet.stand_frame):
 			jumped_in += 1
 		if not is_equal_approx(key.position.x, body.position.x):
 			key_apart += 1
-		if x != last:
+		if x != last and sprite.texture == velvet.walk_texture:
 			frames_seen[sprite.frame] = true
+		last_sheet = sprite.texture
 		rest = rest + 1 if x == last and absf(x - home) >= velvet.walk_reach - AT_END else 0
 		longest_rest_at_end = maxi(longest_rest_at_end, rest)
 		was_still = x == last
@@ -126,7 +130,7 @@ func _she_strolls_both_ways_within_her_reach() -> bool:
 	var both_ends: bool = highest >= reach - AT_END and lowest <= -reach + AT_END
 	var within: bool = highest <= reach + AT_END and lowest >= -reach - AT_END
 	var area_put: bool = is_equal_approx(area.global_position.x, area_x)
-	var walk_frames: int = sprite.hframes
+	var walk_frames: int = velvet.walk_frames
 	var steps: bool = frames_seen.size() == walk_frames
 	# Walk Pause counted down in steps of 1/60 s may end a frame early.
 	var rests: bool = longest_rest_at_end >= roundi(velvet.walk_pause * 60.0) - 1
@@ -135,7 +139,7 @@ func _she_strolls_both_ways_within_her_reach() -> bool:
 			and jumped_in == 0 and key_apart == 0 and area_put and steps,
 			("Velvet strolls from %.1f to %.1f px of where she stands (reach %.0f): both ends %s, "
 			+ "within %s, rests %d frames at an end; %d frame(s) turned against her way, %d "
-			+ "standing off her standing frame, %d walks not starting on it, %d with her key apart; "
+			+ "standing still off her idle, %d walks not starting on her standing frame, %d with her key apart; "
 			+ "Talk Area in place %s; %d of %d walk frames shown")
 			% [lowest, highest, reach, both_ends, within, longest_rest_at_end, turned_wrong,
 			off_frame, jumped_in, key_apart, area_put, frames_seen.size(), walk_frames])
@@ -157,7 +161,7 @@ func _near_her_she_stands_turned_to_the_man() -> bool:
 	await wait_frames(NEAR_FRAMES)
 	var still_left: bool = absf(body.global_position.x - stopped_at) <= STILL
 	var turned_left: bool = _facing(velvet) < 0.0
-	var standing: bool = sprite.frame == velvet.stand_frame
+	var standing: bool = sprite.texture == velvet.idle_texture
 	_place_man(level, velvet, NEAR)
 	await wait_frames(NEAR_FRAMES)
 	var still_right: bool = absf(body.global_position.x - stopped_at) <= STILL
@@ -172,7 +176,7 @@ func _near_her_she_stands_turned_to_the_man() -> bool:
 	return report(walking_right and still_left and turned_left and standing and still_right
 			and turned_right and kept,
 			("Velvet with the man near: was walking right %s; with him on her left, still %s, "
-			+ "turned to him %s, on her standing frame %s; with him then on her right, still %s, "
+			+ "turned to him %s, playing her idle %s; with him then on her right, still %s, "
 			+ "turned to him %s; with him right over her, still turned and shown %s")
 			% [walking_right, still_left, turned_left, standing, still_right, turned_right, kept])
 
@@ -189,7 +193,8 @@ func _once_he_goes_she_walks_again() -> bool:
 	var walks: bool = await wait_until(
 			func() -> bool: return absf(body.global_position.x - stopped_at) > 1.0)
 	var steps: bool = await wait_until(
-			func() -> bool: return sprite.frame != velvet.stand_frame)
+			func() -> bool:
+				return sprite.texture == velvet.walk_texture and sprite.frame != velvet.stand_frame)
 	await _remove_level(level)
 	return report(walks and steps,
 			"Velvet once the man goes: walks again %s, steps through her walk frames %s"
