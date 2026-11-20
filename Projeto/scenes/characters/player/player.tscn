@@ -22,29 +22,45 @@
 [ext_resource type="AudioStream" uid="uid://bis457scowalr" path="res://assets/audio/sfx/hard_land_2.wav" id="12_hard_land_2"]
 [ext_resource type="Script" uid="uid://cluvnfuwg430j" path="res://scenes/characters/components/sinking_drawing.gd" id="13_sinking_drawing"]
 [ext_resource type="Script" uid="uid://cnf6ppd87trgl" path="res://scenes/characters/player/player_animation.gd" id="14_animation"]
-[ext_resource type="Texture2D" path="res://assets/sprites/player/main_character_jump_384.png" id="15_jump"]
-[ext_resource type="Texture2D" path="res://assets/sprites/player/main_character_escape_384.png" id="16_escape"]
-[ext_resource type="Script" path="res://scenes/others/sight/sight_eyes.gd" id="17_sight_eyes"]
-[ext_resource type="Script" path="res://scenes/characters/player/bramble_death.gd" id="19_bramble_death"]
+[ext_resource type="Texture2D" uid="uid://c573y7b10wtvu" path="res://assets/sprites/player/main_character_jump_384.png" id="15_jump"]
+[ext_resource type="Texture2D" uid="uid://cyciby16gaebl" path="res://assets/sprites/player/main_character_escape_384.png" id="16_escape"]
+[ext_resource type="Script" uid="uid://by3s6oekf5rek" path="res://scenes/others/sight/sight_eyes.gd" id="17_sight_eyes"]
+[ext_resource type="Script" uid="uid://byuv8bh64n56x" path="res://scenes/characters/player/snag.gd" id="18_snag"]
+[ext_resource type="Script" uid="uid://dwposp4tmijt5" path="res://scenes/characters/player/bramble_death.gd" id="19_bramble_death"]
 [ext_resource type="Resource" path="res://scenes/characters/player/bramble_death_stats.tres" id="20_bramble_death_stats"]
-[ext_resource type="Script" path="res://scenes/characters/player/snag.gd" id="18_snag"]
-[ext_resource type="AudioStream" path="res://assets/audio/sfx/low_sp.ogg" id="24_low_sp"]
-[ext_resource type="Script" path="res://scenes/characters/player/footsteps.gd" id="25_footsteps"]
-[ext_resource type="AudioStream" path="res://assets/audio/sfx/footstep_1.wav" id="26_step_1"]
-[ext_resource type="AudioStream" path="res://assets/audio/sfx/footstep_2.wav" id="27_step_2"]
-[ext_resource type="AudioStream" path="res://assets/audio/sfx/footstep_3.wav" id="28_step_3"]
-[ext_resource type="AudioStream" path="res://assets/audio/sfx/footstep_4.wav" id="29_step_4"]
-[ext_resource type="AudioStream" path="res://assets/audio/sfx/footstep_5.wav" id="30_step_5"]
-[ext_resource type="AudioStream" path="res://assets/audio/sfx/footstep_6.wav" id="31_step_6"]
-[ext_resource type="AudioStream" path="res://assets/audio/sfx/footstep_d_1.wav" id="32_step_d_1"]
-[ext_resource type="AudioStream" path="res://assets/audio/sfx/footstep_d_2.wav" id="33_step_d_2"]
-[ext_resource type="AudioStream" path="res://assets/audio/sfx/footstep_d_3.wav" id="34_step_d_3"]
-[ext_resource type="AudioStream" path="res://assets/audio/sfx/footstep_d_4.wav" id="35_step_d_4"]
-[ext_resource type="AudioStream" path="res://assets/audio/sfx/footstep_d_5.wav" id="36_step_d_5"]
-[ext_resource type="AudioStream" path="res://assets/audio/sfx/footstep_d_6.wav" id="37_step_d_6"]
+[ext_resource type="AudioStream" uid="uid://we8tge6m4yfc" path="res://assets/audio/sfx/low_sp.ogg" id="24_low_sp"]
+[ext_resource type="Script" uid="uid://q86mh16evwte" path="res://scenes/characters/player/footsteps.gd" id="25_footsteps"]
+[ext_resource type="AudioStream" uid="uid://cahpkkt8gw08n" path="res://assets/audio/sfx/footstep_1.wav" id="26_step_1"]
+[ext_resource type="AudioStream" uid="uid://smpg8iqsvp0d" path="res://assets/audio/sfx/footstep_2.wav" id="27_step_2"]
+[ext_resource type="AudioStream" uid="uid://cd2qn3av84vlo" path="res://assets/audio/sfx/footstep_3.wav" id="28_step_3"]
+[ext_resource type="AudioStream" uid="uid://br5xuksm4xx7t" path="res://assets/audio/sfx/footstep_4.wav" id="29_step_4"]
+[ext_resource type="AudioStream" uid="uid://btsytplin6nwo" path="res://assets/audio/sfx/footstep_5.wav" id="30_step_5"]
+[ext_resource type="AudioStream" uid="uid://cetbtmqhq36r8" path="res://assets/audio/sfx/footstep_6.wav" id="31_step_6"]
+[ext_resource type="AudioStream" uid="uid://du6jx81txlpui" path="res://assets/audio/sfx/footstep_d_1.wav" id="32_step_d_1"]
+[ext_resource type="AudioStream" uid="uid://bc31uuiredlfq" path="res://assets/audio/sfx/footstep_d_2.wav" id="33_step_d_2"]
+[ext_resource type="AudioStream" uid="uid://bxx8ncad6mfdt" path="res://assets/audio/sfx/footstep_d_3.wav" id="34_step_d_3"]
+[ext_resource type="AudioStream" uid="uid://dhjj60suxe3wx" path="res://assets/audio/sfx/footstep_d_4.wav" id="35_step_d_4"]
+[ext_resource type="AudioStream" uid="uid://bvys8jgo4savk" path="res://assets/audio/sfx/footstep_d_5.wav" id="36_step_d_5"]
+[ext_resource type="AudioStream" uid="uid://3cyxk2laasuc" path="res://assets/audio/sfx/footstep_d_6.wav" id="37_step_d_6"]
 
 [sub_resource type="RectangleShape2D" id="RectangleShape2D_player"]
 size = Vector2(48, 96)
+
+[sub_resource type="AtlasTexture" id="AtlasTexture_escape0"]
+atlas = ExtResource("16_escape")
+region = Rect2(0, 0, 384, 384)
+
+[sub_resource type="AtlasTexture" id="AtlasTexture_escape1"]
+atlas = ExtResource("16_escape")
+region = Rect2(384, 0, 384, 384)
+
+[sub_resource type="AtlasTexture" id="AtlasTexture_escape2"]
+atlas = ExtResource("16_escape")
+region = Rect2(768, 0, 384, 384)
+
+[sub_resource type="AtlasTexture" id="AtlasTexture_escape3"]
+atlas = ExtResource("16_escape")
+region = Rect2(1152, 0, 384, 384)
 
 [sub_resource type="AtlasTexture" id="AtlasTexture_g6k8r"]
 atlas = ExtResource("3_qjkh3")
@@ -61,6 +77,26 @@ region = Rect2(768, 0, 384, 384)
 [sub_resource type="AtlasTexture" id="AtlasTexture_hg6s5"]
 atlas = ExtResource("3_qjkh3")
 region = Rect2(1152, 0, 384, 384)
+
+[sub_resource type="AtlasTexture" id="AtlasTexture_jump0"]
+atlas = ExtResource("15_jump")
+region = Rect2(0, 0, 384, 384)
+
+[sub_resource type="AtlasTexture" id="AtlasTexture_jump1"]
+atlas = ExtResource("15_jump")
+region = Rect2(384, 0, 384, 384)
+
+[sub_resource type="AtlasTexture" id="AtlasTexture_jump2"]
+atlas = ExtResource("15_jump")
+region = Rect2(768, 0, 384, 384)
+
+[sub_resource type="AtlasTexture" id="AtlasTexture_jump3"]
+atlas = ExtResource("15_jump")
+region = Rect2(1152, 0, 384, 384)
+
+[sub_resource type="AtlasTexture" id="AtlasTexture_jump4"]
+atlas = ExtResource("15_jump")
+region = Rect2(1536, 0, 384, 384)
 
 [sub_resource type="AtlasTexture" id="AtlasTexture_knn7v"]
 atlas = ExtResource("4_g4c7l")
@@ -110,44 +146,25 @@ region = Rect2(3840, 0, 384, 384)
 atlas = ExtResource("4_g4c7l")
 region = Rect2(4224, 0, 384, 384)
 
-[sub_resource type="AtlasTexture" id="AtlasTexture_jump0"]
-atlas = ExtResource("15_jump")
-region = Rect2(0, 0, 384, 384)
-
-[sub_resource type="AtlasTexture" id="AtlasTexture_jump1"]
-atlas = ExtResource("15_jump")
-region = Rect2(384, 0, 384, 384)
-
-[sub_resource type="AtlasTexture" id="AtlasTexture_jump2"]
-atlas = ExtResource("15_jump")
-region = Rect2(768, 0, 384, 384)
-
-[sub_resource type="AtlasTexture" id="AtlasTexture_jump3"]
-atlas = ExtResource("15_jump")
-region = Rect2(1152, 0, 384, 384)
-
-[sub_resource type="AtlasTexture" id="AtlasTexture_jump4"]
-atlas = ExtResource("15_jump")
-region = Rect2(1536, 0, 384, 384)
-
-[sub_resource type="AtlasTexture" id="AtlasTexture_escape0"]
-atlas = ExtResource("16_escape")
-region = Rect2(0, 0, 384, 384)
-
-[sub_resource type="AtlasTexture" id="AtlasTexture_escape1"]
-atlas = ExtResource("16_escape")
-region = Rect2(384, 0, 384, 384)
-
-[sub_resource type="AtlasTexture" id="AtlasTexture_escape2"]
-atlas = ExtResource("16_escape")
-region = Rect2(768, 0, 384, 384)
-
-[sub_resource type="AtlasTexture" id="AtlasTexture_escape3"]
-atlas = ExtResource("16_escape")
-region = Rect2(1152, 0, 384, 384)
-
 [sub_resource type="SpriteFrames" id="SpriteFrames_g4v7s"]
 animations = [{
+"frames": [{
+"duration": 1.0,
+"texture": SubResource("AtlasTexture_escape0")
+}, {
+"duration": 1.0,
+"texture": SubResource("AtlasTexture_escape1")
+}, {
+"duration": 1.0,
+"texture": SubResource("AtlasTexture_escape2")
+}, {
+"duration": 1.0,
+"texture": SubResource("AtlasTexture_escape3")
+}],
+"loop": 1,
+"name": &"escape",
+"speed": 4.0
+}, {
 "frames": [{
 "duration": 1.0,
 "texture": SubResource("AtlasTexture_g6k8r")
@@ -167,20 +184,23 @@ animations = [{
 }, {
 "frames": [{
 "duration": 1.0,
-"texture": SubResource("AtlasTexture_escape0")
+"texture": SubResource("AtlasTexture_jump0")
 }, {
 "duration": 1.0,
-"texture": SubResource("AtlasTexture_escape1")
+"texture": SubResource("AtlasTexture_jump1")
 }, {
 "duration": 1.0,
-"texture": SubResource("AtlasTexture_escape2")
+"texture": SubResource("AtlasTexture_jump2")
 }, {
 "duration": 1.0,
-"texture": SubResource("AtlasTexture_escape3")
+"texture": SubResource("AtlasTexture_jump3")
+}, {
+"duration": 1.0,
+"texture": SubResource("AtlasTexture_jump4")
 }],
-"loop": true,
-"name": &"escape",
-"speed": 4.0
+"loop": 0,
+"name": &"jump",
+"speed": 5.0
 }, {
 "frames": [{
 "duration": 1.0,
@@ -222,26 +242,6 @@ animations = [{
 "loop": 1,
 "name": &"walk",
 "speed": 18.0
-}, {
-"frames": [{
-"duration": 1.0,
-"texture": SubResource("AtlasTexture_jump0")
-}, {
-"duration": 1.0,
-"texture": SubResource("AtlasTexture_jump1")
-}, {
-"duration": 1.0,
-"texture": SubResource("AtlasTexture_jump2")
-}, {
-"duration": 1.0,
-"texture": SubResource("AtlasTexture_jump3")
-}, {
-"duration": 1.0,
-"texture": SubResource("AtlasTexture_jump4")
-}],
-"loop": 0,
-"name": &"jump",
-"speed": 5.0
 }]
 
 [node name="Player" type="CharacterBody2D" unique_id=1108148048 node_paths=PackedStringArray("input", "soul_points")]
@@ -300,16 +300,17 @@ bus = &"SFX"
 [node name="Land" type="AudioStreamPlayer2D" parent="PlayerSounds" unique_id=1911883037]
 bus = &"SFX"
 
-[node name="LowSP" type="AudioStreamPlayer" parent="PlayerSounds"]
+[node name="LowSP" type="AudioStreamPlayer" parent="PlayerSounds" unique_id=1846389967]
 stream = ExtResource("24_low_sp")
 bus = &"Alerts"
 
-[node name="Footsteps" type="AudioStreamPlayer" parent="." node_paths=PackedStringArray("sprite")]
+[node name="Footsteps" type="AudioStreamPlayer" parent="." unique_id=775820297 node_paths=PackedStringArray("sprite")]
 editor_description = "The steps play on the walk's Step Frames (3 and 9: the widest strides). Double Layer switches to the _d files, with the heel. Volume dB: -17 puts the new files (their hit at about -20 dBFS) where the old steps sat in level 1, since this player has no distance or panning to lower them."
-volume_db = -17.0
+volume_db = -12.004
 bus = &"SFX"
 script = ExtResource("25_footsteps")
 sprite = NodePath("../Sprite")
+double_layer = true
 single_sounds = Array[AudioStream]([ExtResource("26_step_1"), ExtResource("27_step_2"), ExtResource("28_step_3"), ExtResource("29_step_4"), ExtResource("30_step_5"), ExtResource("31_step_6")])
 double_sounds = Array[AudioStream]([ExtResource("32_step_d_1"), ExtResource("33_step_d_2"), ExtResource("34_step_d_3"), ExtResource("35_step_d_4"), ExtResource("36_step_d_5"), ExtResource("37_step_d_6")])
 
@@ -347,25 +348,25 @@ stats = ExtResource("11_grab_stats")
 [node name="GrabPrompt" parent="." unique_id=1485858473 node_paths=PackedStringArray("grab_escape") instance=ExtResource("12_grab_prompt")]
 grab_escape = NodePath("../GrabEscape")
 
-[node name="Snag" type="Node" parent="." node_paths=PackedStringArray("player")]
+[node name="Snag" type="Node" parent="." unique_id=977425218 node_paths=PackedStringArray("player")]
 script = ExtResource("18_snag")
 player = NodePath("..")
 
-[node name="BrambleDeath" type="Node" parent="." node_paths=PackedStringArray("player", "sinking")]
+[node name="BrambleDeath" type="Node" parent="." unique_id=1897029864 node_paths=PackedStringArray("player", "sinking")]
 script = ExtResource("19_bramble_death")
 player = NodePath("..")
 sinking = NodePath("../SinkingDrawing")
 stats = ExtResource("20_bramble_death_stats")
 
-[node name="Eyes" type="Marker2D" parent="."]
+[node name="Eyes" type="Marker2D" parent="." unique_id=1192278499]
 position = Vector2(0, -84)
 script = ExtResource("17_sight_eyes")
 
+[connection signal="died" from="." to="Hurtbox" method="set_closed" binds= [true]]
 [connection signal="healed" from="Crucifix" to="SoulPoints" method="heal"]
 [connection signal="broke_free" from="GrabEscape" to="Crucifix" method="unblock" binds= [&"grab"]]
 [connection signal="died" from="GrabEscape" to="." method="_on_grab_escape_died"]
-[connection signal="died" from="." to="Hurtbox" method="set_closed" binds= [true]]
 [connection signal="grabbed" from="GrabEscape" to="Crucifix" method="block" binds= [&"grab"]]
 [connection signal="sink_changed" from="GrabEscape" to="SinkingDrawing" method="set_sink"]
-[connection signal="sink_changed" from="Snag" to="SinkingDrawing" method="set_sink"]
 [connection signal="struggled" from="GrabEscape" to="PlayerAnimation" method="struggle"]
+[connection signal="sink_changed" from="Snag" to="SinkingDrawing" method="set_sink"]
