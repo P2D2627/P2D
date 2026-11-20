@@ -62,6 +62,17 @@ signal land_played(hard: bool)
 ## off a wall always lands with a sound, however short the last drop.
 @export_range(0.0, 200.0, 1.0, "suffix:px") var min_land_height: float = 16.0
 
+@export_group("Low SP")
+## The man's Soul Points: the warning plays while they are low.
+@export var soul_points: SoulPoints
+## Plays over and over while the SP is at or below Low Threshold. A plain AudioStreamPlayer, not a
+## 2D one: the sound is the man's own, and its file is already mixed in stereo. Its volume is set
+## on it; a fade-out puts it back for the next time.
+@export var low_sp: AudioStreamPlayer
+## Seconds the warning takes to fade out when the SP goes back above Low Threshold. 0 stops it at
+## once. When the SP runs out it always stops at once.
+@export_range(0.0, 3.0, 0.05, "suffix:s") var low_sp_fade_out: float = 0.5
+
 ## The index in footstep_sounds of the last step played, -1 before the first.
 var _last_footstep_index: int = -1
 ## The highest y of the current fall: the player's y on the floor or on a wall, and the smallest y
@@ -71,6 +82,10 @@ var _fall_top_y: float = 0.0
 var _fall_from_wall: bool = false
 ## How hard the last landing heard was, from 0 to 1 (get_last_landing_share()).
 var _last_landing_share: float = 0.0
+## The volume set on Low SP, which each fade-out brings back once it ends.
+var _low_sp_volume_db: float = 0.0
+## The fade-out under way, null when none.
+var _low_sp_fade: Tween
 
 
 func _ready() -> void:
@@ -83,6 +98,14 @@ func _ready() -> void:
 	assert(land != null, "PlayerSounds: assign an AudioStreamPlayer2D to Land.")
 	assert(soft_land_sound != null, "PlayerSounds: assign the soft landing to Soft Land Sound.")
 	assert(not hard_land_sounds.is_empty(), "PlayerSounds: add the hard landings to Hard Land Sounds.")
+	assert(soul_points != null, "PlayerSounds: assign the SoulPoints to Soul Points.")
+	assert(low_sp != null, "PlayerSounds: assign an AudioStreamPlayer to Low SP.")
+	_low_sp_volume_db = low_sp.volume_db
+	# Like the wall slide, the file is not imported as a loop: it starts again each time it ends
+	# while the SP is still low. Its last 3.3 s are silence, the pause between heartbeats.
+	low_sp.finished.connect(_on_low_sp_finished)
+	soul_points.low_changed.connect(_on_low_changed)
+	soul_points.depleted.connect(_stop_low_sp)
 	# The file is not imported as a loop, so the sound starts again each time it ends while the
 	# slide goes on.
 	wall_slide.finished.connect(_on_wall_slide_finished)
@@ -171,6 +194,42 @@ func _is_sliding_down_a_wall() -> bool:
 func _on_wall_slide_finished() -> void:
 	if _is_sliding_down_a_wall():
 		_play(wall_slide)
+
+
+## True while the low SP warning is heard and not fading out.
+func is_low_sp_playing() -> bool:
+	return low_sp.playing and _low_sp_fade == null
+
+
+## Low: the warning starts from the beginning, also over a fade-out under way. Back above: it fades
+## out. When the SP runs out, depleted stops it instead, so the fade is not heard over the death.
+func _on_low_changed(is_low: bool) -> void:
+	if is_low:
+		if soul_points.is_depleted():
+			return
+		_stop_low_sp()
+		low_sp.play()
+	elif low_sp.playing and _low_sp_fade == null:
+		if low_sp_fade_out <= 0.0:
+			_stop_low_sp()
+			return
+		_low_sp_fade = create_tween()
+		_low_sp_fade.tween_property(low_sp, "volume_db", -80.0, low_sp_fade_out)
+		_low_sp_fade.finished.connect(_stop_low_sp)
+
+
+## Stops the warning and any fade-out, and puts its volume back for the next time.
+func _stop_low_sp() -> void:
+	if _low_sp_fade != null:
+		_low_sp_fade.kill()
+		_low_sp_fade = null
+	low_sp.stop()
+	low_sp.volume_db = _low_sp_volume_db
+
+
+func _on_low_sp_finished() -> void:
+	if soul_points.is_low() and not soul_points.is_depleted() and _low_sp_fade == null:
+		low_sp.play()
 
 
 func _on_jumped() -> void:

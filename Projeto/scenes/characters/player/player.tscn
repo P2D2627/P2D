@@ -34,6 +34,7 @@
 [ext_resource type="AudioStream" path="res://assets/audio/sfx/footstep_4.wav" id="21_footstep_4"]
 [ext_resource type="AudioStream" path="res://assets/audio/sfx/footstep_5.wav" id="22_footstep_5"]
 [ext_resource type="AudioStream" path="res://assets/audio/sfx/footstep_6.wav" id="23_footstep_6"]
+[ext_resource type="AudioStream" path="res://assets/audio/sfx/low_sp.ogg" id="24_low_sp"]
 
 [sub_resource type="RectangleShape2D" id="RectangleShape2D_player"]
 size = Vector2(48, 96)
@@ -270,7 +271,7 @@ script = ExtResource("3_input")
 script = ExtResource("5_soul_points")
 stats = ExtResource("6_soul_points_stats")
 
-[node name="PlayerSounds" type="Node2D" parent="." unique_id=1783119641 node_paths=PackedStringArray("player", "wall_slide", "footstep", "animation", "jump", "land")]
+[node name="PlayerSounds" type="Node2D" parent="." unique_id=1783119641 node_paths=PackedStringArray("player", "wall_slide", "footstep", "animation", "jump", "land", "soul_points", "low_sp")]
 script = ExtResource("4_sounds")
 player = NodePath("..")
 wall_slide = NodePath("WallSlide")
@@ -281,6 +282,8 @@ jump = NodePath("Jump")
 land = NodePath("Land")
 soft_land_sound = ExtResource("10_soft_land")
 hard_land_sounds = Array[AudioStream]([ExtResource("11_hard_land"), ExtResource("12_hard_land_2")])
+soul_points = NodePath("../SoulPoints")
+low_sp = NodePath("LowSP")
 
 [node name="WallSlide" type="AudioStreamPlayer2D" parent="PlayerSounds" unique_id=728238785]
 stream = ExtResource("5_wall_slide")
@@ -296,6 +299,10 @@ bus = &"SFX"
 
 [node name="Land" type="AudioStreamPlayer2D" parent="PlayerSounds" unique_id=1911883037]
 bus = &"SFX"
+
+[node name="LowSP" type="AudioStreamPlayer" parent="PlayerSounds"]
+stream = ExtResource("24_low_sp")
+bus = &"Alerts"
 
 [node name="Crucifix" parent="." unique_id=1711840262 node_paths=PackedStringArray("player") instance=ExtResource("4_crucifix")]
 position = Vector2(0, -60)

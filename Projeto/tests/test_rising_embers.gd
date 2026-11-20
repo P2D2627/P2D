@@ -3,7 +3,7 @@
 # rise, at different speeds and not straight up: some lean left and some right, and none flies in
 # a straight line. They go out within their life, a few seconds, and then none is left and the node
 # stops running. A fire that is hidden throws none; the pause holds them; and a crackle of the
-# fire's sound throws them from its side, coloured with the fire's own colours and outlined in its
+# fire's sound throws 4 or 5 from its side, coloured with the fire's own colours and outlined in its
 # darkest, as the drawn flame is. Each burns with a bloom, added over it on a canvas of its own,
 # that flickers and dims as it cools.
 # Run from the repository root; the exit code is 0 on pass and 1 on fail:
@@ -12,6 +12,8 @@ extends "res://tests/support/base_test.gd"
 
 const EMBERS_PATH: String = "res://scenes/others/ambience/rising_embers.tscn"
 const FIRE_SOUND_PATH: String = "res://scenes/others/ambience/fire_sound.tscn"
+## How many embers each crackle of the fire's sound throws, the fewest and the most, as asked.
+const FIRE_EMBERS: Vector2i = Vector2i(4, 5)
 ## The prototype's fire, whose colour ramp the flame is drawn through.
 const ProtoFire := preload("res://scenes/levels/prototypes/lighting/proto_fire.gd")
 ## The game's viewport, which the headless window is set to, and a camera far from the origin.
@@ -187,8 +189,8 @@ func _the_pause_holds_them() -> bool:
 			"the pause holds the embers (%d flying), and they go on after it" % before.size())
 
 
-## The fire's sound, at the centre of the screen, plays a crackle from each side: its embers leave
-## from that side of the flame.
+## The fire's sound, at the centre of the screen, plays a crackle from each side: each throws
+## FIRE_EMBERS of them, from that side of the flame.
 func _the_fire_sound_s_crackles_throw_them_from_their_side() -> bool:
 	var sound: SoundEmitter = (load(FIRE_SOUND_PATH) as PackedScene).instantiate() as SoundEmitter
 	sound.position = _camera.get_screen_center_position()
@@ -199,13 +201,17 @@ func _the_fire_sound_s_crackles_throw_them_from_their_side() -> bool:
 	# No crackle of its own while it is watched.
 	sound._time_left = INF
 	var problems: Array[String] = []
+	if embers.count != FIRE_EMBERS:
+		problems.append("Count is %s" % embers.count)
+	var thrown: Array[int] = []
 	for side: float in [-1.0, 1.0]:
 		var before: int = _flying(embers).size()
 		sound.play_one_shot(side)
 		await _wait_frames(LEAVE_FRAMES)
 		var places: PackedVector2Array = _flying(embers)
-		if places.size() <= before:
-			problems.append("none from side %.0f" % side)
+		thrown.append(places.size() - before)
+		if places.size() - before < FIRE_EMBERS.x or places.size() - before > FIRE_EMBERS.y:
+			problems.append("%d from side %.0f" % [places.size() - before, side])
 		for k: int in range(before, places.size()):
 			var middle: float = sound.global_position.x + embers.emit_area.get_center().x
 			if (places[k].x - middle) * side < -(LEAVE_FRAMES * FRAME_TIME * embers.speed.y):
@@ -218,8 +224,8 @@ func _the_fire_sound_s_crackles_throw_them_from_their_side() -> bool:
 	while Time.get_ticks_msec() < until:
 		await process_frame
 	return _report(problems.is_empty(),
-			"the fire's sound throws embers with each crackle, from its side (problems: %s)"
-			% "; ".join(problems))
+			"the fire's sound throws %s embers with each crackle (%d to %d), from its side (problems: %s)"
+			% [thrown, FIRE_EMBERS.x, FIRE_EMBERS.y, "; ".join(problems)])
 
 
 ## Every colour of the fire's embers, by heat, is one of the fire's own ramp, and their outline is

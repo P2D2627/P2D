@@ -18,6 +18,14 @@
 [ext_resource type="Texture2D" path="res://assets/sprites/demon_lust/dog_idle_cell.png" id="16_dog_idle"]
 [ext_resource type="Script" path="res://scenes/characters/demon/demon_back_bite.gd" id="14_back_bite"]
 [ext_resource type="Script" path="res://scenes/others/sight/sight_reveal.gd" id="17_sight_reveal"]
+[ext_resource type="PackedScene" path="res://scenes/others/ambience/sound_emitter.tscn" id="18_emitter"]
+[ext_resource type="AudioStream" path="res://assets/audio/sfx/demons/demon_dog_alert.wav" id="19_dog_alert"]
+[ext_resource type="AudioStream" path="res://assets/audio/sfx/demons/demon_dog_latch_1.wav" id="20_dog_latch_1"]
+[ext_resource type="AudioStream" path="res://assets/audio/sfx/demons/demon_dog_latch_2.wav" id="21_dog_latch_2"]
+[ext_resource type="AudioStream" path="res://assets/audio/sfx/demons/demon_dog_jump.wav" id="22_dog_jump"]
+[ext_resource type="AudioStream" path="res://assets/audio/sfx/demons/demon_dog_attack.wav" id="23_dog_attack"]
+[ext_resource type="AudioStream" path="res://assets/audio/sfx/demons/demon_dog_cruci_hit_1.wav" id="24_dog_hit_1"]
+[ext_resource type="AudioStream" path="res://assets/audio/sfx/demons/demon_dog_cruci_hit_2.wav" id="25_dog_hit_2"]
 
 [sub_resource type="RectangleShape2D" id="RectangleShape2D_body"]
 size = Vector2(112, 56)
@@ -108,6 +116,24 @@ animations = [{
 [sub_resource type="RectangleShape2D" id="RectangleShape2D_back"]
 size = Vector2(48, 48)
 
+[sub_resource type="AudioStreamRandomizer" id="AudioStreamRandomizer_latch"]
+playback_mode = 1
+random_pitch = 1.0
+streams_count = 2
+stream_0/stream = ExtResource("20_dog_latch_1")
+stream_0/weight = 1.0
+stream_1/stream = ExtResource("21_dog_latch_2")
+stream_1/weight = 1.0
+
+[sub_resource type="AudioStreamRandomizer" id="AudioStreamRandomizer_crucifix_hit"]
+playback_mode = 1
+random_pitch = 1.04
+streams_count = 2
+stream_0/stream = ExtResource("24_dog_hit_1")
+stream_0/weight = 1.0
+stream_1/stream = ExtResource("25_dog_hit_2")
+stream_1/weight = 1.0
+
 [node name="Demon" type="CharacterBody2D"]
 disable_mode = 1
 collision_layer = 4
@@ -157,10 +183,15 @@ theme_override_font_sizes/font_size = 56
 horizontal_alignment = 1
 vertical_alignment = 1
 
-[node name="DemonSounds" type="Node2D" parent="." node_paths=PackedStringArray("demon", "cue")]
+[node name="DemonSounds" type="Node2D" parent="." node_paths=PackedStringArray("demon", "alert", "latch", "jump", "attack", "crucifix_hit", "cue")]
 position = Vector2(0, -28)
 script = ExtResource("9_sounds")
 demon = NodePath("..")
+alert = NodePath("Alert")
+latch = NodePath("Latch")
+jump = NodePath("Jump")
+attack = NodePath("Attack")
+crucifix_hit = NodePath("CrucifixHit")
 cue = NodePath("Cue")
 alert_sound = ExtResource("10_alert")
 search_sound = ExtResource("11_search")
@@ -169,6 +200,51 @@ land_sound = ExtResource("13_land")
 
 [node name="Cue" type="AudioStreamPlayer2D" parent="DemonSounds"]
 bus = &"Alerts"
+
+[node name="Alert" parent="DemonSounds" instance=ExtResource("18_emitter")]
+one_shots = ExtResource("19_dog_alert")
+near_distance = 150.0
+hearing_distance = 1200.0
+plays_on_its_own = false
+
+[node name="OneShotPlayer" parent="DemonSounds/Alert" index="1"]
+bus = &"Alerts"
+
+[node name="Latch" parent="DemonSounds" instance=ExtResource("18_emitter")]
+one_shots = SubResource("AudioStreamRandomizer_latch")
+near_distance = 150.0
+hearing_distance = 1200.0
+plays_on_its_own = false
+
+[node name="OneShotPlayer" parent="DemonSounds/Latch" index="1"]
+bus = &"SFX"
+
+[node name="Jump" parent="DemonSounds" instance=ExtResource("18_emitter")]
+one_shots = ExtResource("22_dog_jump")
+near_distance = 150.0
+hearing_distance = 1200.0
+plays_on_its_own = false
+
+[node name="OneShotPlayer" parent="DemonSounds/Jump" index="1"]
+bus = &"SFX"
+
+[node name="Attack" parent="DemonSounds" instance=ExtResource("18_emitter")]
+one_shots = ExtResource("23_dog_attack")
+near_distance = 150.0
+hearing_distance = 1200.0
+plays_on_its_own = false
+
+[node name="OneShotPlayer" parent="DemonSounds/Attack" index="1"]
+bus = &"SFX"
+
+[node name="CrucifixHit" parent="DemonSounds" instance=ExtResource("18_emitter")]
+one_shots = SubResource("AudioStreamRandomizer_crucifix_hit")
+near_distance = 150.0
+hearing_distance = 1200.0
+plays_on_its_own = false
+
+[node name="OneShotPlayer" parent="DemonSounds/CrucifixHit" index="1"]
+bus = &"SFX"
 
 [node name="SinkingDrawing" type="Node" parent="." node_paths=PackedStringArray("drawing")]
 script = ExtResource("6_sinking_drawing")
@@ -276,3 +352,9 @@ shape = SubResource("RectangleShape2D_back")
 [connection signal="state_changed" from="." to="Mark" method="_on_demon_state_changed"]
 [connection signal="hold_sink_changed" from="Hitbox" to="SinkingDrawing" method="set_sink"]
 [connection signal="hold_sink_changed" from="BackBite/BackBiteHitbox" to="SinkingDrawing" method="set_sink"]
+
+[editable path="DemonSounds/Alert"]
+[editable path="DemonSounds/Latch"]
+[editable path="DemonSounds/Jump"]
+[editable path="DemonSounds/Attack"]
+[editable path="DemonSounds/CrucifixHit"]

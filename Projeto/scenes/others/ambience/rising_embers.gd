@@ -1,7 +1,7 @@
 class_name RisingEmbers
 extends CanvasLayer
 
-## Embers a fire throws up when it crackles: one or two for each one-shot of Emitter, from the side
+## Embers a fire throws up when it crackles: Count of them for each one-shot of Emitter, from the side
 ## of the flame the crackle is heard from. Each leaves at its own speed and angle off straight up,
 ## with the pop of the crackle, then the heat carries it on up, slower as it cools, while slow curls
 ## of turbulence (curl noise) swing it; it goes out within a few seconds.

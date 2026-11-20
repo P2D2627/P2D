@@ -1,5 +1,11 @@
 [gd_resource type="AudioBusLayout" format=3 uid="uid://c07rrykm7lc8d"]
 
+[sub_resource type="AudioEffectPanner" id="AudioEffectPanner_thunder_background"]
+resource_name = "Panner"
+
+[sub_resource type="AudioEffectPanner" id="AudioEffectPanner_thunder_main"]
+resource_name = "Panner"
+
 [sub_resource type="AudioEffectCompressor" id="AudioEffectCompressor_alerts"]
 resource_name = "Compressor"
 threshold = -24.7
@@ -21,12 +27,6 @@ ratio = 2.0
 attack_us = 2000.0
 release_ms = 600.0
 sidechain = &"Gusts"
-
-[sub_resource type="AudioEffectPanner" id="AudioEffectPanner_thunder_background"]
-resource_name = "Panner"
-
-[sub_resource type="AudioEffectPanner" id="AudioEffectPanner_thunder_main"]
-resource_name = "Panner"
 
 [resource]
 bus/1/name = &"Music"

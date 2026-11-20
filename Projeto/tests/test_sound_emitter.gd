@@ -8,7 +8,8 @@
 # by Pan Spread to its side, from anywhere on the screen, and is as loud as from the thing, even
 # while the ear moves: by Godot's own sums, at level 1's zoom, and measured in Godot's mix, left
 # against right. Its loudness follows Default Falloff, or a Falloff of its own, from an Ear of its
-# own. Disabled, it stops; the pause holds its one-shots. The fire's sound has the fire's files, on
+# own. Disabled, it stops; told only (Plays On Its Own off), it plays no one-shot by itself and,
+# with no loop, sleeps between them; the pause holds its one-shots. The fire's sound has the fire's files, on
 # the Ambience bus, with the times asked for; in the lighting prototype, every fire has its sound,
 # whose embers leave from its flame and hide with it, and the fires hear from the man: with the
 # camera still, they are much quieter halfway between two than beside one.
@@ -146,6 +147,7 @@ func _initialize() -> void:
 	results.append(await _measured_in_the_mix())
 	results.append(await _the_falloff_follows_its_curve())
 	results.append(await _disabled_it_stops())
+	results.append(await _told_only_it_plays_and_sleeps_between())
 	results.append(await _the_pause_holds_the_one_shots())
 	results.append(_the_fire_sound_has_the_fire_files())
 	results.append(await _every_prototype_fire_has_its_sound())
@@ -445,6 +447,49 @@ func _disabled_it_stops() -> bool:
 	return _report(heard_on and silent and back,
 			"disabled, it stops and plays no one-shots (%s); enabled again, it plays (%s)"
 			% [silent, back])
+
+
+## With Plays On Its Own off, as for a dog's voice, a heard emitter with a loop plays the loop and
+## no one-shot by itself. With no loop either, it sleeps, its physics frame off; told to play a
+## one-shot, it wakes, keeps the one-shot's volume to the ear as the thing moves away, and sleeps
+## again once the one-shot is over. Disabled, it plays none when told.
+func _told_only_it_plays_and_sleeps_between() -> bool:
+	var centre: Vector2 = _camera.get_screen_center_position()
+	var looping: SoundEmitter = _new_emitter(_tone(true), _tone(false), centre)
+	looping.plays_on_its_own = false
+	looping.interval = TEST_INTERVAL
+	looping.deviation = TEST_DEVIATION
+	await _listen(looping, PAUSED_FRAMES)
+	var loop_only: bool = looping.is_hearing() and looping.loop_player.playing \
+			and _heard_frames.is_empty()
+	looping.queue_free()
+	var told: SoundEmitter = _emitter_scene.instantiate() as SoundEmitter
+	told.one_shots = _tone(false)
+	told.plays_on_its_own = false
+	told.hearing_distance = HEARING
+	told.position = centre
+	root.add_child(told)
+	await _wait_frames(SETTLE_FRAMES)
+	var asleep: bool = not told.is_physics_processing() and not told.one_shot_player.playing
+	told.play_one_shot(0.0)
+	var woke: bool = told.is_physics_processing() and told.one_shot_player.playing
+	var near_db: float = told.one_shot_player.volume_db
+	told.position = centre + Vector2(HEARING * 0.75, 0.0)
+	await _wait_frames(SETTLE_FRAMES)
+	var far_db: float = told.one_shot_player.volume_db
+	var follows: bool = far_db < near_db - 10.0
+	told.one_shot_player.stop()
+	await _wait_frames(SETTLE_FRAMES)
+	var asleep_again: bool = not told.is_physics_processing()
+	told.enabled = false
+	told.play_one_shot(0.0)
+	var none_disabled: bool = not told.one_shot_player.playing and not told.is_physics_processing()
+	told.queue_free()
+	return _report(loop_only and asleep and woke and follows and asleep_again and none_disabled,
+			"told only: with a loop, it loops and plays no one-shot by itself (%s); with none, it "
+			% loop_only + "sleeps (%s), wakes to play one (%s), follows the ear (%.1f, then %.1f dB), "
+			% [asleep, woke, near_db, far_db] + "sleeps once it is over (%s), and disabled plays none (%s)"
+			% [asleep_again, none_disabled])
 
 
 func _the_pause_holds_the_one_shots() -> bool:

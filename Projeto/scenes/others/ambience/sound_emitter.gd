@@ -16,7 +16,9 @@ extends Node2D
 ## (a balance from 50/50 to 40/60 at 0.1), as loud as the loop: the side only moves it in the
 ## stereo. One Shot Played tells which side, so something seen, such as a fire's embers
 ## (RisingEmbers), can come from there too. A thing that moves, such as a dog, carries the emitter
-## and its players with it.
+## and its players with it. With Plays On Its Own off, as for a dog's voice, it plays a one-shot
+## only when told (play_one_shot), and with no Loop it sleeps between them, so a level's many dogs
+## cost nothing while they are quiet.
 ## It counts in real time, as AmbienceBed does, because the audio keeps playing through the hitstop
 ## of a death, and in its physics frame, so the pause holds it, and its players with it.
 
@@ -29,6 +31,9 @@ signal one_shot_played(at: Vector2, side: float)
 const MAX_STEP: float = 0.1
 ## The shortest wait between two one-shots, in s, however far Deviation reaches.
 const MIN_GAP: float = 0.2
+## Physics frames a one-shot told to play is followed for before its player has to say it plays: a
+## 2D player starts its voice in its own physics step, after the emitter's.
+const START_FRAMES: int = 2
 ## A player's volume once the thing is out of hearing, in dB: silent.
 const SILENT_DB: float = -80.0
 ## Godot's own falloff, off: an Attenuation of 0 makes its curve flat, and a Max Distance this far, in
@@ -88,6 +93,10 @@ const DEFAULT_PANNING: float = 0.5
 @export_range(-60.0, 12.0, 0.5, "suffix:dB") var one_shot_volume_db: float = 0.0
 
 @export_group("One Shots")
+## Whether it plays its one-shots by itself, about one every Interval, while it is heard. Off, as for
+## a dog's voice, it plays one only when told (play_one_shot); with no Loop either, it sleeps
+## between them, its physics frame off.
+@export var plays_on_its_own: bool = true
 ## The mean wait from one one-shot to the next, in s, while it is heard.
 @export_range(0.5, 60.0, 0.1, "suffix:s") var interval: float = 4.0
 ## How far each wait strays from Interval, at most, either way, in s: picked at random between.
@@ -118,6 +127,8 @@ var _time_left: float = 0.0
 var _project_panning: float = DEFAULT_PANNING
 ## The man of the level it is in, found once; none outside a level.
 var _man: Node2D
+## Physics frames left of START_FRAMES since a one-shot was told to play.
+var _start_frames_left: int = 0
 
 
 func _ready() -> void:
@@ -138,11 +149,16 @@ func _ready() -> void:
 	_man = _find_man()
 	if loop == null and one_shots == null:
 		push_warning("SoundEmitter %s: no Loop or One Shots to play." % name)
+	if _sleeps_between():
+		set_physics_process(false)
 
 
 # In the physics step, as the players start the voices they are asked for in their own, after this
 # one: the mix then takes up a new pass of the loop and the newest one's next round together.
 func _physics_process(delta: float) -> void:
+	if _sleeps_between():
+		_follow_one_shot()
+		return
 	var step: float = minf(delta / Engine.time_scale, MAX_STEP) if Engine.time_scale > 0.0 else 0.0
 	var distance: float = global_position.distance_to(get_ear_position())
 	if not _hearing:
@@ -158,20 +174,24 @@ func _physics_process(delta: float) -> void:
 	_time_left -= step
 	if _time_left <= 0.0:
 		_time_left = _next_gap()
-		if one_shot_player != null and one_shots != null:
+		if plays_on_its_own and one_shot_player != null and one_shots != null:
 			play_one_shot(randf_range(-1.0, 1.0))
 
 
 ## Plays one one-shot now, from side of the thing (-1 at the left edge of Pan Spread, 1 at the right
-## one), as loud as the loop.
+## one), as loud as the loop. Disabled, it plays none. Sleeping between one-shots, it wakes to keep
+## this one's volume to the ear while it plays.
 func play_one_shot(side: float) -> void:
-	if one_shot_player == null or one_shots == null:
+	if not enabled or one_shot_player == null or one_shots == null:
 		return
 	var way: float = clampf(side, -1.0, 1.0)
 	one_shot_player.global_position = global_position + Vector2(_side_offset(way), 0.0)
 	_set_volumes(global_position.distance_to(get_ear_position()))
 	one_shot_player.play()
 	one_shot_played.emit(global_position, way)
+	if _sleeps_between():
+		_start_frames_left = START_FRAMES
+		set_physics_process(true)
 
 
 ## Whether it is heard now: the loop plays and the one-shots come.
@@ -240,6 +260,22 @@ func _set_volumes(distance: float) -> void:
 
 func _next_gap() -> float:
 	return maxf(interval + randf_range(-deviation, deviation), MIN_GAP)
+
+
+## Whether it has nothing to do between one-shots: no Loop, and none it plays by itself.
+func _sleeps_between() -> bool:
+	return loop == null and not plays_on_its_own
+
+
+## While a one-shot it was told to play goes on, keeps its volume to the ear as the thing and the ear
+## move; once it is over, sleeps again.
+func _follow_one_shot() -> void:
+	if _start_frames_left > 0:
+		_start_frames_left -= 1
+	elif one_shot_player == null or not one_shot_player.playing:
+		set_physics_process(false)
+		return
+	_set_volumes(global_position.distance_to(get_ear_position()))
 
 
 ## Starts the loop's next pass once the newest reaches Loop End, from as far past Loop Start as the

@@ -278,7 +278,7 @@ estados:
 |---|---|
 | Parado | Espera no seu posto, onde o nível o colocou e virado para onde o nível o virou, até reparar na personagem. Com ronda, é a pausa entre duas idas, sorteada por cada demónio entre 0,8 e 2 s. |
 | Ronda | Vai e vem a passo, a 150 px/s, num troço de 480 px do seu chão, centrado no posto. Vira-se nas pontas, à beira de um desnível e contra uma parede. Fora do ecrã, fica parado. |
-| Alerta | Ao reparar na personagem, vira-se para ela e fica 0,3 s parado onde está, o tempo de ladrar, antes de a perseguir. Por cima da cabeça surge um "!", com um bip agudo; o "!" fica mais 0,5 s já na perseguição, para se conseguir ler. |
+| Alerta | Ao reparar na personagem, vira-se para ela e fica 0,3 s parado onde está, o tempo de ladrar, antes de a perseguir. Por cima da cabeça surge um "!", com o som de alerta do cão (1,8 s); o "!" fica mais 0,5 s já na perseguição, para se conseguir ler. Quando o som de alerta acaba, se o cão ainda a perseguir, ouve-se um de dois sons de quem se fixou na presa, ao acaso. |
 | Perseguir | Segue-a a cerca de 560 px/s, no chão onde está. A personagem corre a 720 px/s, pelo que fugir resulta, mas com pouca margem. |
 | Aviso | Antes de cada ataque, mostra qual vem, para que o jogador tenha tempo de reagir: antes da mordida, alarga-se e baixa durante 0,1 s, sem parar de correr; antes do salto, para e encolhe durante 0,35 s. |
 | Atirar-se | Salta para onde a personagem vai estar, entre 200 e 420 px, e fica 0,35 s parado onde aterra. |
@@ -288,7 +288,7 @@ estados:
 | Repelido | Depois de atirado pelo crucifixo, fica 0,3 s parado onde aterrou e volta a perseguir. |
 | Atordoado | Depois de atirado pela personagem ao soltar-se, fica 1,2 s no chão, achatado e mais escuro, e depois recua ou volta a perseguir. |
 | Fora de alcance | Com a personagem num chão ou numa parede acima ou abaixo do que os seus ataques chegam, não a segue por baixo nem por cima: para virado para ela e ladra, e depois anda para trás e para a frente num troço de 160 px à volta do sítio onde parou e, em cada ponta, volta a parar e a ladrar; contra uma parede ou na borda do seu chão, do lado dela, salta no sítio. Se ela sair do troço por cima dele, corre por baixo à velocidade da perseguição até ficar debaixo dela e anda aí. Se ela descer ao seu alcance, volta a persegui-la. Enquanto a vir, nunca desiste; se ela sair da sua vista, ladra mais 3 s para onde ela estava e depois vai procurá-la. |
-| Procurar | Quando uma parede a esconde durante 0,5 s, vai a 300 px/s até onde a viu pela última vez, ou até onde o seu chão deixa, e fareja ali durante 2,5 s, virando-se para o outro lado a meio. Se a vir, fica alerta e volta a persegui-la; se não, desiste. Fora do ecrã, desiste logo. Ao começar a procura, toca dois bips a descer; o "?" sobre a cabeça está desligado desde a linha de vista (Shows Search, no nó `Mark`). |
+| Procurar | Quando uma parede a esconde durante 0,5 s, vai a 300 px/s até onde a viu pela última vez, ou até onde o seu chão deixa, e fareja ali durante 2,5 s, virando-se para o outro lado a meio. Se a vir, fica alerta e volta a persegui-la; se não, desiste. Fora do ecrã, desiste logo. Os dois bips a descer do início da procura estão desligados (Play Beeps, no nó `DemonSounds`); o "?" sobre a cabeça está desligado desde a linha de vista (Shows Search, no nó `Mark`). |
 | Voltar | Depois de desistir, volta ao posto a passo, a 200 px/s, e retoma a ronda. Se a vir à frente pelo caminho, fica alerta e volta a persegui-la. |
 
 O demónio vê a personagem a menos de 1100 px, mais de meio ecrã, se não houver uma parede entre os
@@ -421,7 +421,8 @@ demónios usam-na com 96 px e 240 px:
   desce até ao chão onde a viu pela última vez.
 
 Ao descolar, o retângulo provisório estica (0,8 × 1,25) e, ao aterrar, encolhe (1,25 × 0,75),
-voltando ao tamanho em 0,2 s; cada um tem um bip provisório.
+voltando ao tamanho em 0,2 s. Ao descolar, e também ao atirar-se à personagem, ouve-se um salto
+provisório; os bips de descolar e de aterrar estão desligados.
 
 Os valores são os do demónio da luxúria, num ficheiro de dados (`scenes/characters/demon/lust_demon_stats.tres`);
 mudam sem alterar código e são provisórios. O aviso é, por agora, um retângulo que muda de forma e
@@ -2238,10 +2239,11 @@ tem de ser chão plano. A caixa de colisão cobre o tronco (66 × 54 px), sem a 
   do aviso de ataque; distinguem-se pela forma e não pela cor. Cada marca surge maior e encolhe uma
   única vez, sem piscar. O "!" fica Alert Linger Time (0,5 s) já na perseguição, porque 0,3 s mal
   chega para ler. Qualquer outro estado apaga a marca no mesmo passo, e uma pausa suspende a
-  contagem. O nó `DemonSounds` toca um bip no alerta e dois bips a descer na procura, e tem um lugar
-  vazio para o ladrido. Cada demónio tem uma voz própria, até 8% acima ou abaixo do tom normal, e
+  contagem. O nó `DemonSounds` tocava um bip no alerta e dois bips a descer na procura, e tem um lugar
+  vazio para o ladrido; os bips estão hoje desligados, e o alerta tem o som do cão (ver "Sons no
+  mundo: os cães-demónio"). Cada demónio tem uma voz própria, até 8% acima ou abaixo do tom normal, e
   cada som varia até 2%. A marca e o som cobrem-se um ao outro: quem não ouve vê a marca, e quem não
-  está a olhar ouve o bip. O som usa um gerador de números próprio. Com o gerador global, o som
+  está a olhar ouve o alerta. O som usa um gerador de números próprio. Com o gerador global, o som
   tirava números de que cada demónio se serve para a sua semente, e mudava o comportamento nos
   testes com semente fixa. Os valores da marca ficam no Inspector da cena do demónio. Custo, com 50
   demónios alertados no mesmo passo (headless, à corrente): a marca acrescenta cerca de 0,2 ms
@@ -2269,8 +2271,8 @@ tem de ser chão plano. A caixa de colisão cobre o tronco (66 × 54 px), sem a 
   desfaz o último passo. Ficaram de lado: um salto de ataque sem sair do chão, barato, mas que não
   vai atrás dela; saltar buracos, porque os refúgios não precisam deles; e mudar o posto para onde
   a perde, porque espalha os demónios e tira a quem desenha o sítio de cada um. O demónio emite
-  `took_off` e `landed`, a que o retângulo provisório e o `DemonSounds` respondem (no máximo 2 bips
-  por passo de física, para todos), e o F3 desenha o caminho guardado, numerado pela ordem em que
+  `took_off` e `landed`, a que o retângulo provisório e o `DemonSounds` respondem (no máximo 2 sons
+  de salto por passo de física, para todos), e o F3 desenha o caminho guardado, numerado pela ordem em que
   se desfaz. Limites conhecidos: dois chãos à mesma altura contam como o mesmo; fora de alcance, não
   volta a tentar se a personagem andar para cima de um degrau a que chega; sem testes a 120 Hz nem
   com plataformas de sentido único como chão de partida ou de chegada.
@@ -3761,7 +3763,7 @@ buses e os lados acima. Se a luz e o som combinam confirma-se a jogar.
 
 #### Sons no mundo: o fogo e as suas brasas
 
-O som de uma coisa do mundo, como uma fogueira (e, mais tarde, os cães-demónio), é um nó
+O som de uma coisa do mundo, como uma fogueira ou um cão-demónio, é um nó
 `SoundEmitter` (`scenes/others/ambience/sound_emitter.tscn`): um som contínuo em ciclo (Loop) e,
 por cima dele, sons soltos (One Shots) a momentos ao acaso, para que o ciclo não se reconheça. O
 emissor anda com a coisa, por isso serve também para o que se mexe.
@@ -3813,7 +3815,10 @@ centro desloca-se 0,25 do campo estéreo. Por isso, o som solto toca deslocado p
 590 px do mundo com o zoom de 1,3 das zonas de câmara do nível 1), com o volume da coisa: como o
 emissor calcula o volume pela distância da coisa ao ouvido, o lado só muda a panorâmica. A conta foi
 confirmada na mistura do Godot: um som 400 px à direita do centro saiu 1,232 vezes mais forte à
-direita do que à esquerda, como a conta diz. O emissor conta o tempo real, como os fundos, e a pausa
+direita do que à esquerda, como a conta diz. Pela mesma conta, um som junto à borda do ecrã fica a
+62,5/37,5 (cerca de 4,4 dB), o que nas colunas de um portátil quase não se ouve; a força da
+panorâmica de todos os sons 2D é Project Settings › Audio › General › 2D Panning Strength (0,5, o
+valor do Godot), e a de um só leitor o seu Panning Strength. O emissor conta o tempo real, como os fundos, e a pausa
 suspende-o.
 
 Ficaram de lado deslocar o som solto só dentro da largura da chama (10 % da largura do ecrã, cerca
@@ -3823,7 +3828,8 @@ mesmo tempo partilhariam o mesmo; e tocar todas as fogueiras sempre, deixando o 
 distantes, porque as 87 continuariam a descodificar o ficheiro.
 
 A cada som solto, o nó `RisingEmbers` (`scenes/others/ambience/rising_embers.tscn`), que ouve o
-emissor, lança 1 ou 2 brasas da metade da chama de onde o som se ouve. Cada uma sai com velocidade
+emissor, lança 4 ou 5 brasas (Count, no nó `RisingEmbers` da cena do fogo) da metade da chama de
+onde o som se ouve. Cada uma sai com velocidade
 (70 a 160 px/s) e ângulo (até 25° da vertical, para cada lado) próprios, com o estalo; depois o
 calor leva-a para cima, mais devagar à medida que arrefece, e a turbulência (ruído de curl)
 desvia-a; apaga-se ao fim de 1,5 a 3 s.
@@ -3869,7 +3875,8 @@ tão alto como o ciclo; e que, com um ouvido próprio, o volume segue a curva de
 seus pontos, ou uma curva própria. Verifica ainda que desligado se cala, que a pausa suspende os sons
 soltos, que o fogo tem os seus ficheiros e tempos, que cada uma das 87 fogueiras do protótipo tem o
 seu som, com as brasas a sair da chama, e que as fogueiras ouvem a partir da personagem. O `test_rising_embers.gd` verifica, em 18 estalos, que
-cada um lança 1 ou 2 brasas (8 lançaram 1 e 10 lançaram 2), da sua metade da chama; que todas
+cada um lança 1 ou 2 brasas, o Count de omissão do nó (8 lançaram 1 e 10 lançaram 2), da sua
+metade da chama; que cada estalo do som do fogo lança 4 ou 5 (os dois estalos medidos lançaram 5); que todas
 sobem (de 71 a 262 px), 89 % acabam pelo menos 15 px para um lado (17 para a esquerda e 8 para a
 direita), afastam-se da linha reta 14 px (mediana) e a mais rápida sobe 2,8 vezes mais depressa do
 que a mais lenta; que se apagam dentro da sua vida e não fica nenhuma; que uma fogueira escondida
@@ -3877,6 +3884,61 @@ não lança nenhuma; que a pausa as suspende; que as cores das brasas do fogo s�
 da chama, com o contorno no seu vinho mais escuro; e que o brilho de cada brasa se desenha depois
 dela, em modo aditivo, varia 76 % no primeiro segundo e cai de 0,135 para 0,047 do primeiro ao
 último terço da sua vida. Se o fogo soa bem, e se as brasas se veem bem, só se confirma a jogar.
+
+#### Sons no mundo: os cães-demónio
+
+Os sons próprios dos cães, em `Projeto/assets/audio/sfx/demons/`, usam o mesmo emissor do fogo: o
+volume vem da distância entre o cão e a personagem, e o lado, do ponto do ecrã onde o cão aparece.
+Cada cão tem cinco, cada um num nó `SoundEmitter` próprio, filho do nó `DemonSounds`:
+
+| Som | Quando toca | Ficheiro |
+|---|---|---|
+| Alert | Ao reparar na personagem, com o "!". | `demon_dog_alert.wav` (1,8 s), no bus Alerts |
+| Latch | Quando o som de alerta acaba, mais Latch Gap (0 s), se o cão ainda a perseguir; não toca se, entretanto, desistiu, a foi procurar ou foi atirado. | `demon_dog_latch_1.wav` (1,2 s) ou `demon_dog_latch_2.wav` (2,4 s), ao acaso |
+| Jump | Ao saltar para um degrau, ao descer de uma borda e, com Jump On Lunge, ao atirar-se à personagem. | `demon_dog_jump.wav` (0,13 s), provisório |
+| Attack | Quando uma mordida ou um salto acerta na personagem, também quando a agarra. | `demon_dog_attack.wav` (0,18 s), provisório |
+| CrucifixHit | Quando o crucifixo o atira; não quando a personagem se solta dele, nem enquanto o crucifixo o continua a empurrar no ar. | `demon_dog_cruci_hit_1.wav` (1,8 s) ou `demon_dog_cruci_hit_2.wav` (1,4 s), ao acaso, com o tom a variar até 4 % |
+
+Os quatro últimos tocam no bus SFX. Ouvem-se por inteiro até 150 px (Near Distance) e calam-se aos
+1 200 px (Hearing Distance), com a curva de omissão do emissor. Cada um liga-se e desliga-se no seu
+Enabled, e o volume, as distâncias e a curva acertam-se no próprio nó. Cada cão toca-os com a sua
+voz, como os bips. Os dois sons provisórios são cópias de sons da personagem, tocadas 1,3 vezes
+mais depressa (cerca de 4,5 meios-tons acima, e por isso mais curtas) e cortadas com um
+desvanecimento: o salto vem de `player_jump.wav` (0,28 s) e o ataque de `hard_land.wav` (0,38 s).
+Para os trocar, basta substituir o ficheiro.
+
+Os bips provisórios continuam nos seus lugares do `DemonSounds` e só tocam, no leitor `Cue`, com
+Play Beeps. Com Use Old Alert, o alerta volta a ser o bip antigo, e o Latch toca depois dele.
+
+Antes, todos os sons de um cão tocavam num só leitor, e cada som novo parava o anterior. Com bips de
+0,14 s, nunca se notou; com um alerta de 1,8 s e sons de até 2,4 s, um salto logo a seguir ao "!"
+cortaria o alerta a meio. Por isso, cada som tem o seu leitor. O nível 1 tem 99 cães, e cinco
+emissores em cada um mediriam a distância perto de 500 vezes por frame. Com Plays On Its Own
+desligado, um emissor sem ciclo só toca quando o cão lho pede e dorme entre sons, sem
+processamento; acorda só enquanto o som dura, para lhe acertar o volume.
+
+A escolha entre dois ficheiros e a variação do tom vêm do gerador de números do próprio cão, como
+nos bips: o `AudioStreamRandomizer` do Godot tira números do gerador global, de onde cada demónio
+tira a sua semente (ADR 0040). O randomizer fica no Inspector como a lista dos ficheiros, com os
+seus pesos e o seu Random Pitch, que o `DemonSounds` lê; o seu Random Volume Offset não se usa. Por
+passo de física, todos os cães juntos começam no máximo 3 alertas, 2 saltos, 2 ataques e 2 golpes
+do crucifixo (Max Notice Sounds, Max Leap Sounds, Max Attack Sounds e Max Hit Sounds Per Step),
+contados à parte, para que um bando se ouça como um só sem calar um alerta.
+
+Ficaram de lado: um só leitor com várias vozes, porque no Godot mudar o ficheiro de um leitor para
+o som que estava a tocar; leitores simples com a atenuação do Godot, que se ouve a partir do centro
+do ecrã e quase não muda com a distância (ver o fogo); e deixar o randomizer escolher, porque
+mudaria as sementes dos demónios.
+
+O `test_demon_sounds.gd` verifica, em 17 casos, que a cena tem os cinco sons com os seus ficheiros e
+buses, a dormir, e os bips desligados nos seus lugares; que nenhum bip toca por omissão; que cada
+som toca no seu momento e que o salto não corta o alerta; que o golpe do crucifixo só toca quando o
+crucifixo atira o cão, e uma vez por arremesso, e que em 24 golpes se ouviram os dois ficheiros; que
+o Latch começou 1,700 s depois do alerta, para 1,716 s esperados (o alerta ao tom desse cão), 2,250 s
+para 2,253 s com Latch Gap 0,5 s e 0,133 s para 0,146 s depois do bip antigo, e que não tocou nos
+cães que voltaram ao posto, foram procurar ou foram atirados; que cada som se cala com Enabled
+desligado; que os limites por passo se cumprem; e que fazer um cão e tocar todos os seus sons não
+tira números do gerador global. Se os sons dos cães soam bem, só se confirma a jogar.
 
 #### Sincronia dos sons da personagem e do crucifixo
 
@@ -3948,6 +4010,9 @@ disponível começam no seu ponto. Se a sincronia está certa confirma-se a joga
 - `demon_alert.wav`, `demon_search.wav`, `demon_take_off.wav` e `demon_land.wav`, em
   `Projeto/assets/audio/sfx/`: bips provisórios gerados por síntese de ondas sinusoidais, sem
   material de terceiros. Saem quando chegarem os sons definitivos.
+- `demon_dog_jump.wav` e `demon_dog_attack.wav`, em `Projeto/assets/audio/sfx/demons/`: cópias
+  provisórias de `player_jump.wav` e `hard_land.wav`, tocadas 1,3 vezes mais depressa e cortadas,
+  feitas com o ffmpeg. Saem quando chegarem os sons definitivos.
 - `amb_layer_1.ogg` e `amb_layer_2.ogg`, em `Projeto/assets/audio/ambience/`, e os sons soltos do
   vento, em `Projeto/assets/audio/ambience/wind/`: os fundos e as rajadas de ambiente do nível 1,
   feitos por Diogo, do grupo, por edição e mistura de sons com licença CC0 (domínio público), que
@@ -3961,6 +4026,11 @@ disponível começam no seu ponto. Se a sincronia está certa confirma-se a joga
   `thunder_spontaneous_backlayer_2.wav`): os trovões de ambiente do nível 1, feitos por Diogo, do
   grupo, por edição e mistura de sons com licença CC0 (domínio público), que não pede atribuição e
   permite qualquer uso, incluindo o vídeo, as apresentações e o portefólio.
+- Os cinco sons dos cães-demónio, em `Projeto/assets/audio/sfx/demons/` (`demon_dog_alert.wav`,
+  `demon_dog_latch_1.wav`, `demon_dog_latch_2.wav`, `demon_dog_cruci_hit_1.wav` e
+  `demon_dog_cruci_hit_2.wav`): o alerta, o ataque depois do alerta e o golpe do crucifixo, feitos
+  por Diogo, do grupo, por edição e mistura de sons com licença CC0 (domínio público), que não pede
+  atribuição e permite qualquer uso, incluindo o vídeo, as apresentações e o portefólio.
 - `level1_cave_map.png` e `level1_cave_shade.png`, em `Projeto/assets/sprites/backgrounds/`:
   imagens provisórias geradas com IA (Claude) a partir do mapa do nível 1, sem material de
   terceiros. A primeira dá a cor de cada área do fundo e a segunda escurece o fundo junto à rocha.

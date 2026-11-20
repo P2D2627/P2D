@@ -40,5 +40,6 @@ loop_end = 10.735
 [node name="RisingEmbers" parent="." node_paths=PackedStringArray("emitter") instance=ExtResource("2_embers")]
 unique_name_in_owner = true
 emitter = NodePath("..")
+count = Vector2i(4, 5)
 heat_ramp = SubResource("Gradient_fire_embers")
 outline_colour = Color(0.3, 0.05, 0.18, 1)
