@@ -6,8 +6,8 @@ extends RefCounted
 ## goes out, drawn as a streak as long as it moves while a film camera's shutter is open, with a
 ## faint halo, flickering as it tumbles. They give light, so they are drawn added and unshaded. The
 ## textures and the material are made once and shared by every node that draws embers. The fires'
-## embers (RisingEmbers) are drawn flat instead, as the flame is, and take only Blackbody Ramp,
-## when no colours of their own are set.
+## embers (RisingEmbers) are drawn flat instead, as the flame is, with only the halo as their bloom
+## (draw_glow), and take Blackbody Ramp when no colours of their own are set.
 
 ## A halo's size, as a multiple of its core.
 const HALO_SIZE: float = 4.0
@@ -43,10 +43,7 @@ static func light_material() -> CanvasItemMaterial:
 ## moves in shutter seconds, and its halo, halo_share as bright as the core.
 static func draw(canvas: CanvasItem, at: Vector2, velocity: Vector2, core: float, colour: Color,
 		light: float, halo_share: float, shutter: float) -> void:
-	if _core == null:
-		_core = _dot(PackedFloat32Array([0.0, CORE_SOLID_SHARE, 1.0]),
-				PackedFloat32Array([1.0, 1.0, 0.0]))
-		_halo = _dot(PackedFloat32Array([0.0, 1.0]), PackedFloat32Array([1.0, 0.0]))
+	_make_dots()
 	var tint := Color(colour.r, colour.g, colour.b, 1.0)
 	var streak: float = maxf(core, velocity.length() * shutter)
 	var halo: float = core * HALO_SIZE
@@ -81,6 +78,24 @@ static func blackbody_ramp() -> Gradient:
 			Color(0.9, 0.22, 0.01, 0.15), Color(1.0, 0.32, 0.02, 0.35), Color(1.0, 0.44, 0.06, 0.6),
 			Color(1.0, 0.62, 0.2, 0.85), Color(1.0, 0.88, 0.62, 1.0)])
 	return ramp
+
+
+## Draws a soft round glow on canvas, at a point of the canvas, diameter across, coloured by colour's
+## rgb, as bright as light (an alpha): the halo of the embers, alone, such as the bloom round the
+## fires' flat embers (RisingEmbers). The canvas takes Light Material.
+static func draw_glow(canvas: CanvasItem, at: Vector2, diameter: float, colour: Color,
+		light: float) -> void:
+	_make_dots()
+	var tint := Color(colour.r, colour.g, colour.b, light)
+	canvas.draw_texture_rect(_halo, Rect2(at - Vector2(diameter, diameter) * 0.5,
+			Vector2(diameter, diameter)), false, tint)
+
+
+static func _make_dots() -> void:
+	if _core == null:
+		_core = _dot(PackedFloat32Array([0.0, CORE_SOLID_SHARE, 1.0]),
+				PackedFloat32Array([1.0, 1.0, 0.0]))
+		_halo = _dot(PackedFloat32Array([0.0, 1.0]), PackedFloat32Array([1.0, 0.0]))
 
 
 ## A round white dot, its alpha falling from its heart outwards as given.

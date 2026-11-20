@@ -4,7 +4,8 @@
 # a straight line. They go out within their life, a few seconds, and then none is left and the node
 # stops running. A fire that is hidden throws none; the pause holds them; and a crackle of the
 # fire's sound throws them from its side, coloured with the fire's own colours and outlined in its
-# darkest, as the drawn flame is.
+# darkest, as the drawn flame is. Each burns with a bloom, added over it on a canvas of its own,
+# that flickers and dims as it cools.
 # Run from the repository root; the exit code is 0 on pass and 1 on fail:
 # godot --headless --fixed-fps 60 --path Projeto --script res://tests/test_rising_embers.gd
 extends "res://tests/support/base_test.gd"
@@ -45,6 +46,10 @@ const PAUSED_FRAMES: int = 30
 const LEAVE_FRAMES: int = 10
 ## Real ms the audio server takes to let go of a freed player's playback.
 const RELEASE_MSEC: int = 200
+## The bloom: how far its light must swing with the flicker over an ember's first second, as a share
+## of its brightest, and frames to watch an ember's whole life for.
+const MIN_BLOOM_SWING: float = 0.2
+const BLOOM_LIFE_FRAMES: int = 200
 
 var _embers_scene: PackedScene
 var _camera: Camera2D
@@ -76,6 +81,7 @@ func _initialize() -> void:
 	results.append(await _the_pause_holds_them())
 	results.append(await _the_fire_sound_s_crackles_throw_them_from_their_side())
 	results.append(_the_fire_s_embers_take_the_fire_s_colours())
+	results.append(await _each_burns_with_a_bloom())
 	_camera.queue_free()
 	await process_frame
 	_finish(results)
@@ -234,6 +240,50 @@ func _the_fire_s_embers_take_the_fire_s_colours() -> bool:
 	return _report(strangers.is_empty() and outlined,
 			"the fire's embers take the fire's own colours (not the fire's: %s) and its darkest for "
 			% ", ".join(strangers) + "their outline (%s)" % outlined)
+
+
+## The bloom is drawn after the embers, added; over one ember's life its light flickers, and it is
+## dimmer in the last third of its life, cooler, than in the first.
+func _each_burns_with_a_bloom() -> bool:
+	var embers: RisingEmbers = _new_embers()
+	embers._flicker_rng.seed = RANDOM_SEED
+	embers.throw(FIRE_AT, 0.0)
+	await process_frame
+	await process_frame
+	var drawn_after: bool = (embers._glow != null and embers._glow.get_index() > embers._canvas.get_index()
+			and embers._glow.material == EmberLook.light_material())
+	var index: int = -1
+	for k: int in embers._lives.size():
+		if embers._lives[k] > 0.0:
+			index = k
+			break
+	var lights: Array[float] = []
+	if index >= 0:
+		for _frame: int in BLOOM_LIFE_FRAMES:
+			if embers._lives[index] <= 0.0:
+				break
+			lights.append(embers.get_bloom_light(index))
+			await process_frame
+	embers.queue_free()
+	await process_frame
+	if lights.size() < 30:
+		return _report(false, "an ember burns long enough to watch its bloom (%d frames)" % lights.size())
+	var first_second: Array[float] = lights.slice(0, 60)
+	var swing: float = (first_second.max() - first_second.min()) / maxf(first_second.max(), 0.0001)
+	var third: int = lights.size() / 3
+	var early: float = _mean(lights.slice(0, third))
+	var late: float = _mean(lights.slice(lights.size() - third))
+	return _report(drawn_after and swing >= MIN_BLOOM_SWING and late < early,
+			"each ember burns with a bloom drawn after them, added (%s), flickering " % drawn_after
+			+ "(swings %.0f%% in its first second) and dimmer as it cools " % (swing * 100.0)
+			+ "(%.3f in the first third of its life, %.3f in the last)" % [early, late])
+
+
+func _mean(values: Array[float]) -> float:
+	var total: float = 0.0
+	for value: float in values:
+		total += value
+	return total / maxf(values.size(), 1.0)
 
 
 func _is_one_of(colour: Color, colours: PackedColorArray) -> bool:

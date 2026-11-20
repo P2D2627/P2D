@@ -1,13 +1,17 @@
-# Checks the sound emitter, the sound of a thing in the world such as a fire. Its loop plays only
-# while the centre of the screen is within Hearing Distance, goes on a little past it, up to
-# Hearing Margin, and stops beyond; it loops even when its file's import does not, without
-# changing the file, and two emitters start it at different points. The one-shots come one at a
-# time, each wait within Deviation of Interval and about Interval on average. Each one-shot moves
-# the stereo by Pan Spread to its side, from anywhere on the screen, and is as loud as from the
-# thing, even while the camera moves: by Godot's own sums, at level 1's zoom, and measured in
-# Godot's mix, left against right. A side out of hearing gives way to the other. Disabled, it stops; the pause holds its one-shots. The fire's
-# sound has the fire's files, on the Ambience bus, with the times asked for; and in the lighting
-# prototype, every fire has its sound, whose embers leave from its flame and hide with it.
+# Checks the sound emitter, the sound of a thing in the world such as a fire. Outside a level it
+# hears from the centre of the screen; its loop plays only while the ear is within Hearing
+# Distance, goes on a little past it, up to Hearing Margin, and stops beyond, with Godot's own
+# falloff off. It loops even when its file's import does not, without changing the file, and two
+# emitters start it at different points; the fire's loop plays its reverb tail out under the next
+# pass, as loud through Loop End, measured in Godot's mix. The one-shots come one at a time, each
+# wait within Deviation of Interval and about Interval on average. Each one-shot moves the stereo
+# by Pan Spread to its side, from anywhere on the screen, and is as loud as from the thing, even
+# while the ear moves: by Godot's own sums, at level 1's zoom, and measured in Godot's mix, left
+# against right. Its loudness follows Default Falloff, or a Falloff of its own, from an Ear of its
+# own. Disabled, it stops; the pause holds its one-shots. The fire's sound has the fire's files, on
+# the Ambience bus, with the times asked for; in the lighting prototype, every fire has its sound,
+# whose embers leave from its flame and hide with it, and the fires hear from the man: with the
+# camera still, they are much quieter halfway between two than beside one.
 # Run from the repository root; the exit code is 0 on pass and 1 on fail:
 # godot --headless --fixed-fps 60 --path Projeto --script res://tests/test_sound_emitter.gd
 extends "res://tests/support/base_test.gd"
@@ -59,8 +63,12 @@ const SIDES: Array[float] = [-1.0, -0.5, 0.5, 1.0]
 ## How far Godot's pan and loudness of a one-shot may stray from what is asked, by the sums.
 const PAN_TOLERANCE: float = 0.002
 const LOUDNESS_TOLERANCE: float = 0.01
-## A thing near the right edge of hearing, so a one-shot further right would be out of it.
+## A thing near the right edge of hearing, from the ear: a one-shot to its right plays further out.
 const NEAR_THE_EDGE: Vector2 = Vector2(1100.0, 0.0)
+## Where an ear of the emitter's own is, from the centre of the screen: far off it, so the screen
+## does not count; and the share of its volume a flat Falloff of its own gives.
+const EAR_AWAY: Vector2 = Vector2(-4000.0, 2500.0)
+const OWN_FALLOFF: float = 0.3
 ## The tone the measured case plays: sample rate, pitch, amplitude, and length, in s, longer than
 ## the measure.
 const TONE_RATE: int = 44100
@@ -80,6 +88,25 @@ const MEASURED_LOUDNESS_TOLERANCE: float = 0.03
 const PAUSED_FRAMES: int = int(4.0 * (TEST_INTERVAL + TEST_DEVIATION) / FRAME_TIME)
 ## Frames the lighting prototype takes to set up its fires.
 const LEVEL_FRAMES: int = 10
+## The fire's file: its dry sound ends here, in s, and a reverb tail dies to silence after it.
+const FIRE_DRY_END: float = 10.735
+const FIRE_END_TOLERANCE: float = 0.05
+## Where in the fire's file a pass is started, a little before its Loop End, in s, and the real
+## seconds its loudness is measured over, in windows: through Loop End and well into where the tail
+## alone would have died, and how far below the loudest window the quietest may fall, in dB (the
+## loop's own swing, window to window, is under 4 dB; the tail alone falls 20 dB in 1.5 s).
+const FIRE_TEST_FROM: float = 10.0
+const FIRE_WINDOW: float = 0.25
+const FIRE_WINDOWS: int = 10
+const FIRE_STEADY_DB: float = 6.0
+## Two fires of the prototype side by side on one floor, this far apart at least and at most, in px;
+## where the man stands beside the first, from its base, and how much quieter, in dB, all the fires
+## together must be halfway to the second than beside the first, wherever the camera is.
+const FIRE_PAIR_GAP: Vector2 = Vector2(900.0, 1600.0)
+const BESIDE_FIRE: Vector2 = Vector2(60.0, -40.0)
+const WALKING_AWAY_DB: float = 9.0
+## Physics frames for the man to be placed and the fires to hear it.
+const PLACE_FRAMES: int = 4
 
 var _emitter_scene: PackedScene
 var _camera: Camera2D
@@ -112,15 +139,17 @@ func _initialize() -> void:
 	var results: Array[bool] = []
 	results.append(await _heard_only_within_hearing_distance())
 	results.append(await _the_loop_loops_without_changing_its_file())
+	results.append(await _the_fire_loop_goes_on_over_its_tail())
 	results.append(await _one_shots_come_about_every_interval())
 	results.append(await _one_shots_move_the_stereo_by_pan_spread_as_loud())
-	results.append(await _the_volume_follows_the_camera())
+	results.append(await _the_volume_follows_the_ear())
 	results.append(await _measured_in_the_mix())
-	results.append(await _a_side_out_of_hearing_gives_way())
+	results.append(await _the_falloff_follows_its_curve())
 	results.append(await _disabled_it_stops())
 	results.append(await _the_pause_holds_the_one_shots())
 	results.append(_the_fire_sound_has_the_fire_files())
 	results.append(await _every_prototype_fire_has_its_sound())
+	results.append(await _walking_away_from_a_fire_makes_it_quieter())
 	_camera.queue_free()
 	await process_frame
 	_finish(results)
@@ -129,7 +158,7 @@ func _initialize() -> void:
 func _heard_only_within_hearing_distance() -> bool:
 	var emitter: SoundEmitter = _new_emitter(_tone(true), null)
 	var centre: Vector2 = _camera.get_screen_center_position()
-	var listens_at_centre: bool = emitter.get_listener_position().is_equal_approx(centre)
+	var listens_at_centre: bool = emitter.get_ear_position().is_equal_approx(centre)
 	emitter.global_position = centre + Vector2(HEARING + MARGIN + 200.0, 0.0)
 	await _wait_frames(SETTLE_FRAMES)
 	var silent_far: bool = not emitter.is_hearing() and not emitter.loop_player.playing
@@ -142,17 +171,18 @@ func _heard_only_within_hearing_distance() -> bool:
 	emitter.global_position = centre + Vector2(-(HEARING + MARGIN + 50.0), 0.0)
 	await _wait_frames(SETTLE_FRAMES)
 	var stopped_past: bool = not emitter.is_hearing() and not emitter.loop_player.playing
-	var players_set: bool = (emitter.loop_player.max_distance == HEARING
-			and emitter.one_shot_player.max_distance == HEARING
-			and emitter.loop_player.attenuation == emitter.attenuation)
+	var players_set: bool = true
+	for player: AudioStreamPlayer2D in [emitter.loop_player, emitter.one_shot_player]:
+		players_set = (players_set and player.attenuation == SoundEmitter.GODOT_ATTENUATION
+				and player.max_distance == SoundEmitter.GODOT_MAX_DISTANCE)
 	emitter.queue_free()
 	return _report(listens_at_centre and silent_far and heard_near and heard_in_margin
 			and stopped_past and players_set,
-			"it listens from the centre of the screen (%s), is silent far off (%s), plays within "
+			"outside a level it hears from the centre of the screen (%s), is silent far off (%s), "
 			% [listens_at_centre, silent_far]
-			+ "Hearing Distance (%s), goes on within the margin (%s), stops past it (%s), and its "
-			% [heard_near, heard_in_margin, stopped_past]
-			+ "players take its Hearing Distance (%s)" % players_set)
+			+ "plays within Hearing Distance (%s), goes on within the margin (%s), stops past it "
+			% [heard_near, heard_in_margin]
+			+ "(%s), and Godot's own falloff is off in its players (%s)" % [stopped_past, players_set])
 
 
 func _the_loop_loops_without_changing_its_file() -> bool:
@@ -176,6 +206,48 @@ func _the_loop_loops_without_changing_its_file() -> bool:
 			"the fire's loop plays looping (%s) and its file stays as imported (loop %s); a WAV "
 			% [loops, file_loops]
 			+ "loop loops too (%s); two emitters start %.2f s apart" % [wav_loops, apart])
+
+
+## The fire's file ends in a reverb tail after its loop: started a little before Loop End, the loop
+## goes on as loud through it and past it, measured in Godot's mix, instead of dying into the tail
+## and going quiet until the file starts over; the tail plays out under the next pass.
+func _the_fire_loop_goes_on_over_its_tail() -> bool:
+	var fire: SoundEmitter = (load(FIRE_SOUND_PATH) as PackedScene).instantiate() as SoundEmitter
+	var loop_start: float = float(fire.get(&"loop_start")) if fire.get(&"loop_start") != null else 0.0
+	var loop_end: float = float(fire.get(&"loop_end")) if fire.get(&"loop_end") != null else 0.0
+	fire.free()
+	var capture: AudioEffectCapture = _capture_bus(&"TestLoop")
+	var emitter: SoundEmitter = _emitter_scene.instantiate() as SoundEmitter
+	emitter.loop = load(FIRE_LOOP_PATH) as AudioStream
+	emitter.set(&"loop_start", loop_start)
+	emitter.set(&"loop_end", loop_end)
+	emitter.random_start = false
+	emitter.position = _camera.get_screen_center_position()
+	root.add_child(emitter)
+	emitter.loop_player.bus = &"TestLoop"
+	await _wait_frames(SETTLE_FRAMES)
+	emitter.loop_player.stop()
+	emitter.loop_player.play(FIRE_TEST_FROM)
+	await _wait_real(SETTLE_TIME)
+	capture.clear_buffer()
+	var windows: Array[float] = []
+	for _k: int in FIRE_WINDOWS:
+		await _wait_real(FIRE_WINDOW)
+		var level: Vector2 = _rms(capture)
+		capture.clear_buffer()
+		windows.append(linear_to_db(maxf(level.x + level.y, 0.000001)))
+	emitter.queue_free()
+	await process_frame
+	_remove_bus(&"TestLoop")
+	var fall: float = windows.max() - windows.min()
+	var shown: Array[String] = []
+	for level_db: float in windows:
+		shown.append("%.0f" % level_db)
+	return _report(absf(loop_end - FIRE_DRY_END) <= FIRE_END_TOLERANCE and fall <= FIRE_STEADY_DB,
+			"the fire's Loop End is where its dry sound ends (%.3f s of %.3f), and from %.1f s " % [
+			loop_end, FIRE_DRY_END, FIRE_TEST_FROM]
+			+ "its loop goes on through it, the quietest window %.1f dB below the loudest " % fall
+			+ "(dB per %.2f s: %s)" % [FIRE_WINDOW, ", ".join(shown)])
 
 
 func _one_shots_come_about_every_interval() -> bool:
@@ -225,7 +297,7 @@ func _one_shots_move_the_stereo_by_pan_spread_as_loud() -> bool:
 			var player: AudioStreamPlayer2D = emitter.one_shot_player
 			var moved: float = _pan(player.global_position, player) - _pan(emitter.global_position, player)
 			var loud: float = _loudness(player.global_position, player, player.volume_db)
-			var asked: float = _loudness(emitter.global_position, player, emitter.one_shot_volume_db)
+			var asked: float = _from_the_thing(emitter)
 			if (told.size() != 1 or absf(told[0] - side) > 0.0001
 					or absf(moved - side * emitter.pan_spread) > PAN_TOLERANCE
 					or absf(loud / asked - 1.0) > LOUDNESS_TOLERANCE):
@@ -238,9 +310,9 @@ func _one_shots_move_the_stereo_by_pan_spread_as_loud() -> bool:
 			% "; ".join(problems))
 
 
-## A one-shot from the right while the camera moves towards it: its volume follows, so it stays as
-## loud as from the thing.
-func _the_volume_follows_the_camera() -> bool:
+## A one-shot from the right while the ear (outside a level, the centre of the screen) moves towards
+## the thing: the thing gets louder, and the one-shot follows, as loud as from the thing.
+func _the_volume_follows_the_ear() -> bool:
 	var centre: Vector2 = _camera.get_screen_center_position()
 	var emitter: SoundEmitter = _new_emitter(_tone(true), _tone(false), centre + FOLLOWED_AT)
 	await _wait_frames(SETTLE_FRAMES)
@@ -248,20 +320,21 @@ func _the_volume_follows_the_camera() -> bool:
 	emitter._time_left = INF
 	emitter.play_one_shot(1.0)
 	var player: AudioStreamPlayer2D = emitter.one_shot_player
-	var before: float = (_loudness(player.global_position, player, player.volume_db)
-			/ _loudness(emitter.global_position, player, emitter.one_shot_volume_db))
+	var gain_before: float = _from_the_thing(emitter)
+	var before: float = _loudness(player.global_position, player, player.volume_db) / gain_before
 	_camera.position += CAMERA_MOVE
 	await _wait_frames(SETTLE_FRAMES)
-	var after: float = (_loudness(player.global_position, player, player.volume_db)
-			/ _loudness(emitter.global_position, player, emitter.one_shot_volume_db))
+	var gain_after: float = _from_the_thing(emitter)
+	var after: float = _loudness(player.global_position, player, player.volume_db) / gain_after
 	var playing: bool = player.playing
 	_camera.position -= CAMERA_MOVE
 	emitter.queue_free()
 	await _wait_frames(SETTLE_FRAMES)
-	return _report(playing and absf(before - 1.0) <= LOUDNESS_TOLERANCE
+	return _report(playing and gain_after > gain_before and absf(before - 1.0) <= LOUDNESS_TOLERANCE
 			and absf(after - 1.0) <= LOUDNESS_TOLERANCE,
-			"while the camera moves, a one-shot stays as loud as from the thing (%.4f, then %.4f)"
-			% [before, after])
+			"as the ear nears the thing, it gets louder (%.3f, then %.3f of its volume), " % [
+			gain_before, gain_after] + "and a one-shot playing stays as loud as from the thing "
+			+ "(%.4f, then %.4f)" % [before, after])
 
 
 ## The same in Godot's mix: the loop, from the thing, and a one-shot from its right on buses of
@@ -303,20 +376,55 @@ func _measured_in_the_mix() -> bool:
 			% [moved, rights[0]] + "and is %.3f as loud as the loop" % as_loud)
 
 
-func _a_side_out_of_hearing_gives_way() -> bool:
-	var centre: Vector2 = _camera.get_screen_center_position()
-	var emitter: SoundEmitter = _new_emitter(_tone(true), _tone(false), centre + NEAR_THE_EDGE)
+## With an ear of its own, far from the centre of the screen: as loud as at the thing within Near
+## Distance, at each point of Default Falloff as loud as it says, and as a Falloff of its own says
+## when it has one; near the edge of hearing, a one-shot on its far side keeps that side and is as
+## loud as from the thing.
+func _the_falloff_follows_its_curve() -> bool:
+	var ear := Node2D.new()
+	ear.position = _camera.get_screen_center_position() + EAR_AWAY
+	root.add_child(ear)
+	var emitter: SoundEmitter = _new_emitter(_tone(true), _tone(false), ear.position)
+	emitter.ear = ear
+	emitter._time_left = INF
+	var span: float = HEARING - emitter.near_distance
+	var problems: Array[String] = []
+	var spots: Array[Vector2] = [Vector2(emitter.near_distance * 0.5, 1.0)]
+	for point: Vector2 in SoundEmitter.DEFAULT_FALLOFF:
+		if point.y > 0.0:
+			spots.append(Vector2(emitter.near_distance + point.x * span, point.y))
+	for spot: Vector2 in spots:
+		emitter.position = ear.position + Vector2(0.0, -spot.x)
+		await _wait_frames(SETTLE_FRAMES)
+		var gain: float = (_loudness(emitter.global_position, emitter.loop_player,
+				emitter.loop_player.volume_db) / db_to_linear(emitter.loop_volume_db))
+		if absf(gain - spot.y) > LOUDNESS_TOLERANCE:
+			problems.append("%.0f px: %.3f for %.3f" % [spot.x, gain, spot.y])
+	var own := Curve.new()
+	own.add_point(Vector2(0.0, OWN_FALLOFF), 0.0, 0.0, Curve.TANGENT_LINEAR, Curve.TANGENT_LINEAR)
+	own.add_point(Vector2(1.0, OWN_FALLOFF), 0.0, 0.0, Curve.TANGENT_LINEAR, Curve.TANGENT_LINEAR)
+	emitter.falloff = own
+	emitter.position = ear.position + Vector2(0.0, -(emitter.near_distance + span * 0.5))
+	await _wait_frames(SETTLE_FRAMES)
+	var own_gain: float = db_to_linear(emitter.loop_player.volume_db - emitter.loop_volume_db)
+	if absf(own_gain - OWN_FALLOFF) > LOUDNESS_TOLERANCE:
+		problems.append("its own falloff: %.3f for %.3f" % [own_gain, OWN_FALLOFF])
+	emitter.falloff = null
+	emitter.position = ear.position + NEAR_THE_EDGE
 	await _wait_frames(SETTLE_FRAMES)
 	var told: Array[float] = []
 	emitter.one_shot_played.connect(func(_at: Vector2, heard: float) -> void: told.append(heard))
 	emitter.play_one_shot(1.0)
 	var player: AudioStreamPlayer2D = emitter.one_shot_player
-	var loud: float = _loudness(player.global_position, player, player.volume_db)
-	var asked: float = _loudness(emitter.global_position, player, emitter.one_shot_volume_db)
+	var edge: float = _loudness(player.global_position, player, player.volume_db) / _from_the_thing(emitter)
+	if told.size() != 1 or told[0] != 1.0 or absf(edge - 1.0) > LOUDNESS_TOLERANCE:
+		problems.append("near the edge, a one-shot to the right: side %s, %.4f as loud" % [told, edge])
 	emitter.queue_free()
-	return _report(told.size() == 1 and told[0] < 0.0 and absf(loud / asked - 1.0) <= LOUDNESS_TOLERANCE,
-			"near the right edge of hearing, a one-shot to the right comes from the left instead "
-			+ "(side %s), as loud as from the thing (%.4f)" % [told, loud / asked])
+	ear.queue_free()
+	return _report(problems.is_empty(),
+			"with an ear of its own, it is as loud as at the thing within Near Distance, as Default "
+			+ "Falloff says at each of its points, as its own Falloff says, and a one-shot near the "
+			+ "edge of hearing keeps its side, as loud (problems: %s)" % "; ".join(problems))
 
 
 func _disabled_it_stops() -> bool:
@@ -416,6 +524,95 @@ func _every_prototype_fire_has_its_sound() -> bool:
 			+ "hide with it (problems: %s)" % ", ".join(problems))
 
 
+## In the lighting prototype, with the camera held still: the man beside a fire, then halfway to the
+## next one on the same floor. What Godot plays of all the fires' loops together, by its own sums,
+## is Walking Away dB quieter halfway than beside the fire.
+func _walking_away_from_a_fire_makes_it_quieter() -> bool:
+	var scene: PackedScene = load(LIGHTING_LEVEL_PATH) as PackedScene
+	var holder: Node2D = scene.instantiate() as Node2D
+	# Its own camera follows the man: the test's steps aside for it.
+	_camera.enabled = false
+	root.add_child(holder)
+	await _wait_frames(LEVEL_FRAMES)
+	var level: Level = holder.find_child("Level1", true, false) as Level
+	var man: Player = level.player if level != null else null
+	var emitters: Array[SoundEmitter] = []
+	for node: Node in holder.find_children("*", "", true, false):
+		if node is SoundEmitter:
+			emitters.append(node as SoundEmitter)
+	var pair: Array[SoundEmitter] = _fire_pair(emitters, man)
+	var level_camera: Camera2D = root.get_viewport().get_camera_2d()
+	if man == null or pair.is_empty() or level_camera == null:
+		holder.queue_free()
+		_camera.enabled = true
+		await process_frame
+		return _report(false, "the lighting prototype has its man (%s), a camera (%s) and two fires " % [
+				man != null, level_camera != null] + "side by side on one floor (%s)" % not pair.is_empty())
+	level_camera.set_physics_process(false)
+	level_camera.set_process(false)
+	var beside: Vector2 = pair[0].global_position + BESIDE_FIRE
+	var halfway: Vector2 = (pair[0].global_position + pair[1].global_position) * 0.5 + Vector2(0.0, BESIDE_FIRE.y)
+	var hears_the_man: bool = pair[0].get_ear_position().is_equal_approx(man.global_position)
+	var heard: Array[float] = []
+	for spot: Vector2 in [beside, halfway]:
+		man.global_position = spot
+		man.velocity = Vector2.ZERO
+		for _k: int in PLACE_FRAMES:
+			await physics_frame
+		heard.append(_fires_heard_db(emitters))
+	var gap: float = pair[0].global_position.distance_to(pair[1].global_position)
+	holder.queue_free()
+	_camera.enabled = true
+	_camera.make_current()
+	await _wait_frames(SETTLE_FRAMES)
+	var quieter: float = heard[0] - heard[1]
+	return _report(hears_the_man and quieter >= WALKING_AWAY_DB,
+			"the fires hear from the man (%s), and with the camera still they are together " % hears_the_man
+			+ "%.1f dB quieter halfway between two (%.0f px apart) than beside one " % [quieter, gap]
+			+ "(%.1f dB, then %.1f dB)" % [heard[0], heard[1]])
+
+
+## Two fires on one floor, next to each other and Fire Pair Gap apart, the first nearest the man.
+func _fire_pair(emitters: Array[SoundEmitter], man: Node2D) -> Array[SoundEmitter]:
+	if man == null:
+		return []
+	var best: Array[SoundEmitter] = []
+	var best_distance: float = INF
+	for a: SoundEmitter in emitters:
+		var next: SoundEmitter = null
+		for b: SoundEmitter in emitters:
+			if (b != a and is_equal_approx(b.global_position.y, a.global_position.y)
+					and b.global_position.x > a.global_position.x
+					and (next == null or b.global_position.x < next.global_position.x)):
+				next = b
+		if next == null:
+			continue
+		var gap: float = next.global_position.x - a.global_position.x
+		var distance: float = a.global_position.distance_to(man.global_position)
+		if gap >= FIRE_PAIR_GAP.x and gap <= FIRE_PAIR_GAP.y and distance < best_distance:
+			best = [a, next]
+			best_distance = distance
+	return best
+
+
+## What Godot plays of the emitters' loops together, in dB: each playing loop player's attenuation
+## over its distance from the centre of the screen and its volume, summed as powers.
+func _fires_heard_db(emitters: Array[SoundEmitter]) -> float:
+	var power: float = 0.0
+	var viewport: Viewport = root.get_viewport()
+	var centre: Vector2 = ((viewport.get_global_canvas_transform() * viewport.get_canvas_transform())
+			.affine_inverse() * (viewport.get_visible_rect().size * 0.5))
+	for emitter: SoundEmitter in emitters:
+		var player: AudioStreamPlayer2D = emitter.loop_player
+		if not player.playing:
+			continue
+		var distance: float = player.global_position.distance_to(centre)
+		var gain: float = (pow(maxf(1.0 - distance / player.max_distance, 0.0), player.attenuation)
+				* db_to_linear(player.volume_db))
+		power += gain * gain
+	return linear_to_db(sqrt(power)) if power > 0.0 else -INF
+
+
 func _new_emitter(loop: AudioStream, one_shots: AudioStream,
 		position: Vector2 = Vector2.ZERO) -> SoundEmitter:
 	var emitter: SoundEmitter = _emitter_scene.instantiate() as SoundEmitter
@@ -444,6 +641,13 @@ func _listen(emitter: SoundEmitter, frames: int, enough: int = 0) -> void:
 		if enough > 0 and _heard_frames.size() >= enough:
 			break
 	emitter.one_shot_played.disconnect(keep)
+
+
+## How loud a one-shot of emitter should be, by its own sums: its volume, lowered by the falloff
+## over the thing's distance from the ear.
+func _from_the_thing(emitter: SoundEmitter) -> float:
+	return (emitter.get_gain(emitter.global_position.distance_to(emitter.get_ear_position()))
+			* db_to_linear(emitter.one_shot_volume_db))
 
 
 ## Godot's pan for a 2D player at a point of the world: the share of the right speaker, 0.5 at the

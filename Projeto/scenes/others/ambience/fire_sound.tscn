@@ -21,6 +21,10 @@ stream_2/weight = 1.0
 stream_3/stream = ExtResource("7_crackle_4")
 stream_3/weight = 1.0
 
+[sub_resource type="Curve" id="Curve_fire_falloff"]
+_data = [Vector2(0, 1), 0.0, -2.5, 1, 1, Vector2(0.2, 0.5), -2.5, -1.0, 1, 1, Vector2(0.45, 0.25), -1.0, -0.5, 1, 1, Vector2(0.75, 0.1), -0.5, -0.4, 1, 1, Vector2(1, 0), -0.4, 0.0, 1, 1]
+point_count = 5
+
 [sub_resource type="Gradient" id="Gradient_fire_embers"]
 offsets = PackedFloat32Array(0, 0.4, 0.75, 1)
 colors = PackedColorArray(0.3, 0.05, 0.18, 0, 0.62, 0.1, 0.42, 1, 1, 0.36, 0.78, 1, 1, 0.84, 0.76, 1)
@@ -28,6 +32,10 @@ colors = PackedColorArray(0.3, 0.05, 0.18, 0, 0.62, 0.1, 0.42, 1, 1, 0.36, 0.78,
 [node name="FireSound" instance=ExtResource("1_emitter")]
 loop = ExtResource("3_base")
 one_shots = SubResource("AudioStreamRandomizer_crackles")
+near_distance = 120.0
+hearing_distance = 900.0
+falloff = SubResource("Curve_fire_falloff")
+loop_end = 10.735
 
 [node name="RisingEmbers" parent="." node_paths=PackedStringArray("emitter") instance=ExtResource("2_embers")]
 unique_name_in_owner = true

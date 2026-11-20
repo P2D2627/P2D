@@ -23,8 +23,10 @@ const TEST_PATH: String = "user://test_settings.cfg"
 ## How far a bus volume read back from the AudioServer may be from the one set: it goes through dB.
 const VOLUME_TOLERANCE: float = 0.0001
 ## The buses after the ones with a volume option, each with the bus it sends to and whose option it
-## follows: Alerts holds the sounds that turn the ambience down, and follows SFX.
-const SUB_BUSES: Dictionary[StringName, StringName] = {&"Alerts": &"SFX"}
+## follows: Alerts holds the sounds that turn the ambience down, and follows SFX; Beds holds the
+## ambience's beds and Gusts its passing gusts, which turn the beds down, and both follow Ambience.
+const SUB_BUSES: Dictionary[StringName, StringName] = {&"Alerts": &"SFX", &"Beds": &"Ambience",
+		&"Gusts": &"Ambience"}
 const BUS_LAYOUT_PATH: String = "res://default_bus_layout.tres"
 ## A volume option at half, 6.02 dB under the mix, and how far a bus's dB may be from the expected.
 const HALF_VOLUME: float = 0.5

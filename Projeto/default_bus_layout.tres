@@ -14,6 +14,14 @@ release_ms = 517.0
 mix = 0.25
 sidechain = &"SFX"
 
+[sub_resource type="AudioEffectCompressor" id="AudioEffectCompressor_gusts"]
+resource_name = "Compressor"
+threshold = -27.0
+ratio = 2.0
+attack_us = 2000.0
+release_ms = 600.0
+sidechain = &"Gusts"
+
 [resource]
 bus/1/name = &"Music"
 bus/1/solo = false
@@ -49,3 +57,17 @@ bus/5/mute = false
 bus/5/bypass_fx = false
 bus/5/volume_db = 0.0
 bus/5/send = &"SFX"
+bus/6/name = &"Beds"
+bus/6/solo = false
+bus/6/mute = false
+bus/6/bypass_fx = false
+bus/6/volume_db = 0.0
+bus/6/send = &"Ambience"
+bus/6/effect/0/effect = SubResource("AudioEffectCompressor_gusts")
+bus/6/effect/0/enabled = true
+bus/7/name = &"Gusts"
+bus/7/solo = false
+bus/7/mute = false
+bus/7/bypass_fx = false
+bus/7/volume_db = 0.0
+bus/7/send = &"Ambience"

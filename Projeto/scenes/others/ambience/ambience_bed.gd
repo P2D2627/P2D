@@ -23,6 +23,9 @@ const MAX_STEP: float = 0.1
 ## set in them; their volume is the bed's.
 @export var first_player: AudioStreamPlayer
 @export var second_player: AudioStreamPlayer
+## The bus both players play on, such as one that a compressor turns down under the gusts; empty,
+## their own.
+@export var bus: StringName = &""
 ## Fades the bed in on entering the tree. Without it, the bed waits for start().
 @export var autostart: bool = true
 ## The first pass after start() begins at a random point of the loop, so a level never opens on
@@ -87,6 +90,8 @@ func _ready() -> void:
 	for run: Pass in _passes:
 		run.player.volume_linear = 0.0
 		run.player.stream = sound
+		if bus != &"":
+			run.player.bus = bus
 	if sound == null:
 		push_warning("AmbienceBed %s: no Sound to play." % name)
 		return

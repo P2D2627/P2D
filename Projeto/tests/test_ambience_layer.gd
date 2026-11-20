@@ -7,8 +7,10 @@
 # Unpanned sounds, which keep their own stereo, play from the centre of the screen on a player
 # that is not 2D, never two in a row, about Unpanned Share of the time, and travel as Unpanned
 # Travel says; a placed sound travels from its side of the screen towards the other. A layer with
-# only unpanned sounds plays all of them unpanned. In level 1, the passing gusts and the low
-# rumbles are two layers, with their gaps and their sounds.
+# only unpanned sounds plays all of them unpanned. A placed sound keeps its place on the screen
+# while it plays, as the camera moves on. In level 1, the passing gusts and the low rumbles are two
+# layers, with their gaps, their sounds and their buses, and a gust turns the beds down: the beds
+# play on Beds, the gusts on Gusts, both into Ambience, and a compressor on Beds listens to Gusts.
 # The sounds the player needs to hear to stay alive, the demon's and the crucifix's, play on the
 # Alerts bus, which sends to SFX, and a compressor on the Ambience bus listens to Alerts, so they
 # turn the ambience down while they play. The player's own sounds, steps among them, stay on SFX,
@@ -78,6 +80,16 @@ const RUMBLE_GAPS: Vector2 = Vector2(11.0, 19.0)
 const PASSING_FILES: Array[String] = ["one_shot_wind_2.wav", "one_shot_wind_5.wav"]
 const BAKED_PAN_FILES: Array[String] = ["one_shot_wind_1_bakedpan.wav"]
 const RUMBLE_FILES: Array[String] = ["one_shot_wind_3_low.wav", "one_shot_wind_4_low.wav"]
+## The beds' bus and the passing gusts': both send to Ambience, and a compressor on Beds listens to
+## Gusts, so a gust turns the beds down while it blows.
+const BEDS_BUS: StringName = &"Beds"
+const GUSTS_BUS: StringName = &"Gusts"
+const LEVEL1_BEDS: Array[NodePath] = [^"Bed1", ^"Bed2"]
+## A sound long enough to play on while the camera moves, in s; how far the camera moves, in px,
+## and how near its place on the screen the sound must stay, in px.
+const FOLLOWED_SOUND_LENGTH: float = 3.0
+const CAMERA_MOVE: Vector2 = Vector2(800.0, -300.0)
+const PLACE_TOLERANCE: float = 0.5
 
 var _layer_scene: PackedScene
 ## Process frames since the last _listen() began, when each sound played, from where, which way it
@@ -103,6 +115,7 @@ func _initialize() -> void:
 	results.append(await _waits_stay_between_min_and_max_gap())
 	results.append(await _without_a_camera_sounds_come_from_around_the_layer())
 	results.append(await _sounds_come_from_around_the_screen_centre())
+	results.append(await _a_placed_sound_keeps_its_place_on_the_screen())
 	results.append(await _without_autostart_waits_for_start())
 	results.append(await _stop_holds_the_sounds())
 	results.append(await _pause_holds_the_sounds())
@@ -110,6 +123,7 @@ func _initialize() -> void:
 	results.append(await _unpanned_sounds_play_as_they_are())
 	results.append(await _with_only_unpanned_sounds_every_sound_is_unpanned())
 	results.append(_level1_has_the_wind_layers())
+	results.append(_gusts_turn_the_beds_down())
 	results.append(_alerts_turn_the_ambience_down_and_the_players_sounds_do_not())
 	# Lets the last layer's queue_free() happen before quitting.
 	await process_frame
@@ -178,6 +192,27 @@ func _sounds_come_from_around_the_screen_centre() -> bool:
 	return _report(_inside_the_spread_on_both_sides(centre) and player_at_last,
 			"the sounds come from around the centre of the screen, on both sides of it, and the "
 			+ "player is where the last one came from")
+
+
+## A placed sound keeps its place on the screen while it plays, as the camera moves on: it neither
+## falls behind nor pans away as the man runs on.
+func _a_placed_sound_keeps_its_place_on_the_screen() -> bool:
+	var camera: Camera2D = await _new_camera()
+	var layer: AmbienceLayer = _new_layer(_short_sound(FOLLOWED_SOUND_LENGTH), true, LAYER_AT)
+	await _listen(layer, NEXT_SOUND_FRAMES, 1)
+	var played: bool = _heard_frames.size() == 1
+	var offset: Vector2 = layer.player.global_position - camera.get_screen_center_position()
+	camera.position += CAMERA_MOVE
+	# The layer follows a frame behind the camera, which takes its new place after the layer's frame.
+	await _wait_frames(CAMERA_FRAMES + 1)
+	var kept: Vector2 = layer.player.global_position - camera.get_screen_center_position()
+	var playing: bool = layer.player.playing
+	layer.queue_free()
+	camera.queue_free()
+	await process_frame
+	return _report(played and playing and kept.distance_to(offset) <= PLACE_TOLERANCE,
+			"a placed sound playing keeps its place on the screen as the camera moves on "
+			+ "(%s from the centre, then %s)" % [offset.round(), kept.round()])
 
 
 func _without_autostart_waits_for_start() -> bool:
@@ -309,9 +344,9 @@ func _level1_has_the_wind_layers() -> bool:
 		problems.append("PassingWind and LowRumble are AmbienceLayers")
 	else:
 		problems.append_array(_layer_problems(passing, PASSING_GAPS, PASSING_FILES,
-				BAKED_PAN_FILES, AmbienceLayer.Travel.LEFT_TO_RIGHT))
+				BAKED_PAN_FILES, AmbienceLayer.Travel.LEFT_TO_RIGHT, GUSTS_BUS))
 		problems.append_array(_layer_problems(rumble, RUMBLE_GAPS, [], RUMBLE_FILES,
-				AmbienceLayer.Travel.NONE))
+				AmbienceLayer.Travel.NONE, AMBIENCE_BUS))
 	ambience.queue_free()
 	return _report(problems.is_empty(), "level 1 has the passing gusts every %.0f to %.0f s and "
 			% [PASSING_GAPS.x, PASSING_GAPS.y] + "the low rumbles every %.0f to %.0f s, with "
@@ -320,9 +355,9 @@ func _level1_has_the_wind_layers() -> bool:
 
 
 ## What a level's layer gets wrong against its gaps, the files of its Sounds and of its Unpanned
-## Sounds, by name, and its Unpanned Travel.
+## Sounds, by name, its Unpanned Travel, and the bus its players play on.
 func _layer_problems(layer: AmbienceLayer, gaps: Vector2, placed: Array[String],
-		unpanned: Array[String], travel: AmbienceLayer.Travel) -> Array[String]:
+		unpanned: Array[String], travel: AmbienceLayer.Travel, bus: StringName) -> Array[String]:
 	var problems: Array[String] = []
 	if not is_equal_approx(layer.min_gap, gaps.x) or not is_equal_approx(layer.max_gap, gaps.y):
 		problems.append("%s gaps %.1f to %.1f s" % [layer.name, layer.min_gap, layer.max_gap])
@@ -336,9 +371,50 @@ func _layer_problems(layer: AmbienceLayer, gaps: Vector2, placed: Array[String],
 		problems.append("%s Unpanned Sounds %s" % [layer.name, unpanned_files])
 	if layer.unpanned_travel != travel:
 		problems.append("%s Unpanned Travel %d" % [layer.name, layer.unpanned_travel])
-	if layer.unpanned_player == null or layer.unpanned_player.bus != AMBIENCE_BUS:
-		problems.append("%s Unpanned Player off the Ambience bus" % layer.name)
+	if layer.unpanned_player == null or layer.player == null:
+		problems.append("%s has no players" % layer.name)
+	elif _players_bus(layer.bus, [layer.player.bus, layer.unpanned_player.bus]) != bus:
+		problems.append("%s plays off the %s bus" % [layer.name, bus])
 	return problems
+
+
+## The bus players end on: bus, if set, and else theirs, if they share one; none otherwise.
+func _players_bus(bus: StringName, theirs: Array[StringName]) -> StringName:
+	if bus != &"":
+		return bus
+	for each: StringName in theirs:
+		if each != theirs[0]:
+			return &""
+	return theirs[0]
+
+
+## Level 1's gusts turn its beds down: Beds and Gusts send to Ambience, so the Ambience option
+## applies to both, a compressor on Beds listens to Gusts, and the beds play on Beds (the passing
+## gusts on Gusts: _level1_has_the_wind_layers).
+func _gusts_turn_the_beds_down() -> bool:
+	var problems: Array[String] = []
+	for bus: StringName in [BEDS_BUS, GUSTS_BUS]:
+		var index: int = AudioServer.get_bus_index(bus)
+		if index == -1 or AudioServer.get_bus_send(index) != AMBIENCE_BUS:
+			problems.append("%s does not send to Ambience" % bus)
+	var beds: int = AudioServer.get_bus_index(BEDS_BUS)
+	var listens: bool = false
+	if beds != -1:
+		for index: int in AudioServer.get_bus_effect_count(beds):
+			var compressor := AudioServer.get_bus_effect(beds, index) as AudioEffectCompressor
+			listens = listens or (compressor != null and compressor.sidechain == GUSTS_BUS
+					and AudioServer.is_bus_effect_enabled(beds, index))
+	if not listens:
+		problems.append("no compressor on Beds listens to Gusts")
+	var ambience: Node = (load(LEVEL1_AMBIENCE_PATH) as PackedScene).instantiate()
+	for path: NodePath in LEVEL1_BEDS:
+		var bed := ambience.get_node_or_null(path) as AmbienceBed
+		if bed == null or _players_bus(bed.bus, [bed.first_player.bus, bed.second_player.bus]) != BEDS_BUS:
+			problems.append("%s plays off Beds" % path)
+	ambience.free()
+	return _report(problems.is_empty(), "the gusts turn level 1's beds down: Beds and Gusts send to "
+			+ "Ambience, a compressor on Beds listens to Gusts, and the beds play on Beds (problems: "
+			+ "%s)" % "; ".join(problems))
 
 
 ## The file names in a sound: the streams of an AudioStreamRandomizer, the sound itself, or none.
@@ -485,11 +561,11 @@ func _finish(results: Array[bool]) -> void:
 
 
 ## A tenth of a second of silence, made in memory: the test needs a sound to play, not to hear one.
-func _short_sound() -> AudioStreamWAV:
+func _short_sound(length: float = SHORT_SOUND_LENGTH) -> AudioStreamWAV:
 	var sound := AudioStreamWAV.new()
 	sound.format = AudioStreamWAV.FORMAT_16_BITS
 	sound.mix_rate = SHORT_SOUND_RATE
 	var bytes := PackedByteArray()
-	bytes.resize(int(SHORT_SOUND_RATE * SHORT_SOUND_LENGTH) * 2)
+	bytes.resize(int(SHORT_SOUND_RATE * length) * 2)
 	sound.data = bytes
 	return sound

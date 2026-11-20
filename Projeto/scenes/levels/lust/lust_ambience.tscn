@@ -41,6 +41,7 @@ stream_1/weight = 1.0
 
 [node name="Bed1" parent="." unique_id=1641107320 instance=ExtResource("1_bed")]
 sound = ExtResource("2_layer_1")
+bus = &"Beds"
 loop_start = 3.0
 loop_end = 63.0
 quiet_db = -24.5
@@ -49,12 +50,14 @@ drift_rate = 0.11
 
 [node name="Bed2" parent="." unique_id=1648832064 instance=ExtResource("1_bed")]
 sound = ExtResource("3_layer_2")
+bus = &"Beds"
 loop_end = 107.0
 quiet_db = -27.5
 loud_db = -12.5
 
 [node name="PassingWind" parent="." instance=ExtResource("4_layer")]
 sounds = SubResource("AudioStreamRandomizer_passing")
+bus = &"Gusts"
 unpanned_sounds = SubResource("AudioStreamRandomizer_baked")
 unpanned_travel = 1
 min_gap = 21.0
@@ -67,3 +70,4 @@ max_gap = 19.0
 
 [node name="WindEmbers" parent="." node_paths=PackedStringArray("wind_layer") instance=ExtResource("5_embers")]
 wind_layer = NodePath("../PassingWind")
+in_backdrop = true

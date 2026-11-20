@@ -3513,7 +3513,8 @@ momentos e pontos escolhidos ao acaso:
   omissão, 8 e 25 s).
 - Cada som parte de um ponto ao acaso à volta do centro do ecrã: por omissão, até 900 px para cada
   lado e até 300 px para cima ou para baixo. O lado decide em que coluna se ouve mais, e a distância
-  decide o volume.
+  decide o volume. Enquanto toca, o som mantém o seu lugar no ecrã (Follow Screen): antes ficava no
+  ponto do mundo onde começara, e, com a personagem a correr, ficava para trás, mais baixo e de lado.
 - Os sons vêm de um `AudioStreamRandomizer` do Godot, no campo Sounds, que escolhe um som diferente
   do anterior e lhe varia o tom e o volume.
 
@@ -3574,11 +3575,27 @@ Cada camada escolhe os ficheiros com um `AudioStreamRandomizer`, que lhes varia 
 Cada rajada que passa leva consigo algumas brasas, como de fogueiras fora de vista. O nó
 `WindEmbers` (`scenes/others/ambience/wind_embers.tscn`) ouve a PassingWind e, a cada som, sopra
 uma rajada para o lado para onde o som atravessa o ecrã; a do `_bakedpan` vai sempre da esquerda
-para a direita. Entram 6 a 14 brasas, ao longo de 0,7 s, pelo lado de onde vem o vento e a alturas
-ao acaso, e atravessam o ecrã com a rajada, que cresce em 0,35 s, se mantém 0,9 s e depois amaina.
-Não seguem uma linha reta: cada rajada inclina-se alguns graus para cima ou para baixo, a
-turbulência (ruído de curl, levado pela própria rajada) desvia-as, as quentes sobem e as que
-arrefecem descem, e as maiores, mais perto do olhar, vão mais depressa. O aspeto é o das brasas do
+para a direita. Entram 6 a 14 brasas, de 0,25 s a 1,15 s depois do início do som, pelo lado de onde
+vem o vento e a alturas ao acaso, e atravessam o ecrã em cerca de 3 s com a rajada, que cresce em
+0,45 s, se mantém 2,8 s e depois amaina. Sobem na diagonal: cada rajada sopra, em média, 6° acima
+da horizontal (Slant), com um desvio ao acaso de 4°. Não seguem uma linha reta: a turbulência
+(ruído de curl, levado pela própria rajada) desvia-as, as quentes sobem e as que arrefecem descem,
+e as maiores, mais perto do olhar, vão mais depressa.
+
+A sincronia entre as brasas e o som foi medida na mistura do próprio Godot, gravada com o modo de
+gravação de filme (`--write-movie`): cada rajada atinge o pico 0,6 a 0,9 s depois de começar, com
+as brasas já no ecrã. O que a tornava difícil de seguir era o volume: no pico, as rajadas ficavam a
+cerca de −40 dBFS, o mesmo que o primeiro fundo quando sobe, e perdiam-se debaixo dele; e uma rajada
+posicionada ficava para trás quando a personagem corria. Os roncos (LowRumble), também de vento e
+sem brasas, ouviam-se então como se fossem a rajada, segundos depois. Por isso, além de a rajada
+manter o seu lugar no ecrã, os fundos tocam agora num bus próprio, Beds, e as rajadas que passam
+noutro, Gusts, ambos a enviar para o Ambience (e a seguir o seu volume nas opções). Um compressor no
+Beds escuta o Gusts (sidechain), com o limiar a −27 dB, a razão de 2 para 1, ataque de 2 ms e
+recuperação em 600 ms: enquanto a rajada sopra, os fundos baixam. Medido com um tom constante no
+Beds e cada rajada no Gusts a −6 dB, os fundos baixam 4,5 a 6,2 dB no pico da rajada e recuperam em
+cerca de 1,5 s. A primeira afinação (−30 dB, 3 para 1) baixava-os 7 a 10 dB, o que se ouvia como um
+buraco. Ficou de lado subir simplesmente as rajadas 6 dB, que as punha mais fortes do que tudo o
+resto em vez de abrir espaço para elas. O aspeto é o das brasas do
 menu principal (`MenuEmbers`): a cor segue o calor, de um núcleo claro a um vermelho fundo; cada
 uma é um rasto tão longo quanto o que percorre com o obturador de uma câmara de cinema aberto; e
 cintila. Voam no mundo, à volta do que a câmara mostra, numa camada de desenho própria (um
@@ -3588,12 +3605,26 @@ camada) não as apaga, e passam à frente do nível. A camada 1 deixa-as ainda d
 gradação de cor do protótipo, que chegam até ela. A pausa suspende-as. Na primeira versão, desenhadas
 na camada do nível, não se viam: numa imagem do jogo, com 6 brasas no ecrã, só se distinguia um
 traço; na escuridão do protótipo (0,30, 0,20, 0,30), nenhuma. Ficaram maiores (núcleo de 3 a 7 px),
-mais quentes e mais brilhantes, e com um obturador mais curto (1/96 s em vez do 1/48 s do menu),
-porque, à velocidade de uma rajada, um rasto longo espalha a luz até ela desaparecer. Medido pelo `test_wind_embers.gd`, em quatro rajadas para cada lado,
-97 a 100 % atravessam o ecrã todo, com a mediana em 1,1 s; afastam-se da linha reta 48 a 49 px
-(mediana), e 95 a 97 % acabam mais acima ou mais abaixo do que entraram. Num minuto e dez de nível 1,
-sem nada forçado, as rajadas tocaram aos 21,4 s e aos 49,4 s e lançaram 8 e 13 brasas, e os roncos
-aos 13,6, 27,9, 43,6 e 59,0 s.
+mais quentes e mais brilhantes. Atravessavam então o ecrã em cerca de 1 s, com um obturador mais
+curto (1/96 s), porque, a essa velocidade, um rasto longo espalhava a luz até ela desaparecer; a
+3 s por travessia, voltaram ao 1/48 s do menu, e vivem 4,5 a 6 s, a arrefecer devagar, para ainda
+brilharem do outro lado.
+
+Com In Backdrop ligado, como no nível 1, as brasas voam no fundo do nível em vez de à frente de
+tudo: desenham-se como o último filho do nó Backdrop do nível (o mesmo que o protótipo de
+iluminação procura), por isso à frente das rochas do fundo e atrás da rocha onde se joga, da
+personagem e de tudo o que vem depois. Aí, a escuridão do nível escurece-as, e Backdrop Brightness
+(2,5 vezes) compensa-o; Backdrop Size (0,75) torna-as mais pequenas, como mais longe. Numa imagem do
+protótipo, no fundo, as brasas veem-se sobre a parede da gruta com um brilho próximo do das da
+frente, e nenhuma passa à frente da rocha do chão; desligado, voltam à sua camada e passam por cima
+dela. Pode ligar-se e desligar-se com o jogo a correr, no separador Remote.
+
+Medido pelo `test_wind_embers.gd`, em quatro rajadas para cada lado, 95 a 97 % atravessam o ecrã
+todo, com a mediana em 2,9 a 3,05 s; afastam-se da linha reta 62 a 65 px (mediana), e 89 a 95 %
+sobem pelo menos 100 px (mediana de 263 a 278 px, cerca de 8° na travessia). Antes de as rajadas
+durarem mais, só 76 % chegavam ao outro lado: as últimas a entrar apanhavam a rajada já a amainar e
+paravam a meio. Num minuto e dez de nível 1, sem nada forçado, as rajadas tocaram aos 21,4 s e aos
+49,4 s e lançaram 8 e 13 brasas, e os roncos aos 13,6, 27,9, 43,6 e 59,0 s.
 
 Ficaram de lado esperar pelo `MenuEmbers`, que ainda não está no dev, para lhe dar um modo de vento,
 e as partículas do Godot (`GPUParticles2D`), que não reproduzem o aspeto das do menu. O desenho das
@@ -3622,17 +3653,21 @@ Godot recupera mais devagar quanto mais o som passou do limiar, e o ambiente reg
 
 O `test_ambience_layer.gd` verifica, com um som silencioso criado em memória, que cada intervalo
 fica entre Min Gap e Max Gap e que os intervalos variam; que os sons partem dos dois lados do centro
-do ecrã, dentro dos limites, ou da própria camada quando não há câmara; que tocam no bus Ambience;
+do ecrã, dentro dos limites, ou da própria camada quando não há câmara; que um som posicionado
+mantém o seu lugar no ecrã quando a câmara se move 800 px; que tocam no bus Ambience;
 que `stop()` e a pausa os suspendem; que os sons não posicionados tocam do centro do ecrã, no seu
 leitor, nunca dois seguidos, e dizem o seu lado, e que os posicionados atravessam do seu lado para
-o outro; que as duas camadas de vento do nível 1 têm os intervalos e os ficheiros acima; e que o
+o outro; que as duas camadas de vento do nível 1 têm os intervalos, os ficheiros e os buses acima
+(as rajadas no Gusts, os roncos no Ambience); que o Beds e o Gusts enviam para o Ambience, um
+compressor no Beds escuta o Gusts e os fundos do nível 1 tocam no Beds; e que o
 Alerts envia para o SFX, o compressor do Ambience o
 escuta, o demónio e o crucifixo estão no Alerts e a personagem no SFX. O `test_ambience_ducking.gd`
 toca, com o áudio a misturar em tempo real e sem saída, cada som do crucifixo, do demónio e da
 personagem, lidos das cenas, e verifica que cada alerta baixa o ambiente entre 5 e 18 dB e cada som
 da personagem 3 dB no máximo; demora cerca de 100 s. Se os alertas se ouvem bem por cima do
 ambiente confirma-se a jogar. O `test_settings.gd` confirma a lista de buses: os cinco com
-opção de volume, todos a enviar para o Master, e o Alerts, a enviar para o SFX.
+opção de volume, todos a enviar para o Master, o Alerts, a enviar para o SFX, e o Beds e o Gusts, a
+enviar para o Ambience.
 
 O `test_ambience_bed.gd` verifica, também com um som silencioso, que um fundo toca nos seus dois
 leitores, no bus Ambience; que entra a partir do silêncio, nunca passa de Loud dB e depois varia
@@ -3641,7 +3676,8 @@ segundos antes do fim da anterior, e que a potência total durante a transição
 da constante (no teste, 0,0 %); que a primeira passagem começa num ponto ao acaso; que `stop()`
 desliga o fundo em Fade Time e `start()` o traz de volta; que a pausa o suspende; que, com a escala
 de tempo do hitstop, a passagem seguinte chega ao fim de 4,93 s de tempo real, em vez de 5 s; e que
-os dois fundos do nível 1 estão no bus Ambience, cada um com o seu som, e só se realinham ao fim de
+os dois fundos do nível 1 tocam no Ambience ou num bus que envia para ele (o Beds), cada um com o
+seu som, e só se realinham ao fim de
 mais de meia hora. Se o ambiente se repete ou respira bem só se ouve a jogar.
 
 #### Sons no mundo: o fogo e as suas brasas
@@ -3651,15 +3687,42 @@ O som de uma coisa do mundo, como uma fogueira (e, mais tarde, os cães-demónio
 por cima dele, sons soltos (One Shots) a momentos ao acaso, para que o ciclo não se reconheça. O
 emissor anda com a coisa, por isso serve também para o que se mexe.
 
-O Godot ouve os sons 2D a partir do centro do ecrã e baixa-os com a distância: o volume é
-(1 − distância / Hearing Distance) elevado a Attenuation, e é nulo a partir de Hearing Distance. O
-emissor só toca o ciclo enquanto o centro do ecrã está mais perto do que Hearing Distance (por
-omissão, 1 500 px, com Attenuation 1,5, que desce depressa perto do fogo e se arrasta ao longe); só
-o desliga 100 px mais longe (Hearing Margin), para que andar nessa fronteira não o ligue e desligue
-a cada frame. Assim, das 87 fogueiras do protótipo de iluminação, só as próximas tocam, e as outras
-não gastam processamento a descodificar o ficheiro. O ciclo começa num ponto ao acaso, para que duas
+O volume depende da distância entre a coisa e o ouvido, que é a personagem do nível onde o emissor
+está (sem nível, como numa cena aberta sozinha, o centro do ecrã; o campo Ear pode apontar outro).
+Dentro de Near Distance, ouve-se como junto à coisa; daí até Hearing Distance, desce como diz a curva
+Falloff, que se desenha no Inspector; a partir de Hearing Distance, cala-se. Sem curva própria, o
+emissor usa uma que desce cerca de 6 dB de cada vez que a distância duplica, como ao ar livre, e se
+cala no fim: metade (−6 dB) a um quinto do caminho, um quarto (−12 dB) pouco antes do meio, um
+décimo (−20 dB) a três quartos, e zero no fim. O emissor acerta o volume dos seus leitores a cada
+frame e desliga a atenuação do próprio Godot; o lado (esquerda e direita) continua a ser o do Godot,
+pelo ponto do ecrã onde a coisa aparece. O fogo ouve-se até 900 px e por inteiro até 120 px.
+
+Antes, o volume era o do Godot: ouvia-se a partir do centro do ecrã, (1 − distância / 1 500 px)
+elevado a 1,5. Com as fogueiras do protótipo a 1 000 a 1 300 px umas das outras, ouviam-se sempre
+duas ou três ao mesmo tempo: numa passagem medida ao longo de uma fila, a soma ia de −0,7 dB junto
+a uma fogueira a só −4,5 dB a meio caminho da seguinte, uma diferença de 3,8 dB, que mal se ouve. E
+o centro do ecrã nem sempre segue a personagem: a câmara para nos limites das zonas e não se mexe
+dentro da sua janela, e aí aproximar-se do fogo não mudava nada. Medido pelo `test_sound_emitter.gd`
+com a câmara parada, de junto a uma fogueira até meio caminho da seguinte (1 296 px), a soma das
+fogueiras descia 0,0 dB; agora desce 14,3 dB. Ficaram de lado ouvir a partir do centro do ecrã,
+mantendo o problema da câmara parada, e pôr um `AudioListener2D` na personagem, que mudaria também
+o lado e o volume de todos os outros sons 2D do jogo.
+
+O emissor só toca o ciclo enquanto o ouvido está mais perto do que Hearing Distance, e só o desliga
+100 px mais longe (Hearing Margin), para que andar nessa fronteira não o ligue e desligue a cada
+frame. Assim, das 87 fogueiras do protótipo de iluminação, só as próximas tocam, e as outras não
+gastam processamento a descodificar o ficheiro. O ciclo começa num ponto ao acaso, para que duas
 fogueiras nunca toquem em passo. O ficheiro importa-se sem ciclo, como o Godot faz por omissão; o
 emissor toca uma cópia que repete, sem alterar o ficheiro nem a sua importação.
+
+Um ficheiro pode acabar numa cauda, como a reverberação do último momento. O `fire_base_layer.ogg`
+(15,5 s) é estável até aos 10,735 s, onde o som direto para de repente, e os 4,8 s seguintes são só
+a reverberação a morrer; o ficheiro, exportado do FL Studio, não traz marcas de ciclo. Repetido
+inteiro, a cada volta o fogo morria na cauda e calava-se uns segundos. Com Loop End, cada passagem
+toca até ao fim, cauda incluída, e a seguinte começa em Loop Start quando a anterior chega a Loop
+End, por cima da cauda dela, no mesmo leitor (até três ao mesmo tempo). Medido na mistura do Godot,
+começando aos 10 s, o fogo mantém-se entre −41 e −38 dB através de Loop End; antes caía 27 dB em
+2,5 s.
 
 Os sons soltos vêm, em média, a cada Interval (por omissão, 4 s), com cada espera sorteada até
 Deviation para cada lado (1,5 s: entre 2,5 e 5,5 s), e só enquanto o emissor se ouve. Escolhe-os um
@@ -3668,11 +3731,11 @@ Cada um vem um pouco ao lado da coisa, até Pan Spread do campo estéreo para ca
 equilíbrio de 50/50 passa, no máximo, a 40/60). O Godot não tem um controlo de panorâmica nos
 leitores 2D: o lado de um som vem do ponto do ecrã onde está, e um som a uma largura de ecrã do
 centro desloca-se 0,25 do campo estéreo. Por isso, o som solto toca deslocado para o lado (cerca de
-590 px do mundo com o zoom de 1,3 das zonas de câmara do nível 1) e o seu volume sobe o que a
-distância lhe tira, para soar tão alto como da coisa; esse ajuste segue a câmara enquanto o som toca,
-até 18 dB. Um lado que fique fora do alcance cede ao outro. A conta foi confirmada na mistura do
-Godot: um som 400 px à direita do centro saiu 1,232 vezes mais forte à direita do que à esquerda,
-como a conta diz. O emissor conta o tempo real, como os fundos, e a pausa suspende-o.
+590 px do mundo com o zoom de 1,3 das zonas de câmara do nível 1), com o volume da coisa: como o
+emissor calcula o volume pela distância da coisa ao ouvido, o lado só muda a panorâmica. A conta foi
+confirmada na mistura do Godot: um som 400 px à direita do centro saiu 1,232 vezes mais forte à
+direita do que à esquerda, como a conta diz. O emissor conta o tempo real, como os fundos, e a pausa
+suspende-o.
 
 Ficaram de lado deslocar o som solto só dentro da largura da chama (10 % da largura do ecrã, cerca
 de 190 px, mudaria o equilíbrio apenas 0,025, o que não se ouve); um efeito de panorâmica num bus
@@ -3702,29 +3765,39 @@ uma chama desenhada. Como as do vento, desenham-se numa camada própria (`Canvas
 escuridão do protótipo não apaga, e passam por isso à frente da rocha. No protótipo, uma fogueira
 que o homem não vê não lança brasas, mas ouve-se, tal como a sua luz se vê à volta das esquinas.
 
+Para não parecerem paradas, cada brasa arde: tem um pequeno brilho (bloom), um halo suave somado por
+cima dela, com 2,6 vezes o seu comprimento, que cintila ao seu próprio ritmo (5 a 11 Hz) e enfraquece
+ao arrefecer; e a sua cor sobe até 12 % mais quente com a cintilação, sem nunca ficar mais fria do
+que o seu calor. O brilho desenha-se noutra camada de desenho, por cima das lascas, em modo aditivo,
+e o seu acaso é independente do do voo, pelo que o voo das brasas ficou igual. Numa imagem do
+protótipo, as lascas quentes têm um halo rosado ténue, e as frias apagam-se sem ele.
+
 O fogo é a cena `scenes/others/ambience/fire_sound.tscn`, que junta o emissor e as brasas com os
 ficheiros em `assets/audio/textures/fire/`: o ciclo `fire_base_layer.ogg` (15,5 s) e quatro estalos
 em `crackles/`, de 0,9 a 2,9 s. O protótipo de iluminação põe um em cada fogueira, com as brasas a
 sair da metade central da chama, entre 50 e 85 % da sua altura. Os sons tocam no bus Ambience:
 seguem o volume do ambiente nas opções e baixam com os alertas.
 
-O `test_sound_emitter.gd` verifica que o ciclo só toca dentro de Hearing Distance, continua na
-margem e para além dela; que repete sem alterar o ficheiro, e que dois emissores começam em pontos
-diferentes; que, em 30 sons soltos, cada espera fica dentro de Deviation de Interval (em média,
-0,987 s para 1 s no teste) e há sons dos dois lados; que, pelas contas do próprio Godot, com o zoom
-1,3 e a coisa em vários pontos do ecrã, cada som solto desloca o estéreo pelo seu lado de Pan Spread
-e soa tão alto como da coisa, também com a câmara em movimento; e que, medido na mistura do Godot,
-um som solto à direita desloca o estéreo 0,100 e soa 1,000 vezes tão alto como o ciclo. Verifica
-ainda que um lado fora do alcance cede ao outro, que desligado se cala, que a pausa suspende os sons
-soltos, que o fogo tem os seus ficheiros e tempos, e que cada uma das 87 fogueiras do protótipo tem
-o seu som, com as brasas a sair da chama. O `test_rising_embers.gd` verifica, em 18 estalos, que
+O `test_sound_emitter.gd` verifica que, fora de um nível, o emissor ouve a partir do centro do ecrã;
+que o ciclo só toca dentro de Hearing Distance, continua na margem e para além dela, com a atenuação
+do Godot desligada; que repete sem alterar o ficheiro, e que dois emissores começam em pontos
+diferentes; que o ciclo do fogo continua através de Loop End, medido na mistura; que, em 30 sons
+soltos, cada espera fica dentro de Deviation de Interval e há sons dos dois lados; que, pelas contas
+do próprio Godot, com o zoom 1,3 e a coisa em vários pontos do ecrã, cada som solto desloca o
+estéreo pelo seu lado de Pan Spread e soa tão alto como da coisa, também com o ouvido em movimento;
+que, medido na mistura do Godot, um som solto à direita desloca o estéreo 0,100 e soa 1,000 vezes
+tão alto como o ciclo; e que, com um ouvido próprio, o volume segue a curva de omissão em cada um dos
+seus pontos, ou uma curva própria. Verifica ainda que desligado se cala, que a pausa suspende os sons
+soltos, que o fogo tem os seus ficheiros e tempos, que cada uma das 87 fogueiras do protótipo tem o
+seu som, com as brasas a sair da chama, e que as fogueiras ouvem a partir da personagem. O `test_rising_embers.gd` verifica, em 18 estalos, que
 cada um lança 1 ou 2 brasas (8 lançaram 1 e 10 lançaram 2), da sua metade da chama; que todas
 sobem (de 71 a 262 px), 89 % acabam pelo menos 15 px para um lado (17 para a esquerda e 8 para a
 direita), afastam-se da linha reta 14 px (mediana) e a mais rápida sobe 2,8 vezes mais depressa do
 que a mais lenta; que se apagam dentro da sua vida e não fica nenhuma; que uma fogueira escondida
-não lança nenhuma; que a pausa as suspende; e que as cores das brasas do fogo são todas da rampa
-da chama, com o contorno no seu vinho mais escuro. Se o fogo soa bem, e se as brasas se veem bem,
-só se confirma a jogar.
+não lança nenhuma; que a pausa as suspende; que as cores das brasas do fogo são todas da rampa
+da chama, com o contorno no seu vinho mais escuro; e que o brilho de cada brasa se desenha depois
+dela, em modo aditivo, varia 76 % no primeiro segundo e cai de 0,135 para 0,047 do primeiro ao
+último terço da sua vida. Se o fogo soa bem, e se as brasas se veem bem, só se confirma a jogar.
 
 #### Sincronia dos sons da personagem e do crucifixo
 

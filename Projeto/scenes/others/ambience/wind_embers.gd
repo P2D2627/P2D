@@ -3,10 +3,12 @@ extends CanvasLayer
 
 ## Embers a passing gust carries across the screen, as from fires out of sight. A sound of Wind
 ## Layer blows one gust, the way the sound travels: the embers come in on the side the wind comes from,
-## at heights spread over the screen, a few at a time, and cross it in about a second, with the
-## gust's rise, hold and fall. They do not fly in a straight line: each gust leans a little up or
-## down, curls of turbulence (curl noise), carried along by the gust, swing them as they pass, hot
-## ones rise and cooled ones settle, and the big ones, nearer the eye, cross faster. They look like
+## at heights spread over the screen, a few at a time, as the sound swells (a passing gust's file
+## peaks 0.6 to 0.9 s in, measured on 19/11), and cross it in about three seconds, with the gust's
+## rise, hold and fall. They fly on a slant, rising as they go (Slant), and not in a straight line:
+## each gust leans a little off the slant, curls of turbulence (curl noise), carried along by the
+## gust, swing them as they pass, hot ones rise and cooled ones settle, and the big ones, nearer the
+## eye, cross faster. They look like
 ## the main menu's embers (MenuEmbers), with the glowing embers' look (EmberLook): a core
 ## coloured by its heat, which cools towards deep red and goes out, drawn as a streak as long as it
 ## moves while a film camera's shutter is open, with a faint halo, flickering as it tumbles.
@@ -14,13 +16,17 @@ extends CanvasLayer
 ## the camera (Follow Viewport), as the lighting prototype's rocks in front do: they give light, so
 ## the level's darkness (a CanvasModulate, which only darkens its own canvas) does not dim them, and
 ## they pass in front of the level. Layer 1 keeps them under the glow and the colour grade, which
-## reach up to it. A fixed pool drawn in one pass: nothing is made while they fly, and nothing runs
+## reach up to it. With In Backdrop, they fly in the level's backdrop instead: drawn last of what it
+## holds, so behind the rock, the man and all that follows it, and dimmed by the level's darkness
+## there, which Backdrop Brightness makes up for. A fixed pool drawn in one pass: nothing is made while they fly, and nothing runs
 ## between gusts. It runs in its frame, so the pause holds it.
 
 ## The longest step the air takes, in s: a slow frame does not fling them.
 const MAX_STEP: float = 0.1
 ## How long one takes to appear as it comes in: almost at once, and off the screen anyway.
 const APPEAR_TIME: float = 0.06
+## A level's backdrop, by its path from the level, as the lighting prototype finds it.
+const BACKDROP_PATH: NodePath = ^"Backdrop"
 ## Below this heat an ember gives no light any more and leaves the pool.
 const OUT_HEAT: float = 0.04
 ## How long one takes to fade out at the end of its life, in s, so none that still glows pops out.
@@ -41,32 +47,53 @@ const EDDY_CARRY: float = 0.6
 ## The ambience layer whose sounds blow the gusts: each sound blows one, the way it travels.
 @export var wind_layer: AmbienceLayer
 
+@export_group("Backdrop")
+## Fly in the backdrop: drawn after what Backdrop holds and before what follows it, such as the rock
+## and the man, instead of on a layer of their own in front of everything. It can be switched while
+## the game runs, in the Remote tab.
+@export var in_backdrop: bool = false:
+	set(value):
+		in_backdrop = value
+		if is_node_ready():
+			_place_canvas()
+## The backdrop they fly in; empty, that of the level they are in (its node Backdrop, as the lighting
+## prototype finds it). Without one, they stay on their own layer.
+@export var backdrop: Node2D
+## How bright they are in the backdrop, as a multiple of Brightness: the level's darkness, which
+## only darkens its own canvas, dims them there.
+@export_range(0.0, 10.0, 0.05) var backdrop_brightness: float = 2.5
+## How big they are in the backdrop, as a share of Core Size: further off.
+@export_range(0.1, 2.0, 0.01) var backdrop_size: float = 0.75
+
 @export_group("Gust")
 ## How many embers a gust carries, from the fewest (x) to the most (y).
 @export var count: Vector2i = Vector2i(6, 14)
-## When the first ember comes in after the sound starts, in s.
-@export_range(0.0, 3.0, 0.05, "suffix:s") var delay: float = 0.1
+## When the first ember comes in after the sound starts, in s: as the sound swells.
+@export_range(0.0, 3.0, 0.05, "suffix:s") var delay: float = 0.25
 ## Over how long after the first the others come in, in s.
-@export_range(0.0, 3.0, 0.05, "suffix:s") var arrival: float = 0.7
+@export_range(0.0, 3.0, 0.05, "suffix:s") var arrival: float = 0.9
 ## How fast the gust's air blows at its strongest, from the softest gust (x) to the strongest (y),
-## in px per s.
-@export var speed: Vector2 = Vector2(1500.0, 2300.0)
+## in px per s: about three seconds across the screen.
+@export var speed: Vector2 = Vector2(560.0, 780.0)
 ## How long the gust takes to blow at full, in s.
-@export_range(0.0, 3.0, 0.05, "suffix:s") var rise_time: float = 0.35
+@export_range(0.0, 3.0, 0.05, "suffix:s") var rise_time: float = 0.45
 ## How long it blows at full, in s.
-@export_range(0.0, 5.0, 0.05, "suffix:s") var hold_time: float = 0.9
+@export_range(0.0, 5.0, 0.05, "suffix:s") var hold_time: float = 2.8
 ## How long it then takes to die down, by e, in s.
-@export_range(0.05, 5.0, 0.05, "suffix:s") var fall_time: float = 1.2
-## How far a gust leans off the level, up or down, in degrees (one standard deviation).
-@export_range(0.0, 30.0, 0.5) var lean: float = 5.0
+@export_range(0.05, 5.0, 0.05, "suffix:s") var fall_time: float = 1.8
+## How far above the level the gusts blow, on average, in degrees: they rise as they cross. Below 0,
+## they fall.
+@export_range(-30.0, 30.0, 0.5) var slant: float = 6.0
+## How far a gust leans off Slant, up or down, in degrees (one standard deviation).
+@export_range(0.0, 30.0, 0.5) var lean: float = 4.0
 ## Where up and down they come in, from the highest (x) to the lowest (y), as shares of the
-## screen's height from the top.
-@export var height: Vector2 = Vector2(0.1, 0.9)
+## screen's height from the top: low enough that they rise across it.
+@export var height: Vector2 = Vector2(0.3, 0.95)
 ## How far outside the upwind edge they come in, at most, in px, so they never enter on one line.
 @export_range(0.0, 600.0, 5.0, "suffix:px") var entry_depth: float = 120.0
 ## How fast each crosses, as a share of the gust's air, from the smallest ember (x), far off, to the
 ## biggest (y), near the eye.
-@export var depth_speed: Vector2 = Vector2(0.8, 1.2)
+@export var depth_speed: Vector2 = Vector2(0.85, 1.15)
 
 @export_group("Air")
 ## How big the curls of turbulence are, in px.
@@ -80,20 +107,21 @@ const EDDY_CARRY: float = 0.6
 ## How fast a cooled ember settles through the air, and how fast one at full heat rises, in px per
 ## s: a hot one rises, and sinks as it cools.
 @export_range(0.0, 1000.0, 5.0, "suffix:px/s") var settle: float = 120.0
-@export_range(0.0, 1000.0, 5.0, "suffix:px/s") var lift: float = 220.0
+@export_range(0.0, 1000.0, 5.0, "suffix:px/s") var lift: float = 160.0
 
 @export_group("Glow")
 ## Colour (rgb) and brightness (alpha) by heat, from out (0) to the hottest (1); the main menu's,
 ## made in code, if empty.
 @export var heat_ramp: Gradient
-## How long each lives, from the shortest (x) to the longest (y), in s.
-@export var life: Vector2 = Vector2(2.0, 3.0)
+## How long each lives, from the shortest (x) to the longest (y), in s: long enough to cross.
+@export var life: Vector2 = Vector2(4.5, 6.0)
 ## How big each core is, from the smallest (x) to the biggest (y), in px; many are small.
 @export var core_size: Vector2 = Vector2(3.0, 7.0)
 ## How hot each comes in, from the coolest (x) to the hottest (y): they have flown a while.
 @export var start_heat: Vector2 = Vector2(0.7, 1.0)
-## How fast each cools: its heat falls by e every this share of its life, from x to y.
-@export var cooling: Vector2 = Vector2(0.6, 1.0)
+## How fast each cools: its heat falls by e every this share of its life, from x to y: slowly, so
+## they still glow across the screen.
+@export var cooling: Vector2 = Vector2(1.0, 1.6)
 ## The brightest one gets, as an alpha.
 @export_range(0.0, 3.0, 0.01) var brightness: float = 1.8
 ## How deep the flicker is, as a share of the brightness.
@@ -104,14 +132,16 @@ const EDDY_CARRY: float = 0.6
 @export var flicker_rate: Vector2 = Vector2(6.0, 12.0)
 ## How bright a halo is, as a share of its core.
 @export_range(0.0, 1.0, 0.01) var halo_share: float = 0.2
-## How long a film camera's shutter stays open, in s: a streak is as long as it moves in it. Shorter
-## than the main menu's (1/48 s), whose embers are slow: at a gust's speed a long streak spreads one
-## so thin it vanishes.
-@export_range(0.0, 0.1, 0.001, "suffix:s") var shutter: float = 1.0 / 96.0
+## How long a film camera's shutter stays open, in s: a streak is as long as it moves in it. The main
+## menu's (1/48 s): at three seconds across, a streak is about twice as long as its core.
+@export_range(0.0, 0.1, 0.001, "suffix:s") var shutter: float = 1.0 / 48.0
 
 var _rng: RandomNumberGenerator = RandomNumberGenerator.new()
-## What the embers are drawn on, in the world's coordinates: the layer follows the camera.
+## What the embers are drawn on, in the world's coordinates: on the layer, which follows the camera,
+## or in the backdrop.
 var _canvas: Node2D
+## Whether the canvas is in the backdrop now, so they are drawn as there.
+var _drawn_in_backdrop: bool = false
 var _noise: FastNoiseLite = FastNoiseLite.new()
 var _time: float = 0.0
 ## The gust blowing now: how long since it began, which way (a unit vector), how fast at its
@@ -142,6 +172,10 @@ func _ready() -> void:
 	_canvas.material = EmberLook.light_material()
 	_canvas.draw.connect(_draw_embers)
 	add_child(_canvas)
+	if backdrop == null:
+		backdrop = _level_backdrop()
+	# Deferred: the backdrop's level may be still setting up its children.
+	_place_canvas.call_deferred()
 	if heat_ramp == null:
 		heat_ramp = EmberLook.blackbody_ramp()
 	_rng.randomize()
@@ -168,6 +202,12 @@ func _ready() -> void:
 		wind_layer.sound_played.connect(_on_wind_layer_sound_played)
 
 
+# A canvas in the backdrop is not this node's: it goes with it.
+func _notification(what: int) -> void:
+	if what == NOTIFICATION_PREDELETE and is_instance_valid(_canvas) and _canvas.get_parent() != self:
+		_canvas.queue_free()
+
+
 func _process(delta: float) -> void:
 	_step(minf(delta, MAX_STEP))
 	_canvas.queue_redraw()
@@ -176,6 +216,8 @@ func _process(delta: float) -> void:
 
 
 func _draw_embers() -> void:
+	var size_share: float = backdrop_size if _drawn_in_backdrop else 1.0
+	var light_share: float = backdrop_brightness if _drawn_in_backdrop else 1.0
 	for index: int in _lives.size():
 		if _lives[index] <= 0.0:
 			continue
@@ -183,9 +225,15 @@ func _draw_embers() -> void:
 		var colour: Color = heat_ramp.sample(heat)
 		var appeared: float = minf(1.0, _ages[index] / APPEAR_TIME)
 		var left: float = clampf((_lives[index] - _ages[index]) / FADE_TIME, 0.0, 1.0)
-		var light: float = colour.a * brightness * appeared * left * _flicker(index, heat)
-		EmberLook.draw(_canvas, _positions[index], _velocities[index], _sizes[index], colour, light,
-				halo_share, shutter)
+		var light: float = (colour.a * brightness * light_share * appeared * left
+				* _flicker(index, heat))
+		EmberLook.draw(_canvas, _positions[index], _velocities[index], _sizes[index] * size_share,
+				colour, light, halo_share, shutter)
+
+
+## Whether they fly in the backdrop now.
+func is_in_backdrop() -> bool:
+	return _drawn_in_backdrop
 
 
 ## Blows a gust across the screen, travelling as travel says: 1 from left to right, -1 from right
@@ -195,8 +243,9 @@ func blow(travel: int) -> void:
 	var way: float = signf(travel)
 	if way == 0.0:
 		way = 1.0 if _rng.randf() < 0.5 else -1.0
-	var angle: float = deg_to_rad(_rng.randfn(0.0, lean))
-	_gust_direction = Vector2(cos(angle) * way, sin(angle))
+	var angle: float = deg_to_rad(slant + _rng.randfn(0.0, lean))
+	# Up the screen is towards -y.
+	_gust_direction = Vector2(cos(angle) * way, -sin(angle))
 	_gust_speed = _rng.randf_range(minf(speed.x, speed.y), maxf(speed.x, speed.y))
 	_gust_age = 0.0
 	_arrivals.clear()
@@ -313,6 +362,31 @@ func _curl(at: Vector2) -> Vector2:
 	var right: float = _noise.get_noise_3d(from.x + step, from.y, depth)
 	var below: float = _noise.get_noise_3d(from.x, from.y + step, depth)
 	return Vector2(below - here, here - right) * (curl_size / step)
+
+
+## Puts the canvas where In Backdrop says: last in Backdrop, so drawn after what it holds, or back on
+## the layer. Either way it draws in the world's coordinates.
+func _place_canvas() -> void:
+	var into: Node = backdrop if in_backdrop and is_instance_valid(backdrop) else self
+	if _canvas.get_parent() != into:
+		_canvas.get_parent().remove_child(_canvas)
+		into.add_child(_canvas)
+	else:
+		into.move_child(_canvas, -1)
+	_drawn_in_backdrop = into != self
+	if _drawn_in_backdrop:
+		_canvas.global_transform = Transform2D.IDENTITY
+	else:
+		_canvas.transform = Transform2D.IDENTITY
+	_canvas.queue_redraw()
+
+
+## The backdrop of the level they are in: among the levels in the tree, the one that holds them.
+func _level_backdrop() -> Node2D:
+	for node: Node in get_tree().get_nodes_in_group(Level.GROUP):
+		if node.is_ancestor_of(self):
+			return node.get_node_or_null(BACKDROP_PATH) as Node2D
+	return null
 
 
 ## A free place in the pool, or -1 when every ember flies.

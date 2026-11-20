@@ -8,6 +8,8 @@ extends Node2D
 ## Some sounds keep their own stereo instead: Unpanned Sounds, such as a gust whose sweep from one
 ## side to the other is already in the file, or a rumble mixed to the centre, play as they are,
 ## with no place and no panning of Godot's.
+## A placed sound keeps its place on the screen while it plays (Follow Screen), so it neither falls
+## behind nor pans away as the camera moves on: the ambience is all round the man, wherever he goes.
 ## It counts down in its frame, so whatever stops its frame stops it too: inside a level, under the
 ## LevelSlot, the pause holds both the countdown and the sound playing.
 
@@ -28,6 +30,12 @@ enum Travel { NONE, LEFT_TO_RIGHT, RIGHT_TO_LEFT }
 ## Plays the sounds. Its bus, its Max Distance and its Attenuation are set in it. A new sound moves
 ## it, so keep Min Gap longer than the longest sound, or the tail of the last one jumps with it.
 @export var player: AudioStreamPlayer2D
+## A placed sound keeps its place on the screen while it plays, as the camera moves on. Off, it stays
+## where it began in the world, and the man leaves it behind.
+@export var follow_screen: bool = true
+## The bus both players play on, such as one whose sound turns the beds down (the gusts'); empty,
+## their own.
+@export var bus: StringName = &""
 ## Starts the countdown to the first sound on entering the tree. Without it, the layer waits for
 ## start(), from a zone or an event.
 @export var autostart: bool = true
@@ -66,6 +74,11 @@ enum Travel { NONE, LEFT_TO_RIGHT, RIGHT_TO_LEFT }
 var _time_left: float = 0.0
 ## Whether the last sound was an unpanned one, so the next is not.
 var _last_unpanned: bool = false
+## Whether the countdown runs, and whether a placed sound playing keeps Offset from the centre of
+## the screen.
+var _running: bool = false
+var _following: bool = false
+var _offset: Vector2 = Vector2.ZERO
 
 
 func _ready() -> void:
@@ -74,6 +87,10 @@ func _ready() -> void:
 		player.stream = sounds
 	if unpanned_player != null and unpanned_sounds != null:
 		unpanned_player.stream = unpanned_sounds
+	if bus != &"" and player != null:
+		player.bus = bus
+	if bus != &"" and unpanned_player != null:
+		unpanned_player.bus = bus
 	if not _has_placed() and not _has_unpanned():
 		push_warning("AmbienceLayer %s: no Sounds or Unpanned Sounds, with their player, to play."
 				% name)
@@ -82,25 +99,36 @@ func _ready() -> void:
 
 
 func _process(delta: float) -> void:
-	_time_left -= delta
-	if _time_left <= 0.0:
-		_play_one()
-		_time_left = _next_gap()
+	# Before the countdown: a sound started on this frame is not playing yet (a 2D player starts it in
+	# its physics step), and must not end the following.
+	if _following:
+		if player.playing:
+			player.global_position = _screen_centre() + _offset
+		else:
+			_following = false
+	if _running:
+		_time_left -= delta
+		if _time_left <= 0.0:
+			_play_one()
+			_time_left = _next_gap()
+	if not _running and not _following:
+		set_process(false)
 
 
 ## Starts the countdown to the next sound, from a whole gap. A layer already playing starts over.
 func start() -> void:
 	_time_left = _next_gap()
+	_running = true
 	set_process(true)
 
 
 ## Stops new sounds; the one playing ends on its own.
 func stop() -> void:
-	set_process(false)
+	_running = false
 
 
 func is_running() -> bool:
-	return is_processing()
+	return _running
 
 
 func _play_one() -> void:
@@ -116,6 +144,8 @@ func _play_one() -> void:
 			randf_range(-vertical_spread, vertical_spread))
 	player.global_position = _screen_centre() + offset
 	player.play()
+	_offset = offset
+	_following = follow_screen
 	# From its side towards the other: heard on the left (offset below 0), it travels to the right.
 	sound_played.emit(player.global_position, -int(signf(offset.x)))
 

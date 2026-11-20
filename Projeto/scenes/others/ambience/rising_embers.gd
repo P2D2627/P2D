@@ -8,7 +8,9 @@ extends CanvasLayer
 ## They look like the drawn flame's own sparks: small flat slivers with a dark outline, coloured by
 ## their heat through Heat Ramp (the fire's own colours, from a peach and pink when hot through
 ## magenta to a deep wine as they cool), burning down and tumbling as they rise. Drawn flat and
-## unshaded, as the flame is, not as glowing dots like the gusts' embers (EmberLook).
+## unshaded, as the flame is, not as glowing dots like the gusts' embers (EmberLook), but burning:
+## each has a little bloom, a soft glow added over it that flickers at its own pace and dims as it
+## cools, and its colour flares a little hotter with the flicker.
 ## They fly in the world, on a canvas layer of their own that follows the camera (Follow Viewport),
 ## as the gusts' embers do: they are as bright as the flame, so the level's darkness (a
 ## CanvasModulate, which only darkens its own canvas) does not dim them, and they pass in front of
@@ -108,13 +110,33 @@ const TIP_LEAN: float = 0.6
 ## How fast each cools: its heat falls by e every this share of its life, from x to y.
 @export var cooling: Vector2 = Vector2(0.6, 1.0)
 
+@export_group("Bloom")
+## How bright the glow round each is at its hottest, as an alpha, added over it; it dims as it
+## cools. 0: none.
+@export_range(0.0, 2.0, 0.01) var bloom_strength: float = 0.35
+## How wide the glow is, as a multiple of the ember's length.
+@export_range(0.5, 8.0, 0.05) var bloom_size: float = 2.6
+## How deep the glow flickers, as a share of its brightness.
+@export_range(0.0, 1.0, 0.01) var bloom_flicker: float = 0.55
+## How deep a cooled one's flicker stays, as a share of Bloom Flicker.
+@export_range(0.0, 1.0, 0.01) var cooled_flicker: float = 0.4
+## How fast each flickers, from the slowest (x) to the fastest (y), in Hz.
+@export var flicker_rate: Vector2 = Vector2(5.0, 11.0)
+## How much hotter its colour flares with the flicker, as a share of its heat: never cooler than
+## its heat.
+@export_range(0.0, 0.5, 0.01) var shimmer: float = 0.12
+
 ## Drawn flat over what is behind, as the flame is, and unshaded, so the level's lights neither
 ## light nor shade them: one material for every fire.
 static var _material: CanvasItemMaterial
 
 var _rng: RandomNumberGenerator = RandomNumberGenerator.new()
-## What the embers are drawn on, in the world's coordinates: the layer follows the camera.
+## The flicker's own randomness, apart from the flight's, so the look never changes how they fly.
+var _flicker_rng: RandomNumberGenerator = RandomNumberGenerator.new()
+## What the embers are drawn on, in the world's coordinates: the layer follows the camera. Their
+## bloom is drawn after them, added, on a canvas of its own.
 var _canvas: Node2D
+var _glow: Node2D
 var _noise: FastNoiseLite = FastNoiseLite.new()
 var _time: float = 0.0
 ## A sliver's corners, and the same closed for its outline, filled in for each one drawn.
@@ -138,6 +160,8 @@ var _heats: PackedFloat32Array = PackedFloat32Array()
 var _coolings: PackedFloat32Array = PackedFloat32Array()
 var _responses: PackedFloat32Array = PackedFloat32Array()
 var _sideways: PackedFloat32Array = PackedFloat32Array()
+var _phases: PackedFloat32Array = PackedFloat32Array()
+var _rates: PackedFloat32Array = PackedFloat32Array()
 
 
 func _ready() -> void:
@@ -149,11 +173,17 @@ func _ready() -> void:
 	_canvas.material = _material
 	_canvas.draw.connect(_draw_embers)
 	add_child(_canvas)
+	_glow = Node2D.new()
+	_glow.name = "Bloom"
+	_glow.material = EmberLook.light_material()
+	_glow.draw.connect(_draw_bloom)
+	add_child(_glow)
 	if heat_ramp == null:
 		heat_ramp = EmberLook.blackbody_ramp()
 	_corners.resize(3)
 	_edge.resize(4)
 	_rng.randomize()
+	_flicker_rng.randomize()
 	_noise.seed = _rng.randi()
 	_noise.frequency = 1.0 / curl_size
 	_noise.fractal_octaves = CURL_OCTAVES
@@ -173,6 +203,8 @@ func _ready() -> void:
 	_coolings.resize(places)
 	_responses.resize(places)
 	_sideways.resize(places)
+	_phases.resize(places)
+	_rates.resize(places)
 	set_process(false)
 	if emitter != null:
 		emitter.one_shot_played.connect(_on_emitter_one_shot_played)
@@ -181,6 +213,7 @@ func _ready() -> void:
 func _process(delta: float) -> void:
 	_step(minf(delta, MAX_STEP))
 	_canvas.queue_redraw()
+	_glow.queue_redraw()
 	if _waits.is_empty() and not is_burning():
 		set_process(false)
 
@@ -193,10 +226,9 @@ func _draw_embers() -> void:
 		if _lives[index] <= 0.0:
 			continue
 		var heat: float = _heat(index)
-		var colour: Color = heat_ramp.sample(heat)
-		var appeared: float = minf(1.0, _ages[index] / APPEAR_TIME)
-		var left: float = clampf((_lives[index] - _ages[index]) / FADE_TIME, 0.0, 1.0)
-		var alpha: float = colour.a * appeared * left * opacity
+		var flicker: float = _flicker(index, heat)
+		var colour: Color = heat_ramp.sample(minf(heat * (1.0 + shimmer * flicker), 1.0))
+		var alpha: float = colour.a * _shown(index) * opacity
 		if alpha <= 0.0:
 			continue
 		var burn: float = lerpf(burnt_size, 1.0, clampf(heat / _heats[index], 0.0, 1.0))
@@ -214,6 +246,46 @@ func _draw_embers() -> void:
 			_canvas.draw_polyline(_edge, Color(outline_colour, outline_colour.a * alpha), outline_width,
 					true)
 	_canvas.draw_set_transform(Vector2.ZERO)
+
+
+## Each ember's bloom: a soft glow over it, as wide as Bloom Size of its length, as bright as Bloom
+## Strength at its hottest, dimmer as it cools, flickering.
+func _draw_bloom() -> void:
+	var opacity: float = _opacity()
+	if opacity <= 0.0 or bloom_strength <= 0.0:
+		return
+	for index: int in _lives.size():
+		if _lives[index] <= 0.0:
+			continue
+		var light: float = get_bloom_light(index) * opacity
+		if light <= 0.0:
+			continue
+		var heat: float = _heat(index)
+		var length: float = _sizes[index] * lerpf(burnt_size, 1.0, clampf(heat / _heats[index], 0.0, 1.0))
+		EmberLook.draw_glow(_glow, _positions[index], length * bloom_size, heat_ramp.sample(heat), light)
+
+
+## How bright the bloom of ember index is now, as an alpha, before Fade With: Bloom Strength at its
+## hottest, dimmer as it cools and as it fades out, flickering by Bloom Flicker. 0 for a free place.
+func get_bloom_light(index: int) -> float:
+	if _lives[index] <= 0.0:
+		return 0.0
+	var heat: float = _heat(index)
+	return (bloom_strength * heat * _shown(index)
+			* (1.0 - bloom_flicker * (1.0 - _flicker(index, heat))))
+
+
+## How much of ember index shows by its age: it appears at once as it leaves and fades out at the
+## end of its life.
+func _shown(index: int) -> float:
+	var appeared: float = minf(1.0, _ages[index] / APPEAR_TIME)
+	return appeared * clampf((_lives[index] - _ages[index]) / FADE_TIME, 0.0, 1.0)
+
+
+## The flicker of ember index now, from 0 to 1: two waves at its own pace and phase, shallower as it
+## cools (as the gusts' embers flicker, EmberLook.flicker).
+func _flicker(index: int, heat: float) -> float:
+	return EmberLook.flicker(_phases[index], _time * _rates[index], heat, 1.0, cooled_flicker)
 
 
 ## Throws one burst from origin, the emitter's place, from side of the flame: -1 its left, 1 its
@@ -289,6 +361,8 @@ func _launch(index: int, origin: Vector2, side: float) -> void:
 	_ages[index] = 0.0
 	_heats[index] = _rng.randf_range(start_heat.x, start_heat.y)
 	_coolings[index] = _rng.randf_range(cooling.x, cooling.y)
+	_phases[index] = _flicker_rng.randf() * TAU
+	_rates[index] = _flicker_rng.randf_range(flicker_rate.x, flicker_rate.y)
 	var across: float = clampf(0.5 + side * SIDE_SHARE + _rng.randf_range(-SIDE_SHARE, SIDE_SHARE),
 			0.0, 1.0)
 	_positions[index] = origin + emit_area.position + emit_area.size * Vector2(across, _rng.randf())

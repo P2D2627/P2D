@@ -5,8 +5,8 @@
 # dip, and the passes take turns. The first pass starts at a random point of the loop, a different
 # one for each bed. stop() fades the bed out over Fade Time and then silences both players, and
 # start() brings it back. The pause holds it, and the hitstop of a death, which slows the game's
-# time but not the audio, does not slow it. The lust level's beds play on the Ambience bus, each
-# with its own sound, and only come back to within a second of the same alignment after half an
+# time but not the audio, does not slow it. The lust level's beds play on the Ambience bus, or on
+# one into it (Beds, which the gusts turn down), each with its own sound, and only come back to within a second of the same alignment after half an
 # hour.
 # Run from the repository root; the exit code is 0 on pass and 1 on fail:
 # godot --headless --fixed-fps 60 --path Projeto --script res://tests/test_ambience_bed.gd
@@ -245,6 +245,14 @@ func _the_hitstop_does_not_slow_the_bed() -> bool:
 			% (started * FRAME_TIME))
 
 
+## Whether a bus is Ambience or sends to it, so the Ambience option applies to what plays on it.
+func _reaches_ambience(bus: StringName) -> bool:
+	if bus == AMBIENCE_BUS:
+		return true
+	var index: int = AudioServer.get_bus_index(bus)
+	return index != -1 and AudioServer.get_bus_send(index) == AMBIENCE_BUS
+
+
 func _the_lust_beds_rarely_line_up() -> bool:
 	var scene: PackedScene = load(LUST_AMBIENCE_PATH) as PackedScene
 	if scene == null:
@@ -257,7 +265,8 @@ func _the_lust_beds_rarely_line_up() -> bool:
 	var sounds: Array[AudioStream] = []
 	for bed: AmbienceBed in beds:
 		ready = ready and bed.sound != null and bed.sound not in sounds and bed.autostart
-		ready = ready and bed.first_player.bus == AMBIENCE_BUS and bed.second_player.bus == AMBIENCE_BUS
+		ready = ready and _reaches_ambience(bed.bus if bed.bus != &"" else bed.first_player.bus)
+		ready = ready and _reaches_ambience(bed.bus if bed.bus != &"" else bed.second_player.bus)
 		ready = ready and bed.get_pass_period() > 0.0
 		sounds.append(bed.sound)
 	var soonest: float = INF
@@ -269,7 +278,7 @@ func _the_lust_beds_rarely_line_up() -> bool:
 			return "%.2f s" % bed.get_pass_period())
 	ambience.queue_free()
 	return _report(ready and soonest >= MIN_ALIGN_TIME,
-			"the lust level has %d beds on the Ambience bus, each with its own sound (%s), with "
+			"the lust level has %d beds on the Ambience bus or one into it, each with its own sound (%s), with "
 			% [beds.size(), ready] + "passes of %s that come back in line only after %.0f s"
 			% [", ".join(periods), soonest])
 
