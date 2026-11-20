@@ -288,8 +288,9 @@ func _no_menu_sound_is_empty() -> bool:
 			"%d menus' feedback (2 expected); empty sounds: %s" % [feedbacks, empty])
 
 
-## The question before a new game over a save, opened as the main menu opens it, with No selected:
-## Enter on No answers it with the way back's thud, and with nothing else.
+## The question before a new game over slot 1's save, opened straight from the menu's code rather
+## than through the slots, with No selected: Enter on No answers it with the way back's thud, and
+## with nothing else.
 func _no_to_replacing_the_save_only_thuds() -> bool:
 	var main: Node = await new_main()
 	var menu: Node = main.get_node(^"%MainMenu")
@@ -297,7 +298,7 @@ func _no_to_replacing_the_save_only_thuds() -> bool:
 	var answered: bool = false
 	_listen_on_the_test_clock(main)
 	if dialog != null:
-		menu.ask_to_replace_save(0)
+		menu.ask_to_replace_save(1)
 		await process_frame
 		await _tap_calmly(KEY_ENTER)
 		answered = not dialog.visible
