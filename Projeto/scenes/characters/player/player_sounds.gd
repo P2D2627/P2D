@@ -5,10 +5,8 @@ extends Node2D
 ## script never touches the audio. Its physics frame runs after the player's, because it is a child
 ## of it, so it reads the state and the velocity the player's last move_and_slide() left. It is a
 ## Node2D so that its 2D sound players follow the player: under a plain Node they stay at the world
-## origin and go silent past their Max Distance.
+## origin and go silent past their Max Distance. The steps are not here: Footsteps plays them.
 
-## A step was heard: sound_index is its place in footstep_sounds. Dust or a camera bob can follow it.
-signal footstep_played(sound_index: int)
 ## A jump, off the floor or off a wall, was heard.
 signal jump_played
 ## A landing was heard: hard after a fall of hard_land_height or more, soft after a shorter one.
@@ -22,25 +20,6 @@ signal land_played(hard: bool)
 @export_range(0.0, 0.5, 0.005) var pitch_variation: float = 0.05
 ## Plays over and over while the player slides down a wall.
 @export var wall_slide: AudioStreamPlayer2D
-
-@export_group("Footsteps")
-## Plays the footsteps. Its own stream is replaced by one of Footstep Sounds on each step.
-@export var footstep: AudioStreamPlayer2D
-## Where the steps come from: a step plays each time its walk plants a foot, so the sound lands with
-## the drawing. How far apart they are, and where the first one falls, is the walk cycle's, there.
-@export var animation: PlayerAnimation
-## The step sounds. Each step picks one at random, never the same as the step before. Each file
-## holds one impact, and all are as loud as each other: a second impact in a file sounds as an extra
-## step between the drawn ones, and a quieter file is lost under the ambience while the rest are
-## heard.
-@export var footstep_sounds: Array[AudioStream] = []
-## The steps' volume. Set here and not on Footstep, whose own volume each step replaces with this
-## one and its variation. Measured in level 1, a step reaches the SFX bus 8 to 13 dB below its file:
-## the distance to the middle of the screen takes 2 to 5 dB, and the 2D panning about 6 more, since
-## Godot plays a centred 2D sound at half its level in each speaker.
-@export_range(-24.0, 12.0, 0.5, "suffix:dB") var footstep_volume_db: float = 0.0
-## How far each step's amplitude can move from Footstep Volume, either way: 0.01 is 1% up or down.
-@export_range(0.0, 0.5, 0.005) var footstep_volume_variation: float = 0.01
 
 @export_group("Jump and landing")
 ## Plays the jump, off the floor and off a wall, with the stream set in it.
@@ -73,8 +52,6 @@ signal land_played(hard: bool)
 ## once. When the SP runs out it always stops at once.
 @export_range(0.0, 3.0, 0.05, "suffix:s") var low_sp_fade_out: float = 0.5
 
-## The index in footstep_sounds of the last step played, -1 before the first.
-var _last_footstep_index: int = -1
 ## The highest y of the current fall: the player's y on the floor or on a wall, and the smallest y
 ## reached in the air since (y grows downwards).
 var _fall_top_y: float = 0.0
@@ -91,9 +68,6 @@ var _low_sp_fade: Tween
 func _ready() -> void:
 	assert(player != null, "PlayerSounds: assign the Player to Player.")
 	assert(wall_slide != null, "PlayerSounds: assign an AudioStreamPlayer2D to Wall Slide.")
-	assert(footstep != null, "PlayerSounds: assign an AudioStreamPlayer2D to Footstep.")
-	assert(animation != null, "PlayerSounds: assign the PlayerAnimation to Animation.")
-	assert(not footstep_sounds.is_empty(), "PlayerSounds: add the step sounds to Footstep Sounds.")
 	assert(jump != null, "PlayerSounds: assign an AudioStreamPlayer2D to Jump.")
 	assert(land != null, "PlayerSounds: assign an AudioStreamPlayer2D to Land.")
 	assert(soft_land_sound != null, "PlayerSounds: assign the soft landing to Soft Land Sound.")
@@ -113,7 +87,6 @@ func _ready() -> void:
 	player.jumped.connect(_on_jumped.unbind(2))
 	player.wall_jumped.connect(_on_jumped.unbind(2))
 	player.landed.connect(_on_landed)
-	animation.stepped.connect(_play_footstep)
 	_fall_top_y = player.global_position.y
 
 
@@ -147,30 +120,6 @@ func _update_wall_slide() -> void:
 			_play(wall_slide)
 	elif wall_slide.playing:
 		wall_slide.stop()
-
-
-## One of the step sounds at random, never the last one again, with its pitch and amplitude moved a
-## little at random so the repetition does not tire.
-func _play_footstep() -> void:
-	var index: int = _next_footstep_index()
-	footstep.stream = footstep_sounds[index]
-	footstep.volume_linear = db_to_linear(footstep_volume_db) * (1.0
-			+ randf_range(-footstep_volume_variation, footstep_volume_variation))
-	_play(footstep)
-	footstep_played.emit(index)
-
-
-## A random index in footstep_sounds other than the last one played, when there are two or more.
-func _next_footstep_index() -> int:
-	var count: int = footstep_sounds.size()
-	if count == 1:
-		return 0
-	# Picks among the others, then skips over the last one.
-	var index: int = randi_range(0, count - 2)
-	if _last_footstep_index >= 0 and index >= _last_footstep_index:
-		index += 1
-	_last_footstep_index = index
-	return index
 
 
 ## Plays a sound from from_position s into its file, with its pitch moved a little at random.

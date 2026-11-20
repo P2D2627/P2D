@@ -12,14 +12,11 @@ extends Node
 ## name.
 ##
 ## The walk keeps pace with the ground: it plays one step for every Step Length he runs, at any
-## speed, so the feet never slide. Each time it reaches one of Contact Frames, where a foot is
-## planted, it emits stepped, and the footstep sound plays on it.
+## speed, so the feet never slide. It always starts from its first frame, with the legs together.
+## Footsteps plays the step sounds on its frames.
 ##
 ## The jump's frames follow the arc, not the clock: the frame comes from how fast he goes up or
 ## down, so a short hop, a full jump, a wall jump and a fall off a ledge each show the right part.
-
-## A foot was planted: the walk reached one of Contact Frames.
-signal stepped
 
 const IDLE: StringName = &"idle"
 const WALK: StringName = &"walk"
@@ -28,8 +25,6 @@ const FALL: StringName = &"fall"
 const WALL_SLIDE: StringName = &"wall_slide"
 const HURT: StringName = &"hurt"
 const ESCAPE: StringName = &"escape"
-## What _last_walk_frame holds while he is not walking.
-const NOT_WALKING: int = -1
 ## The jump's frames, as main_character_jump draws them: crouched to push off, stretching on the
 ## way up, stretched at the top, coming down, and bracing for the landing.
 const TAKE_OFF_FRAME: int = 0
@@ -48,9 +43,9 @@ const FAST_FALL_FRAME: int = 4
 ## How far he runs in one step, from one planted foot to the next. The walk plays faster or slower
 ## to keep to it; longer makes longer, slower strides.
 @export_range(20.0, 1000.0, 10.0, "suffix:px") var step_length: float = 220.0
-## The walk's frames where a foot is planted, one per step, in order. Measured on the art: 0 and 6
-## are the lowest frames, with the foot on the ground line. New walk art needs its own.
-@export var contact_frames: Array[int] = [0, 6]
+## How many steps the walk's art draws in one loop, one per foot: 2 in its 12 frames. New walk art
+## needs its own.
+@export_range(1, 8, 1) var steps_per_loop: int = 2
 
 @export_group("Jump frames")
 ## How long the crouched frame shows after a jump off the floor. A wall jump has none.
@@ -67,10 +62,6 @@ const FAST_FALL_FRAME: int = 4
 ## each press swaps hands. New escape art needs its own.
 @export var escape_pose_frames: Array[int] = [0, 2]
 
-## The walk frame shown on the last frame, NOT_WALKING when it was another animation.
-var _last_walk_frame: int = NOT_WALKING
-## The animation chosen on the last frame, before falling back for missing art.
-var _last_choice: StringName = IDLE
 ## Seconds of the take-off frame left.
 var _take_off_left: float = 0.0
 ## True once he has gone up faster than apex_speed since he last stood on the floor.
@@ -80,7 +71,6 @@ var _rose: bool = false
 func _ready() -> void:
 	assert(player != null, "PlayerAnimation: assign the Player to Player.")
 	assert(sprite != null, "PlayerAnimation: assign the AnimatedSprite2D to Sprite.")
-	assert(not contact_frames.is_empty(), "PlayerAnimation: add the walk's planted frames.")
 	assert(not sprite.sprite_frames.has_animation(ESCAPE) or are_valid_pose_frames(
 			escape_pose_frames, sprite.sprite_frames.get_frame_count(ESCAPE)),
 			"PlayerAnimation: escape's poses must start in order, once each, within its frames.")
@@ -106,18 +96,10 @@ func _process(delta: float) -> void:
 				fast_fall_speed))
 	elif sprite.animation != animation or not sprite.is_playing():
 		sprite.play(animation)
-		# Off the floor into the walk, the stride starts halfway to the next planted foot, so the
-		# first step does not crowd the landing's sound. From standing, it starts on a planted foot.
-		if animation == WALK and _last_choice != IDLE:
-			sprite.frame = _mid_step_frame()
-	_last_choice = choice
 	if animation == WALK:
 		sprite.speed_scale = walk_speed_scale(absf(player.velocity.x))
-		_emit_steps_passed()
-		_last_walk_frame = sprite.frame
 	else:
 		sprite.speed_scale = 1.0
-		_last_walk_frame = NOT_WALKING
 
 
 ## The animation for a state, a velocity and a knockback, whether the SpriteFrames has it or not. Up
@@ -200,7 +182,7 @@ static func are_valid_pose_frames(pose_frames: Array[int], frame_count: int) -> 
 ## whatever Speed the SpriteFrames gives the walk.
 func walk_speed_scale(speed: float) -> float:
 	var frames_per_step: float = (float(sprite.sprite_frames.get_frame_count(WALK))
-			/ contact_frames.size())
+			/ steps_per_loop)
 	var frames_per_second: float = speed / step_length * frames_per_step
 	return frames_per_second / sprite.sprite_frames.get_animation_speed(WALK)
 
@@ -212,28 +194,6 @@ func _show_still(animation: StringName, frame: int) -> void:
 		sprite.pause()
 	if sprite.frame != frame:
 		sprite.frame = frame
-
-
-## Emits stepped for each planted frame reached since the last frame, once each, even if a slow
-## frame skipped over it. Starting the walk on a planted frame counts as reaching it.
-func _emit_steps_passed() -> void:
-	var count: int = sprite.sprite_frames.get_frame_count(WALK)
-	var frame: int = sprite.frame
-	if _last_walk_frame == NOT_WALKING:
-		if frame in contact_frames:
-			stepped.emit()
-		return
-	var passed: int = posmod(frame - _last_walk_frame, count)
-	for offset: int in range(1, passed + 1):
-		if posmod(_last_walk_frame + offset, count) in contact_frames:
-			stepped.emit()
-
-
-## The frame halfway from the first planted frame to the next.
-func _mid_step_frame() -> int:
-	var count: int = sprite.sprite_frames.get_frame_count(WALK)
-	var half_step: int = floori(float(count) / contact_frames.size() / 2.0)
-	return posmod(contact_frames[0] + half_step, count)
 
 
 ## The man struggled. A press (pressed true) jumps escape, if it shows, to the start of the pose after
