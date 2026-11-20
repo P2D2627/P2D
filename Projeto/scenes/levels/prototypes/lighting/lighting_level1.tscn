@@ -1,8 +1,8 @@
-[gd_scene format=3]
+[gd_scene format=3 uid="uid://cae3e66w66aq6"]
 
-[ext_resource type="Script" path="res://scenes/levels/prototypes/lighting/lighting_level1.gd" id="1_wrapper"]
-[ext_resource type="PackedScene" path="res://scenes/levels/lust/level1.tscn" id="2_level1"]
+[ext_resource type="Script" uid="uid://hccsuia6h1n1" path="res://scenes/levels/prototypes/lighting/lighting_level1.gd" id="1_wrapper"]
+[ext_resource type="PackedScene" uid="uid://cebpbpg0rur1b" path="res://scenes/levels/lust/level1.tscn" id="2_level1"]
 
-[node name="LightingLevel1" type="Node2D"]
+[node name="LightingLevel1" type="Node2D" unique_id=850833443]
 script = ExtResource("1_wrapper")
 level_scene = ExtResource("2_level1")

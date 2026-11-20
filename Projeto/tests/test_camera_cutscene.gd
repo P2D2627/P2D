@@ -8,9 +8,11 @@
 # the man jump. A shot with Keep Zoom is reached with no zoom at all; with Motion Blur the screen streaks while
 # the camera moves, no more than Max Blur, and not while it holds or after; and what the move is about to show
 # wakes before the camera comes. An unlocker with a cutscene opens its gates when the camera gets to the first
-# shot, and at once when the cutscene was seen. In level 1, phase 1's cutscene starts in its zone, a quick look at
-# the exit of about 5 s; phase 2's, about 3 s, starts when Asmodeus's offer ends, not on walking in nor after
-# another talk, shows gate B open, then shut by the end, with no zoom and a streak, and hands the camera back.
+# shot, and at once when the cutscene was seen. In level 1, phase 1 has no cutscene; phase 2's, a quick look of
+# about 3 s, starts when Asmodeus's offer ends, not on walking in nor after another talk, shows gate B open, then
+# shut by the end, with no zoom and a streak, and hands the camera back. With the level started over in phase 2,
+# it plays again after the first death there, Replay Delay after the start, and not with no death nor after the
+# second; unlocker B's look at gate B opening, about 3 s with no zoom, plays at every use, in every new copy.
 # Run from the repository root; the exit code is 0 on pass and 1 on fail:
 # godot --headless --fixed-fps 60 --path Projeto --script res://tests/test_camera_cutscene.gd
 extends "res://tests/support/player_test.gd"
@@ -38,8 +40,8 @@ const HELD_FRAMES: int = 30
 const MOVE_FRAMES: int = 10
 ## Where the man respawns in level 1's phase 2: inside ZoneP2StartRoom.
 const PHASE_2_START: Vector2 = Vector2(16872.0, 11856.0)
-## How long level 1's two quick looks last in all, in s, and how far from it they may be.
-const PHASE_1_TOTAL: float = 5.0
+## How long level 1's quick looks at gate B last in all, phase 2's and unlocker B's, in s, and how far from it
+## they may be.
 const PHASE_2_TOTAL: float = 3.0
 const TOTAL_TOLERANCE: float = 0.05
 ## The streak for the small world's look with no zoom.
@@ -88,6 +90,7 @@ func _initialize() -> void:
 	_camera.queue_free()
 	await physics_frame
 	results.append(await _level_1_has_its_cutscenes_and_phase_2_locks_gate_b())
+	results.append(await _level_1_replays_phase_2_once_and_pans_to_gate_b_every_time())
 	finish(results)
 
 
@@ -271,7 +274,7 @@ func _level_1_has_its_cutscenes_and_phase_2_locks_gate_b() -> bool:
 	var level: Node2D = (load(LEVEL1_SCENE) as PackedScene).instantiate() as Node2D
 	root.add_child(level)
 	await physics_frame
-	var overview: CameraCutscene = level.get_node(^"Cutscenes/Phase1Overview") as CameraCutscene
+	var overview_gone: bool = level.get_node_or_null(^"Cutscenes/Phase1Overview") == null
 	var intro: CameraCutscene = level.get_node(^"Cutscenes/Phase2Intro") as CameraCutscene
 	var opening: CameraCutscene = level.get_node(^"Cutscenes/GateBOpening") as CameraCutscene
 	var unlocker: GateUnlocker = level.get_node(^"GateUnlockers/UnlockerB") as GateUnlocker
@@ -280,12 +283,11 @@ func _level_1_has_its_cutscenes_and_phase_2_locks_gate_b() -> bool:
 	var asmodeus: Asmodeus = level.get_node(^"Asmodeus") as Asmodeus
 	var camera: GameCamera = level.get_node(^"GameCamera") as GameCamera
 	var blur: MotionBlur = camera.get_node(^"%MotionBlur") as MotionBlur
-	var wired: bool = (overview.trigger_zone.name == &"ZoneP1UnderLeg" and intro.trigger_zone == null
-			and intro.talk_cue == "asmodeus_offer" and asmodeus.talk_ended.is_connected(intro.play_after_talk)
-			and opening.trigger_zone == null and unlocker.cutscene == opening
-			and not overview.event.is_empty() and not intro.event.is_empty() and not opening.event.is_empty())
-	var quick: bool = (_is_quick_look(overview, PHASE_1_TOTAL) and _is_quick_look(intro, PHASE_2_TOTAL)
-			and is_zero_approx(opening.motion_blur))
+	var wired: bool = (overview_gone and intro.trigger_zone == null and intro.talk_cue == "asmodeus_offer"
+			and asmodeus.talk_ended.is_connected(intro.play_after_talk) and not intro.event.is_empty()
+			and intro.replay_phase == 2 and not intro.replay_event.is_empty()
+			and opening.trigger_zone == null and unlocker.cutscene == opening and opening.event.is_empty())
+	var quick: bool = _is_quick_look(intro, PHASE_2_TOTAL) and _is_quick_look(opening, PHASE_2_TOTAL)
 	# Walking into phase 2's start room no longer starts it, nor does the end of another talk.
 	player.global_position = PHASE_2_START
 	player.reset_physics_interpolation()
@@ -317,11 +319,98 @@ func _level_1_has_its_cutscenes_and_phase_2_locks_gate_b() -> bool:
 	return report(wired and quick and not on_walking_in and not after_other_talk and started and open_seen[0]
 			and finished and absf(seconds - PHASE_2_TOTAL) <= 2.0 / Engine.physics_ticks_per_second
 			and zoom_off[0] < 0.001 and widest[0] > 1.0 and shut and released,
-			("Level 1: cutscenes wired %s, quick looks of %.1f s and %.1f s with no zoom %s, phase 2's starts on "
-			+ "walking in %s, after another talk %s, after the offer %s, gate B open as it starts %s, finished %s "
-			+ "after %.2f s, zoom moved %.4f, widest streak %.1f px, gate B shut at its place %s, camera released %s")
-			% [wired, PHASE_1_TOTAL, PHASE_2_TOTAL, quick, on_walking_in, after_other_talk, started, open_seen[0],
+			("Level 1: no phase 1 cutscene and the others wired %s, phase 2's and gate B's quick looks of %.1f s "
+			+ "with no zoom %s, phase 2's starts on walking in %s, after another talk %s, after the offer %s, gate B "
+			+ "open as it starts %s, finished %s after %.2f s, zoom moved %.4f, widest streak %.1f px, gate B shut at "
+			+ "its place %s, camera released %s")
+			% [wired, PHASE_2_TOTAL, quick, on_walking_in, after_other_talk, started, open_seen[0],
 			finished, seconds, zoom_off[0], widest[0], shut, released])
+
+
+## Level 1 started over in phase 2, as after a death there, with her offer answered and phase 2's cutscene seen:
+## with no death in phase 2 the cutscene does not play again; after the first death it does, Replay Delay after
+## the start, marks its Replay Event and shows gate B open, then shut; after the second, it does not. Unlocker
+## B's look at gate B plays in each of the three copies, as every use after a death.
+func _level_1_replays_phase_2_once_and_pans_to_gate_b_every_time() -> bool:
+	var progress: GameProgress = root.get_node(^"GameState") as GameProgress
+	var stats: GameRunStats = root.get_node(^"RunStats") as GameRunStats
+	progress.reset()
+	for event: StringName in [&"lust_phase_2_reached", &"answered_asmodeus_offer", &"lust_phase_2_intro_seen"]:
+		progress.mark_event(event)
+	var scene: PackedScene = load(LEVEL1_SCENE) as PackedScene
+	var pans: Array[bool] = []
+
+	# No death in phase 2 yet: it does not play again.
+	var level: Node2D = scene.instantiate() as Node2D
+	root.add_child(level)
+	var intro: CameraCutscene = level.get_node(^"Cutscenes/Phase2Intro") as CameraCutscene
+	var replay_frames: int = roundi(intro.replay_delay * Engine.physics_ticks_per_second)
+	await wait_frames(replay_frames + MOVE_FRAMES)
+	var with_no_death: bool = intro.is_playing()
+	var in_phase_2: bool = stats.get_phase() == 2
+	pans.append(await _unlocker_b_pans(level))
+	level.queue_free()
+	await physics_frame
+
+	# His first death in phase 2: it plays again, once the screen is back.
+	stats.record_death(&"test_phase_2_death")
+	level = scene.instantiate() as Node2D
+	intro = level.get_node(^"Cutscenes/Phase2Intro") as CameraCutscene
+	var gate: Gate = level.get_node(^"Gates/GateB") as Gate
+	var added_at: int = Engine.get_physics_frames()
+	var started_at: Array[int] = [-1]
+	var open_seen: Array[bool] = [false]
+	var on_start: Callable = func() -> void:
+		started_at[0] = Engine.get_physics_frames()
+		open_seen[0] = gate.is_unlocked()
+	intro.started.connect(on_start, CONNECT_DEFERRED)
+	root.add_child(level)
+	var replayed: bool = await wait_until(intro.is_playing, replay_frames + MOVE_FRAMES)
+	var waited: int = started_at[0] - added_at
+	var marked: bool = progress.has_event(intro.replay_event)
+	var finished: bool = await wait_until(func() -> bool: return not intro.is_playing(), MAX_FRAMES * 3)
+	await wait_frames(MOVE_FRAMES)
+	var shut: bool = not gate.is_unlocked()
+	pans.append(await _unlocker_b_pans(level))
+	level.queue_free()
+	await physics_frame
+
+	# His second death there: no more.
+	stats.record_death(&"test_phase_2_death")
+	level = scene.instantiate() as Node2D
+	root.add_child(level)
+	intro = level.get_node(^"Cutscenes/Phase2Intro") as CameraCutscene
+	await wait_frames(replay_frames + MOVE_FRAMES)
+	var after_second: bool = intro.is_playing()
+	pans.append(await _unlocker_b_pans(level))
+	level.queue_free()
+	await physics_frame
+	return report(in_phase_2 and not with_no_death and replayed and absi(waited - replay_frames) <= FRAME_TOLERANCE
+			and marked and open_seen[0] and finished and shut and not after_second and pans.size() == 3
+			and not pans.has(false),
+			("Level 1 started over in phase 2 %s: plays again with no death %s; after the first %s, %d frames after "
+			+ "the start (%d expected), marked %s, gate B open as it starts %s, finished %s, gate B shut %s; after "
+			+ "the second %s; unlocker B's look in each copy %s")
+			% [in_phase_2, with_no_death, replayed, waited, replay_frames, marked, open_seen[0], finished, shut,
+			after_second, pans])
+
+
+## Unlocker B used in level: its cutscene plays, with no zoom, gate B is open by its end, and the camera is
+## handed back.
+func _unlocker_b_pans(level: Node2D) -> bool:
+	var opening: CameraCutscene = level.get_node(^"Cutscenes/GateBOpening") as CameraCutscene
+	var unlocker: GateUnlocker = level.get_node(^"GateUnlockers/UnlockerB") as GateUnlocker
+	var gate: Gate = level.get_node(^"Gates/GateB") as Gate
+	var camera: GameCamera = level.get_node(^"GameCamera") as GameCamera
+	var home_zoom: float = camera.zoom.x
+	var zoom_off: Array[float] = [0.0]
+	var watch: Callable = func() -> void: zoom_off[0] = maxf(zoom_off[0], absf(camera.zoom.x - home_zoom))
+	physics_frame.connect(watch)
+	unlocker.activate()
+	var playing: bool = opening.is_playing()
+	var finished: bool = await wait_until(func() -> bool: return not opening.is_playing(), MAX_FRAMES * 3)
+	physics_frame.disconnect(watch)
+	return playing and finished and zoom_off[0] < 0.001 and gate.is_unlocked() and not camera.is_directed()
 
 
 ## Whether cutscene is one shot with Keep Zoom and no pull back, lasting total seconds in all, with a streak.

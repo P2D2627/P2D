@@ -289,7 +289,7 @@ estados:
 |---|---|
 | Parado | Espera no seu posto, onde o nível o colocou e virado para onde o nível o virou, até reparar na personagem. Com ronda, é a pausa entre duas idas, sorteada por cada demónio entre 0,8 e 2 s. |
 | Ronda | Vai e vem a passo, a 150 px/s, num troço de 480 px do seu chão, centrado no posto. Vira-se nas pontas, à beira de um desnível e contra uma parede. Fora do ecrã, fica parado. |
-| Alerta | Ao reparar na personagem, vira-se para ela e fica 0,3 s parado onde está, o tempo de ladrar, antes de a perseguir. Por cima da cabeça surge um "!", com um bip agudo; o "!" fica mais 0,5 s já na perseguição, para se conseguir ler. |
+| Alerta | Ao reparar na personagem, vira-se para ela e fica 0,3 s parado onde está, o tempo de ladrar, antes de a perseguir. Por cima da cabeça surge um "!", com o som de alerta do cão (1,8 s); o "!" fica mais 0,5 s já na perseguição, para se conseguir ler. Quando o som de alerta acaba, se o cão ainda a perseguir, ouve-se um de dois sons de quem se fixou na presa, ao acaso. |
 | Perseguir | Segue-a a cerca de 560 px/s, no chão onde está. A personagem corre a 720 px/s, pelo que fugir resulta, mas com pouca margem. |
 | Aviso | Antes de cada ataque, mostra qual vem, para que o jogador tenha tempo de reagir: antes da mordida, alarga-se e baixa durante 0,1 s, sem parar de correr; antes do salto, para e encolhe durante 0,35 s. |
 | Atirar-se | Salta para onde a personagem vai estar, entre 200 e 420 px, e fica 0,35 s parado onde aterra. |
@@ -299,7 +299,7 @@ estados:
 | Repelido | Depois de atirado pelo crucifixo, fica 0,3 s parado onde aterrou e volta a perseguir. |
 | Atordoado | Depois de atirado pela personagem ao soltar-se, fica 1,2 s no chão, achatado e mais escuro, e depois recua ou volta a perseguir. |
 | Fora de alcance | Com a personagem num chão ou numa parede acima ou abaixo do que os seus ataques chegam, não a segue por baixo nem por cima: para virado para ela e ladra, e depois anda para trás e para a frente num troço de 160 px à volta do sítio onde parou e, em cada ponta, volta a parar e a ladrar; contra uma parede ou na borda do seu chão, do lado dela, salta no sítio. Se ela sair do troço por cima dele, corre por baixo à velocidade da perseguição até ficar debaixo dela e anda aí. Se ela descer ao seu alcance, volta a persegui-la. Enquanto a vir, nunca desiste; se ela sair da sua vista, ladra mais 3 s para onde ela estava e depois vai procurá-la. |
-| Procurar | Quando uma parede a esconde durante 0,5 s, vai a 300 px/s até onde a viu pela última vez, ou até onde o seu chão deixa, e fareja ali durante 2,5 s, virando-se para o outro lado a meio. Se a vir, fica alerta e volta a persegui-la; se não, desiste. Fora do ecrã, desiste logo. Ao começar a procura, toca dois bips a descer; o "?" sobre a cabeça está desligado desde a linha de vista (Shows Search, no nó `Mark`). |
+| Procurar | Quando uma parede a esconde durante 0,5 s, vai a 300 px/s até onde a viu pela última vez, ou até onde o seu chão deixa, e fareja ali durante 2,5 s, virando-se para o outro lado a meio. Se a vir, fica alerta e volta a persegui-la; se não, desiste. Fora do ecrã, desiste logo. Os dois bips a descer do início da procura estão desligados (Play Beeps, no nó `DemonSounds`); o "?" sobre a cabeça está desligado desde a linha de vista (Shows Search, no nó `Mark`). |
 | Voltar | Depois de desistir, volta ao posto a passo, a 200 px/s, e retoma a ronda. Se a vir à frente pelo caminho, fica alerta e volta a persegui-la. |
 
 O demónio vê a personagem a menos de 1100 px, mais de meio ecrã, se não houver uma parede entre os
@@ -439,7 +439,8 @@ demónios usam-na com 96 px e 240 px:
   desce até ao chão onde a viu pela última vez.
 
 Ao descolar, o retângulo provisório estica (0,8 × 1,25) e, ao aterrar, encolhe (1,25 × 0,75),
-voltando ao tamanho em 0,2 s; cada um tem um bip provisório.
+voltando ao tamanho em 0,2 s. Ao descolar, e também ao atirar-se à personagem, ouve-se um salto
+provisório; os bips de descolar e de aterrar estão desligados.
 
 Os valores são os do demónio da luxúria, num ficheiro de dados (`scenes/characters/demon/lust_demon_stats.tres`);
 mudam sem alterar código e são provisórios. O aviso é, por agora, um retângulo que muda de forma e
@@ -742,7 +743,7 @@ deste jogo: a corrida, as chaminés, as subidas e as quedas. As medidas foram ob
 | Corpo sempre no ecrã | na vertical, a câmara desloca-se sempre o necessário para o corpo inteiro da personagem ficar no ecrã, mesmo que isso passe o limite de uma zona: uma câmara atrasada numa subida rápida, ou uma zona com o topo baixo demais, nunca cortam a cabeça. Na horizontal, o mesmo acontece enquanto a câmara muda de zona, se a personagem estava no ecrã e se deslocou, mas não ao entrar num miradouro, cuja Vista pode ficar ao lado da personagem; uma personagem que avança mais de 200 px num só passo foi colocada, não se deslocou, e a câmara continua a chegar até ela de forma suave. Dentro de uma zona, o lado da zona pode cortar até metade do corpo, antes de a personagem passar para a zona seguinte | com os pés 20 px abaixo do topo de uma zona ancorada em cima, a cabeça fica 76 px acima da zona, e o topo do ecrã sobe exatamente até ela; a correr a 720 px/s para um poço com zoom 2 e a parar a 120 px do lado oposto, o corpo chegava a ficar 205 px fora do ecrã e passou a ficar sempre dentro |
 | Limite horizontal | com a opção Limit Horizontally desligada (por omissão), a zona limita o ecrã só em cima e em baixo, e na horizontal a câmara segue a personagem como fora das zonas; ligada, limita-o dos quatro lados, para uma sala em que a câmara deve ficar parada | numa zona de 1200 px de largura, com a personagem a 1100 px da borda esquerda, a câmara fica no centro da zona (x 600) com a opção ligada e acompanha a personagem (x 1036) com a opção desligada, com o mesmo enquadramento vertical |
 | Âncora vertical | numa zona mais baixa do que o ecrã, a âncora da zona escolhe onde fica o ecrã: em baixo (1), o fundo do ecrã coincide com o fundo da zona; em cima (0), o topo do ecrã coincide com o topo da zona; ao centro (0,5, o valor por omissão), o excesso divide-se pelos dois lados | numa zona de 400 px de altura, o ecrã mostra 680 px acima da zona com a âncora em baixo e 340 px de cada lado com a âncora ao centro; numa zona mais alta do que o ecrã, a âncora não altera a posição da câmara |
-| Cenas de câmara | uma cena de câmara (`CameraCutscene`) leva a câmara a mostrar, por ordem, os enquadramentos (`CameraShot`) que tem como filhos, cada um com uma Vista (um `ReferenceRect` filho), um tempo de viagem e um tempo de paragem, e volta depois à personagem; começa quando a personagem entra pela primeira vez na sua zona de câmara (Trigger Zone), quando outro elemento a pede, como um desbloqueador, ou quando acaba uma conversa com a deixa escolhida (Talk Cue), como a oferta da Asmodeu; o mundo continua a correr, mas a personagem fica parada, sem crucifixo e sem receber golpes; o que está no caminho da câmara acorda antes de ela lá chegar (ver "Atividade fora do ecrã"); a câmara desloca-se com aceleração e travagem suaves e muda o zoom em proporção constante; um enquadramento com Keep Zoom mantém o zoom que a câmara tinha e só a centra na Vista; entre dois sítios que não cabem no mesmo ecrã, pode afastar-se a meio caminho até os dois caberem (Zoom Out To Travel); com Motion Blur, a imagem arrasta-se na direção da deslocação, tanto mais quanto mais depressa, até Max Blur, num ecrã por cima do nível e por baixo dos menus (`MotionBlur`, na câmara); cada enquadramento avisa quando a câmara lá chega (arrived), para um portão fechar ou abrir à vista; com um evento (Event), só se vê uma vez em todo o jogo, e o jogo grava nesse momento, como com um upgrade aceite, para uma morte não a repetir; o salto termina-a, passado meio segundo | uma viagem de 1 s chegou ao enquadramento em 59 passos de física (60 previstos); entre duas Vistas a 24 000 px uma da outra, com zooms de 1,2 e 0,6 nos extremos, a câmara afastou-se até ao zoom 0,070 a meio; com Keep Zoom, o zoom não mudou (diferença abaixo de 0,0001); com Motion Blur 0,5 e Max Blur 30 px, o arrastamento chegou a 30 px durante a viagem e foi 0 na paragem e no fim; um elemento adormecido junto da Vista acordou dois frames depois do início, antes de a câmara chegar; a cena da fase 2 do nível 1 durou 3,00 s; no fim, a câmara ficou exatamente onde estava antes de começar |
+| Cenas de câmara | uma cena de câmara (`CameraCutscene`) leva a câmara a mostrar, por ordem, os enquadramentos (`CameraShot`) que tem como filhos, cada um com uma Vista (um `ReferenceRect` filho), um tempo de viagem e um tempo de paragem, e volta depois à personagem; começa quando a personagem entra pela primeira vez na sua zona de câmara (Trigger Zone), quando outro elemento a pede, como um desbloqueador, ou quando acaba uma conversa com a deixa escolhida (Talk Cue), como a oferta da Asmodeu; o mundo continua a correr, mas a personagem fica parada, sem crucifixo e sem receber golpes; o que está no caminho da câmara acorda antes de ela lá chegar (ver "Atividade fora do ecrã"); a câmara desloca-se com aceleração e travagem suaves e muda o zoom em proporção constante; um enquadramento com Keep Zoom mantém o zoom que a câmara tinha e só a centra na Vista; entre dois sítios que não cabem no mesmo ecrã, pode afastar-se a meio caminho até os dois caberem (Zoom Out To Travel); com Motion Blur, a imagem arrasta-se na direção da deslocação, tanto mais quanto mais depressa, até Max Blur, num ecrã por cima do nível e por baixo dos menus (`MotionBlur`, na câmara); cada enquadramento avisa quando a câmara lá chega (arrived), para um portão fechar ou abrir à vista; com um evento (Event), só se vê uma vez em todo o jogo, e o jogo grava nesse momento, como com um upgrade aceite, para uma morte não a repetir; sem evento, vê-se sempre que é pedida, como a do desbloqueador B do nível 1, também depois de cada morte; com uma fase de repetição (Replay Phase) e um evento de repetição (Replay Event), uma cena já vista volta a ver-se uma única vez, quando o nível recomeça nessa fase depois da primeira morte nela, passado o tempo de Replay Delay (0,8 s, para o ecrã já ter voltado do negro); as mortes contam-se nas estatísticas da partida (`RunStats`), que uma morte não desfaz, e o evento de repetição grava-se no momento, para a segunda morte não a repetir; é o caso da cena da fase 2 do nível 1, que volta a mostrar o portão B a fechar; o salto termina-a, passado meio segundo | uma viagem de 1 s chegou ao enquadramento em 59 passos de física (60 previstos); entre duas Vistas a 24 000 px uma da outra, com zooms de 1,2 e 0,6 nos extremos, a câmara afastou-se até ao zoom 0,070 a meio; com Keep Zoom, o zoom não mudou (diferença abaixo de 0,0001); com Motion Blur 0,5 e Max Blur 30 px, o arrastamento chegou a 30 px durante a viagem e foi 0 na paragem e no fim; um elemento adormecido junto da Vista acordou dois frames depois do início, antes de a câmara chegar; a cena da fase 2 do nível 1 durou 3,00 s; com o nível recomeçado na fase 2, não se repetiu sem mortes nessa fase, repetiu-se depois da primeira, 47 passos de física após o recomeço (48 previstos), e não se repetiu depois da segunda; a cena do desbloqueador B, de 3 s, viu-se nas três cópias seguidas do nível, sem mudar o zoom (diferença abaixo de 0,001); no fim, a câmara ficou exatamente onde estava antes de começar |
 | Miradouros | antes de uma queda, de uma subida ou de um entroncamento, um miradouro (`CameraLookout`) afasta a câmara para mostrar esse troço: enquanto a personagem estiver no retângulo do miradouro, e depois durante o salto ou a queda até aterrar, o ecrã enche a Vista (um `ReferenceRect` filho) e nunca mostra nada fora dela, pelo que a Vista se desenha só sobre esse troço do caminho; tem prioridade sobre as zonas; no chão, deixa de valer quando o corpo fica a mais de um tile (48 px) do retângulo | numa Vista de 2400 × 1350 px, o zoom fica em 0,8 e o ecrã coincide com a Vista; numa Vista de 6000 × 5000 px, o zoom para em 0,7 e o ecrã segue a personagem sem sair dela; ao sair de um rebordo, o miradouro mantém-se durante toda a queda e acaba na aterragem |
 
 As zonas de câmara definem-se na cena de cada nível (ver "Câmara" em "Para quem programa"). Cada
@@ -1300,7 +1301,7 @@ Remote; os restantes valores são lidos sempre que são usados.
     ├── default_bus_layout.tres   buses de áudio
     ├── addons/        plugins de terceiros: o Dialogue Manager, que dá as falas
     ├── assets/        arte e som
-    │   ├── audio/       som, por tipo: os efeitos sonoros em sfx/
+    │   ├── audio/       som, por tipo: os efeitos sonoros em sfx/ e os ambientes em ambience/
     │   ├── fonts/       tipos de letra: a Tinos, de reserva para a Times New Roman dos menus, e a Atkinson Hyperlegible Next e a Literata dos avisos do tutorial
     │   ├── sprites/     uma pasta por grupo: player/, demon_lust/, environment/, backgrounds/, ramps/ e menu/ (a arte dos menus)
     │   └── ui/          imagens da interface: os ícones dos botões do comando nos avisos (prompts/)
@@ -1310,7 +1311,7 @@ Remote; os restantes valores são lidos sempre que são usados.
     │   ├── characters/  a personagem (player/), o crucifixo (crucifix/), os demónios (demon/, com os estados em states/, e os que falam, Velvet e Asmodeu) e os componentes que mais de um sistema usa (components/)
     │   ├── levels/      uma pasta por nível: a sala de teste (test_room/), a sala de treino (gym/) e o nível 1 (lust/, com os construtores e os mapas em texto em builders/); na raiz, as peças e os scripts comuns e o fundo de que os níveis partem (background/)
     │   ├── objects/     peças com comportamento: portões (gates/), plataformas (platforms/) e armadilhas (traps/)
-    │   ├── others/      câmara (camera/), atividade fora do ecrã (activity/, o ActivityTracker, que adormece o que está parado longe do ecrã), som ambiente (ambience/, as camadas de sons soltos), depuração (debug/), resposta aos impactos (feedback/), todos os shaders (shaders/) e conjuntos de tiles (tilesets/)
+    │   ├── others/      câmara (camera/), atividade fora do ecrã (activity/, o ActivityTracker, que adormece o que está parado longe do ecrã), som ambiente (ambience/, as camadas de sons soltos, os fundos e as brasas que o vento leva), depuração (debug/), resposta aos impactos (feedback/), todos os shaders (shaders/) e conjuntos de tiles (tilesets/)
     │   └── screens/     menus, ecrã das opções, o balão de diálogo, indicador de gravação e a barra de alma (soul_hud/)
     ├── tests/         testes automáticos (test_*.gd), que correm sem janela
     │   ├── launchers/ abrem o jogo num ponto escolhido, para ver à mão (por agora, o fim da fase 2)
@@ -1340,8 +1341,10 @@ Para que a organização se mantenha à medida que o jogo cresce, seguem-se oito
   gravação, fica em `scenes/autoload/`.
 - Os shaders ficam todos em `scenes/others/shaders/` e os conjuntos de tiles em
   `scenes/others/tilesets/`, mesmo os que só um sistema usa.
-- O som também se divide por tipo: os efeitos sonoros ficam em `assets/audio/sfx/`, e a música e os
-  ambientes terão pastas suas ao lado desta.
+- O som também se divide por tipo: os efeitos sonoros ficam em `assets/audio/sfx/`, os ambientes
+  em `assets/audio/ambience/` (os sons soltos do vento em `wind/`, uma pasta por categoria) e os
+  sons de coisas do mundo em `assets/audio/textures/`, uma pasta por coisa (o fogo em `fire/`, com
+  o ciclo à raiz e os estalos em `crackles/`), e a música terá uma pasta sua ao lado destas.
 - O que não faz parte do jogo fica em pastas à parte: os construtores de um nível, com os mapas em
   texto de que partem, em `builders/`, dentro da pasta do nível; em `tests/`, as medições em
   `measures/` e os lançadores em `launchers/`.
@@ -1476,6 +1479,11 @@ godot --headless --fixed-fps 60 --path Projeto --script res://tests/test_demon_p
 godot --headless --fixed-fps 60 --path Projeto --script res://tests/test_demon_mark.gd
 godot --headless --fixed-fps 60 --path Projeto --script res://tests/test_demon_sounds.gd
 godot --headless --fixed-fps 60 --path Projeto --script res://tests/test_ambience_layer.gd
+godot --headless --fixed-fps 60 --path Projeto --script res://tests/test_ambience_bed.gd
+godot --headless --fixed-fps 60 --path Projeto --script res://tests/test_ambience_ducking.gd
+godot --headless --fixed-fps 60 --path Projeto --script res://tests/test_wind_embers.gd
+godot --headless --fixed-fps 60 --path Projeto --script res://tests/test_sound_emitter.gd
+godot --headless --fixed-fps 60 --path Projeto --script res://tests/test_rising_embers.gd
 godot --headless --fixed-fps 60 --path Projeto --script res://tests/test_hit_boxes.gd
 godot --headless --fixed-fps 60 --path Projeto --script res://tests/test_knockback.gd
 godot --headless --fixed-fps 60 --path Projeto --script res://tests/test_stacked_bodies.gd
@@ -2355,10 +2363,11 @@ tem de ser chão plano. A caixa de colisão cobre o tronco (66 × 54 px), sem a 
   do aviso de ataque; distinguem-se pela forma e não pela cor. Cada marca surge maior e encolhe uma
   única vez, sem piscar. O "!" fica Alert Linger Time (0,5 s) já na perseguição, porque 0,3 s mal
   chega para ler. Qualquer outro estado apaga a marca no mesmo passo, e uma pausa suspende a
-  contagem. O nó `DemonSounds` toca um bip no alerta e dois bips a descer na procura, e tem um lugar
-  vazio para o ladrido. Cada demónio tem uma voz própria, até 8% acima ou abaixo do tom normal, e
+  contagem. O nó `DemonSounds` tocava um bip no alerta e dois bips a descer na procura, e tem um lugar
+  vazio para o ladrido; os bips estão hoje desligados, e o alerta tem o som do cão (ver "Sons no
+  mundo: os cães-demónio"). Cada demónio tem uma voz própria, até 8% acima ou abaixo do tom normal, e
   cada som varia até 2%. A marca e o som cobrem-se um ao outro: quem não ouve vê a marca, e quem não
-  está a olhar ouve o bip. O som usa um gerador de números próprio. Com o gerador global, o som
+  está a olhar ouve o alerta. O som usa um gerador de números próprio. Com o gerador global, o som
   tirava números de que cada demónio se serve para a sua semente, e mudava o comportamento nos
   testes com semente fixa. Os valores da marca ficam no Inspector da cena do demónio. Custo, com 50
   demónios alertados no mesmo passo (headless, à corrente): a marca acrescenta cerca de 0,2 ms
@@ -2386,8 +2395,8 @@ tem de ser chão plano. A caixa de colisão cobre o tronco (66 × 54 px), sem a 
   desfaz o último passo. Ficaram de lado: um salto de ataque sem sair do chão, barato, mas que não
   vai atrás dela; saltar buracos, porque os refúgios não precisam deles; e mudar o posto para onde
   a perde, porque espalha os demónios e tira a quem desenha o sítio de cada um. O demónio emite
-  `took_off` e `landed`, a que o retângulo provisório e o `DemonSounds` respondem (no máximo 2 bips
-  por passo de física, para todos), e o F3 desenha o caminho guardado, numerado pela ordem em que
+  `took_off` e `landed`, a que o retângulo provisório e o `DemonSounds` respondem (no máximo 2 sons
+  de salto por passo de física, para todos), e o F3 desenha o caminho guardado, numerado pela ordem em que
   se desfaz. Limites conhecidos: dois chãos à mesma altura contam como o mesmo; fora de alcance, não
   volta a tentar se a personagem andar para cima de um degrau a que chega; sem testes a 120 Hz nem
   com plataformas de sentido único como chão de partida ou de chegada.
@@ -3199,7 +3208,12 @@ predefinido. Uma opção nova entra como chave nova: um ficheiro antigo, que nã
 predefinido e mantém as outras. Por isso, as cinco opções de acessibilidade entraram sem mudar o
 número de versão, que só terá de subir quando uma chave mudar de sentido, de tipo ou de secção. O
 limite de FPS só
-limita o desenho; a física mantém-se nos 60 passos por segundo. Os menus nunca alteram o áudio, a
+limita o desenho; a física mantém-se nos 60 passos por segundo. O volume de cada bus no
+`default_bus_layout.tres`, acertado no painel Audio do editor, é a mistura do jogo; a opção de volume
+escala-a, pelo que 100 % deixa o bus na mistura e 50 % põe-no 6 dB abaixo. O `Settings` lê a mistura
+do ficheiro, e não do AudioServer, porque este já pode ter sido mudado por outro nó de opções. Antes,
+a opção substituía o volume do bus, e o que se acertava no painel Audio não chegava ao jogo: o
+Ambience, a −8,24 dB no ficheiro, tocava a 0 dB. Os menus nunca alteram o áudio, a
 janela ou o motor diretamente: pedem a mudança ao `Settings`, que a aplica e grava. Com o jogo
 embutido no editor, o ecrã inteiro não se aplica (só a janela normal é suportada); experimenta-se com
 o jogo numa janela à parte ou numa exportação.
@@ -3853,7 +3867,7 @@ personagem longe desliga o rastreador enquanto corre: ligado, adormeceria os cã
 estes não patrulhariam. Com todos os testes, antes e depois do rastreador, falham as mesmas
 verificações (12 testes, das fases 1 a 3, já falhavam antes dele).
 
-#### Som ambiente: camadas de sons soltos e o bus Alerts
+#### Som ambiente: camadas de sons soltos, fundos e o bus Alerts
 
 O som ambiente de um nível (trovões, rajadas de vento, vozes) não é uma faixa em ciclo, porque um
 ciclo, por mais longo que seja, acaba por ser reconhecido. Cada tipo de som é uma camada, um nó
@@ -3864,32 +3878,467 @@ momentos e pontos escolhidos ao acaso:
   omissão, 8 e 25 s).
 - Cada som parte de um ponto ao acaso à volta do centro do ecrã: por omissão, até 900 px para cada
   lado e até 300 px para cima ou para baixo. O lado decide em que coluna se ouve mais, e a distância
-  decide o volume.
+  decide o volume. Enquanto toca, o som mantém o seu lugar no ecrã (Follow Screen): antes ficava no
+  ponto do mundo onde começara, e, com a personagem a correr, ficava para trás, mais baixo e de lado.
 - Os sons vêm de um `AudioStreamRandomizer` do Godot, no campo Sounds, que escolhe um som diferente
   do anterior e lhe varia o tom e o volume.
 
 Assim, com poucos ficheiros, a sequência de sons não se repete. As camadas ficam dentro do nível, pelo
 que a pausa as suspende com o resto do jogo; `start()` e `stop()` ligam-nas e desligam-nas por zona
-ou por acontecimento. Os ambientes contínuos por baixo das camadas, como um vento constante, são
-leitores de som em ciclo no bus Ambience e não precisam de script. Ficaram de lado o
-`AudioStreamPlaylist` do Godot, que baralha faixas longas mas não controla o espaço entre elas (dois
-trovões podem seguir-se) e acaba por as repetir, e o FMOD, uma ferramenta externa, com licença e
-aprendizagem próprias, desproporcionada para três níveis.
+ou por acontecimento. Ficaram de lado o `AudioStreamPlaylist` do Godot, que baralha faixas longas
+mas não controla o espaço entre elas (dois trovões podem seguir-se) e acaba por as repetir, e o
+FMOD, uma ferramenta externa, com licença e aprendizagem próprias, desproporcionada para três níveis.
+
+Alguns sons trazem já a sua própria imagem estéreo, e o Godot não os deve colocar nem mover para um
+lado: uma rajada cujo trajeto de um lado ao outro já vem no ficheiro, ou um ronco misturado ao
+centro. Estes ficam no campo Unpanned Sounds da camada e tocam tal como estão, num leitor sem
+posição (um `AudioStreamPlayer`, e não 2D), a −6 dB, o volume a que o Godot toca um som 2D ao
+centro do ecrã. Quando uma camada tem os dois tipos, Unpanned Share é a parte dos sons que sai dos
+não posicionados (por omissão, 0,33, um em cada três), e dois destes nunca tocam seguidos; em 3 000
+sorteios, com três sementes, a parte medida foi de 0,325 a 0,341. Uma camada só com sons não
+posicionados toca-os todos assim. Cada som diz também para que lado atravessa o ecrã: um não
+posicionado, o lado que diz Unpanned Travel; um posicionado, do seu lado para o outro, porque uma
+rajada que se ouve à esquerda sopra para a direita.
+
+Por baixo das camadas tocam os fundos: sons longos e contínuos, como o vento, cada um num nó
+`AmbienceBed` (`scenes/others/ambience/ambience_bed.tscn`). Um nível tem dois ou mais fundos, de
+durações diferentes, que tocam ao mesmo tempo; como as durações diferem, a combinação dos dois
+raramente se repete. Um fundo não repete o ficheiro em ciclo: toca-o em passagens, de Loop Start a
+Loop End, e a passagem seguinte começa no outro dos seus dois leitores Crossfade segundos antes do
+fim da anterior (por omissão, 3 s), numa transição de potência constante (seno e cosseno). Assim,
+as entradas e saídas graduais e o silêncio no fim de um ficheiro ficam de fora, e o ficheiro não
+precisa de ser um ciclo perfeito. O volume de cada fundo varia devagar entre Quiet dB e Loud dB,
+segundo um ruído suave (FastNoiseLite), para que o vento respire em vez de ficar num nível fixo. A
+primeira passagem começa num ponto ao acaso, pelo que o nível, e cada recomeço depois de uma morte,
+abre num ponto diferente do som. O fundo conta o tempo real e não o do jogo, porque o som continua
+durante o hitstop de uma morte; um frame conta no máximo 0,1 s, porque, no frame em que a escala de
+tempo muda, o delta ainda traz a escala anterior.
+
+No nível 1, a cena `scenes/levels/lust/lust_ambience.tscn` (o nó Ambience do `level1.tscn`) tem dois
+fundos, `amb_layer_1.ogg` (68,5 s) e `amb_layer_2.ogg` (113,4 s), em `assets/audio/ambience/`.
+Medidos com o ffmpeg, segundo a segundo, o primeiro entra aos poucos (−41 dB no primeiro segundo,
+perto do nível do resto do ficheiro a partir dos 3 s) e ambos acabam em silêncio: o primeiro desce
+a partir dos 63 s e cala-se dos 64,9 s aos 68,5 s, e o segundo desce a partir dos 107 s e cala-se
+dos 109,5 s aos 113,4 s. Os fundos tocam, por isso, dos 3 aos 63 s e dos 0 aos 107 s, em passagens
+de 57 s e de 104 s; a posição de um em relação ao outro só volta a ficar a menos de 1 s da inicial
+ao fim de 5 928 s, cerca de 99 minutos.
+
+Por cima dos fundos, o nível 1 tem duas camadas de vento, com os ficheiros em
+`assets/audio/ambience/wind/`, uma pasta por categoria:
+
+- PassingWind, as rajadas que passam, de 21 a 33 s umas das outras (cerca de 27 s, com um desvio ao
+  acaso). O Godot coloca de um lado ou do outro `one_shot_wind_2.wav` (5,2 s) e
+  `one_shot_wind_5.wav` (4,9 s); `one_shot_wind_1_bakedpan.wav` (6,2 s) toca sem posição, porque o
+  trajeto já vem no ficheiro. Medida com o ffmpeg em janelas de meio segundo, a sua energia está
+  mais à esquerda aos 0,5 s, ao centro a 1,0 s e quase toda à direita a 1,5 s.
+- LowRumble, os roncos graves, de 11 a 19 s uns dos outros (cerca de 15 s): `one_shot_wind_3_low.wav`
+  (8,0 s) e `one_shot_wind_4_low.wav` (5,8 s), todos sem posição, ao centro.
+
+Cada camada escolhe os ficheiros com um `AudioStreamRandomizer`, que lhes varia o tom até cerca de
+6 % e o volume até 1,5 dB.
+
+Cada rajada que passa leva consigo algumas brasas, como de fogueiras fora de vista. O nó
+`WindEmbers` (`scenes/others/ambience/wind_embers.tscn`) ouve a PassingWind e, a cada som, sopra
+uma rajada para o lado para onde o som atravessa o ecrã; a do `_bakedpan` vai sempre da esquerda
+para a direita. Entram 6 a 14 brasas, de 0,25 s a 1,15 s depois do início do som, pelo lado de onde
+vem o vento e a alturas ao acaso, e atravessam o ecrã em cerca de 3 s com a rajada, que cresce em
+0,45 s, se mantém 2,8 s e depois amaina. Sobem na diagonal: cada rajada sopra, em média, 6° acima
+da horizontal (Slant), com um desvio ao acaso de 4°. Não seguem uma linha reta: a turbulência
+(ruído de curl, levado pela própria rajada) desvia-as, as quentes sobem e as que arrefecem descem,
+e as maiores, mais perto do olhar, vão mais depressa.
+
+A sincronia entre as brasas e o som foi medida na mistura do próprio Godot, gravada com o modo de
+gravação de filme (`--write-movie`): cada rajada atinge o pico 0,6 a 0,9 s depois de começar, com
+as brasas já no ecrã. O que a tornava difícil de seguir era o volume: no pico, as rajadas ficavam a
+cerca de −40 dBFS, o mesmo que o primeiro fundo quando sobe, e perdiam-se debaixo dele; e uma rajada
+posicionada ficava para trás quando a personagem corria. Os roncos (LowRumble), também de vento e
+sem brasas, ouviam-se então como se fossem a rajada, segundos depois. Por isso, além de a rajada
+manter o seu lugar no ecrã, os fundos tocam agora num bus próprio, Beds, e as rajadas que passam
+noutro, Gusts, ambos a enviar para o Ambience (e a seguir o seu volume nas opções). Um compressor no
+Beds escuta o Gusts (sidechain), com o limiar a −27 dB, a razão de 2 para 1, ataque de 2 ms e
+recuperação em 600 ms: enquanto a rajada sopra, os fundos baixam. Medido com um tom constante no
+Beds e cada rajada no Gusts a −6 dB, os fundos baixam 4,5 a 6,2 dB no pico da rajada e recuperam em
+cerca de 1,5 s. A primeira afinação (−30 dB, 3 para 1) baixava-os 7 a 10 dB, o que se ouvia como um
+buraco. Ficou de lado subir simplesmente as rajadas 6 dB, que as punha mais fortes do que tudo o
+resto em vez de abrir espaço para elas. O aspeto é o das brasas do
+menu principal (`MenuEmbers`): a cor segue o calor, de um núcleo claro a um vermelho fundo; cada
+uma é um rasto tão longo quanto o que percorre com o obturador de uma câmara de cinema aberto; e
+cintila. Voam no mundo, à volta do que a câmara mostra, numa camada de desenho própria (um
+`CanvasLayer`, na camada 1) que acompanha a câmara, como as rochas da frente do protótipo de
+iluminação: dão luz, por isso a escuridão do nível (um `CanvasModulate`, que só escurece a sua
+camada) não as apaga, e passam à frente do nível. A camada 1 deixa-as ainda debaixo do brilho e da
+gradação de cor do protótipo, que chegam até ela. A pausa suspende-as. Na primeira versão, desenhadas
+na camada do nível, não se viam: numa imagem do jogo, com 6 brasas no ecrã, só se distinguia um
+traço; na escuridão do protótipo (0,30, 0,20, 0,30), nenhuma. Ficaram maiores (núcleo de 3 a 7 px),
+mais quentes e mais brilhantes. Atravessavam então o ecrã em cerca de 1 s, com um obturador mais
+curto (1/96 s), porque, a essa velocidade, um rasto longo espalhava a luz até ela desaparecer; a
+3 s por travessia, voltaram ao 1/48 s do menu, e vivem 4,5 a 6 s, a arrefecer devagar, para ainda
+brilharem do outro lado.
+
+Com In Backdrop ligado, como no nível 1, as brasas voam no fundo do nível em vez de à frente de
+tudo: desenham-se como o último filho do nó Backdrop do nível (o mesmo que o protótipo de
+iluminação procura), por isso à frente das rochas do fundo e atrás da rocha onde se joga, da
+personagem e de tudo o que vem depois. Aí, a escuridão do nível escurece-as, e Backdrop Brightness
+(2,5 vezes) compensa-o; Backdrop Size (0,75) torna-as mais pequenas, como mais longe. Numa imagem do
+protótipo, no fundo, as brasas veem-se sobre a parede da gruta com um brilho próximo do das da
+frente, e nenhuma passa à frente da rocha do chão; desligado, voltam à sua camada e passam por cima
+dela. Pode ligar-se e desligar-se com o jogo a correr, no separador Remote.
+
+Medido pelo `test_wind_embers.gd`, em quatro rajadas para cada lado, 95 a 97 % atravessam o ecrã
+todo, com a mediana em 2,9 a 3,05 s; afastam-se da linha reta 62 a 65 px (mediana), e 89 a 95 %
+sobem pelo menos 100 px (mediana de 263 a 278 px, cerca de 8° na travessia). Antes de as rajadas
+durarem mais, só 76 % chegavam ao outro lado: as últimas a entrar apanhavam a rajada já a amainar e
+paravam a meio. Num minuto e dez de nível 1, sem nada forçado, as rajadas tocaram aos 21,4 s e aos
+49,4 s e lançaram 8 e 13 brasas, e os roncos aos 13,6, 27,9, 43,6 e 59,0 s.
+
+Ficaram de lado esperar pelo `MenuEmbers`, que ainda não está no dev, para lhe dar um modo de vento,
+e as partículas do Godot (`GPUParticles2D`), que não reproduzem o aspeto das do menu. O desenho das
+brasas (a cor pelo calor, o rasto e a cintilação) está num componente comum, `EmberLook`
+(`scenes/others/ambience/ember_look.gd`), que o menu pode passar a usar quando chegar ao dev. As
+brasas do fogo têm um aspeto próprio, o da chama (ver "Sons no mundo: o fogo e as suas brasas").
 
 O som ambiente não pode tapar o que é preciso ouvir para sobreviver. Os sons do demónio e do
 crucifixo tocam num bus próprio, Alerts, que envia para o SFX e segue por isso o volume dos efeitos
-nas opções, sem opção própria. Um compressor no bus Ambience escuta o Alerts (sidechain): enquanto
-um alerta toca acima de −20 dB, o ambiente baixa, na razão de 4 para 1, e volta ao normal em 500 ms
-depois de o alerta acabar. Os sons da própria personagem (passos, saltos, aterragens e o deslizar na
-parede) ficam no SFX: se fossem eles a baixar o ambiente, este oscilaria a cada passo.
+nas opções, sem opção própria. Dois compressores no bus Ambience baixam o ambiente (sidechain). O
+primeiro escuta o Alerts, com o limiar a −40 dB, abaixo do som mais baixo do crucifixo, a razão de
+20 para 1, para que todos os alertas baixem o ambiente quase o mesmo, e Mix a 0,75, que limita a
+descida a cerca de 12 dB; volta em 500 ms. O segundo escuta o SFX, com o limiar a −20,5 dB e Mix a
+0,5, que limita a descida a 6 dB; volta em 517 ms. Os sons da própria personagem (passos, saltos,
+aterragens e o deslizar na parede) ficam no SFX e só passam esse limiar de raspão, pelo que o
+ambiente respira com eles, sem oscilar a cada passo; como o Alerts envia para o SFX, os alertas
+passam pelos dois compressores.
+
+Com o limiar antigo de −20 dB, os sons do crucifixo (no bus, entre −32 e −24 dB) não chegavam a
+baixar o ambiente, e ouviam-se mal; e os do demónio, que passavam pelos dois compressores, sem
+limite, baixavam-no 33 a 36 dB. Medido pelo `test_ambience_ducking.gd`, com um tom constante no
+Ambience: os sons do crucifixo baixam agora o ambiente 10,3 a 14,3 dB, os do demónio 16,9 a 17,1 dB,
+e os da personagem 0,4 a 2,3 dB. O ambiente volta a menos de 1 dB do normal 1,6 s depois de um som do
+crucifixo acabar e 1,9 s depois de um do demónio (a menos de 0,3 dB, 2,2 e 2,6 s): o compressor do
+Godot recupera mais devagar quanto mais o som passou do limiar, e o ambiente regressa aos poucos.
 
 O `test_ambience_layer.gd` verifica, com um som silencioso criado em memória, que cada intervalo
 fica entre Min Gap e Max Gap e que os intervalos variam; que os sons partem dos dois lados do centro
-do ecrã, dentro dos limites, ou da própria camada quando não há câmara; que tocam no bus Ambience;
-que `stop()` e a pausa os suspendem; e que o Alerts envia para o SFX, o compressor do Ambience o
-escuta, o demónio e o crucifixo estão no Alerts e a personagem no SFX. Quanto o ambiente baixa só se
-ouve com som real e confirma-se à mão. O `test_settings.gd` confirma a lista de buses: os cinco com
-opção de volume, todos a enviar para o Master, e o Alerts, a enviar para o SFX.
+do ecrã, dentro dos limites, ou da própria camada quando não há câmara; que um som posicionado
+mantém o seu lugar no ecrã quando a câmara se move 800 px; que tocam no bus Ambience;
+que `stop()` e a pausa os suspendem; que os sons não posicionados tocam do centro do ecrã, no seu
+leitor, nunca dois seguidos, e dizem o seu lado, e que os posicionados atravessam do seu lado para
+o outro; que as duas camadas de vento do nível 1 têm os intervalos, os ficheiros e os buses acima
+(as rajadas no Gusts, os roncos no Ambience); que o Beds e o Gusts enviam para o Ambience, um
+compressor no Beds escuta o Gusts e os fundos do nível 1 tocam no Beds; e que o
+Alerts envia para o SFX, o compressor do Ambience o
+escuta, o demónio e o crucifixo estão no Alerts e a personagem no SFX. O `test_ambience_ducking.gd`
+toca, com o áudio a misturar em tempo real e sem saída, cada som do crucifixo, do demónio e da
+personagem, lidos das cenas, e verifica que cada alerta baixa o ambiente entre 5 e 18 dB e cada som
+da personagem 3 dB no máximo; demora cerca de 100 s. Se os alertas se ouvem bem por cima do
+ambiente confirma-se a jogar. O `test_settings.gd` confirma a lista de buses: os cinco com
+opção de volume, todos a enviar para o Master, o Alerts, a enviar para o SFX, o Beds, o Gusts e o
+Thunder, a enviar para o Ambience, e os três buses dos trovões, a enviar para o Thunder.
+
+O `test_ambience_bed.gd` verifica, também com um som silencioso, que um fundo toca nos seus dois
+leitores, no bus Ambience; que entra a partir do silêncio, nunca passa de Loud dB e depois varia
+entre Quiet dB e Loud dB; que a passagem seguinte começa em Loop Start, no outro leitor, Crossfade
+segundos antes do fim da anterior, e que a potência total durante a transição fica a menos de 2 %
+da constante (no teste, 0,0 %); que a primeira passagem começa num ponto ao acaso; que `stop()`
+desliga o fundo em Fade Time e `start()` o traz de volta; que a pausa o suspende; que, com a escala
+de tempo do hitstop, a passagem seguinte chega ao fim de 4,93 s de tempo real, em vez de 5 s; e que
+os dois fundos do nível 1 tocam no Ambience ou num bus que envia para ele (o Beds), cada um com o
+seu som, e só se realinham ao fim de
+mais de meia hora. Se o ambiente se repete ou respira bem só se ouve a jogar.
+
+#### Trovões e relâmpagos
+
+O nível 1 tem uma trovoada fora de vista, em três camadas, seguindo as indicações de quem fez os
+sons (Diogo, do grupo), com os ficheiros em `assets/audio/ambience/thunder/`:
+
+- ThunderBacklayer, o fundo da trovoada, a camada mais baixa: `thunder_spontaneous_backlayer_1.wav`
+  (17,7 s) e `_2.wav` (15,6 s), de 32 a 48 s uns dos outros (cerca de 40 s, com um desvio ao acaso),
+  ao centro, sem posição. Nunca tocam os dois ao mesmo tempo: o intervalo mais curto, 32 s, é mais
+  longo do que o ficheiro mais longo no tom mais grave, 18,4 s.
+- ThunderBackground, os trovões ao longe: `thunder_background_1.wav` (3,9 s) e `_2.wav` (4,0 s), de
+  9 a 15 s uns dos outros (cerca de 12 s), cada um entre 50 e 80 % para um lado escolhido ao acaso.
+- ThunderMain, os trovões principais: `thunder_1.wav` (4,9 s) e `thunder_2.wav` (7,6 s), um
+  relâmpago de 26 a 38 s depois do anterior (cerca de 32 s). Primeiro vê-se a luz e só 2 a 6 s
+  depois se ouve o trovão, a 35 % para o lado de onde veio a luz.
+
+Em todas, o ficheiro é escolhido ao acaso e o tom varia até 4 % de cada vez. As duas primeiras são
+camadas de ambiente (`AmbienceLayer`); a terceira é um nó próprio, `ThunderLayer`
+(`scenes/others/ambience/thunder_layer.tscn`), porque toca o som segundos depois do acontecimento
+que o anuncia. Cada trovão principal é um recurso `ThunderStrike` (em
+`scenes/others/ambience/strikes/`), que junta o som e o relâmpago que o precede.
+
+Os trovões guardam a imagem estéreo e a reverberação com que foram gravados. Para os pôr de um lado,
+os buses ThunderBackground e ThunderMain têm um efeito Panner do Godot, que o nó acerta antes de
+cada som: o Panner passa parte de um canal para o outro em vez de baixar um deles, e o som mantém a
+largura e o volume. Ficou de lado colocar o som num leitor 2D ao lado do ecrã, como as rajadas,
+porque o lado dependeria então da distância no ecrã e do zoom da câmara, e não do valor pedido. Como
+o Panner move tudo o que toca no bus, dois sons da mesma camada nunca se sobrepõem: no ThunderMain,
+o intervalo mais curto (26 s) é maior do que o atraso mais longo e o trovão mais longo no tom mais
+grave somados (13,9 s); no ThunderBackground, 9 s contra 4,2 s.
+
+Cada camada tem o seu bus, e os três enviam para um bus Thunder, que envia para o Ambience: os
+trovões seguem a opção de volume do ambiente e baixam com ele debaixo dos alertas. Medidos com o
+ffmpeg (norma EBU R128), os ficheiros principais têm −20,0 e −26,5 LUFS, os de fundo −28,7 e −31,0
+LUFS e os do fundo da trovoada −21,3 e −25,5 LUFS: estes últimos, os mais fortes depois do
+`thunder_1`, têm de ser os mais baixos. Os leitores estão a −6 dB, como os sons sem posição das
+outras camadas, o ThunderBacklayer a −12 dB e os outros dois a 0 dB; somados os ganhos, antes do
+Ambience, o fundo da trovoada fica entre −39 e −44 LUFS, os trovões ao longe entre −35 e −37 e os
+principais entre −26 e −33. Afinam-se a ouvir, no painel de áudio do Godot.
+
+O relâmpago é a luz que um nó `LightningFlash` (`scenes/others/ambience/lightning_flash.tscn`)
+desenha sobre o fundo do nível: um shader, desenhado como o último filho do nó Backdrop (como as
+brasas do vento), ilumina de cor-de-rosa (1,0; 0,45; 0,82) o que o fundo mostra, mais do lado de
+onde veio o relâmpago, sem tocar na rocha onde se joga nem na personagem. É uma primeira versão,
+feita para ser substituída: o `ThunderLayer` só anuncia cada relâmpago (com um sinal), e outro
+shader com os mesmos parâmetros, ou outro nó que ouça o mesmo sinal, muda o aspeto sem mexer no som.
+Ficaram de lado tingir todo o fundo, que não mostra de que lado veio a luz, e uma camada de luz à
+frente de tudo, que parece o flash de uma câmara e é mais agressiva para quem é fotossensível. Numa
+imagem do nível 1 durante o primeiro relâmpago, vindo da esquerda, o fundo fica rosa, mais claro à
+esquerda, e a rocha, a personagem e as indicações do tutorial ficam como estavam.
+
+A luz segue a forma de cada trovão. Medidos em janelas de 50 ms, o `thunder_1` é um estalo
+próximo: forte desde os primeiros 50 ms, com uma segunda explosão entre 0,6 e 0,75 s, e já 24 dB
+abaixo do pico a 1,5 s. O `thunder_2` é um trovão que rola, com o pico 8,8 dB abaixo: o golpe
+principal aos 0,4 s, forte até 1,4 s, duas subidas aos 1,9 e 2,6 s, e apaga-se até cerca de 4,5 s.
+Um script fora do repositório transforma esta medição na curva de luz de cada `ThunderStrike`, duas
+vezes mais rápida do que o som: cada pico forte (pelo menos 5 dB acima das quebras à sua volta e a
+menos de 12 dB do pico do ficheiro) é um clarão, que sobe em 25 ms e cai para cerca de um terço em 0,12 s, e
+o rolar do trovão é um brilho mais fraco por baixo. O brilho segue a raiz quadrada da amplitude, mais
+próxima do que se vê e do que se ouve do que uma relação direta. O `thunder_1` dá dois clarões, aos
+0,09 e 0,33 s, com o brilho máximo, e apaga-se em 1,9 s; o `thunder_2`, com 0,60 do brilho, sobe
+num brilho que rola durante 0,35 s, tem três clarões, aos 0,40, 0,70 e 0,97 s, e apaga-se em 2,8 s.
+As curvas podem ser corrigidas à mão no Inspector.
+
+Por causa da fotossensibilidade, nada pisca mais de três vezes num segundo (critério da WCAG). O
+script só mantém um clarão se nenhum segundo ficar com mais de três e se estiver a pelo menos 0,2 s
+de outro; contando como um clarão uma subida e uma descida de pelo menos um décimo do brilho máximo,
+o `thunder_1` pisca 2 vezes e o `thunder_2` 3 vezes no segundo em que mais pisca.
+
+O `test_thunder.gd` verifica que os três buses dos trovões enviam para o Thunder, e este para o
+Ambience, que os dois buses com lado têm um Panner e que o do fundo da trovoada é o mais baixo; que,
+em 16 relâmpagos, cada trovão chega dentro do atraso pedido depois da sua luz, com o mesmo som, do
+mesmo lado, com o pan e o tom pedidos, que os relâmpagos ficam entre o intervalo mais curto e o mais
+longo e vêm dos dois lados; que `stop()` suspende os relâmpagos mas não um trovão já anunciado, e a
+pausa suspende os dois; que a luz se desenha em último lugar no fundo, vem do lado do relâmpago,
+segue a curva do relâmpago frame a frame e apaga-se quando ela acaba; que uma camada de ambiente com
+Side Pan põe cada som para um lado, dentro dos limites; que os dois relâmpagos do nível 1 não piscam
+mais de três vezes num segundo; e que as três camadas do nível 1 têm os intervalos, os ficheiros, os
+buses e os lados acima. Se a luz e o som combinam confirma-se a jogar.
+
+#### Sons no mundo: o fogo e as suas brasas
+
+O som de uma coisa do mundo, como uma fogueira ou um cão-demónio, é um nó
+`SoundEmitter` (`scenes/others/ambience/sound_emitter.tscn`): um som contínuo em ciclo (Loop) e,
+por cima dele, sons soltos (One Shots) a momentos ao acaso, para que o ciclo não se reconheça. O
+emissor anda com a coisa, por isso serve também para o que se mexe.
+
+O volume depende da distância entre a coisa e o ouvido, que é a personagem do nível onde o emissor
+está (sem nível, como numa cena aberta sozinha, o centro do ecrã; o campo Ear pode apontar outro).
+Dentro de Near Distance, ouve-se como junto à coisa; daí até Hearing Distance, desce como diz a curva
+Falloff, que se desenha no Inspector; a partir de Hearing Distance, cala-se. Sem curva própria, o
+emissor usa uma que desce cerca de 6 dB de cada vez que a distância duplica, como ao ar livre, e se
+cala no fim: metade (−6 dB) a um quinto do caminho, um quarto (−12 dB) pouco antes do meio, um
+décimo (−20 dB) a três quartos, e zero no fim. O emissor acerta o volume dos seus leitores a cada
+frame e desliga a atenuação do próprio Godot; o lado (esquerda e direita) continua a ser o do Godot,
+pelo ponto do ecrã onde a coisa aparece. O fogo ouve-se até 900 px e por inteiro até 120 px.
+
+Antes, o volume era o do Godot: ouvia-se a partir do centro do ecrã, (1 − distância / 1 500 px)
+elevado a 1,5. Com as fogueiras do protótipo a 1 000 a 1 300 px umas das outras, ouviam-se sempre
+duas ou três ao mesmo tempo: numa passagem medida ao longo de uma fila, a soma ia de −0,7 dB junto
+a uma fogueira a só −4,5 dB a meio caminho da seguinte, uma diferença de 3,8 dB, que mal se ouve. E
+o centro do ecrã nem sempre segue a personagem: a câmara para nos limites das zonas e não se mexe
+dentro da sua janela, e aí aproximar-se do fogo não mudava nada. Medido pelo `test_sound_emitter.gd`
+com a câmara parada, de junto a uma fogueira até meio caminho da seguinte (1 296 px), a soma das
+fogueiras descia 0,0 dB; agora desce 14,3 dB. Ficaram de lado ouvir a partir do centro do ecrã,
+mantendo o problema da câmara parada, e pôr um `AudioListener2D` na personagem, que mudaria também
+o lado e o volume de todos os outros sons 2D do jogo.
+
+O emissor só toca o ciclo enquanto o ouvido está mais perto do que Hearing Distance, e só o desliga
+100 px mais longe (Hearing Margin), para que andar nessa fronteira não o ligue e desligue a cada
+frame. Assim, das 87 fogueiras do protótipo de iluminação, só as próximas tocam, e as outras não
+gastam processamento a descodificar o ficheiro. O ciclo começa num ponto ao acaso, para que duas
+fogueiras nunca toquem em passo. O ficheiro importa-se sem ciclo, como o Godot faz por omissão; o
+emissor toca uma cópia que repete, sem alterar o ficheiro nem a sua importação.
+
+Um ficheiro pode acabar numa cauda, como a reverberação do último momento. O `fire_base_layer.ogg`
+(15,5 s) é estável até aos 10,735 s, onde o som direto para de repente, e os 4,8 s seguintes são só
+a reverberação a morrer; o ficheiro, exportado do FL Studio, não traz marcas de ciclo. Repetido
+inteiro, a cada volta o fogo morria na cauda e calava-se uns segundos. Com Loop End, cada passagem
+toca até ao fim, cauda incluída, e a seguinte começa em Loop Start quando a anterior chega a Loop
+End, por cima da cauda dela, no mesmo leitor (até três ao mesmo tempo). Medido na mistura do Godot,
+começando aos 10 s, o fogo mantém-se entre −41 e −38 dB através de Loop End; antes caía 27 dB em
+2,5 s.
+
+Os sons soltos vêm, em média, a cada Interval (por omissão, 4 s), com cada espera sorteada até
+Deviation para cada lado (1,5 s: entre 2,5 e 5,5 s), e só enquanto o emissor se ouve. Escolhe-os um
+`AudioStreamRandomizer`, que não repete o anterior e lhes varia o tom até 5 % e o volume até 2 dB.
+Cada um vem um pouco ao lado da coisa, até Pan Spread do campo estéreo para cada lado (0,1: um
+equilíbrio de 50/50 passa, no máximo, a 40/60). O Godot não tem um controlo de panorâmica nos
+leitores 2D: o lado de um som vem do ponto do ecrã onde está, e um som a uma largura de ecrã do
+centro desloca-se 0,25 do campo estéreo. Por isso, o som solto toca deslocado para o lado (cerca de
+590 px do mundo com o zoom de 1,3 das zonas de câmara do nível 1), com o volume da coisa: como o
+emissor calcula o volume pela distância da coisa ao ouvido, o lado só muda a panorâmica. A conta foi
+confirmada na mistura do Godot: um som 400 px à direita do centro saiu 1,232 vezes mais forte à
+direita do que à esquerda, como a conta diz. Pela mesma conta, um som junto à borda do ecrã fica a
+62,5/37,5 (cerca de 4,4 dB), o que nas colunas de um portátil quase não se ouve; a força da
+panorâmica de todos os sons 2D é Project Settings › Audio › General › 2D Panning Strength (0,5, o
+valor do Godot), e a de um só leitor o seu Panning Strength. O emissor conta o tempo real, como os fundos, e a pausa
+suspende-o.
+
+Ficaram de lado deslocar o som solto só dentro da largura da chama (10 % da largura do ecrã, cerca
+de 190 px, mudaria o equilíbrio apenas 0,025, o que não se ouve); um efeito de panorâmica num bus
+por som solto, porque os buses são de todo o projeto e dois estalos de fogueiras diferentes ao
+mesmo tempo partilhariam o mesmo; e tocar todas as fogueiras sempre, deixando o Godot silenciar as
+distantes, porque as 87 continuariam a descodificar o ficheiro.
+
+A cada som solto, o nó `RisingEmbers` (`scenes/others/ambience/rising_embers.tscn`), que ouve o
+emissor, lança 4 ou 5 brasas (Count, no nó `RisingEmbers` da cena do fogo) da metade da chama de
+onde o som se ouve. Cada uma sai com velocidade
+(70 a 160 px/s) e ângulo (até 25° da vertical, para cada lado) próprios, com o estalo; depois o
+calor leva-a para cima, mais devagar à medida que arrefece, e a turbulência (ruído de curl)
+desvia-a; apaga-se ao fim de 1,5 a 3 s.
+
+O aspeto segue o da chama, e não o das brasas do vento. A chama é uma animação desenhada, plana,
+com um contorno escuro, pintada pela rampa de cor do fogo (de um vinho escuro, pelo magenta e o
+rosa, até um pêssego); as faíscas desenhadas na própria animação são pequenas lascas cor-de-rosa
+com esse contorno. As brasas do fogo são também lascas planas: pequenos triângulos irregulares (7 a
+14 px de comprido), cada um com a sua forma, contornados no vinho mais escuro da rampa, que rodam
+ao subir. A cor vem do calor, pelas cores da rampa do fogo: saem entre o rosa e o pêssego, passam
+ao magenta ao arrefecer e desvanecem-se antes de chegar ao vinho, como as faíscas da chama, que se
+apagam ainda rosadas; e encolhem para 40 % à medida que ardem. A primeira versão usava o aspeto das
+brasas do vento, pontos luminosos laranja com halo e rasto: numa imagem do jogo, ao lado da chama
+rosa e desenhada, liam-se como de outro jogo. Numa segunda imagem, as brasas já frias ficavam
+triângulos escuros, que pareciam cinza; por isso desvanecem-se ao arrefecer. Ficou de lado manter
+os pontos luminosos e mudar só a cor, porque continuariam a ler-se como luz fotográfica ao lado de
+uma chama desenhada. Como as do vento, desenham-se numa camada própria (`CanvasLayer` 1), que a
+escuridão do protótipo não apaga, e passam por isso à frente da rocha. No protótipo, uma fogueira
+que o homem não vê não lança brasas, mas ouve-se, tal como a sua luz se vê à volta das esquinas.
+
+Para não parecerem paradas, cada brasa arde: tem um pequeno brilho (bloom), um halo suave somado por
+cima dela, com 2,6 vezes o seu comprimento, que cintila ao seu próprio ritmo (5 a 11 Hz) e enfraquece
+ao arrefecer; e a sua cor sobe até 12 % mais quente com a cintilação, sem nunca ficar mais fria do
+que o seu calor. O brilho desenha-se noutra camada de desenho, por cima das lascas, em modo aditivo,
+e o seu acaso é independente do do voo, pelo que o voo das brasas ficou igual. Numa imagem do
+protótipo, as lascas quentes têm um halo rosado ténue, e as frias apagam-se sem ele.
+
+O fogo é a cena `scenes/others/ambience/fire_sound.tscn`, que junta o emissor e as brasas com os
+ficheiros em `assets/audio/textures/fire/`: o ciclo `fire_base_layer.ogg` (15,5 s) e quatro estalos
+em `crackles/`, de 0,9 a 2,9 s. O protótipo de iluminação põe um em cada fogueira, com as brasas a
+sair da metade central da chama, entre 50 e 85 % da sua altura. Os sons tocam no bus Ambience:
+seguem o volume do ambiente nas opções e baixam com os alertas.
+
+O `test_sound_emitter.gd` verifica que, fora de um nível, o emissor ouve a partir do centro do ecrã;
+que o ciclo só toca dentro de Hearing Distance, continua na margem e para além dela, com a atenuação
+do Godot desligada; que repete sem alterar o ficheiro, e que dois emissores começam em pontos
+diferentes; que o ciclo do fogo continua através de Loop End, medido na mistura; que, em 30 sons
+soltos, cada espera fica dentro de Deviation de Interval e há sons dos dois lados; que, pelas contas
+do próprio Godot, com o zoom 1,3 e a coisa em vários pontos do ecrã, cada som solto desloca o
+estéreo pelo seu lado de Pan Spread e soa tão alto como da coisa, também com o ouvido em movimento;
+que, medido na mistura do Godot, um som solto à direita desloca o estéreo 0,100 e soa 1,000 vezes
+tão alto como o ciclo; e que, com um ouvido próprio, o volume segue a curva de omissão em cada um dos
+seus pontos, ou uma curva própria. Verifica ainda que desligado se cala, que a pausa suspende os sons
+soltos, que o fogo tem os seus ficheiros e tempos, que cada uma das 87 fogueiras do protótipo tem o
+seu som, com as brasas a sair da chama, e que as fogueiras ouvem a partir da personagem. O `test_rising_embers.gd` verifica, em 18 estalos, que
+cada um lança 1 ou 2 brasas, o Count de omissão do nó (8 lançaram 1 e 10 lançaram 2), da sua
+metade da chama; que cada estalo do som do fogo lança 4 ou 5 (os dois estalos medidos lançaram 5); que todas
+sobem (de 71 a 262 px), 89 % acabam pelo menos 15 px para um lado (17 para a esquerda e 8 para a
+direita), afastam-se da linha reta 14 px (mediana) e a mais rápida sobe 2,8 vezes mais depressa do
+que a mais lenta; que se apagam dentro da sua vida e não fica nenhuma; que uma fogueira escondida
+não lança nenhuma; que a pausa as suspende; que as cores das brasas do fogo são todas da rampa
+da chama, com o contorno no seu vinho mais escuro; e que o brilho de cada brasa se desenha depois
+dela, em modo aditivo, varia 76 % no primeiro segundo e cai de 0,135 para 0,047 do primeiro ao
+último terço da sua vida. Se o fogo soa bem, e se as brasas se veem bem, só se confirma a jogar.
+
+#### Sons no mundo: os cães-demónio
+
+Os sons próprios dos cães, em `Projeto/assets/audio/sfx/demons/`, usam o mesmo emissor do fogo: o
+volume vem da distância entre o cão e a personagem, e o lado, do ponto do ecrã onde o cão aparece.
+Cada cão tem cinco, cada um num nó `SoundEmitter` próprio, filho do nó `DemonSounds`:
+
+| Som | Quando toca | Ficheiro |
+|---|---|---|
+| Alert | Ao reparar na personagem, com o "!". | `demon_dog_alert.wav` (1,8 s), no bus Alerts |
+| Latch | Quando o som de alerta acaba, mais Latch Gap (0 s), se o cão ainda a perseguir; não toca se, entretanto, desistiu, a foi procurar ou foi atirado. | `demon_dog_latch_1.wav` (1,2 s) ou `demon_dog_latch_2.wav` (2,4 s), ao acaso |
+| Jump | Ao saltar para um degrau, ao descer de uma borda e, com Jump On Lunge, ao atirar-se à personagem. | `demon_dog_jump.wav` (0,13 s), provisório |
+| Attack | Quando uma mordida ou um salto acerta na personagem, também quando a agarra. | `demon_dog_attack.wav` (0,18 s), provisório |
+| CrucifixHit | Quando o crucifixo o atira; não quando a personagem se solta dele, nem enquanto o crucifixo o continua a empurrar no ar. | `demon_dog_cruci_hit_1.wav` (1,8 s) ou `demon_dog_cruci_hit_2.wav` (1,4 s), ao acaso, com o tom a variar até 4 % |
+
+Os quatro últimos tocam no bus SFX. Ouvem-se por inteiro até 150 px (Near Distance) e calam-se aos
+1 200 px (Hearing Distance), com a curva de omissão do emissor. Cada um liga-se e desliga-se no seu
+Enabled, e o volume, as distâncias e a curva acertam-se no próprio nó. Cada cão toca-os com a sua
+voz, como os bips. Os dois sons provisórios são cópias de sons da personagem, tocadas 1,3 vezes
+mais depressa (cerca de 4,5 meios-tons acima, e por isso mais curtas) e cortadas com um
+desvanecimento: o salto vem de `player_jump.wav` (0,28 s) e o ataque de `hard_land.wav` (0,38 s).
+Para os trocar, basta substituir o ficheiro.
+
+Os bips provisórios continuam nos seus lugares do `DemonSounds` e só tocam, no leitor `Cue`, com
+Play Beeps. Com Use Old Alert, o alerta volta a ser o bip antigo, e o Latch toca depois dele.
+
+Antes, todos os sons de um cão tocavam num só leitor, e cada som novo parava o anterior. Com bips de
+0,14 s, nunca se notou; com um alerta de 1,8 s e sons de até 2,4 s, um salto logo a seguir ao "!"
+cortaria o alerta a meio. Por isso, cada som tem o seu leitor. O nível 1 tem 99 cães, e cinco
+emissores em cada um mediriam a distância perto de 500 vezes por frame. Com Plays On Its Own
+desligado, um emissor sem ciclo só toca quando o cão lho pede e dorme entre sons, sem
+processamento; acorda só enquanto o som dura, para lhe acertar o volume.
+
+A escolha entre dois ficheiros e a variação do tom vêm do gerador de números do próprio cão, como
+nos bips: o `AudioStreamRandomizer` do Godot tira números do gerador global, de onde cada demónio
+tira a sua semente (ADR 0040). O randomizer fica no Inspector como a lista dos ficheiros, com os
+seus pesos e o seu Random Pitch, que o `DemonSounds` lê; o seu Random Volume Offset não se usa. Por
+passo de física, todos os cães juntos começam no máximo 3 alertas, 2 saltos, 2 ataques e 2 golpes
+do crucifixo (Max Notice Sounds, Max Leap Sounds, Max Attack Sounds e Max Hit Sounds Per Step),
+contados à parte, para que um bando se ouça como um só sem calar um alerta.
+
+Ficaram de lado: um só leitor com várias vozes, porque no Godot mudar o ficheiro de um leitor para
+o som que estava a tocar; leitores simples com a atenuação do Godot, que se ouve a partir do centro
+do ecrã e quase não muda com a distância (ver o fogo); e deixar o randomizer escolher, porque
+mudaria as sementes dos demónios.
+
+O `test_demon_sounds.gd` verifica, em 17 casos, que a cena tem os cinco sons com os seus ficheiros e
+buses, a dormir, e os bips desligados nos seus lugares; que nenhum bip toca por omissão; que cada
+som toca no seu momento e que o salto não corta o alerta; que o golpe do crucifixo só toca quando o
+crucifixo atira o cão, e uma vez por arremesso, e que em 24 golpes se ouviram os dois ficheiros; que
+o Latch começou 1,700 s depois do alerta, para 1,716 s esperados (o alerta ao tom desse cão), 2,250 s
+para 2,253 s com Latch Gap 0,5 s e 0,133 s para 0,146 s depois do bip antigo, e que não tocou nos
+cães que voltaram ao posto, foram procurar ou foram atirados; que cada som se cala com Enabled
+desligado; que os limites por passo se cumprem; e que fazer um cão e tocar todos os seus sons não
+tira números do gerador global. Se os sons dos cães soam bem, só se confirma a jogar.
+
+#### Sincronia dos sons da personagem e do crucifixo
+
+Cada som toca no passo de física do acontecimento (salto, aterragem, erguer ou baixar o
+crucifixo) ou, nos passos, no frame da animação em que o pé assenta. A latência de saída do áudio,
+medida no Godot com o controlador WASAPI do Windows, é de 10,7 ms. O desfasamento que se sentia
+estava nos ficheiros, medidos amostra a amostra:
+
+- Cada um dos três ficheiros de passos tinha dois impactos, o segundo 143 a 145 ms depois do
+  primeiro e só 3 a 9 dB mais baixo, separados por um silêncio a −50 dB. A correr a 600 px/s, com um
+  passo a cada 220 px (367 ms), ouviam-se quatro batidas por ciclo onde se veem dois pés. Cada
+  ficheiro foi cortado nesse silêncio em dois sons de um só impacto, `footstep_1.wav` a
+  `footstep_6.wav`, o que também duplica a variedade.
+- Nenhum passo se perdia: no nível 1, cada pé que assenta no desenho dispara o som e o som
+  começa. Mas os seis ficheiros diferiam 7 dB entre si (nos 10 ms mais altos, de −34,0 a
+  −27,1 dBFS), e cada passo chega ao bus SFX 8 a 13 dB abaixo do ficheiro: a distância ao centro do
+  ecrã tira 2 a 5 dB e o panorama 2D cerca de 6 dB, porque o Godot toca um som 2D centrado a metade
+  do nível em cada coluna. Com o ambiente, que oscila devagar entre cerca de −57 e −37 dBFS, os
+  passos mais baixos ficavam apenas 3 dB acima dele e perdiam-se. Os seis ficheiros foram
+  igualados ao mais alto (+0 a +6,9 dB, com picos até −16 dBFS), e o volume dos passos passou a ter
+  um campo próprio, Footstep Volume (0 dB). Medidos no nível 1, a correr, os passos chegam agora
+  ao bus a −35,5 a −39,1 dBFS, 9 a 19 dB acima do ambiente no instante de cada um, e continuam
+  abaixo do salto e da aterragem suave, cujos ficheiros, que fazem o mesmo caminho até ao bus, são
+  1,4 e 3,6 dB mais altos.
+- O salto e três sons do crucifixo ganham corpo tarde, enquanto a imagem muda de imediato: o salto
+  chega ao máximo aos 60 ms, o erguer aos 120 ms, o baixar sobe durante 80 ms e o som de crucifixo
+  disponível fica abaixo de −50 dBFS nos primeiros 107 ms. Cada um começa agora a meio do ficheiro,
+  num ponto afinável no Inspector: o salto a 0,03 s, o erguer a 0,07 s, o baixar a 0,03 s e o
+  disponível a 0,1 s. Os ficheiros não mudam. O Godot começa o som de imediato nesse ponto, sem
+  entrada gradual (confirmado numa captura da mistura), e o salto do silêncio para a primeira
+  amostra fica entre −39 e −84 dBFS, pelo menos 17 dB abaixo do pico de cada ficheiro.
+- As aterragens não mudaram: chegam a 4 dB do máximo nos primeiros 10 ms.
+
+O `test_player_sounds.gd` verifica que cada som de passo, lido do ficheiro, tem um só impacto e
+que os seis diferem 1 dB no máximo, que cada passo toca em Footstep Volume e que o salto começa em
+Jump Start; o `test_crucifix_sounds.gd`, que o erguer, o baixar e o som de
+disponível começam no seu ponto. Se a sincronia está certa confirma-se a jogar.
 
 ### Convenções de código
 
@@ -3924,6 +4373,27 @@ opção de volume, todos a enviar para o Master, e o Alerts, a enviar para o SFX
 - `demon_alert.wav`, `demon_search.wav`, `demon_take_off.wav` e `demon_land.wav`, em
   `Projeto/assets/audio/sfx/`: bips provisórios gerados por síntese de ondas sinusoidais, sem
   material de terceiros. Saem quando chegarem os sons definitivos.
+- `demon_dog_jump.wav` e `demon_dog_attack.wav`, em `Projeto/assets/audio/sfx/demons/`: cópias
+  provisórias de `player_jump.wav` e `hard_land.wav`, tocadas 1,3 vezes mais depressa e cortadas,
+  feitas com o ffmpeg. Saem quando chegarem os sons definitivos.
+- `amb_layer_1.ogg` e `amb_layer_2.ogg`, em `Projeto/assets/audio/ambience/`, e os sons soltos do
+  vento, em `Projeto/assets/audio/ambience/wind/`: os fundos e as rajadas de ambiente do nível 1,
+  feitos por Diogo, do grupo, por edição e mistura de sons com licença CC0 (domínio público), que
+  não pede atribuição e permite qualquer uso, incluindo o vídeo, as apresentações e o portefólio.
+- `fire_base_layer.ogg`, em `Projeto/assets/audio/textures/fire/`, e os quatro estalos, em
+  `Projeto/assets/audio/textures/fire/crackles/`: o som das fogueiras, feito por Diogo, do grupo,
+  por edição de sons com licença CC0 (domínio público), que não pede atribuição e permite qualquer
+  uso, incluindo o vídeo, as apresentações e o portefólio.
+- Os seis trovões, em `Projeto/assets/audio/ambience/thunder/` (`thunder_1.wav`, `thunder_2.wav`,
+  `thunder_background_1.wav`, `thunder_background_2.wav`, `thunder_spontaneous_backlayer_1.wav` e
+  `thunder_spontaneous_backlayer_2.wav`): os trovões de ambiente do nível 1, feitos por Diogo, do
+  grupo, por edição e mistura de sons com licença CC0 (domínio público), que não pede atribuição e
+  permite qualquer uso, incluindo o vídeo, as apresentações e o portefólio.
+- Os cinco sons dos cães-demónio, em `Projeto/assets/audio/sfx/demons/` (`demon_dog_alert.wav`,
+  `demon_dog_latch_1.wav`, `demon_dog_latch_2.wav`, `demon_dog_cruci_hit_1.wav` e
+  `demon_dog_cruci_hit_2.wav`): o alerta, o ataque depois do alerta e o golpe do crucifixo, feitos
+  por Diogo, do grupo, por edição e mistura de sons com licença CC0 (domínio público), que não pede
+  atribuição e permite qualquer uso, incluindo o vídeo, as apresentações e o portefólio.
 - `level1_cave_map.png` e `level1_cave_shade.png`, em `Projeto/assets/sprites/backgrounds/`:
   imagens provisórias feitas a partir do mapa do nível 1, sem material de
   terceiros. A primeira dá a cor de cada área do fundo e a segunda escurece o fundo junto à rocha.

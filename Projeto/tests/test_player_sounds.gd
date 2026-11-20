@@ -1,14 +1,9 @@
-# Checks the player's sounds. Running on the floor plays a step every Step Length of the walk cycle,
-# on the walk's planted frames, the first on the frame the player starts to run from standing still,
-# and standing still or being in the air plays none. Each step is one of the three
-# sounds, never the same twice in a row, with its pitch and amplitude inside the variations set in
-# PlayerSounds. The wall slide sound plays while sliding down a wall and stops on landing. The sounds
-# come from where the player is, so they are heard anywhere in a level and not only near its origin.
-# A jump, off the floor or off a wall, plays the jump sound. Landing after a normal jump or a wall
-# slide is soft and cuts the jump sound off, after a long fall hard, with both hard sounds in use,
-# and landing from a few px
-# (as at the start of a level) makes no sound. Jumps and landings keep their pitch inside the
-# variation too.
+# Checks the player's sounds; the steps are Footsteps', in test_footsteps.gd. The wall slide sound
+# plays while sliding down a wall and stops on landing. The sounds come from where the player is, so
+# they are heard anywhere in a level and not only near its origin. A jump, off the floor or off a
+# wall, plays the jump sound. Landing after a normal jump or a wall slide is soft and cuts the jump
+# sound off, after a long fall hard, with both hard sounds in use, and landing from a few px (as at
+# the start of a level) makes no sound. Jumps and landings keep their pitch inside the variation.
 # Run from the repository root; the exit code is 0 on pass and 1 on fail:
 # godot --headless --fixed-fps 60 --path Projeto --script res://tests/test_player_sounds.gd
 extends "res://tests/support/player_test.gd"
@@ -22,17 +17,6 @@ const FLOOR_RIGHT: float = 20000.0
 const RUN_START: Vector2 = Vector2(500.0, -2.0)
 ## Where a wall slide starts: next to the wall, high enough to slide for a while.
 const SLIDE_START: Vector2 = Vector2(WALL_FACE + 64.0, -1500.0)
-## Frames of each run: two seconds at top speed is several steps.
-const RUN_FRAMES: int = 120
-## Frames to stand still, or to fall, while no step may play.
-const QUIET_FRAMES: int = 60
-## Frames to stand on the floor before a run, so it starts from standing still and not from the
-## landing, whose first step comes at half a Step Length.
-const STAND_FRAMES: int = 5
-## Frames of a long run, to hear many steps and check all of them.
-const LONG_RUN_FRAMES: int = 600
-## A step lands on the frame that crosses the distance, so the count may be one off the ideal.
-const STEP_COUNT_TOLERANCE: int = 1
 ## Well past the sound players' Max Distance from the world origin.
 const FAR_FROM_THE_ORIGIN: Vector2 = Vector2(10000.0, -2.0)
 ## How far a sound player may be from the player, in px.
@@ -46,129 +30,24 @@ const RANDOM_SEED: int = 2026
 const LANDING_FRAMES: int = 2
 ## Rounding room for the pitch and amplitude limits.
 const LIMIT_TOLERANCE: float = 0.0001
+## A start into the jump's file unlike the default, in s, so the case can tell it was used.
+const TEST_START: float = 0.05
 
 
 func _initialize() -> void:
 	make_wall(WALL_FACE - WALL_THICKNESS, WALL_FACE, WALL_TOP)
 	make_platform(WALL_FACE - WALL_THICKNESS, FLOOR_RIGHT)
 	var results: Array[bool] = []
-	results.append(await _first_step_plays_as_running_starts())
-	results.append(await _running_steps_every_step_distance())
-	results.append(await _standing_still_and_falling_make_no_steps())
-	results.append(await _steps_vary_the_sound_pitch_and_amplitude())
 	results.append(await _wall_slide_sound_plays_while_sliding_down_only())
 	results.append(await _sounds_come_from_where_the_player_is())
 	results.append(await _jump_plays_the_jump_sound())
+	results.append(await _jump_plays_from_jump_start())
 	results.append(await _wall_jump_plays_the_jump_sound())
 	results.append(await _landing_from_a_few_px_is_silent())
 	results.append(await _landing_after_a_normal_jump_is_soft())
 	results.append(await _landing_after_a_wall_slide_is_soft())
 	results.append(await _landing_after_a_long_fall_is_hard_with_both_sounds())
 	finish(results)
-
-
-## The bug: the first step came only after half a Step Distance, 0.2 s into the run, so starting
-## to run sounded late. From standing still, it plays on the first frame the player moves.
-func _first_step_plays_as_running_starts() -> bool:
-	var player: Player = await spawn_on_floor(RUN_START)
-	if player == null:
-		return report(false, "the player never landed to start running")
-	var steps: Array[int] = []
-	_sounds(player).footstep_played.connect(func(index: int) -> void: steps.append(index))
-	await _wait_frames(STAND_FRAMES)
-	Input.action_press(&"move_right")
-	var moved: bool = await wait_until(func() -> bool: return player.velocity.x != 0.0)
-	# The step comes from the walk, which PlayerAnimation picks in _process: later in the same frame
-	# as the physics that moved him, not on a later one.
-	await process_frame
-	var steps_on_the_first_frame: int = steps.size()
-	Input.action_release(&"move_right")
-	player.queue_free()
-	return report(moved and steps_on_the_first_frame == 1,
-			"Starting to run: %d step(s) on the first frame the player moves, expected 1"
-			% steps_on_the_first_frame)
-
-
-## Over a run of d px from standing still, the first step comes at once, then one every Step
-## Length of the walk cycle.
-func _running_steps_every_step_distance() -> bool:
-	var player: Player = await spawn_on_floor(RUN_START)
-	if player == null:
-		return report(false, "the player never landed for the run")
-	var sounds: PlayerSounds = _sounds(player)
-	var step_length: float = sounds.animation.step_length
-	var steps: Array[int] = []
-	sounds.footstep_played.connect(func(index: int) -> void: steps.append(index))
-	await _wait_frames(STAND_FRAMES)
-	var start_x: float = player.position.x
-	Input.action_press(&"move_right")
-	await _wait_frames(RUN_FRAMES)
-	Input.action_release(&"move_right")
-	var distance: float = player.position.x - start_x
-	var expected: int = floori(distance / step_length) + 1
-	player.queue_free()
-	return report(absi(steps.size() - expected) <= STEP_COUNT_TOLERANCE,
-			"Running %.0f px with Step Length %.0f px: %d steps, expected %d"
-			% [distance, step_length, steps.size(), expected])
-
-
-func _standing_still_and_falling_make_no_steps() -> bool:
-	var player: Player = await spawn_on_floor(RUN_START)
-	if player == null:
-		return report(false, "the player never landed to stand still")
-	var steps: Array[int] = []
-	_sounds(player).footstep_played.connect(func(index: int) -> void: steps.append(index))
-	await _wait_frames(QUIET_FRAMES)
-	var standing: int = steps.size()
-	player.queue_free()
-	# Running through the air, from high up, never touches the floor in QUIET_FRAMES.
-	var falling_player: Player = spawn_player(Vector2(RUN_START.x, WALL_TOP))
-	var falling: Array[int] = []
-	_sounds(falling_player).footstep_played.connect(func(index: int) -> void: falling.append(index))
-	Input.action_press(&"move_right")
-	await _wait_frames(QUIET_FRAMES)
-	Input.action_release(&"move_right")
-	var stayed_in_the_air: bool = not falling_player.is_on_floor()
-	falling_player.queue_free()
-	return report(standing == 0 and falling.is_empty() and stayed_in_the_air,
-			"Standing still: %d steps; running in the air: %d steps (expected 0 and 0)"
-			% [standing, falling.size()])
-
-
-## Over a long run, every sound is heard, none twice in a row, and each step's pitch and amplitude
-## stay within the variations around 1.
-func _steps_vary_the_sound_pitch_and_amplitude() -> bool:
-	var player: Player = await spawn_on_floor(RUN_START)
-	if player == null:
-		return report(false, "the player never landed for the long run")
-	var sounds: PlayerSounds = _sounds(player)
-	var indices: Array[int] = []
-	var pitch_ok: Array[bool] = [true]
-	var volume_ok: Array[bool] = [true]
-	sounds.footstep_played.connect(func(index: int) -> void:
-		indices.append(index)
-		if absf(sounds.footstep.pitch_scale - 1.0) > sounds.pitch_variation + LIMIT_TOLERANCE:
-			pitch_ok[0] = false
-		if absf(sounds.footstep.volume_linear - 1.0) \
-				> sounds.footstep_volume_variation + LIMIT_TOLERANCE:
-			volume_ok[0] = false)
-	Input.action_press(&"move_right")
-	await _wait_frames(LONG_RUN_FRAMES)
-	Input.action_release(&"move_right")
-	player.queue_free()
-	var repeats: int = 0
-	for i: int in range(1, indices.size()):
-		if indices[i] == indices[i - 1]:
-			repeats += 1
-	var used: int = 0
-	for index: int in sounds.footstep_sounds.size():
-		if indices.has(index):
-			used += 1
-	return report(repeats == 0 and used == sounds.footstep_sounds.size()
-			and pitch_ok[0] and volume_ok[0],
-			"%d steps: %d of %d sounds used, %d repeats in a row, pitch in range %s, amplitude in range %s"
-			% [indices.size(), used, sounds.footstep_sounds.size(), repeats, pitch_ok[0],
-			volume_ok[0]])
 
 
 ## Pushing into the wall from the air: the sound plays once the player slides down, and stops on
@@ -195,18 +74,19 @@ func _wall_slide_sound_plays_while_sliding_down_only() -> bool:
 
 
 ## The bug: under a plain Node, the 2D sound players stayed at the world origin, and 2000 px away
-## from it (their Max Distance) they went silent. Far from the origin, both sit on the player.
+## from it (their Max Distance) they went silent. Far from the origin, all of them sit on the player.
 func _sounds_come_from_where_the_player_is() -> bool:
 	var player: Player = await spawn_on_floor(FAR_FROM_THE_ORIGIN)
 	if player == null:
 		return report(false, "the player never landed far from the origin")
 	var sounds: PlayerSounds = _sounds(player)
-	var footstep_offset: float = sounds.footstep.global_position.distance_to(player.global_position)
-	var slide_offset: float = sounds.wall_slide.global_position.distance_to(player.global_position)
+	var offsets: Array[float] = []
+	for sound: AudioStreamPlayer2D in [sounds.wall_slide, sounds.jump, sounds.land]:
+		offsets.append(sound.global_position.distance_to(player.global_position))
 	player.queue_free()
-	return report(footstep_offset <= POSITION_TOLERANCE and slide_offset <= POSITION_TOLERANCE,
-			"At x = %.0f, the footstep is %.0f px from the player and the wall slide %.0f px (expected 0)"
-			% [FAR_FROM_THE_ORIGIN.x, footstep_offset, slide_offset])
+	return report(offsets.max() <= POSITION_TOLERANCE,
+			"At x = %.0f, the wall slide, the jump and the landing are %s px from the player (expected 0)"
+			% [FAR_FROM_THE_ORIGIN.x, offsets])
 
 
 func _jump_plays_the_jump_sound() -> bool:
@@ -223,6 +103,25 @@ func _jump_plays_the_jump_sound() -> bool:
 	player.queue_free()
 	return report(jumps[0] == 1 and in_range,
 			"Jump off the floor: %d jump sound(s), expected 1, pitch in range %s" % [jumps[0], in_range])
+
+
+## The bug: the jump's file is quiet for its first 30 ms and loudest at 60 ms, so its loud part came
+## after he had left the floor. It plays from Jump Start. jump_played comes right after the play, so
+## the sound player still gives back the start it was told.
+func _jump_plays_from_jump_start() -> bool:
+	var player: Player = await spawn_on_floor(RUN_START)
+	if player == null:
+		return report(false, "the player never landed to jump from Jump Start")
+	var sounds: PlayerSounds = _sounds(player)
+	sounds.jump_start = TEST_START
+	var starts: Array[float] = []
+	sounds.jump_played.connect(func() -> void: starts.append(sounds.jump.get_playback_position()))
+	Input.action_press(&"jump")
+	await _wait_frames(PRESS_DELAY_FRAMES + 1)
+	Input.action_release(&"jump")
+	player.queue_free()
+	return report(starts.size() == 1 and absf(starts[0] - TEST_START) <= LIMIT_TOLERANCE,
+			"Jump from Jump Start %.2f s: started from %s s" % [TEST_START, starts])
 
 
 func _wall_jump_plays_the_jump_sound() -> bool:

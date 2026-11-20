@@ -1,38 +1,36 @@
-[gd_scene format=3]
+[gd_scene format=3 uid="uid://crcw5veveofos"]
 
-[ext_resource type="Script" path="res://scenes/characters/demon/demon.gd" id="1_script"]
-[ext_resource type="Resource" path="res://scenes/characters/demon/lust_demon_stats.tres" id="2_stats"]
-[ext_resource type="Script" path="res://scenes/characters/demon/demon_placeholder.gd" id="3_placeholder"]
+[ext_resource type="Script" uid="uid://blobn3poit0ba" path="res://scenes/characters/demon/demon.gd" id="1_script"]
+[ext_resource type="Resource" uid="uid://dje2bfy58t5xf" path="res://scenes/characters/demon/lust_demon_stats.tres" id="2_stats"]
+[ext_resource type="Script" uid="uid://cje15ow5bw0up" path="res://scenes/characters/demon/demon_placeholder.gd" id="3_placeholder"]
 [ext_resource type="PackedScene" path="res://scenes/characters/components/repellable.tscn" id="4_repellable"]
 [ext_resource type="PackedScene" path="res://scenes/characters/components/hitbox.tscn" id="5_hitbox"]
-[ext_resource type="Script" path="res://scenes/characters/components/sinking_drawing.gd" id="6_sinking_drawing"]
-[ext_resource type="Script" path="res://scenes/characters/demon/demon_senses.gd" id="7_senses"]
-[ext_resource type="Script" path="res://scenes/characters/demon/demon_mark.gd" id="8_mark"]
-[ext_resource type="Script" path="res://scenes/characters/demon/demon_sounds.gd" id="9_sounds"]
+[ext_resource type="Script" uid="uid://cluvnfuwg430j" path="res://scenes/characters/components/sinking_drawing.gd" id="6_sinking_drawing"]
+[ext_resource type="Script" uid="uid://dnrji7ip5rw41" path="res://scenes/characters/demon/demon_senses.gd" id="7_senses"]
+[ext_resource type="Script" uid="uid://dd5h754kae2jo" path="res://scenes/characters/demon/demon_mark.gd" id="8_mark"]
+[ext_resource type="Script" uid="uid://dvxu4a6rc0120" path="res://scenes/characters/demon/demon_sounds.gd" id="9_sounds"]
 [ext_resource type="AudioStream" uid="uid://d14rquii3j2i3" path="res://assets/audio/sfx/demon_alert.wav" id="10_alert"]
 [ext_resource type="AudioStream" uid="uid://bpoa7jbrvdybb" path="res://assets/audio/sfx/demon_search.wav" id="11_search"]
 [ext_resource type="AudioStream" uid="uid://b5dy3n1l8novm" path="res://assets/audio/sfx/demon_take_off.wav" id="12_take_off"]
 [ext_resource type="AudioStream" uid="uid://bnaebg4uygkcb" path="res://assets/audio/sfx/demon_land.wav" id="13_land"]
-[ext_resource type="Texture2D" path="res://assets/sprites/demon_lust/dog_run.png" id="14_dog_run"]
-[ext_resource type="Script" path="res://scenes/characters/demon/demon_animation.gd" id="15_animation"]
-[ext_resource type="Script" path="res://scenes/characters/demon/demon_back_bite.gd" id="14_back_bite"]
-[ext_resource type="Script" path="res://scenes/others/sight/sight_reveal.gd" id="17_sight_reveal"]
+[ext_resource type="Script" uid="uid://b5wik4eh0qt4k" path="res://scenes/characters/demon/demon_back_bite.gd" id="14_back_bite"]
+[ext_resource type="Texture2D" uid="uid://ywtssnl5lau6" path="res://assets/sprites/demon_lust/dog_run.png" id="14_dog_run"]
+[ext_resource type="Script" uid="uid://dsmry8suqhckh" path="res://scenes/characters/demon/demon_animation.gd" id="15_animation"]
+[ext_resource type="Script" uid="uid://b54urt21yd220" path="res://scenes/others/sight/sight_reveal.gd" id="17_sight_reveal"]
+[ext_resource type="PackedScene" path="res://scenes/others/ambience/sound_emitter.tscn" id="18_emitter"]
+[ext_resource type="AudioStream" uid="uid://fynrc7yhesjt" path="res://assets/audio/sfx/demons/demon_dog_alert.wav" id="19_dog_alert"]
+[ext_resource type="AudioStream" uid="uid://b1e5mnph8ebyx" path="res://assets/audio/sfx/demons/demon_dog_latch_1.wav" id="20_dog_latch_1"]
+[ext_resource type="AudioStream" uid="uid://dy4odnt5a6far" path="res://assets/audio/sfx/demons/demon_dog_cruci_hit_3.wav" id="21_6w6ye"]
+[ext_resource type="AudioStream" uid="uid://ds7df8c20ba5u" path="res://assets/audio/sfx/demons/demon_dog_latch_2.wav" id="21_dog_latch_2"]
+[ext_resource type="AudioStream" uid="uid://cr44mb4e3b6ne" path="res://assets/audio/sfx/demons/demon_dog_jump.wav" id="22_dog_jump"]
+[ext_resource type="AudioStream" uid="uid://b814ypx0ibl4" path="res://assets/audio/sfx/demons/demon_dog_attack.wav" id="23_dog_attack"]
+[ext_resource type="AudioStream" uid="uid://tua6x6gbycl5" path="res://assets/audio/sfx/demons/demon_dog_cruci_hit_1.wav" id="24_dog_hit_1"]
+[ext_resource type="AudioStream" uid="uid://irstxgvldy5l" path="res://assets/audio/sfx/demons/demon_dog_cruci_hit_2.wav" id="25_dog_hit_2"]
 [ext_resource type="Texture2D" path="res://assets/sprites/demon_lust/dog_walk.png" id="19_dog_walk"]
 [ext_resource type="Texture2D" path="res://assets/sprites/demon_lust/dog_idle_sheet.png" id="20_dog_idle_sheet"]
 
 [sub_resource type="RectangleShape2D" id="RectangleShape2D_body"]
 size = Vector2(112, 56)
-
-[sub_resource type="RectangleShape2D" id="RectangleShape2D_hit"]
-size = Vector2(160, 56)
-
-[sub_resource type="CircleShape2D" id="CircleShape2D_sight"]
-resource_local_to_scene = true
-radius = 480.0
-
-[sub_resource type="RectangleShape2D" id="RectangleShape2D_pack"]
-resource_local_to_scene = true
-size = Vector2(304, 56)
 
 [sub_resource type="AtlasTexture" id="AtlasTexture_run0"]
 atlas = ExtResource("14_dog_run")
@@ -129,7 +127,7 @@ animations = [{
 "duration": 1.0,
 "texture": SubResource("AtlasTexture_idle3")
 }],
-"loop": true,
+"loop": 1,
 "name": &"idle",
 "speed": 4.0
 }, {
@@ -187,15 +185,40 @@ animations = [{
 "duration": 1.0,
 "texture": SubResource("AtlasTexture_run7")
 }],
-"loop": true,
+"loop": 1,
 "name": &"run",
 "speed": 12.0
 }]
 
+[sub_resource type="AudioStreamRandomizer" id="AudioStreamRandomizer_latch"]
+playback_mode = 1
+streams_count = 2
+stream_0/stream = ExtResource("20_dog_latch_1")
+stream_1/stream = ExtResource("21_dog_latch_2")
+
+[sub_resource type="AudioStreamRandomizer" id="AudioStreamRandomizer_crucifix_hit"]
+playback_mode = 1
+random_pitch = 1.04
+streams_count = 3
+stream_0/stream = ExtResource("24_dog_hit_1")
+stream_1/stream = ExtResource("25_dog_hit_2")
+stream_2/stream = ExtResource("21_6w6ye")
+
+[sub_resource type="CircleShape2D" id="CircleShape2D_sight"]
+resource_local_to_scene = true
+radius = 480.0
+
+[sub_resource type="RectangleShape2D" id="RectangleShape2D_pack"]
+resource_local_to_scene = true
+size = Vector2(304, 56)
+
+[sub_resource type="RectangleShape2D" id="RectangleShape2D_hit"]
+size = Vector2(160, 56)
+
 [sub_resource type="RectangleShape2D" id="RectangleShape2D_back"]
 size = Vector2(112, 48)
 
-[node name="Demon" type="CharacterBody2D"]
+[node name="Demon" type="CharacterBody2D" unique_id=1630932176]
 disable_mode = 1
 collision_layer = 4
 collision_mask = 259
@@ -203,36 +226,36 @@ script = ExtResource("1_script")
 stats = ExtResource("2_stats")
 knock_off_layers = 2
 
-[node name="CollisionShape2D" type="CollisionShape2D" parent="."]
+[node name="CollisionShape2D" type="CollisionShape2D" parent="." unique_id=248897009]
 position = Vector2(0, -28)
 shape = SubResource("RectangleShape2D_body")
 
-[node name="Placeholder" type="Polygon2D" parent="." node_paths=PackedStringArray("art")]
+[node name="Placeholder" type="Polygon2D" parent="." unique_id=1831046908 node_paths=PackedStringArray("art")]
 self_modulate = Color(1, 1, 1, 0)
 color = Color(0.55, 0.12, 0.18, 1)
 polygon = PackedVector2Array(-56, -56, 56, -56, 56, 0, -56, 0)
 script = ExtResource("3_placeholder")
 art = NodePath("../Sprite")
 
-[node name="Sprite" type="AnimatedSprite2D" parent="."]
+[node name="Sprite" type="AnimatedSprite2D" parent="." unique_id=1966081431]
 editor_description = "dog_run.png, dog_walk.png and dog_idle_sheet.png: 432 x 202 cells, the body's middle on the cell's middle and the feet on y = 194. Offset puts the feet on the demon's y = 0; Scale 0.5 halves the art, drawn at twice the size for the zoom."
 scale = Vector2(0.5, 0.5)
 sprite_frames = SubResource("SpriteFrames_dog")
 animation = &"idle"
 offset = Vector2(0, -93)
 
-[node name="DemonAnimation" type="Node" parent="." node_paths=PackedStringArray("demon", "sprite")]
+[node name="DemonAnimation" type="Node" parent="." unique_id=393417801 node_paths=PackedStringArray("demon", "sprite")]
 script = ExtResource("15_animation")
 demon = NodePath("..")
 sprite = NodePath("../Sprite")
 
-[node name="Mark" type="Node2D" parent="." node_paths=PackedStringArray("label")]
+[node name="Mark" type="Node2D" parent="." unique_id=930283890 node_paths=PackedStringArray("label")]
 z_index = 2
 position = Vector2(0, -112)
 script = ExtResource("8_mark")
 label = NodePath("Label")
 
-[node name="Label" type="Label" parent="Mark"]
+[node name="Label" type="Label" parent="Mark" unique_id=1332792711]
 offset_left = -32.0
 offset_top = -40.0
 offset_right = 32.0
@@ -244,53 +267,100 @@ theme_override_font_sizes/font_size = 56
 horizontal_alignment = 1
 vertical_alignment = 1
 
-[node name="DemonSounds" type="Node2D" parent="." node_paths=PackedStringArray("demon", "cue")]
+[node name="DemonSounds" type="Node2D" parent="." unique_id=1026821002 node_paths=PackedStringArray("demon", "alert", "latch", "jump", "attack", "crucifix_hit", "cue")]
 position = Vector2(0, -28)
 script = ExtResource("9_sounds")
 demon = NodePath("..")
+alert = NodePath("Alert")
+latch = NodePath("Latch")
+jump = NodePath("Jump")
+attack = NodePath("Attack")
+crucifix_hit = NodePath("CrucifixHit")
 cue = NodePath("Cue")
 alert_sound = ExtResource("10_alert")
 search_sound = ExtResource("11_search")
 take_off_sound = ExtResource("12_take_off")
 land_sound = ExtResource("13_land")
 
-[node name="Cue" type="AudioStreamPlayer2D" parent="DemonSounds"]
+[node name="Cue" type="AudioStreamPlayer2D" parent="DemonSounds" unique_id=1747478369]
 bus = &"Alerts"
 
-[node name="SinkingDrawing" type="Node" parent="." node_paths=PackedStringArray("drawing")]
+[node name="Alert" parent="DemonSounds" unique_id=1929275270 instance=ExtResource("18_emitter")]
+one_shots = ExtResource("19_dog_alert")
+hearing_distance = 1200.0
+plays_on_its_own = false
+
+[node name="OneShotPlayer" parent="DemonSounds/Alert" index="1"]
+bus = &"Alerts"
+
+[node name="Latch" parent="DemonSounds" unique_id=2118356523 instance=ExtResource("18_emitter")]
+one_shots = SubResource("AudioStreamRandomizer_latch")
+hearing_distance = 1200.0
+plays_on_its_own = false
+
+[node name="OneShotPlayer" parent="DemonSounds/Latch" index="1"]
+bus = &"SFX"
+
+[node name="Jump" parent="DemonSounds" unique_id=1150661696 instance=ExtResource("18_emitter")]
+one_shots = ExtResource("22_dog_jump")
+hearing_distance = 1200.0
+one_shot_volume_db = 3.0
+plays_on_its_own = false
+
+[node name="OneShotPlayer" parent="DemonSounds/Jump" index="1"]
+bus = &"SFX"
+
+[node name="Attack" parent="DemonSounds" unique_id=679185515 instance=ExtResource("18_emitter")]
+one_shots = ExtResource("23_dog_attack")
+hearing_distance = 1200.0
+one_shot_volume_db = 2.5
+plays_on_its_own = false
+
+[node name="OneShotPlayer" parent="DemonSounds/Attack" index="1"]
+bus = &"SFX"
+
+[node name="CrucifixHit" parent="DemonSounds" unique_id=1996093026 instance=ExtResource("18_emitter")]
+one_shots = SubResource("AudioStreamRandomizer_crucifix_hit")
+hearing_distance = 1200.0
+one_shot_volume_db = 3.5
+plays_on_its_own = false
+
+[node name="OneShotPlayer" parent="DemonSounds/CrucifixHit" index="1"]
+bus = &"SFX"
+
+[node name="SinkingDrawing" type="Node" parent="." unique_id=1358670060 node_paths=PackedStringArray("drawing")]
 script = ExtResource("6_sinking_drawing")
 drawing = NodePath("../Sprite")
 
-[node name="SightArea" type="Area2D" parent="."]
+[node name="SightArea" type="Area2D" parent="." unique_id=8960268]
 unique_name_in_owner = true
 position = Vector2(0, -48)
 collision_layer = 0
 collision_mask = 2
 monitorable = false
 
-[node name="SightShape" type="CollisionShape2D" parent="SightArea"]
+[node name="SightShape" type="CollisionShape2D" parent="SightArea" unique_id=1095785331]
 unique_name_in_owner = true
 shape = SubResource("CircleShape2D_sight")
 
-[node name="PackArea" type="Area2D" parent="."]
+[node name="PackArea" type="Area2D" parent="." unique_id=429762939]
 unique_name_in_owner = true
 position = Vector2(0, -28)
 collision_layer = 0
 collision_mask = 4
 monitorable = false
 
-[node name="PackShape" type="CollisionShape2D" parent="PackArea"]
+[node name="PackShape" type="CollisionShape2D" parent="PackArea" unique_id=322969155]
 unique_name_in_owner = true
 shape = SubResource("RectangleShape2D_pack")
 
-[node name="LineOfSight" type="RayCast2D" parent="."]
+[node name="LineOfSight" type="RayCast2D" parent="." unique_id=1764329959]
 unique_name_in_owner = true
 position = Vector2(0, -48)
 enabled = false
 target_position = Vector2(0, 0)
-collision_mask = 1
 
-[node name="Senses" type="Node" parent="." node_paths=PackedStringArray("sight_area", "sight_shape", "line_of_sight", "body_box")]
+[node name="Senses" type="Node" parent="." unique_id=1431425100 node_paths=PackedStringArray("sight_area", "sight_shape", "line_of_sight", "body_box")]
 unique_name_in_owner = true
 script = ExtResource("7_senses")
 sight_area = NodePath("../SightArea")
@@ -298,42 +368,42 @@ sight_shape = NodePath("../SightArea/SightShape")
 line_of_sight = NodePath("../LineOfSight")
 body_box = NodePath("../CollisionShape2D")
 
-[node name="SightReveal" type="Node" parent="." node_paths=PackedStringArray("look_box", "senses")]
+[node name="SightReveal" type="Node" parent="." unique_id=2071416583 node_paths=PackedStringArray("look_box", "senses")]
 script = ExtResource("17_sight_reveal")
 look_box = NodePath("../CollisionShape2D")
 senses = NodePath("../Senses")
 
-[node name="LedgeCheck" type="RayCast2D" parent="."]
+[node name="LedgeCheck" type="RayCast2D" parent="." unique_id=562301092]
 unique_name_in_owner = true
 position = Vector2(62, -1)
 enabled = false
 target_position = Vector2(0, 25)
 collision_mask = 257
 
-[node name="StepCheck" type="RayCast2D" parent="."]
+[node name="StepCheck" type="RayCast2D" parent="." unique_id=624721869]
 unique_name_in_owner = true
 position = Vector2(64, -1)
 enabled = false
 target_position = Vector2(0, 0)
 collision_mask = 257
 
-[node name="Repellable" parent="." node_paths=PackedStringArray("target") instance=ExtResource("4_repellable")]
+[node name="Repellable" parent="." unique_id=565381426 node_paths=PackedStringArray("target") instance=ExtResource("4_repellable")]
 unique_name_in_owner = true
 target = NodePath("..")
 along_floor = true
 
-[node name="RepellableShape" type="CollisionShape2D" parent="Repellable"]
+[node name="RepellableShape" type="CollisionShape2D" parent="Repellable" unique_id=1489270028]
 position = Vector2(0, -28)
 shape = SubResource("RectangleShape2D_body")
 
-[node name="Hitbox" parent="." instance=ExtResource("5_hitbox")]
+[node name="Hitbox" parent="." unique_id=507971625 instance=ExtResource("5_hitbox")]
 unique_name_in_owner = true
 
-[node name="HitboxShape" type="CollisionShape2D" parent="Hitbox"]
+[node name="HitboxShape" type="CollisionShape2D" parent="Hitbox" unique_id=1463538629]
 position = Vector2(0, -28)
 shape = SubResource("RectangleShape2D_hit")
 
-[node name="BackBite" type="Area2D" parent="." node_paths=PackedStringArray("hitbox", "body")]
+[node name="BackBite" type="Area2D" parent="." unique_id=659363706 node_paths=PackedStringArray("hitbox", "body")]
 unique_name_in_owner = true
 process_mode = 4
 collision_layer = 0
@@ -343,23 +413,29 @@ script = ExtResource("14_back_bite")
 hitbox = NodePath("BackBiteHitbox")
 body = NodePath("..")
 
-[node name="BackBiteShape" type="CollisionShape2D" parent="BackBite"]
+[node name="BackBiteShape" type="CollisionShape2D" parent="BackBite" unique_id=1907179654]
 position = Vector2(0, -80)
 shape = SubResource("RectangleShape2D_back")
 
-[node name="BackBiteHitbox" parent="BackBite" instance=ExtResource("5_hitbox")]
+[node name="BackBiteHitbox" parent="BackBite" unique_id=757611627 instance=ExtResource("5_hitbox")]
 process_mode = 4
 
-[node name="BackBiteHitboxShape" type="CollisionShape2D" parent="BackBite/BackBiteHitbox"]
+[node name="BackBiteHitboxShape" type="CollisionShape2D" parent="BackBite/BackBiteHitbox" unique_id=2058990327]
 position = Vector2(0, -80)
 shape = SubResource("RectangleShape2D_back")
 
+[connection signal="barked" from="." to="Placeholder" method="_on_demon_barked"]
+[connection signal="landed" from="." to="Placeholder" method="_on_demon_landed"]
 [connection signal="state_changed" from="." to="Placeholder" method="_on_demon_state_changed"]
+[connection signal="state_changed" from="." to="Mark" method="_on_demon_state_changed"]
+[connection signal="took_off" from="." to="Placeholder" method="_on_demon_took_off"]
 [connection signal="warning_started" from="." to="Placeholder" method="_on_demon_warning_started"]
 [connection signal="warning_started" from="." to="SightReveal" method="reveal_now" unbinds=1]
-[connection signal="barked" from="." to="Placeholder" method="_on_demon_barked"]
-[connection signal="took_off" from="." to="Placeholder" method="_on_demon_took_off"]
-[connection signal="landed" from="." to="Placeholder" method="_on_demon_landed"]
-[connection signal="state_changed" from="." to="Mark" method="_on_demon_state_changed"]
 [connection signal="hold_sink_changed" from="Hitbox" to="SinkingDrawing" method="set_sink"]
 [connection signal="hold_sink_changed" from="BackBite/BackBiteHitbox" to="SinkingDrawing" method="set_sink"]
+
+[editable path="DemonSounds/Alert"]
+[editable path="DemonSounds/Latch"]
+[editable path="DemonSounds/Jump"]
+[editable path="DemonSounds/Attack"]
+[editable path="DemonSounds/CrucifixHit"]

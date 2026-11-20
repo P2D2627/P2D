@@ -37,8 +37,8 @@ extends CharacterBody2D
 ## his head is never a floor on its way. It is a member of the level's ActivityTracker: at rest,
 ## standing or on patrol on its floor, far off the screen, it sleeps, and busy it goes on wherever
 ## it is. It only tells what it does, by
-## state_changed, warning_started, attack_landed, barked, took_off and landed: the art and the
-## sounds listen, and it
+## state_changed, warning_started, attack_landed, barked, took_off, landed and repelled: the art
+## and the sounds listen, and it
 ## never touches them.
 
 ## The demon changed from previous to current this physics frame.
@@ -59,6 +59,10 @@ signal took_off
 ## floor (ADR 0042), right after state_changed to what it does next, so the art and the sounds can
 ## show it. Never without took_off first, nor after the crucifix threw it off in the air.
 signal landed
+## The man's crucifix hit the demon this physics frame and throws it off (ADR 0021), right after
+## state_changed to THROWN, so the art and the sounds can show the hit. Not for the throw when the
+## man breaks free of its hold, nor for the crucifix pushing on while it is thrown.
+signal repelled
 
 ## What the demon is doing, as the art, the sounds and the tests read it. Each has its own
 ## DemonState in states/, whose doc says when it starts and how long it lasts.
@@ -1781,3 +1785,4 @@ func _throw_off(from: Vector2, repelled_on_landing: bool) -> void:
 func _on_repellable_repelled(origin: Vector2) -> void:
 	if _state != State.THROWN:
 		_throw_off(origin, true)
+		repelled.emit()

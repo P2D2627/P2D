@@ -1,10 +1,32 @@
-[gd_resource type="AudioBusLayout" format=3 uid="uid://c07rrykm7lc8d"]
+[gd_resource type="AudioBusLayout" format=3 uid="uid://cxh6h30u66iap"]
+
+[sub_resource type="AudioEffectPanner" id="AudioEffectPanner_thunder_background"]
+resource_name = "Panner"
+
+[sub_resource type="AudioEffectPanner" id="AudioEffectPanner_thunder_main"]
+resource_name = "Panner"
 
 [sub_resource type="AudioEffectCompressor" id="AudioEffectCompressor_alerts"]
 resource_name = "Compressor"
-threshold = -20.0
+threshold = -24.7
 release_ms = 500.0
+mix = 0.75
 sidechain = &"Alerts"
+
+[sub_resource type="AudioEffectCompressor" id="AudioEffectCompressor_j3pel"]
+resource_name = "Compressor"
+threshold = -26.0
+release_ms = 517.0
+mix = 0.25
+sidechain = &"SFX"
+
+[sub_resource type="AudioEffectCompressor" id="AudioEffectCompressor_gusts"]
+resource_name = "Compressor"
+threshold = -27.0
+ratio = 2.0
+attack_us = 2000.0
+release_ms = 600.0
+sidechain = &"Gusts"
 
 [resource]
 bus/1/name = &"Music"
@@ -23,10 +45,12 @@ bus/3/name = &"Ambience"
 bus/3/solo = false
 bus/3/mute = false
 bus/3/bypass_fx = false
-bus/3/volume_db = 0.0
+bus/3/volume_db = -8.241915
 bus/3/send = &"Master"
 bus/3/effect/0/effect = SubResource("AudioEffectCompressor_alerts")
 bus/3/effect/0/enabled = true
+bus/3/effect/1/effect = SubResource("AudioEffectCompressor_j3pel")
+bus/3/effect/1/enabled = true
 bus/4/name = &"UI"
 bus/4/solo = false
 bus/4/mute = false
@@ -39,3 +63,45 @@ bus/5/mute = false
 bus/5/bypass_fx = false
 bus/5/volume_db = 0.0
 bus/5/send = &"SFX"
+bus/6/name = &"Beds"
+bus/6/solo = false
+bus/6/mute = false
+bus/6/bypass_fx = false
+bus/6/volume_db = 0.0
+bus/6/send = &"Ambience"
+bus/6/effect/0/effect = SubResource("AudioEffectCompressor_gusts")
+bus/6/effect/0/enabled = true
+bus/7/name = &"Gusts"
+bus/7/solo = false
+bus/7/mute = false
+bus/7/bypass_fx = false
+bus/7/volume_db = 0.0
+bus/7/send = &"Ambience"
+bus/8/name = &"Thunder"
+bus/8/solo = false
+bus/8/mute = false
+bus/8/bypass_fx = false
+bus/8/volume_db = 0.0
+bus/8/send = &"Ambience"
+bus/9/name = &"ThunderBacklayer"
+bus/9/solo = false
+bus/9/mute = false
+bus/9/bypass_fx = false
+bus/9/volume_db = -12.0
+bus/9/send = &"Thunder"
+bus/10/name = &"ThunderBackground"
+bus/10/solo = false
+bus/10/mute = false
+bus/10/bypass_fx = false
+bus/10/volume_db = 0.0
+bus/10/send = &"Thunder"
+bus/10/effect/0/effect = SubResource("AudioEffectPanner_thunder_background")
+bus/10/effect/0/enabled = true
+bus/11/name = &"ThunderMain"
+bus/11/solo = false
+bus/11/mute = false
+bus/11/bypass_fx = false
+bus/11/volume_db = 0.0
+bus/11/send = &"Thunder"
+bus/11/effect/0/effect = SubResource("AudioEffectPanner_thunder_main")
+bus/11/effect/0/enabled = true

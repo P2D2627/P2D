@@ -22,8 +22,11 @@ const FPS_CAPS: Array[int] = [NO_FPS_CAP, 60, 120, 240]
 ## Written to the file, for the day its layout changes and an older file has to be read otherwise.
 const FILE_VERSION: int = 1
 const DEFAULT_PATH: String = "user://settings.cfg"
-## Linear volume: 0 is silent and 1 is the bus at full volume.
+## Linear volume: 0 is silent and 1 is the bus at its mix, the volume the bus layout gives it (set
+## in the editor's Audio panel); 0.5 is 6 dB under the mix.
 const DEFAULT_VOLUME: float = 1.0
+## Where the mix is read from when the project does not name its own bus layout.
+const DEFAULT_BUS_LAYOUT: String = "res://default_bus_layout.tres"
 const DEFAULT_FULLSCREEN: bool = false
 const DEFAULT_VSYNC: bool = true
 const DEFAULT_FPS_CAP: int = NO_FPS_CAP
@@ -53,6 +56,9 @@ static var ignore_player_file: bool = false
 var path: String = DEFAULT_PATH
 
 var _volumes: Dictionary[StringName, float] = {}
+## Each bus's volume in the bus layout, in dB, by name: the mix the volume options scale. Read from
+## the layout's file, not from the AudioServer, which an earlier settings node may have changed.
+var _mix_db: Dictionary[StringName, float] = {}
 var _fullscreen: bool = DEFAULT_FULLSCREEN
 var _vsync: bool = DEFAULT_VSYNC
 var _fps_cap: int = DEFAULT_FPS_CAP
@@ -338,7 +344,21 @@ func _apply_volume(bus: StringName) -> void:
 	if index < 0:
 		push_error("Settings: the bus layout has no %s bus." % bus)
 		return
-	AudioServer.set_bus_volume_linear(index, _volumes[bus])
+	AudioServer.set_bus_volume_db(index, _layout_db(bus) + linear_to_db(_volumes[bus]))
+
+
+## The bus's volume in the bus layout, in dB; 0 when the layout leaves it at the default.
+func _layout_db(bus: StringName) -> float:
+	if _mix_db.is_empty():
+		var file: String = ProjectSettings.get_setting("audio/buses/default_bus_layout",
+				DEFAULT_BUS_LAYOUT)
+		var layout: AudioBusLayout = null
+		if ResourceLoader.exists(file):
+			layout = load(file) as AudioBusLayout
+		for index: int in AudioServer.bus_count:
+			var stored: Variant = layout.get("bus/%d/volume_db" % index) if layout != null else null
+			_mix_db[AudioServer.get_bus_name(index)] = stored if stored is float else 0.0
+	return _mix_db.get(bus, 0.0)
 
 
 ## Only when it differs, so a window that is already right is left alone.

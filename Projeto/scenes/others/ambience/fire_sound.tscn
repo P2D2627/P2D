@@ -1,0 +1,42 @@
+[gd_scene format=3 uid="uid://btqmsln8sul38"]
+
+[ext_resource type="PackedScene" path="res://scenes/others/ambience/sound_emitter.tscn" id="1_emitter"]
+[ext_resource type="PackedScene" path="res://scenes/others/ambience/rising_embers.tscn" id="2_embers"]
+[ext_resource type="AudioStream" uid="uid://cuw0vs1bdty6j" path="res://assets/audio/textures/fire/fire_base_layer.ogg" id="3_base"]
+[ext_resource type="AudioStream" uid="uid://dp4r2w3l0032r" path="res://assets/audio/textures/fire/crackles/fire_crackle_1.wav" id="4_crackle_1"]
+[ext_resource type="AudioStream" uid="uid://batb7ctflcuru" path="res://assets/audio/textures/fire/crackles/fire_crackle_2.wav" id="5_crackle_2"]
+[ext_resource type="AudioStream" uid="uid://d0y63ts86gmhs" path="res://assets/audio/textures/fire/crackles/fire_crackle_3.wav" id="6_crackle_3"]
+[ext_resource type="AudioStream" uid="uid://drooqprq2afsm" path="res://assets/audio/textures/fire/crackles/fire_crackle_4.wav" id="7_crackle_4"]
+
+[sub_resource type="AudioStreamRandomizer" id="AudioStreamRandomizer_crackles"]
+random_pitch = 1.05
+random_volume_offset_db = 2.0
+streams_count = 4
+stream_0/stream = ExtResource("4_crackle_1")
+stream_1/stream = ExtResource("5_crackle_2")
+stream_2/stream = ExtResource("6_crackle_3")
+stream_3/stream = ExtResource("7_crackle_4")
+
+[sub_resource type="Curve" id="Curve_fire_falloff"]
+_data = [Vector2(0, 1), 0.0, -2.5, 1, 1, Vector2(0.2, 0.5), -2.5, -1.0, 1, 1, Vector2(0.45, 0.25), -1.0, -0.5, 1, 1, Vector2(0.75, 0.1), -0.5, -0.4, 1, 1, Vector2(1, 0), -0.4, 0.0, 1, 1]
+point_count = 5
+
+[sub_resource type="Gradient" id="Gradient_fire_embers"]
+offsets = PackedFloat32Array(0, 0.4, 0.75, 1)
+colors = PackedColorArray(0.3, 0.05, 0.18, 0, 0.62, 0.1, 0.42, 1, 1, 0.36, 0.78, 1, 1, 0.84, 0.76, 1)
+
+[node name="FireSound" unique_id=298149923 instance=ExtResource("1_emitter")]
+loop = ExtResource("3_base")
+one_shots = SubResource("AudioStreamRandomizer_crackles")
+near_distance = 120.0
+hearing_distance = 900.0
+falloff = SubResource("Curve_fire_falloff")
+loop_volume_db = 4.0
+one_shot_volume_db = 4.0
+loop_end = 10.735
+
+[node name="RisingEmbers" parent="." index="2" unique_id=1322437766 node_paths=PackedStringArray("emitter") instance=ExtResource("2_embers")]
+unique_name_in_owner = true
+emitter = NodePath("..")
+count = Vector2i(4, 5)
+heat_ramp = SubResource("Gradient_fire_embers")

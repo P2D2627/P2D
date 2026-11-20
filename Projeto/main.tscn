@@ -9,6 +9,8 @@
 [ext_resource type="PackedScene" path="res://scenes/screens/save_indicator.tscn" id="8_save_indicator"]
 [ext_resource type="PackedScene" path="res://scenes/levels/gym/gym.tscn" id="8_gym"]
 [ext_resource type="PackedScene" path="res://scenes/levels/lust/level1_lit.tscn" id="9_level1"]
+[ext_resource type="Script" path="res://scenes/screens/menu_music.gd" id="10_menu_music"]
+[ext_resource type="AudioStream" path="res://assets/audio/music/main_menu_theme.ogg" id="11_menu_theme"]
 
 [sub_resource type="Resource" id="Resource_test_room"]
 script = ExtResource("2_level_entry")
@@ -51,6 +53,13 @@ unique_name_in_owner = true
 
 [node name="SaveIndicator" parent="." instance=ExtResource("8_save_indicator")]
 unique_name_in_owner = true
+
+[node name="MenuMusic" type="AudioStreamPlayer" parent="." node_paths=PackedStringArray("menus")]
+unique_name_in_owner = true
+stream = ExtResource("11_menu_theme")
+bus = &"Music"
+script = ExtResource("10_menu_music")
+menus = [NodePath("../MainMenu"), NodePath("../PauseMenu")]
 
 [node name="FadeLayer" type="CanvasLayer" parent="."]
 layer = 100

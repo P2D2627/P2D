@@ -5,10 +5,8 @@ extends Node2D
 ## script never touches the audio. Its physics frame runs after the player's, because it is a child
 ## of it, so it reads the state and the velocity the player's last move_and_slide() left. It is a
 ## Node2D so that its 2D sound players follow the player: under a plain Node they stay at the world
-## origin and go silent past their Max Distance.
+## origin and go silent past their Max Distance. The steps are not here: Footsteps plays them.
 
-## A step was heard: sound_index is its place in footstep_sounds. Dust or a camera bob can follow it.
-signal footstep_played(sound_index: int)
 ## A jump, off the floor or off a wall, was heard.
 signal jump_played
 ## A landing was heard: hard after a fall of hard_land_height or more, soft after a shorter one.
@@ -23,20 +21,12 @@ signal land_played(hard: bool)
 ## Plays over and over while the player slides down a wall.
 @export var wall_slide: AudioStreamPlayer2D
 
-@export_group("Footsteps")
-## Plays the footsteps. Its own stream is replaced by one of Footstep Sounds on each step.
-@export var footstep: AudioStreamPlayer2D
-## Where the steps come from: a step plays each time its walk plants a foot, so the sound lands with
-## the drawing. How far apart they are, and where the first one falls, is the walk cycle's, there.
-@export var animation: PlayerAnimation
-## The step sounds. Each step picks one at random, never the same as the step before.
-@export var footstep_sounds: Array[AudioStream] = []
-## How far each step's amplitude can move from the normal, either way: 0.01 is 1% up or down.
-@export_range(0.0, 0.5, 0.005) var footstep_volume_variation: float = 0.01
-
 @export_group("Jump and landing")
 ## Plays the jump, off the floor and off a wall, with the stream set in it.
 @export var jump: AudioStreamPlayer2D
+## How far into its file the jump starts. The file rises for 60 ms to its loudest (its first 10 ms
+## are 23 dB below it), so from 0 the loud part comes after he has left the floor. 0 plays it whole.
+@export_range(0.0, 0.2, 0.005, "suffix:s") var jump_start: float = 0.03
 ## Plays the landings. Its own stream is replaced by the soft or a hard landing each time.
 @export var land: AudioStreamPlayer2D
 ## The landing after a short fall, such as a normal jump.
@@ -51,8 +41,17 @@ signal land_played(hard: bool)
 ## off a wall always lands with a sound, however short the last drop.
 @export_range(0.0, 200.0, 1.0, "suffix:px") var min_land_height: float = 16.0
 
-## The index in footstep_sounds of the last step played, -1 before the first.
-var _last_footstep_index: int = -1
+@export_group("Low SP")
+## The man's Soul Points: the warning plays while they are low.
+@export var soul_points: SoulPoints
+## Plays over and over while the SP is at or below Low Threshold. A plain AudioStreamPlayer, not a
+## 2D one: the sound is the man's own, and its file is already mixed in stereo. Its volume is set
+## on it; a fade-out puts it back for the next time.
+@export var low_sp: AudioStreamPlayer
+## Seconds the warning takes to fade out when the SP goes back above Low Threshold. 0 stops it at
+## once. When the SP runs out it always stops at once.
+@export_range(0.0, 3.0, 0.05, "suffix:s") var low_sp_fade_out: float = 0.5
+
 ## The highest y of the current fall: the player's y on the floor or on a wall, and the smallest y
 ## reached in the air since (y grows downwards).
 var _fall_top_y: float = 0.0
@@ -60,18 +59,27 @@ var _fall_top_y: float = 0.0
 var _fall_from_wall: bool = false
 ## How hard the last landing heard was, from 0 to 1 (get_last_landing_share()).
 var _last_landing_share: float = 0.0
+## The volume set on Low SP, which each fade-out brings back once it ends.
+var _low_sp_volume_db: float = 0.0
+## The fade-out under way, null when none.
+var _low_sp_fade: Tween
 
 
 func _ready() -> void:
 	assert(player != null, "PlayerSounds: assign the Player to Player.")
 	assert(wall_slide != null, "PlayerSounds: assign an AudioStreamPlayer2D to Wall Slide.")
-	assert(footstep != null, "PlayerSounds: assign an AudioStreamPlayer2D to Footstep.")
-	assert(animation != null, "PlayerSounds: assign the PlayerAnimation to Animation.")
-	assert(not footstep_sounds.is_empty(), "PlayerSounds: add the step sounds to Footstep Sounds.")
 	assert(jump != null, "PlayerSounds: assign an AudioStreamPlayer2D to Jump.")
 	assert(land != null, "PlayerSounds: assign an AudioStreamPlayer2D to Land.")
 	assert(soft_land_sound != null, "PlayerSounds: assign the soft landing to Soft Land Sound.")
 	assert(not hard_land_sounds.is_empty(), "PlayerSounds: add the hard landings to Hard Land Sounds.")
+	assert(soul_points != null, "PlayerSounds: assign the SoulPoints to Soul Points.")
+	assert(low_sp != null, "PlayerSounds: assign an AudioStreamPlayer to Low SP.")
+	_low_sp_volume_db = low_sp.volume_db
+	# Like the wall slide, the file is not imported as a loop: it starts again each time it ends
+	# while the SP is still low. Its last 3.3 s are silence, the pause between heartbeats.
+	low_sp.finished.connect(_on_low_sp_finished)
+	soul_points.low_changed.connect(_on_low_changed)
+	soul_points.depleted.connect(_stop_low_sp)
 	# The file is not imported as a loop, so the sound starts again each time it ends while the
 	# slide goes on.
 	wall_slide.finished.connect(_on_wall_slide_finished)
@@ -79,7 +87,6 @@ func _ready() -> void:
 	player.jumped.connect(_on_jumped.unbind(2))
 	player.wall_jumped.connect(_on_jumped.unbind(2))
 	player.landed.connect(_on_landed)
-	animation.stepped.connect(_play_footstep)
 	_fall_top_y = player.global_position.y
 
 
@@ -115,33 +122,10 @@ func _update_wall_slide() -> void:
 		wall_slide.stop()
 
 
-## One of the step sounds at random, never the last one again, with its pitch and amplitude moved a
-## little at random so the repetition does not tire.
-func _play_footstep() -> void:
-	var index: int = _next_footstep_index()
-	footstep.stream = footstep_sounds[index]
-	footstep.volume_linear = 1.0 + randf_range(-footstep_volume_variation, footstep_volume_variation)
-	_play(footstep)
-	footstep_played.emit(index)
-
-
-## A random index in footstep_sounds other than the last one played, when there are two or more.
-func _next_footstep_index() -> int:
-	var count: int = footstep_sounds.size()
-	if count == 1:
-		return 0
-	# Picks among the others, then skips over the last one.
-	var index: int = randi_range(0, count - 2)
-	if _last_footstep_index >= 0 and index >= _last_footstep_index:
-		index += 1
-	_last_footstep_index = index
-	return index
-
-
-## Plays a sound from the start with its pitch moved a little at random.
-func _play(sound: AudioStreamPlayer2D) -> void:
+## Plays a sound from from_position s into its file, with its pitch moved a little at random.
+func _play(sound: AudioStreamPlayer2D, from_position: float = 0.0) -> void:
 	sound.pitch_scale = 1.0 + randf_range(-pitch_variation, pitch_variation)
-	sound.play()
+	sound.play(from_position)
 
 
 ## How hard the last landing heard was: 1 for a hard one, and for a soft one its fall's share of the
@@ -161,8 +145,44 @@ func _on_wall_slide_finished() -> void:
 		_play(wall_slide)
 
 
+## True while the low SP warning is heard and not fading out.
+func is_low_sp_playing() -> bool:
+	return low_sp.playing and _low_sp_fade == null
+
+
+## Low: the warning starts from the beginning, also over a fade-out under way. Back above: it fades
+## out. When the SP runs out, depleted stops it instead, so the fade is not heard over the death.
+func _on_low_changed(is_low: bool) -> void:
+	if is_low:
+		if soul_points.is_depleted():
+			return
+		_stop_low_sp()
+		low_sp.play()
+	elif low_sp.playing and _low_sp_fade == null:
+		if low_sp_fade_out <= 0.0:
+			_stop_low_sp()
+			return
+		_low_sp_fade = create_tween()
+		_low_sp_fade.tween_property(low_sp, "volume_db", -80.0, low_sp_fade_out)
+		_low_sp_fade.finished.connect(_stop_low_sp)
+
+
+## Stops the warning and any fade-out, and puts its volume back for the next time.
+func _stop_low_sp() -> void:
+	if _low_sp_fade != null:
+		_low_sp_fade.kill()
+		_low_sp_fade = null
+	low_sp.stop()
+	low_sp.volume_db = _low_sp_volume_db
+
+
+func _on_low_sp_finished() -> void:
+	if soul_points.is_low() and not soul_points.is_depleted() and _low_sp_fade == null:
+		low_sp.play()
+
+
 func _on_jumped() -> void:
-	_play(jump)
+	_play(jump, jump_start)
 	jump_played.emit()
 
 

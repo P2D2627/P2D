@@ -2,10 +2,16 @@
 
 [ext_resource type="Script" path="res://scenes/others/ambience/ambience_layer.gd" id="1_script"]
 
-[node name="AmbienceLayer" type="Node2D" node_paths=PackedStringArray("player")]
+[node name="AmbienceLayer" type="Node2D" node_paths=PackedStringArray("player", "unpanned_player")]
 script = ExtResource("1_script")
 player = NodePath("Player")
+unpanned_player = NodePath("UnpannedPlayer")
 
 [node name="Player" type="AudioStreamPlayer2D" parent="."]
+max_polyphony = 2
+bus = &"Ambience"
+
+[node name="UnpannedPlayer" type="AudioStreamPlayer" parent="."]
+volume_db = -6.0
 max_polyphony = 2
 bus = &"Ambience"

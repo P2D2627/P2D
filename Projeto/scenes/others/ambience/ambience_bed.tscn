@@ -1,0 +1,14 @@
+[gd_scene format=3]
+
+[ext_resource type="Script" path="res://scenes/others/ambience/ambience_bed.gd" id="1_script"]
+
+[node name="AmbienceBed" type="Node" node_paths=PackedStringArray("first_player", "second_player")]
+script = ExtResource("1_script")
+first_player = NodePath("FirstPlayer")
+second_player = NodePath("SecondPlayer")
+
+[node name="FirstPlayer" type="AudioStreamPlayer" parent="."]
+bus = &"Ambience"
+
+[node name="SecondPlayer" type="AudioStreamPlayer" parent="."]
+bus = &"Ambience"

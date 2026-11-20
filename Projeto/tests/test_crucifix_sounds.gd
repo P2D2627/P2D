@@ -4,8 +4,9 @@
 # the cooldown plays the available sound, and a press during it plays the unavailable sound, except
 # a press close enough to the end that the kept press raises the crucifix once it is ready. The
 # scene holds the files of those three. The cases put the step sounds in those slots instead, so
-# they can tell which one played whatever the files are. The timing cases use short times on their
-# own copy of Crucifix Stats, as test_crucifix.gd does.
+# they can tell which one played whatever the files are. The raise, the holster and the available
+# sound play from their own start into the file, where it is already loud. The timing cases use
+# short times on their own copy of Crucifix Stats, as test_crucifix.gd does.
 # Run from the repository root; the exit code is 0 on pass and 1 on fail:
 # godot --headless --fixed-fps 60 --path Projeto --script res://tests/test_crucifix_sounds.gd
 extends "res://tests/support/player_test.gd"
@@ -39,6 +40,11 @@ const RAISE_END_WAIT_MS: int = 2000
 ## Real time each frame of that wait takes at least, in ms, so the wait stays well under the long
 ## use's frames: at most 1000 of its 1800.
 const FRAME_DELAY_MS: int = 2
+## A start into a sound's file unlike any of the defaults, in s, so a case can tell it was used. Less
+## than the shortest stand-in, 0.14 s.
+const TEST_START: float = 0.05
+## Rounding room for a start read back from the sound player, in s.
+const START_TOLERANCE: float = 0.0001
 
 
 func _initialize() -> void:
@@ -57,8 +63,9 @@ func _initialize() -> void:
 	finish(results)
 
 
-## The raise plays on the cue with the hold quiet; once it ends, with the crucifix still up, the
-## hold plays.
+## The raise plays on the cue, from Raise Start, with the hold quiet; once it ends, with the
+## crucifix still up, the hold plays. The bug: the raise's file is loudest 120 ms in, while the
+## light comes on at once.
 func _raising_plays_the_raise_then_the_hold() -> bool:
 	var player: Player = await spawn_on_floor(FLOOR_START)
 	if player == null:
@@ -67,6 +74,8 @@ func _raising_plays_the_raise_then_the_hold() -> bool:
 	var sounds: CrucifixSounds = _sounds_of(crucifix)
 	crucifix.stats = crucifix.stats.duplicate() as CrucifixStats
 	crucifix.stats.max_use_time = LONG_USE_TIME
+	sounds.raise_start = TEST_START
+	var starts: Array[float] = _starts_on(crucifix.raised, sounds)
 	var stand_in: StandInInput = put_a_stand_in(player)
 	stand_in.crucifix_held = true
 	await wait_frames(SETTLE_FRAMES)
@@ -78,11 +87,14 @@ func _raising_plays_the_raise_then_the_hold() -> bool:
 		await physics_frame
 	var hold_then: bool = sounds.hold.playing and crucifix.is_raised()
 	await remove_player(player)
-	return report(raise_playing and hold_quiet and hold_then,
-			"Raising: raise playing %s, hold quiet meanwhile %s, hold playing once the raise ends %s"
-			% [raise_playing, hold_quiet, hold_then])
+	var from_start: bool = _started_at(starts, TEST_START)
+	return report(raise_playing and hold_quiet and hold_then and from_start,
+			"Raising: raise playing %s from %s s (Raise Start %.2f s), hold quiet meanwhile %s, hold playing once the raise ends %s"
+			% [raise_playing, starts, TEST_START, hold_quiet, hold_then])
 
 
+## The holster plays from Holster Start. The bug: its file is loudest 120 ms in, while the light
+## goes out at once.
 func _letting_go_plays_the_holster() -> bool:
 	var player: Player = await spawn_on_floor(FLOOR_START)
 	if player == null:
@@ -90,6 +102,8 @@ func _letting_go_plays_the_holster() -> bool:
 	var crucifix: Crucifix = _crucifix_of(player)
 	var sounds: CrucifixSounds = _sounds_of(crucifix)
 	sounds.cooldown_sound = COOLDOWN_STAND_IN
+	sounds.holster_start = TEST_START
+	var starts: Array[float] = _starts_on(crucifix.lowered, sounds)
 	var stand_in: StandInInput = put_a_stand_in(player)
 	stand_in.crucifix_held = true
 	await wait_frames(SETTLE_FRAMES + SHORT_HOLD_FRAMES)
@@ -99,9 +113,10 @@ func _letting_go_plays_the_holster() -> bool:
 	var holster: bool = sounds.cue.playing and sounds.cue.stream == sounds.holster_sound
 	var hold_stopped: bool = not sounds.hold.playing
 	await remove_player(player)
-	return report(went_down and holster and hold_stopped,
-			"Letting go: went down %s, holster playing %s, hold stopped %s"
-			% [went_down, holster, hold_stopped])
+	var from_start: bool = _started_at(starts, TEST_START)
+	return report(went_down and holster and hold_stopped and from_start,
+			"Letting go: went down %s, holster playing %s from %s s (Holster Start %.2f s), hold stopped %s"
+			% [went_down, holster, starts, TEST_START, hold_stopped])
 
 
 ## Walking off a ledge with the crucifix up lowers it with the holster, not the cooldown's sound.
@@ -167,6 +182,8 @@ func _running_out_of_time_with_no_cooldown_sound_plays_nothing() -> bool:
 			% [cooling, silent])
 
 
+## The available sound plays from Available Start. The bug: its file is near-silent for its first
+## 100 ms, so it came late for the moment the crucifix is ready.
 func _the_end_of_the_cooldown_plays_the_available_sound() -> bool:
 	var player: Player = await spawn_on_floor(FLOOR_START)
 	if player == null:
@@ -175,6 +192,8 @@ func _the_end_of_the_cooldown_plays_the_available_sound() -> bool:
 	var sounds: CrucifixSounds = _sounds_of(crucifix)
 	_use_short_times(crucifix)
 	sounds.available_sound = AVAILABLE_STAND_IN
+	sounds.available_start = TEST_START
+	var starts: Array[float] = _starts_on(crucifix.cooldown_finished, sounds)
 	var stand_in: StandInInput = put_a_stand_in(player)
 	stand_in.crucifix_held = true
 	var cooling: bool = await _wait_for_the_cooldown(crucifix)
@@ -183,9 +202,10 @@ func _the_end_of_the_cooldown_plays_the_available_sound() -> bool:
 		crucifix.stats.get_cooldown_frames() + SETTLE_FRAMES)
 	var available: bool = sounds.cue.playing and sounds.cue.stream == AVAILABLE_STAND_IN
 	await remove_player(player)
-	return report(cooling and ready_again and available,
-			"The end of the cooldown: ready again %s, available sound playing %s"
-			% [cooling and ready_again, available])
+	var from_start: bool = _started_at(starts, TEST_START)
+	return report(cooling and ready_again and available and from_start,
+			"The end of the cooldown: ready again %s, available sound playing %s from %s s (Available Start %.2f s)"
+			% [cooling and ready_again, available, starts, TEST_START])
 
 
 ## A press early in the cooldown is refused once, plays the unavailable sound and raises nothing.
@@ -274,6 +294,20 @@ func _wait_for_the_cooldown(crucifix: Crucifix) -> bool:
 	return await wait_until(func() -> bool:
 		return crucifix.get_phase() == Crucifix.Phase.COOLDOWN,
 		crucifix.stats.get_max_use_frames() + SETTLE_FRAMES)
+
+
+## Where in its file the cue starts each time moment is emitted. CrucifixSounds connected to it
+## first, in its _ready(), so the cue has just been told to play; until its first physics frame, the
+## sound player gives back the start it was told.
+func _starts_on(moment: Signal, sounds: CrucifixSounds) -> Array[float]:
+	var starts: Array[float] = []
+	moment.connect(func() -> void: starts.append(sounds.cue.get_playback_position()))
+	return starts
+
+
+## Once, from start.
+func _started_at(starts: Array[float], start: float) -> bool:
+	return starts.size() == 1 and absf(starts[0] - start) <= START_TOLERANCE
 
 
 func _crucifix_of(player: Player) -> Crucifix:

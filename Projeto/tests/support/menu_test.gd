@@ -17,9 +17,12 @@ const UI_THEME_PATH: String = "res://themes/ui_theme.tres"
 const SETTINGS_TEST_PATH: String = "user://test_menus.cfg"
 ## Process frames after a key or button goes down, and again after it comes up.
 const TAP_FRAMES: int = 2
-## How long finish waits, in real ms, for the audio server's mix thread to let go of the sounds a
-## removed menu was still playing: quitting before reports them as resources still in use.
-const AUDIO_RELEASE_MS: int = 50
+## Real time, in ms, for the audio server's mix thread to let go of the sounds of the main scenes
+## taken out, as the menus' music and the sounds a removed menu was still playing, before the test
+## quits; the frames after it let the engine do the freeing. Without it, Godot reports them as
+## leaked, or as resources still in use, at exit.
+const AUDIO_SETTLE_MS: int = 100
+const AUDIO_SETTLE_FRAMES: int = 2
 
 ## The autoload Settings, once a main scene has been made; null before.
 var settings: GameSettings
@@ -46,11 +49,11 @@ func _finalize() -> void:
 
 
 ## Before the verdict: Quit was never pressed, and the player's settings file is as it was. The test
-## file goes away. A sound still playing is let go first: the mix thread drops it within
-## Audio Release ms, and the audio server frees it on the next frame.
+## file goes away, and the audio server is given the time to free the sounds of the main scenes.
 func finish(results: Array[bool]) -> void:
-	OS.delay_msec(AUDIO_RELEASE_MS)
-	await process_frame
+	OS.delay_msec(AUDIO_SETTLE_MS)
+	for _frame: int in AUDIO_SETTLE_FRAMES:
+		await process_frame
 	results.append(report(_quit_presses == 0, "Quit pressed during the test: %d times"
 			% _quit_presses))
 	if _player_file_before.is_empty():
