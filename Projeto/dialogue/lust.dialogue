@@ -1,30 +1,23 @@
-# Chapter 1, Lust. One cue per encounter; the level shows what the Ren'Py narration described.
-# Until the player types a name, his lines have no speaker.
+# Chapter 1, Lust. One cue per encounter.
+# The soul only says what the player picks; it has no lines of its own.
 
 ~ waking
-Lord...
-Where am I?
-A moment ago I was driving. It was raining. She is waiting for me.
-And then...
-What is happening to me?
-Breathe. Start with what you know. My name. My name is...
+Velvet: [i](somewhere in the dark, sniffing)[/i] Mm. A new one. Still warm.
+Velvet: Don't go looking for your life. It stayed up there. Everybody keeps one thing on the way down.
+Velvet: Your name. Say it, before that goes too.
 => END
 
 ~ name_empty
-...I know my name. I know it.
+Velvet: Nothing? Everybody keeps the name, sinner. Try again.
 => END
 
 ~ named
-{{GameState.player_name}}: {{GameState.player_name}}. Yes. And she is waiting. I have to get home.
-{{GameState.player_name}}: [speed=0.6][i]The Lord is my shepherd; I shall not want...[/i]
-{{GameState.player_name}}: [speed=0.6][i]Yea, though I walk through the valley of the shadow of death, I will fear no evil: for thou art with me.[/i]
-{{GameState.player_name}}: You are with me. I know You are.
+Velvet: {{GameState.player_name}}. [i](tasting it)[/i] That's all you brought? Good. Light ones are easier to carry.
 => END
 
 ~ velvet
 Velvet: Well, well. Look what fell in. Warm, lost, and still smelling of the world up there.
-{{GameState.player_name}}: Stay back. In the name of the Lord, stay back.
-Velvet: Ooh, a praying one. Those are my favorite. They want it the most.
+Velvet: [i](eyeing the cross in your hand)[/i] And holding a cross. Those are my favorite. They want it the most.
 Velvet: I'm Velvet. I keep the door. And I can smell what everyone in here wants.
 => velvet_questions
 
@@ -34,13 +27,12 @@ if locals.asked_who and locals.asked_what_happened and locals.asked_dead and loc
 - Who are you? [if not locals.asked_who /]
 	$> locals.asked_who = true
 	Velvet: The welcome. I sniff out what new arrivals want, and I bring them to her.
-	Velvet: I belong to Asmodeus. She keeps the ones who give in, and I get the leftovers. You smell like leftovers already.
+	Velvet: I belong to Asmodeus. She keeps the ones who give in, and I get the leftovers.
 	=> velvet_questions
 - What happened to me? [if not locals.asked_what_happened /]
 	$> locals.asked_what_happened = true
-	Velvet: You don't remember? Rain. A phone buzzing on the seat. Somebody waiting outside.
-	{{GameState.player_name}}: My wife. I have to go. She is waiting for me.
-	Velvet: [i](tilting her head)[/i] Is she? Still?
+	Velvet: You died. How, I couldn't say. Nobody brings that down here.
+	Velvet: You kept your name. The rest stayed up there, and nobody here will help you find it.
 	=> velvet_questions
 - Am I dead? [if not locals.asked_dead /]
 	$> locals.asked_dead = true
@@ -49,25 +41,23 @@ if locals.asked_who and locals.asked_what_happened and locals.asked_dead and loc
 - Where am I? [if not locals.asked_where /]
 	$> locals.asked_where = true
 	Velvet: [i](stretching, like a dog after a long nap)[/i] Hell, sinner. First floor: Lust. Where everybody gets what they want, over and over, forever.
-	{{GameState.player_name}}: No... No. That cannot be.
 	=> velvet_questions
+- Just tell me how to get out.
+	=> velvet_argument
 
 ~ velvet_argument
-{{GameState.player_name}}: There must be a mistake. I have tried to live as He asked. Every day of my life.
-Velvet: Mistake? Could be. We get the file, sinner. Never the reasons.
-{{GameState.player_name}}: [i](to himself)[/i] The Lord does not make mistakes. Then why would He...
-{{GameState.player_name}}: Unless... unless this is a test. Like Job!
-Velvet: Oh, another Job! You're the third this week. The last one made it to the second floor. Then he got hungry.
-- Laugh all you want. I do not belong here, and I will find the way out.
+Velvet: Out of Hell? [i](laughing)[/i] Everybody wants out on the first floor. Why you, sinner?
+- I don't belong here. I was a good person.
 	$> Moral.record_tone(&"arrogant")
-	Velvet: [i](sniffing him, slowly)[/i] Not belong? Sinner, this place has a claim on everybody.
-	Velvet: They all say that on the first floor. They get quieter on the way up.
-- I am a sinner, like any man. But I always asked for forgiveness. Is that not enough?
+	Velvet: [i](sniffing you, slowly)[/i] Everybody here was a good person. Ask around.
+	Velvet: They get quieter on the way up.
+- Maybe I do belong here. I don't know.
 	$> Moral.record_tone(&"humble")
-	Velvet: [i](licking her chops)[/i] Forgiveness. You asked for it a lot, didn't you? Funny how the asking never stopped the wanting.
-Velvet: You want out? Asmodeus decides who leaves, at the top of the floor. Most decide to stay.
-{{GameState.player_name}}: Then I will go to her.
-Velvet: [i](her tail swaying)[/i] Oh, I'll take you there myself. Closer.
+	Velvet: [i](licking her chops)[/i] Honest. Honest ones go bad slower. Not much slower.
+- I don't have to tell you anything.
+	Velvet: [i](grinning)[/i] No. You'll tell her.
+Velvet: Asmodeus decides who leaves, at the top of the floor. Most decide to stay.
+Velvet: [i](her tail swaying)[/i] I'll take you to her myself. Closer.
 => END
 
 ~ velvet_again
@@ -76,78 +66,84 @@ Velvet: You want out? Asmodeus decides who leaves, at the top of the floor. Most
 
 ~ velvet_advance
 Velvet: [i](from inside the fog)[/i] Shh. Nobody up there is watching anymore. Let your body decide, for once.
-{{GameState.player_name}}: [i](slurring)[/i] Get... away... from me...
-Velvet: Why? It never stopped you before.
-{{GameState.player_name}}: [speed=0.5][i]...and lead us not into temptation... but deliver us from evil...[/i]
+- Get away from me.
+	Velvet: Your mouth says go. The rest of you isn't so sure.
+- …and lead us not into temptation…
+	$> GameState.mark_event(&"prayed")
+	Velvet: [i](backing off a step)[/i] Ugh. Nobody prays on the first floor. It ruins the mood.
+- (Say nothing.)
+	Velvet: [i](purring)[/i] Good. Words only get in the way.
 => END
 
 ~ velvet_burned
 Velvet: Ow! Ow, ow, ow! Put that thing away!
 Velvet: [i](staring at it)[/i] That's not supposed to work down here.
-{{GameState.player_name}}: [i](shaking)[/i] Then maybe I am not supposed to be down here.
-Velvet: [i](growling, backing off)[/i] Keep telling yourself that. You'll stay, like all the others. Everybody stays.
+- Then maybe I'm not supposed to be down here.
+	$> Moral.record_tone(&"arrogant")
+	Velvet: [i](growling, backing off)[/i] Keep telling yourself that. Everybody stays.
+- Sorry. I didn't know it would do that.
+	Velvet: [i](licking the burn)[/i] Sorry? To me? Oh, you won't last long.
 => END
 
 ~ asmodeus_offer
 Asmodeus: There you are. I've known you for years. You just never said my name.
-{{GameState.player_name}}: [i](hoarse)[/i] Who are you?
-Asmodeus: Asmodeus. This floor is mine. Most people see whatever they want when they look at me. [i](She glances down at herself.)[/i] You chose this. Interesting.
-Asmodeus: And take that little cross off. It's rude to bring a chaperone.
-{{GameState.player_name}}: The Lord is not a chaperone.
-Asmodeus: No. A chaperone would have stopped you.
-{{GameState.player_name}}: Your hound said you decide who leaves.
+Asmodeus: Asmodeus. This floor is mine. People see whatever they want when they look at me.
+Asmodeus: [i](She glances down at herself.)[/i] You chose this. Interesting.
+if GameState.has_crucifix
+	Asmodeus: And put that little cross away. It's rude to bring a chaperone.
+	- It stays.
+		Asmodeus: Keep it, then. A chaperone never stopped anyone.
+	- (Lower the cross.)
+		Asmodeus: [i](smiling)[/i] Better. Now I can see you.
+if RunStats.deaths_in_level() >= 2
+	Asmodeus: {{RunStats.deaths_in_level()}} falls on the way to me. I felt every one.
 $> Offers.present(&"lust_shortcut")
-Asmodeus: I do. And tonight I'm generous. Spend the night with me, and in the morning I'll walk you to the stairs myself. No running. No demons. No more of... [i](a lazy wave at the floor)[/i] ...this.
-{{GameState.player_name}}: And if I refuse?
-Asmodeus: Then you walk. It's a long floor, darling, and everyone on it wants a piece of you. Or you stay. Here, with me. Nobody would ever know.
-- I have been good all my life. I have earned a rest.
-	$> Moral.record_tone(&"arrogant")
-	Asmodeus: “Earned.” What a lovely word. Men always think they've earned me.
-	$> Offers.accept(&"lust_shortcut")
-- I am so tired... One night. Then I go home to her.
-	$> Moral.record_tone(&"humble")
-	Asmodeus: [i](smiling)[/i] Home. To her. Of course. They all want to go home afterwards. None of them ever do.
-	$> Offers.accept(&"lust_shortcut")
-- I made a vow before God. I will find the way myself.
+Asmodeus: Spend the night with me. In the morning, I'll walk you to the stairs. No more running. No more [i](a lazy wave at the floor)[/i] this.
+Asmodeus: Or walk. It's a long floor, darling.
+- I'm tired. But no.
 	$> Offers.refuse(&"lust_shortcut")
 	$> Moral.record_tone(&"humble")
-	Asmodeus: A vow. Making it was the easy part, darling.
-- Find yourself a weaker man. I am not like the others you have here.
+	Asmodeus: Tired, and still no. [i](a slow smile)[/i] I'll wait. The floor is long.
+- Find someone weaker. I'm not like the others.
 	$> Offers.refuse(&"lust_shortcut")
 	$> Moral.record_tone(&"arrogant")
-	Asmodeus: [i](laughing)[/i] Not like the others. They all say that. Then the candles burn down, and they come crawling back.
+	Asmodeus: [i](laughing)[/i] Not like the others. They all say that. Then the candles burn down.
+- I've earned a rest. One night.
+	$> Moral.record_tone(&"arrogant")
+	Asmodeus: “Earned.” What a lovely word. Everyone thinks they've earned me.
+	$> Offers.accept(&"lust_shortcut")
+- I'm so tired. Just one night.
+	$> Moral.record_tone(&"humble")
+	Asmodeus: [i](smiling)[/i] One night. Of course. Nobody ever asks for two.
+	$> Offers.accept(&"lust_shortcut")
 => END
 
 ~ asmodeus_second_offer
-{{GameState.player_name}}: [i](out of breath)[/i] You again. All that climbing, and you are still here.
-Asmodeus: Every road on this floor ends with me, darling. You just took the long one.
-Asmodeus: Let me tell you a story. Your sister's wedding.
-{{GameState.player_name}}: Not the wedding.
-Asmodeus: A farm by the river. Wine since noon. Two bridesmaids, one night.
-{{GameState.player_name}}: That is a lie.
-Asmodeus: You were single then. Single, and very generous with yourself. Neither of them knew about the other.
-$> GameState.mark_event(&"heard_wedding")
-{{GameState.player_name}}: [i](closing his eyes)[/i] Damn that wedding.
-{{GameState.player_name}}: [i](at once)[/i] Forgive me, Lord. Language.
-Asmodeus: [i](delighted)[/i] Oh, I like you better already.
+Asmodeus: Out of breath? Every road here ends with me, darling. You took the long one.
+if RunStats.deaths_in_phase(2) >= 2
+	Asmodeus: {{RunStats.deaths_in_phase(2)}} falls on that climb, and you keep getting up. Why?
+if Moral.leans_arrogant()
+	Asmodeus: You talk like you're better than this place. The others did too.
+else
+	Asmodeus: Still saying no. It makes the yes so much sweeter.
 $> Offers.present(&"lust_shortcut")
 Asmodeus: My offer stands. One night. Then the stairs.
-- Fine. But this changes nothing. I am still a good man.
+- No. I got this far on my own.
+	$> Offers.refuse(&"lust_shortcut")
 	$> Moral.record_tone(&"arrogant")
-	Asmodeus: Of course you are. Good men are my favorite. They feel so much worse afterwards.
-	$> Offers.accept(&"lust_shortcut")
-- I cannot keep running. Take me out of here.
-	$> Moral.record_tone(&"humble")
-	Asmodeus: [i](holding out her hand)[/i] There. Was that so hard?
-	$> Offers.accept(&"lust_shortcut")
-- I did those things. I will not do them again.
+	Asmodeus: On your own. That's what makes it fun to watch.
+- I'm scared of what's up there. Still no.
 	$> Offers.refuse(&"lust_shortcut")
 	$> Moral.record_tone(&"humble")
 	Asmodeus: [i](for once, she doesn't smile)[/i] Hm. That's new. It won't last.
-- You know nothing about me. Get out of my way.
-	$> Offers.refuse(&"lust_shortcut")
+- I can't keep climbing. Take me out.
+	$> Moral.record_tone(&"humble")
+	Asmodeus: [i](holding out her hand)[/i] There. Was that so hard?
+	$> Offers.accept(&"lust_shortcut")
+- Fine. It doesn't change who I am.
 	$> Moral.record_tone(&"arrogant")
-	Asmodeus: I know everything about you, darling. I was there. Both times.
+	Asmodeus: Of course not. That's what everyone says in the morning.
+	$> Offers.accept(&"lust_shortcut")
 => END
 
 ~ asmodeus_deaths
@@ -157,66 +153,68 @@ elif RunStats.offer_zone_deaths() >= 3
 	Asmodeus: {{RunStats.offer_zone_deaths()}} times, right here. I counted. Try not to give me another.
 else
 	Asmodeus: This part was hard, wasn't it? Try not to die here again.
+Asmodeus: Nobody dies twice down here. You just start again.
 if RunStats.death_offers_made() > 1
 	Asmodeus: I did ask you before. The offer still stands.
 $> Offers.present(&"lust_shortcut")
 Asmodeus: Say yes, and you never climb this again.
-- I have earned a rest.
+- I don't need you. I'll do it alone.
+	$> Offers.refuse(&"lust_shortcut")
 	$> Moral.record_tone(&"arrogant")
-	Asmodeus: Of course you have.
-	$> Offers.accept(&"lust_shortcut")
-- I cannot do this anymore.
-	$> Moral.record_tone(&"humble")
-	Asmodeus: [i](softly)[/i] Shh. I know.
-	$> Offers.accept(&"lust_shortcut")
-- He is with me. I will get up again.
+	Asmodeus: Alone. Everyone starts alone.
+- Again. I'll get up again.
 	$> Offers.refuse(&"lust_shortcut")
 	$> Moral.record_tone(&"humble")
 	Asmodeus: Then go. I'll be right here.
-- I do not need you. I will do it alone.
-	$> Offers.refuse(&"lust_shortcut")
+- I've earned a rest.
 	$> Moral.record_tone(&"arrogant")
-	Asmodeus: That's what you said last time.
+	Asmodeus: Of course you have.
+	$> Offers.accept(&"lust_shortcut")
+- I can't do this anymore.
+	$> Moral.record_tone(&"humble")
+	Asmodeus: [i](softly)[/i] Shh. I know.
+	$> Offers.accept(&"lust_shortcut")
 => END
 
 ~ asmodeus_gift
 if Moral.has_taken(&"lust_shortcut")
 	Asmodeus: You see? I keep my promises. Unlike some.
-	if not GameState.has_event(&"heard_wedding")
-		Asmodeus: Your sister's wedding, for instance. Two bridesmaids, one night, and a promise to each.
-		$> GameState.mark_event(&"heard_wedding")
-		{{GameState.player_name}}: [i](closing his eyes)[/i] Damn that wedding.
-		{{GameState.player_name}}: [i](at once)[/i] Forgive me, Lord. Language.
 else
 	Asmodeus: You walked the whole floor and still ended up here. They always do. It's almost rude.
 Asmodeus: Every one of us gives a gift on the way out. It's how we make sure you come back.
+- What gift?
+- I don't want anything from you.
+	Asmodeus: Everyone says that before they see it.
 $> Offers.present(&"charm")
-Asmodeus: Charm. Look at a demon, and it stops and stares at you. The way those two bridesmaids did.
+Asmodeus: Charm. Look at a demon, and it stops and stares at you.
 Asmodeus: The price? Hardly anything. You'll never know again if they want you, or the gift.
 if GameState.has_crucifix
 	Asmodeus: And your little cross won't like it. It burns near me. Keep one or the other.
-- Give it to me.
-	if Moral.stage() >= 1 or Moral.leans_arrogant()
-		{{GameState.player_name}}: I am here by mistake. He will understand why I need it.
-	else
-		{{GameState.player_name}}: [i](quietly)[/i] Forgive me. I cannot do this alone.
+- No. I'd want it too much. [if Moral.stage() < 1 and not Moral.leans_arrogant() /]
+	$> Offers.refuse(&"charm")
+	$> Moral.record_tone(&"humble")
+	Asmodeus: [i](coldly)[/i] The offer stays open. You'll be back for it.
+- Keep your tricks. I don't need them.
+	$> Offers.refuse(&"charm")
+	$> Moral.record_tone(&"arrogant")
+	Asmodeus: Proud. How sweet. The proud ones fall the furthest.
+- I can't do this alone. Give it to me.
+	$> Moral.record_tone(&"humble")
+	$> Offers.accept(&"charm")
+	Asmodeus: [i](softly)[/i] Nobody can. That's the secret.
+- Give it here. I've earned it.
+	$> Moral.record_tone(&"arrogant")
 	$> Offers.accept(&"charm")
 	Asmodeus: There. Now nobody will look away from you again.
-- Keep it.
-	$> Offers.refuse(&"charm")
-	if Moral.stage() >= 1 or Moral.leans_arrogant()
-		{{GameState.player_name}}: I have the Lord. I do not need your tricks.
-		Asmodeus: Faith. How sweet. It's always the faithful who fall the furthest.
-	else
-		{{GameState.player_name}}: Every time I said yes to something like you, somebody got hurt.
-		Asmodeus: [i](coldly)[/i] The offer stays open. You'll be back for it.
 => END
 
 ~ stairs
-Asmodeus: Run along, {{GameState.player_name}}. The next floor is hungry, and they've read your file.
-{{GameState.player_name}}: My file?
-Asmodeus: [i](smiling)[/i] Every page of it. You'll miss my bed before they're done with you.
-{{GameState.player_name}}: [i](climbing)[/i] One floor down. I mean... up. One floor up.
-{{GameState.player_name}}: [i](quietly)[/i] You know I am here. You must know.
-{{GameState.player_name}}: [speed=0.3]...Do You?
+Asmodeus: Run along, darling. The next floor is hungry, and they've read your file.
+- My file?
+	Asmodeus: [i](smiling)[/i] Every fall. Every word. Every yes and every no. Somebody keeps very good notes.
+- (Climb.)
+Asmodeus: Up, darling. Not down. Everyone expects down.
+- Do You know I'm here?
+	$> GameState.mark_event(&"prayed")
+- (Keep climbing.)
 => END

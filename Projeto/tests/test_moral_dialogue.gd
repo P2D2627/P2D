@@ -1,10 +1,10 @@
 # Checks the autoload Moral with the real lines (#169). It is in the tree, at stage 0, and says
-# stage_changed once when the man takes a shortcut, and 0 again on reset(). In Lust's asmodeus_gift,
-# refusing the charm with "Keep it." gives his humble line at stage 0, and the worse one after he
-# took Lust's shortcut, read by the lines through Moral.stage(). At stage 0, it is also the worse one
-# when he gave more arrogant answers than humble ones (Moral.leans_arrogant()), and not on a tie.
-# A stand-in game state holds what
-# those lines read, since GameState does not exist yet. Moral is reset before and after each case.
+# stage_changed once when the soul takes a shortcut, and 0 again on reset(). The soul rots by what
+# it can still say (#277): in Lust's asmodeus_gift, the humble refusal of the charm is offered at
+# stage 0 and hidden after Lust's shortcut, read by the lines through Moral.stage(). At stage 0, it
+# is also hidden when more answers were arrogant than humble (Moral.leans_arrogant()), and not on a
+# tie. The other three answers stay. A stand-in game state holds what those lines read. Moral is
+# reset before and after each case.
 # Run from the repository root; the exit code is 0 on pass and 1 on fail:
 # godot --headless --fixed-fps 60 --path Projeto --script res://tests/test_moral_dialogue.gd
 extends "res://tests/support/player_test.gd"
@@ -12,24 +12,22 @@ extends "res://tests/support/player_test.gd"
 const LUST: DialogueResource = preload("res://dialogue/lust.dialogue")
 const PLAYER_NAME: String = "Anyone"
 const GIFT_CUE: String = "asmodeus_gift"
-const REFUSAL: String = "Keep it."
-const CLEAN_LINE: String = "Every time I said yes to something like you, somebody got hurt."
-const WORSE_LINE: String = "I have the Lord. I do not need your tricks."
+## Picked at the first choice of asmodeus_gift, to reach the charm's answers.
+const FIRST_ANSWER: String = "What gift?"
+const HUMBLE_REFUSAL: String = "No. I'd want it too much."
+## The charm's other answers, in the order the cue offers them.
+const OTHER_ANSWERS: Array[String] = [
+	"Keep your tricks. I don't need them.", "I can't do this alone. Give it to me.",
+	"Give it here. I've earned it.",
+]
 ## Lines read from one cue before giving up, in case a jump loops.
 const MAX_LINES: int = 50
 
 
-## Stands in for GameState, with only what these lines read. The wedding was already told, so the
-## lines never write a flag.
+## Stands in for GameState, with only what these lines read.
 class StandInGameState extends RefCounted:
 	var player_name: String = PLAYER_NAME
 	var has_crucifix: bool = true
-
-	func has_event(_event: StringName) -> bool:
-		return true
-
-	func mark_event(_event: StringName) -> void:
-		pass
 
 
 var _moral: GameMoral
@@ -44,28 +42,26 @@ func _initialize() -> void:
 		return
 	var results: Array[bool] = []
 	results.append(_moral_says_each_stage_change_once())
-	results.append(await _keep_it_is_humble_at_stage_0_and_worse_after_the_shortcut())
-	results.append(await _keep_it_is_worse_when_he_answered_more_proudly())
+	results.append(await _the_humble_refusal_is_offered_at_stage_0_and_hidden_after_the_shortcut())
+	results.append(await _the_humble_refusal_is_hidden_when_more_answers_were_proud())
 	_moral.reset()
 	finish(results)
 
 
-## Still at stage 0, with as many humble as arrogant answers the line stays humble; with one
-## arrogant answer more, it takes the worse one, as his tone so far says.
-func _keep_it_is_worse_when_he_answered_more_proudly() -> bool:
+## Still at stage 0, with as many humble as arrogant answers the humble refusal is offered; with
+## one arrogant answer more, it is hidden, as the tone so far says.
+func _the_humble_refusal_is_hidden_when_more_answers_were_proud() -> bool:
 	_moral.reset()
 	_moral.record_tone(&"arrogant")
 	_moral.record_tone(&"humble")
-	var tied: DialogueLine = await _answer_to_refusal()
+	var tied: Array[String] = await _charm_answers()
 	_moral.record_tone(&"arrogant")
 	var stage: int = _moral.stage()
-	var proud: DialogueLine = await _answer_to_refusal()
+	var proud: Array[String] = await _charm_answers()
 	_moral.reset()
-	var tied_text: String = tied.text if tied != null else "none"
-	var proud_text: String = proud.text if proud != null else "none"
-	return report(stage == 0 and tied_text == CLEAN_LINE and proud_text == WORSE_LINE,
-			"\"%s\" with tied answers: \"%s\"; with one arrogant more, still at stage %d: \"%s\""
-			% [REFUSAL, tied_text, stage, proud_text])
+	return report(stage == 0 and tied == _all_answers() and proud == OTHER_ANSWERS,
+			"\"%s\" with tied answers: %s; with one arrogant more, still at stage %d: %s"
+			% [HUMBLE_REFUSAL, tied, stage, proud])
 
 
 func _moral_says_each_stage_change_once() -> bool:
@@ -85,31 +81,49 @@ func _moral_says_each_stage_change_once() -> bool:
 			% [at_start, after_shortcut, _moral.stage(), said])
 
 
-func _keep_it_is_humble_at_stage_0_and_worse_after_the_shortcut() -> bool:
+func _the_humble_refusal_is_offered_at_stage_0_and_hidden_after_the_shortcut() -> bool:
 	_moral.reset()
-	var clean: DialogueLine = await _answer_to_refusal()
+	var clean: Array[String] = await _charm_answers()
 	_moral.take_temptation(&"lust_shortcut")
-	var worse: DialogueLine = await _answer_to_refusal()
+	var after: Array[String] = await _charm_answers()
 	_moral.reset()
-	var clean_text: String = clean.text if clean != null else "none"
-	var worse_text: String = worse.text if worse != null else "none"
-	return report(clean != null and worse != null and clean.character == PLAYER_NAME
-			and clean_text == CLEAN_LINE and worse_text == WORSE_LINE,
-			"\"%s\" at stage 0: \"%s\"; after the shortcut: \"%s\"" % [REFUSAL, clean_text,
-			worse_text])
+	return report(clean == _all_answers() and after == OTHER_ANSWERS,
+			"\"%s\" at stage 0: %s; after the shortcut: %s" % [HUMBLE_REFUSAL, clean, after])
 
 
-## The line that follows "Keep it." in asmodeus_gift, or null if the cue never offers it.
-func _answer_to_refusal() -> DialogueLine:
+## The charm's four answers, in the order the cue offers them, the humble refusal first.
+func _all_answers() -> Array[String]:
+	var answers: Array[String] = OTHER_ANSWERS.duplicate()
+	answers.insert(0, HUMBLE_REFUSAL)
+	return answers
+
+
+## The charm's answers asmodeus_gift lets the player pick, after "What gift?" at its first choice;
+## empty if the cue never gets there.
+func _charm_answers() -> Array[String]:
 	var states: Array = [{"GameState": StandInGameState.new()}]
 	var line: DialogueLine = await LUST.get_next_dialogue_line(GIFT_CUE, states)
+	var answers: Array[String] = []
+	var past_first_choice: bool = false
 	var read: int = 0
-	while line != null and line.responses.is_empty() and read < MAX_LINES:
-		line = await LUST.get_next_dialogue_line(line.next_id, states)
+	while line != null and read < MAX_LINES:
 		read += 1
+		if line.responses.is_empty():
+			line = await LUST.get_next_dialogue_line(line.next_id, states)
+			continue
+		if past_first_choice:
+			break
+		var first: DialogueResponse = null
+		for response: DialogueResponse in line.responses:
+			if response.text == FIRST_ANSWER:
+				first = response
+		if first == null:
+			return answers
+		past_first_choice = true
+		line = await LUST.get_next_dialogue_line(first.next_id, states)
 	if line == null:
-		return null
+		return answers
 	for response: DialogueResponse in line.responses:
-		if response.text == REFUSAL:
-			return await LUST.get_next_dialogue_line(response.next_id, states)
-	return null
+		if response.is_allowed:
+			answers.append(response.text)
+	return answers

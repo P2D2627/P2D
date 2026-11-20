@@ -164,6 +164,14 @@ func phase_seconds(level: StringName, phase: int) -> float:
 	return _phase_seconds.get(_key(level, phase), 0.0)
 
 
+## All the time of the run, every level and phase.
+func total_seconds() -> float:
+	var seconds: float = 0.0
+	for phase_time: float in _phase_seconds.values():
+		seconds += phase_time
+	return seconds
+
+
 func get_skipped_lines() -> int:
 	return _skipped_lines
 
