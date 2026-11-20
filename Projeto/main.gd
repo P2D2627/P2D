@@ -17,24 +17,37 @@ extends Node
 ## count, so they are never put back on a death. They are written beside the save on each save, on
 ## each death, and on leaving for the menu or quitting; Continue reads them, and a new game empties
 ## them.
+## The save is one of three slots (SaveSlots), each with its run's numbers beside it: Continue
+## opens the slot played last and Load the slot picked; a new game starts in slot 1 when no slot
+## has a file, and otherwise in the slot picked. Every write goes to the slot being played.
 
 ## The levels the main menu offers, in this order: each one a title and a scene. One left empty, or
-## with no scene, stays out of the menu, with a warning.
+## with no scene, stays out of the menu, with a warning; one with In Menu off, as the rooms made for
+## development, stays out with none.
 @export var levels: Array[LevelEntry] = []
 ## Whether a level pauses when the game's window loses the focus, as with Alt+Tab.
 @export var pause_on_focus_loss: bool = true
 ## The time the screen takes to go black at a phase's exit, and again to come back in the next one.
 @export_range(0.0, 2.0, 0.05, "suffix:s") var fade_time: float = 0.25
+## The time Quit takes to make the screen black before the game ends, its own, so a slower or faster
+## phase fade leaves Quit as it is. It starts at 0.15 s, past the choice's longest blow, which Quit
+## plays (140 ms, menu_confirm_2.wav), so the window never closes on it; test_main_flow checks it.
+@export_range(0.15, 1.0, 0.05, "suffix:s") var quit_fade_time: float = 0.25
 
-## The levels the menu shows, in its order: those in levels that have a scene.
+## What ends the game once Quit has faded the screen out; a test puts its own, so it never closes.
+var quit_game: Callable = _end_the_game
+
+## The levels the menu shows, in its order: those in levels that have a scene and In Menu on.
 var _playable_levels: Array[LevelEntry] = []
 ## True from a phase's exit until the next phase has faded in. Meanwhile the level is frozen and the
 ## game does not pause.
 var _changing_phase: bool = false
-## The game's save.
-var _save_file: SaveFile = SaveFile.new()
+## The slot being played, as Continue, Load or a new game picked it; slot 1 before any did.
+var _save_file: SaveFile = SaveSlots.file_of(1)
 ## True while the level in the slot is part of the saved game: from a new game or from Continue.
 var _in_the_run: bool = false
+## True from Quit until the game ends, so a second Quit is ignored.
+var _quitting: bool = false
 
 @onready var _level_slot: Node = %LevelSlot
 @onready var _main_menu: MainMenu = %MainMenu
@@ -53,11 +66,15 @@ func _ready() -> void:
 		if level == null or level.scene == null:
 			push_warning("Main: entry %d of Levels has no scene, so the menu leaves it out." % index)
 			continue
+		if not level.in_menu:
+			continue
 		_playable_levels.append(level)
 		titles.append(level.title)
 	_main_menu.add_levels(titles)
 	_main_menu.level_chosen.connect(_on_level_chosen)
 	_main_menu.continue_requested.connect(_on_continue_requested)
+	_main_menu.load_slot_chosen.connect(_continue_slot)
+	_main_menu.new_game_slot_chosen.connect(_on_new_game_slot_chosen)
 	_main_menu.new_game_confirmed.connect(_play_level)
 	_main_menu.quit_requested.connect(_on_quit_requested)
 	_pause_menu.resume_requested.connect(_resume)
@@ -70,7 +87,7 @@ func _ready() -> void:
 		_offers.refused.connect(_on_offer_answered.bind(false), CONNECT_DEFERRED)
 	else:
 		push_warning("Main: no autoload Offers, so no offer can change the phase.")
-	_main_menu.set_can_continue(_save_file.exists())
+	_show_slots_in_menu()
 
 
 ## The Pause action, Esc or Start, pauses a running level and resumes a paused one.
@@ -92,36 +109,56 @@ func _notification(what: int) -> void:
 		_pause()
 
 
-## The level goes in before the menu hides, so a level that fails to load leaves the menu on screen.
+## A level outside the run just starts. A new game starts in slot 1 when no slot has a file, and
+## otherwise the player picks the slot.
 func _on_level_chosen(index: int) -> void:
-	if _playable_levels[index].starts_game and _save_file.exists():
-		_main_menu.ask_to_replace_save(index)
+	if not _playable_levels[index].starts_game:
+		_play_level(index, 0)
+	elif SaveSlots.has_any():
+		_main_menu.choose_new_game_slot(index)
 	else:
-		_play_level(index)
+		_play_level(index, 1)
 
 
-## A level that starts the game is a new run: the state starts over, and so does the save.
-func _play_level(index: int) -> void:
+## A slot with a file in it, even one that can't be read, is replaced only once the player agrees.
+func _on_new_game_slot_chosen(index: int, slot: int) -> void:
+	if SaveSlots.summary_of(slot).state == SaveSlots.State.EMPTY:
+		_play_level(index, slot)
+	else:
+		_main_menu.ask_to_replace_save(slot)
+
+
+## A level that starts the game is a new run, saved in slot: the state starts over, and so does the
+## save. Outside the run, slot is not used. The level goes in before the menu hides, so a level that
+## fails to load leaves the menu on screen.
+func _play_level(index: int, slot: int) -> void:
 	var entry: LevelEntry = _playable_levels[index]
 	_in_the_run = entry.starts_game
 	if _in_the_run:
+		_save_file = SaveSlots.file_of(slot)
 		_progress.reset()
 		if _run_stats != null:
 			_run_stats.reset()
 	_progress.arrival_point = &""
 	_start_level(entry.scene)
 	_main_menu.hide()
-	if _save(entry.scene.resource_path):
+	if _save(entry.scene.resource_path, _current_phase()):
 		_save_indicator.show_saved()
 
 
-## Back to the saved phase, with the state as it was saved. A save that went bad since the menu
-## opened takes Continue away and leaves the menu on screen.
 func _on_continue_requested() -> void:
-	var saved: Dictionary = _save_file.read()
+	_continue_slot(SaveSlots.last_played())
+
+
+## Back to slot, at its saved phase, with the state as it was saved; from then on the game saves to
+## that slot. A save that went bad since the menu opened leaves the menu on screen, told what the
+## slots hold now.
+func _continue_slot(slot: int) -> void:
+	var saved: Dictionary = SaveSlots.file_of(slot).read() if slot != 0 else {}
 	if saved.is_empty():
-		_main_menu.set_can_continue(false)
+		_show_slots_in_menu()
 		return
+	_save_file = SaveSlots.file_of(slot)
 	_in_the_run = true
 	_progress.from_save(saved["state"])
 	if _run_stats != null:
@@ -131,8 +168,8 @@ func _on_continue_requested() -> void:
 
 
 ## True once the phase at scene_path and the state are on disk. Outside the run, nothing is saved.
-func _save(scene_path: String) -> bool:
-	if not (_in_the_run and _save_file.write(scene_path, _progress.to_save())):
+func _save(scene_path: String, phase: int) -> bool:
+	if not (_in_the_run and _save_file.write(scene_path, _progress.to_save(), phase)):
 		return false
 	_save_the_run()
 	return true
@@ -151,9 +188,10 @@ func _on_save_point_reached() -> void:
 
 ## A debug key put the level at a phase, as if he had reached its save point: the save keeps that,
 ## so the restart that follows, which goes back to the save, brings him there. The level only jumps
-## while it runs, so never while a phase change holds it frozen.
-func _on_level_jumped_to_phase(_phase: int) -> void:
-	_save_the_current_phase()
+## while it runs, so never while a phase change holds it frozen. The run's numbers only reach the
+## phase in the restart, so the save takes it from the jump.
+func _on_level_jumped_to_phase(phase: int) -> void:
+	_save_the_phase(phase)
 
 
 ## A cutscene that plays once in the game was seen: the save keeps it at once, so a death before the
@@ -182,9 +220,36 @@ func _on_offer_answered(offer: OfferData, accepted: bool) -> void:
 
 ## Saves the phase in the level slot, as it stands; with no level there, nothing.
 func _save_the_current_phase() -> void:
+	_save_the_phase(_current_phase())
+
+
+## Saves the level in the level slot, as it stands, as being in phase; with no level, nothing.
+func _save_the_phase(phase: int) -> void:
 	for level: Node in _level_slot.get_children():
-		if _save(level.scene_file_path):
+		if _save(level.scene_file_path, phase):
 			_save_indicator.show_saved()
+
+
+## Tells the menu what each slot holds, with the title of the level each one is in.
+func _show_slots_in_menu() -> void:
+	var summaries: Array[SaveSlots.Summary] = SaveSlots.summaries()
+	var titles: PackedStringArray = []
+	for summary: SaveSlots.Summary in summaries:
+		titles.append(_title_of(summary.scene))
+	_main_menu.set_slots(summaries, titles)
+
+
+## The title of the level whose scene is at scene_path, as Levels names it; empty when none is.
+func _title_of(scene_path: String) -> String:
+	for entry: LevelEntry in levels:
+		if entry != null and entry.scene != null and entry.scene.resource_path == scene_path:
+			return entry.title
+	return ""
+
+
+## The phase he is in, as the run's numbers know it; 0 without them.
+func _current_phase() -> int:
+	return _run_stats.get_phase() if _run_stats != null else 0
 
 
 ## A new copy of scene in the level slot. When it asks to start over, another new copy takes its
@@ -273,7 +338,7 @@ func _finish_level() -> void:
 	_save_the_run()
 	_clear_level()
 	_level_slot.process_mode = Node.PROCESS_MODE_PAUSABLE
-	_main_menu.set_can_continue(_save_file.exists())
+	_show_slots_in_menu()
 	_main_menu.open()
 	await _fade_to(0.0)
 	_changing_phase = false
@@ -304,7 +369,7 @@ func _change_phase(next_scene_path: String, arrival: StringName) -> void:
 		_clear_level()
 		_progress.arrival_point = arrival
 		_start_level(next)
-		saved = _save(next_scene_path)
+		saved = _save(next_scene_path, _current_phase())
 	_level_slot.process_mode = Node.PROCESS_MODE_PAUSABLE
 	if saved:
 		_save_indicator.show_saved()
@@ -312,8 +377,22 @@ func _change_phase(next_scene_path: String, arrival: StringName) -> void:
 	_changing_phase = false
 
 
+## The run's numbers are kept at once; then the screen goes black, in Quit Fade Time, so the choice's
+## blow is heard and the window closes on black rather than on the lit menu; only then does the game
+## end. Meanwhile the menu loses the focus and the fade stops the mouse, so no other option can be
+## chosen.
 func _on_quit_requested() -> void:
+	if _quitting:
+		return
+	_quitting = true
 	_save_the_run()
+	get_viewport().gui_release_focus()
+	_fade.mouse_filter = Control.MOUSE_FILTER_STOP
+	await _fade_to(1.0, quit_fade_time)
+	quit_game.call()
+
+
+func _end_the_game() -> void:
 	get_tree().quit()
 
 
@@ -321,7 +400,7 @@ func _on_main_menu_requested() -> void:
 	_resume()
 	_save_the_run()
 	_clear_level()
-	_main_menu.set_can_continue(_save_file.exists())
+	_show_slots_in_menu()
 	_main_menu.open()
 
 
@@ -351,9 +430,10 @@ func _clear_level() -> void:
 		_offers.clear()
 
 
-func _fade_to(alpha: float) -> void:
+## The fade to alpha, in time: a phase's Fade Time unless told otherwise.
+func _fade_to(alpha: float, time: float = fade_time) -> void:
 	var tween: Tween = create_tween()
-	tween.tween_property(_fade, ^"color:a", alpha, fade_time)
+	tween.tween_property(_fade, ^"color:a", alpha, time)
 	await tween.finished
 
 

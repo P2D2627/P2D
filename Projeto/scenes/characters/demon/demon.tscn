@@ -16,7 +16,6 @@
 [ext_resource type="Script" uid="uid://b5wik4eh0qt4k" path="res://scenes/characters/demon/demon_back_bite.gd" id="14_back_bite"]
 [ext_resource type="Texture2D" uid="uid://ywtssnl5lau6" path="res://assets/sprites/demon_lust/dog_run.png" id="14_dog_run"]
 [ext_resource type="Script" uid="uid://dsmry8suqhckh" path="res://scenes/characters/demon/demon_animation.gd" id="15_animation"]
-[ext_resource type="Texture2D" uid="uid://os4tjjavioqi" path="res://assets/sprites/demon_lust/dog_idle_cell.png" id="16_dog_idle"]
 [ext_resource type="Script" uid="uid://b54urt21yd220" path="res://scenes/others/sight/sight_reveal.gd" id="17_sight_reveal"]
 [ext_resource type="PackedScene" path="res://scenes/others/ambience/sound_emitter.tscn" id="18_emitter"]
 [ext_resource type="AudioStream" uid="uid://fynrc7yhesjt" path="res://assets/audio/sfx/demons/demon_dog_alert.wav" id="19_dog_alert"]
@@ -27,6 +26,8 @@
 [ext_resource type="AudioStream" uid="uid://b814ypx0ibl4" path="res://assets/audio/sfx/demons/demon_dog_attack.wav" id="23_dog_attack"]
 [ext_resource type="AudioStream" uid="uid://tua6x6gbycl5" path="res://assets/audio/sfx/demons/demon_dog_cruci_hit_1.wav" id="24_dog_hit_1"]
 [ext_resource type="AudioStream" uid="uid://irstxgvldy5l" path="res://assets/audio/sfx/demons/demon_dog_cruci_hit_2.wav" id="25_dog_hit_2"]
+[ext_resource type="Texture2D" path="res://assets/sprites/demon_lust/dog_walk.png" id="19_dog_walk"]
+[ext_resource type="Texture2D" path="res://assets/sprites/demon_lust/dog_idle_sheet.png" id="20_dog_idle_sheet"]
 
 [sub_resource type="RectangleShape2D" id="RectangleShape2D_body"]
 size = Vector2(112, 56)
@@ -63,15 +64,101 @@ region = Rect2(2592, 0, 432, 202)
 atlas = ExtResource("14_dog_run")
 region = Rect2(3024, 0, 432, 202)
 
+[sub_resource type="AtlasTexture" id="AtlasTexture_walk0"]
+atlas = ExtResource("19_dog_walk")
+region = Rect2(0, 0, 432, 202)
+
+[sub_resource type="AtlasTexture" id="AtlasTexture_walk1"]
+atlas = ExtResource("19_dog_walk")
+region = Rect2(432, 0, 432, 202)
+
+[sub_resource type="AtlasTexture" id="AtlasTexture_walk2"]
+atlas = ExtResource("19_dog_walk")
+region = Rect2(864, 0, 432, 202)
+
+[sub_resource type="AtlasTexture" id="AtlasTexture_walk3"]
+atlas = ExtResource("19_dog_walk")
+region = Rect2(1296, 0, 432, 202)
+
+[sub_resource type="AtlasTexture" id="AtlasTexture_walk4"]
+atlas = ExtResource("19_dog_walk")
+region = Rect2(1728, 0, 432, 202)
+
+[sub_resource type="AtlasTexture" id="AtlasTexture_walk5"]
+atlas = ExtResource("19_dog_walk")
+region = Rect2(2160, 0, 432, 202)
+
+[sub_resource type="AtlasTexture" id="AtlasTexture_walk6"]
+atlas = ExtResource("19_dog_walk")
+region = Rect2(2592, 0, 432, 202)
+
+[sub_resource type="AtlasTexture" id="AtlasTexture_walk7"]
+atlas = ExtResource("19_dog_walk")
+region = Rect2(3024, 0, 432, 202)
+
+[sub_resource type="AtlasTexture" id="AtlasTexture_idle0"]
+atlas = ExtResource("20_dog_idle_sheet")
+region = Rect2(0, 0, 432, 202)
+
+[sub_resource type="AtlasTexture" id="AtlasTexture_idle1"]
+atlas = ExtResource("20_dog_idle_sheet")
+region = Rect2(432, 0, 432, 202)
+
+[sub_resource type="AtlasTexture" id="AtlasTexture_idle2"]
+atlas = ExtResource("20_dog_idle_sheet")
+region = Rect2(864, 0, 432, 202)
+
+[sub_resource type="AtlasTexture" id="AtlasTexture_idle3"]
+atlas = ExtResource("20_dog_idle_sheet")
+region = Rect2(1296, 0, 432, 202)
+
 [sub_resource type="SpriteFrames" id="SpriteFrames_dog"]
 animations = [{
 "frames": [{
 "duration": 1.0,
-"texture": ExtResource("16_dog_idle")
+"texture": SubResource("AtlasTexture_idle0")
+}, {
+"duration": 1.0,
+"texture": SubResource("AtlasTexture_idle1")
+}, {
+"duration": 1.0,
+"texture": SubResource("AtlasTexture_idle2")
+}, {
+"duration": 1.0,
+"texture": SubResource("AtlasTexture_idle3")
 }],
 "loop": 1,
 "name": &"idle",
-"speed": 5.0
+"speed": 4.0
+}, {
+"frames": [{
+"duration": 1.0,
+"texture": SubResource("AtlasTexture_walk0")
+}, {
+"duration": 1.0,
+"texture": SubResource("AtlasTexture_walk1")
+}, {
+"duration": 1.0,
+"texture": SubResource("AtlasTexture_walk2")
+}, {
+"duration": 1.0,
+"texture": SubResource("AtlasTexture_walk3")
+}, {
+"duration": 1.0,
+"texture": SubResource("AtlasTexture_walk4")
+}, {
+"duration": 1.0,
+"texture": SubResource("AtlasTexture_walk5")
+}, {
+"duration": 1.0,
+"texture": SubResource("AtlasTexture_walk6")
+}, {
+"duration": 1.0,
+"texture": SubResource("AtlasTexture_walk7")
+}],
+"loop": true,
+"name": &"walk",
+"speed": 12.0
 }, {
 "frames": [{
 "duration": 1.0,
@@ -129,7 +216,7 @@ size = Vector2(304, 56)
 size = Vector2(160, 56)
 
 [sub_resource type="RectangleShape2D" id="RectangleShape2D_back"]
-size = Vector2(48, 48)
+size = Vector2(112, 48)
 
 [node name="Demon" type="CharacterBody2D" unique_id=1630932176]
 disable_mode = 1
@@ -151,7 +238,7 @@ script = ExtResource("3_placeholder")
 art = NodePath("../Sprite")
 
 [node name="Sprite" type="AnimatedSprite2D" parent="." unique_id=1966081431]
-editor_description = "dog_run.png and dog_idle_cell.png: 432 x 202 cells, the body's middle on the cell's middle and the feet on y = 194. Offset puts the feet on the demon's y = 0; Scale 0.5 halves the art, drawn at twice the size for the zoom."
+editor_description = "dog_run.png, dog_walk.png and dog_idle_sheet.png: 432 x 202 cells, the body's middle on the cell's middle and the feet on y = 194. Offset puts the feet on the demon's y = 0; Scale 0.5 halves the art, drawn at twice the size for the zoom."
 scale = Vector2(0.5, 0.5)
 sprite_frames = SubResource("SpriteFrames_dog")
 animation = &"idle"
@@ -327,14 +414,14 @@ hitbox = NodePath("BackBiteHitbox")
 body = NodePath("..")
 
 [node name="BackBiteShape" type="CollisionShape2D" parent="BackBite" unique_id=1907179654]
-position = Vector2(0, -122)
+position = Vector2(0, -80)
 shape = SubResource("RectangleShape2D_back")
 
 [node name="BackBiteHitbox" parent="BackBite" unique_id=757611627 instance=ExtResource("5_hitbox")]
 process_mode = 4
 
 [node name="BackBiteHitboxShape" type="CollisionShape2D" parent="BackBite/BackBiteHitbox" unique_id=2058990327]
-position = Vector2(0, -122)
+position = Vector2(0, -80)
 shape = SubResource("RectangleShape2D_back")
 
 [connection signal="barked" from="." to="Placeholder" method="_on_demon_barked"]

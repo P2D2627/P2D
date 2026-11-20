@@ -1,7 +1,8 @@
 # Checks level 1's phase 3 in the scene against its text map, level1_phase3.txt: the pieces it holds (dogs, the
-# biggest dog, spikes on floors and walls, collapsing platforms, three gates, two unlockers); which gate each
+# biggest dog, spikes on floors and walls, collapsing platforms, four gates, three unlockers); which gate each
 # unlocker opens, and that the biggest dog opens gate 3; that with the gates shut no gate can be skipped (from S the
-# air joins unlocker 1 and gate 2 only, past gate 2 it joins unlocker 2 and gate 1 only, past gate 1 it joins F); that
+# air joins unlocker 1 and gate 2 only, past gate 2 it joins unlocker 2 and gate 1 only, past gate 1 it joins the
+# biggest dog, unlocker 3 and gate 4 but not F, which only gate 4 opened joins, #271); that
 # each gate slides onto rock; that each wall's spikes have rock behind them; that the man near the biggest dog opens
 # gate 3; and that the level's one way out is at phase 3's F.
 # Run from the repository root; the exit code is 0 on pass and 1 on fail:
@@ -95,7 +96,7 @@ func _the_scene_holds_what_phase_3s_map_says(level: Node) -> bool:
 		collapsing_tiles += (node as CollapsingPlatform).width_tiles
 	var found: Array[int] = [dogs, biggest, spike_tiles, collapsing_tiles, _phase_3_children(level, "Gates").size(),
 			_phase_3_children(level, "GateUnlockers").size()]
-	var expected: Array[int] = [_count("d"), _count("G"), _count("^[]"), _count("="), 3, 2]
+	var expected: Array[int] = [_count("d"), _count("G"), _count("^[]"), _count("="), 4, 3]
 	return report(found == expected, "Phase 3's contents: dogs, biggest, spike tiles, collapsing tiles, gates, unlockers %s, the map says %s"
 			% [found, expected])
 
@@ -104,35 +105,51 @@ func _each_gate_has_its_opener(level: Node) -> bool:
 	var gate_1: Gate = level.get_node("Gates/P3Gate1") as Gate
 	var gate_2: Gate = level.get_node("Gates/P3Gate2") as Gate
 	var gate_3: Gate = level.get_node("Gates/P3Gate3") as Gate
+	var gate_4: Gate = level.get_node("Gates/P3Gate4") as Gate
 	var unlocker_1: GateUnlocker = level.get_node("GateUnlockers/P3Unlocker1") as GateUnlocker
 	var unlocker_2: GateUnlocker = level.get_node("GateUnlockers/P3Unlocker2") as GateUnlocker
+	var unlocker_3: GateUnlocker = level.get_node("GateUnlockers/P3Unlocker3") as GateUnlocker
 	var biggest: BiggestDemon = level.get_node("Dogs/P3BiggestDog") as BiggestDemon
-	var ok: bool = unlocker_1.gates == [gate_2] and unlocker_2.gates == [gate_1] and biggest.opens == [gate_3]
-	return report(ok, "Openers: unlocker 1 opens %s, unlocker 2 opens %s, the biggest dog opens %s"
-			% [unlocker_1.gates, unlocker_2.gates, biggest.opens])
+	var ok: bool = unlocker_1.gates == [gate_2] and unlocker_2.gates == [gate_1] and unlocker_3.gates == [gate_4] \
+			and biggest.opens == [gate_3]
+	return report(ok, "Openers: unlocker 1 opens %s, unlocker 2 opens %s, unlocker 3 opens %s, the biggest dog opens %s"
+			% [unlocker_1.gates, unlocker_2.gates, unlocker_3.gates, biggest.opens])
 
 
-## Floods the air from phase 3's S with its three gates shut, then from past gate 2, then from past gate 1.
+## Floods the air from phase 3's S with its four gates shut, then from past gate 2, then from past gate 1.
 func _phase_3s_gates_cannot_be_skipped(level: Node, tiles: TileMapLayer) -> bool:
 	var gates: Array[Gate] = []
 	var shut: Dictionary[Vector2i, bool] = {}
-	for digit: String in "123":
+	for digit: String in "1234":
 		var gate: Gate = level.get_node("Gates/P3Gate%s" % digit) as Gate
 		gates.append(gate)
 		for cell: Vector2i in _cells_of_gate(tiles, gate):
 			shut[cell] = true
 	var unlocker_1: Vector2i = _cells("u")[0]
 	var unlocker_2: Vector2i = _cells("v")[0]
+	var unlocker_3: Vector2i = _cells("w")[0]
 	var finish_cell: Vector2i = _cells("F")[0]
 	var from_s: Dictionary[Vector2i, bool] = _flood(tiles, shut, _cells("P")[0])
 	var past_2: Dictionary[Vector2i, bool] = _flood(tiles, shut, _under(tiles, gates[1]))
 	var past_1: Dictionary[Vector2i, bool] = _flood(tiles, shut, _under(tiles, gates[0]))
 	var ok: bool = (from_s.has(unlocker_1) and _touches_above(from_s, tiles, gates[1]) and not from_s.has(unlocker_2)
 			and not from_s.has(finish_cell) and past_2.has(unlocker_2) and _touches_above(past_2, tiles, gates[0])
-			and not past_2.has(finish_cell) and past_1.has(finish_cell) and past_1.has(_cells("G")[0]))
-	return report(ok, "Order: from S unlocker 1 %s, gate 2 %s, unlocker 2 %s, F %s; past gate 2 unlocker 2 %s, gate 1 %s, F %s; past gate 1 F %s"
+			and not past_2.has(finish_cell) and past_1.has(_cells("G")[0]) and past_1.has(unlocker_3)
+			and _touches_beside(past_1, tiles, gates[3]) and not past_1.has(finish_cell))
+	return report(ok, ("Order: from S unlocker 1 %s, gate 2 %s, unlocker 2 %s, F %s; past gate 2 unlocker 2 %s, gate 1 %s, "
+			+ "F %s; past gate 1 the biggest dog %s, unlocker 3 %s, gate 4 %s, F %s (false)")
 			% [from_s.has(unlocker_1), _touches_above(from_s, tiles, gates[1]), from_s.has(unlocker_2), from_s.has(finish_cell),
-			past_2.has(unlocker_2), _touches_above(past_2, tiles, gates[0]), past_2.has(finish_cell), past_1.has(finish_cell)])
+			past_2.has(unlocker_2), _touches_above(past_2, tiles, gates[0]), past_2.has(finish_cell),
+			past_1.has(_cells("G")[0]), past_1.has(unlocker_3), _touches_beside(past_1, tiles, gates[3]),
+			past_1.has(finish_cell)])
+
+
+## True when air holds a tile beside one of gate's tiles, left or right, as a gate that slides up has.
+func _touches_beside(air: Dictionary[Vector2i, bool], tiles: TileMapLayer, gate: Gate) -> bool:
+	for cell: Vector2i in _cells_of_gate(tiles, gate):
+		if air.has(cell + Vector2i.LEFT) or air.has(cell + Vector2i.RIGHT):
+			return true
+	return false
 
 
 ## The tile right under a trapdoor's middle.

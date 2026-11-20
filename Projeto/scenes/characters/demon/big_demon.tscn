@@ -9,8 +9,11 @@ size = Vector2(140, 70)
 [sub_resource type="RectangleShape2D" id="RectangleShape2D_hit"]
 size = Vector2(200, 70)
 
+[sub_resource type="RectangleShape2D" id="RectangleShape2D_back"]
+size = Vector2(140, 60)
+
 [node name="BigDemon" instance=ExtResource("1_demon")]
-editor_description = "The regular dog a quarter bigger: body, hit box, art (with its stride and how deep it sinks) and the checks at its feet, with its art drawn darker so it reads apart at a glance (the Sprite's Self Modulate; its Modulate is the Placeholder's tint, set on every frame). Its stats are the regular dog's but for the damage of each attack."
+editor_description = "The regular dog a quarter bigger: body, hit box, art (with its stride and how deep it sinks) and the checks at its feet, with its art in a pale green tone of its own at about the regular dog's value, so it reads apart at a glance by its colour and size and never as further away, as darker art does in the cave, nor as a dog warning of an attack, whose tints are yellow (the Sprite's Self Modulate; its Modulate is the Placeholder's tint, set on every frame). Its stats are the regular dog's but for the damage of each attack."
 stats = ExtResource("2_stats")
 
 [node name="CollisionShape2D" parent="." index="0"]
@@ -22,11 +25,12 @@ color = Color(0, 0, 0, 1)
 polygon = PackedVector2Array(-70, -70, 70, -70, 70, 0, -70, 0)
 
 [node name="Sprite" parent="." index="2"]
-self_modulate = Color(0.6, 0.6, 0.6, 1)
+self_modulate = Color(0.8, 1, 0.85, 1)
 scale = Vector2(0.625, 0.625)
 
 [node name="DemonAnimation" parent="." index="3"]
 stride_length = 325.0
+walk_stride_length = 225.0
 
 [node name="Mark" parent="." index="4"]
 position = Vector2(0, -140)
@@ -59,3 +63,11 @@ shape = SubResource("RectangleShape2D_body")
 [node name="HitboxShape" parent="Hitbox"]
 position = Vector2(0, -35)
 shape = SubResource("RectangleShape2D_hit")
+
+[node name="BackBiteShape" parent="BackBite"]
+position = Vector2(0, -100)
+shape = SubResource("RectangleShape2D_back")
+
+[node name="BackBiteHitboxShape" parent="BackBite/BackBiteHitbox"]
+position = Vector2(0, -100)
+shape = SubResource("RectangleShape2D_back")

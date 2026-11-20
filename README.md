@@ -4,9 +4,10 @@ Aventura de plataformas 2D desenvolvida em Godot 4 para a unidade curricular de
 **Projeto de Jogo 2D** (Mestrado em Desenvolvimento de Jogos Digitais, Universidade de Aveiro).
 Tema: *Destroy Yourself*. Título por decidir.
 
-Um homem que se considera justo acorda no inferno, convencido de que está ali por engano, e tem de
-subir sete níveis, um por pecado capital, sem poder atacar. Cada demónio oferece-lhe um atalho, e o jogo regista o que ele
-aceita.
+Uma alma sem passado acorda no inferno apenas com o nome e tem de subir sete níveis, um por pecado
+capital, sem poder atacar. Cada demónio oferece-lhe um atalho, e o jogo regista o que o jogador
+aceita. A alma só diz o que o jogador escolhe, para que as escolhas sejam dele e não de uma
+personagem já definida.
 
 > **Estado:** a personagem jogável já anda, salta e tem controlo no ar, desliza nas paredes e salta
 > delas, e o salto tolera pedidos ligeiramente fora de tempo. O jogo abre num menu principal, que dá
@@ -27,35 +28,44 @@ cada sala) está em `docs/nivel1_desenho.md`, e os artigos que o fundamentam em 
 1. Instalar o Godot 4.7.x, versão standard (não a versão .NET).
 2. No Project Manager, importar `Projeto/project.godot`. O projeto Godot encontra-se na subpasta
    `Projeto/`, e não na raiz do repositório.
-3. Premir F5. O jogo abre no menu principal: New Game mostra a lista de níveis, Settings abre as opções
-   e Quit fecha o jogo. Uma cena aberta com F6 corre sozinha, sem menus nem pausa.
-4. A sala de teste tem um bloco elevado, com duas bordas, para experimentar os saltos a partir de
+3. Premir F5. O jogo abre no menu principal: New Game começa o nível 1, Settings abre as opções
+   e Quit fecha o jogo. Uma cena aberta com F6 corre sozinha, sem menus nem pausa. A sala de teste,
+   o blockout antigo e a sala de treino servem o desenvolvimento e ficam fora do menu: abrem-se com
+   F6 (ver "Estrutura", em "Para quem programa").
+4. A sala de teste (`scenes/levels/test_room/test_room.tscn`, com F6) tem um bloco elevado, com duas bordas, para experimentar os saltos a partir de
    uma borda, e uma chaminé de 120 px entre a parede esquerda e um pilar suspenso, por baixo do qual
    se entra a andar. A sala é maior do que o ecrã, e a câmara segue a personagem desde o início. Para
    a direita há uma corrida longa, uma escada de quatro degraus de 200 px, uma segunda chaminé de
    120 px junto à parede direita e, no topo desta, uma passagem que termina numa queda de 1500 px.
    Há dois demónios, um no chão da corrida longa e outro na passagem do topo (ver "Demónios").
-   Durante o jogo, a tecla F3 mostra e esconde o texto de depuração descrito em "Overlay de
-   depuração", e a tecla F4 retira 10 SP à personagem, como um golpe, para experimentar a
-   regeneração descrita em "SP".
-5. O nível 1 (New Game ▸ Level 1: Lust) é uma só cena, `scenes/levels/lust/level1.tscn`, com o tutorial e as
-   fases 1, 2 e 3, e é ele que inicia uma partida nova. No início das fases 2 e 3, a Asmodeu
+   Durante o jogo, a tecla F3 passa pelas páginas do texto de depuração descrito em "Overlay de
+   depuração" (números, luz e shaders, escondido), e a tecla F4 retira 10 SP à personagem, como um
+   golpe, para experimentar a regeneração descrita em "SP".
+5. O nível 1 é uma só cena, `scenes/levels/lust/level1.tscn`, com o tutorial e as fases 1, 2 e 3,
+   e é ele que inicia uma partida nova. O New Game abre-o com a iluminação aprovada no protótipo,
+   pela cena `scenes/levels/lust/level1_lit.tscn`, que herda o nível e lhe junta o `LightingRig`.
+   O código do protótipo entra sem reescrita. O `test_level1_lit.gd` verifica que o nível arranca
+   sem erros, com os mesmos nós do protótipo, que os efeitos ligados por defeito são os aprovados e
+   que o recomeço e o atalho da Asmodeu mantêm a luz. As duas cenas contam como o mesmo nível nas
+   estatísticas da partida (`id` = `level1`), para que passar de uma para a outra não reponha as
+   mortes nem volte a abrir as ofertas por mortes. No início das fases 2 e 3, a Asmodeu
    aparece e oferece o atalho; depois de várias mortes nessas fases, volta a oferecê-lo à entrada
    da zona onde ele morre (ver "Ofertas por mortes"). Na saída, depois da fase 3 ou pelo atalho,
    ela oferece o dom e despede-se, e o jogo volta ao menu principal. O blockout antigo, com uma cena
-   por fase, continua na lista como Level 1: Lust (old blockout), sem iniciar partida. Cada cena
-   também corre sozinha com F6, sem gravar nada.
+   por fase, continua na lista Levels do Main como Level 1: Lust (old blockout), fora do menu e sem
+   iniciar partida. Cada cena também corre sozinha com F6, sem gravar nada.
 6. Entrar numa fase grava o jogo, o que é indicado por "Saving..." no canto do ecrã, e o menu
-   principal passa a mostrar Continue, descrito em "Gravação do jogo".
-7. A sala de treino (New Game ▸ Gym (training room)) põe à prova, uma de cada vez, as mecânicas que já
+   principal passa a mostrar Continue e Load, descritos em "Gravação do jogo", com os três slots.
+7. A sala de treino (`scenes/levels/gym/gym.tscn`, com F6) põe à prova, uma de cada vez, as mecânicas que já
    existem: movimento, paredes e chaminés, câmara, zona fixa da câmara, cães, matilha e agarrão,
    crucifixo, SP e morte. Cada estação ocupa um ecrã e tem uma placa que explica o que experimentar.
    As teclas 1 a 9 levam ao início da estação com esse número, e o 0 à décima. Quem morre recomeça
    no início da estação onde estava. Ver "Sala de treino".
 Os controlos de teclado e rato escolhem-se em Settings ▸ Controls, entre três perfis. O comando é
-igual em todos. As teclas desenhadas no tutorial (`scenes/levels/key_prompt.gd`) mostram a tecla do
-perfil escolhido e, com um comando ligado, o botão do comando, com os nomes de um comando Xbox (A, B,
-RT, LS ← para o stick esquerdo); mudam no momento em que o comando se liga ou desliga.
+igual em todos. No nível 1, os avisos do tutorial aparecem numa faixa em baixo, ao centro, um de
+cada vez (ver "Avisos do tutorial"). Cada aviso mostra a tecla do perfil escolhido ou, se o último
+aparelho usado foi o comando, o ícone do botão de um comando Xbox (A, X, RT, stick esquerdo). Muda
+quando se usa o outro aparelho, quando se liga um comando e quando se desliga o último comando usado.
 
 | Ação | WASD (predefinido) | Setas e QWEASD | Comando |
 |---|---|---|---|
@@ -68,8 +78,9 @@ RT, LS ← para o stick esquerdo); mudam no momento em que o comando se liga ou 
 | Interagir | E | Ctrl | X / Square |
 
 O terceiro perfil, Custom, começa igual ao predefinido, e cada ação pode receber outra tecla ou
-botão do rato. O Esc e as teclas de depuração (F3, F4, F7, F8 e F9) estão reservados; o 1, o 2 e o
-3, que com o texto de depuração visível recomeçam numa fase, não estão. As teclas W,
+botão do rato. O Esc, as teclas de depuração (F1 a F4, F7, F8 e F9) e a tecla Windows, que ao ser
+largada abre o menu Iniciar e tira o foco ao jogo, estão reservados; o 1, o 2 e o
+3, que na página dos números do texto de depuração recomeçam numa fase, não estão. As teclas W,
 E, A, S e D do perfil das setas ficam livres para os upgrades.
 
 | Ação | Teclado | Comando |
@@ -77,9 +88,9 @@ E, A, S e D do perfil das setas ficam livres para os upgrades.
 | Pausar e retomar | Esc | Start |
 | Confirmar nos menus | Enter / Espaço | A / Cross |
 | Voltar nos menus | Esc | B / Circle |
-| Mostrar e esconder o texto de depuração | F3 | — |
+| Passar à página seguinte do texto de depuração (números, luz e shaders, escondido) | F3 | — |
 | Retirar 10 SP à personagem (só na versão de depuração) | F4 | — |
-| Recomeçar o nível na fase 1, 2 ou 3 (com o texto de depuração visível) | 1 / 2 / 3 | — |
+| Recomeçar o nível na fase 1, 2 ou 3 (na página dos números do texto de depuração) | 1 / 2 / 3 | — |
 
 ## Mecânicas implementadas
 
@@ -357,25 +368,32 @@ Em grupo, cada demónio decide sozinho, mas o conjunto lê-se como uma matilha:
 - enquanto a personagem pisca, depois de uma pancada, continuam a atacar à vez, e os ataques,
   mordidas e saltos, acertam e tiram SP. Com muitos demónios, ela perde o SP depressa e acaba
   agarrada: com cinco, três de um lado e dois do outro, fica com o SP baixo ao fim de 1,7 a 2,1 s,
-  contra 5,4 a 5,9 s com um só, em nove sorteios diferentes. O piscar já não a protege deles, e
+  contra 5,4 a 5,9 s com um só, em nove sorteios diferentes (no sorteio do `test_demon.gd`, 2,3 s
+  desde a mordida contínua nas costas, #271; os nove por medir de novo). O piscar já não a protege deles, e
   para escapar tem de fugir ou erguer o crucifixo. No segundo depois de ela se soltar de um
   agarrão, e com ela agarrada por todos os que a podem agarrar, nenhum ataca, e cada um espera no
   seu vaivém (Attacks Invulnerable Man, ADR 0055). Sem esse valor, como nos outros demónios,
   nenhum ataca enquanto ela pisca;
-- mordem quem lhes cai em cima. A personagem que aterra num cão, mesmo só na borda das costas,
-  leva a mordida dele (10 SP) e é atirada 300 px para longe e 100 px para cima, mais do que numa
-  mordida (150 px e 40 px). Assim nunca desliza de costas em costas por cima de uma matilha: com
-  cinco cães, fica 2 passos de física em cima deles, contra 19 antes, e aterra a 384 px do meio.
-  Cada aterragem morde uma vez, também quando cai entre dois cães, em cima dos dois, e cada
-  aterragem nova volta a morder, também no mesmo cão. A mordida entra em qualquer piscar, também
-  no segundo depois de a personagem se soltar de um agarrão. Com o SP baixo, agarra-a como
-  qualquer pancada, e ela cai através do cão até ao chão, onde se afunda, nunca em cima dele. Num
-  buraco fundo demais para o arremesso a tirar de lá, as mordidas acabam num agarrão: num buraco
-  de 240 px com um cão, 9 mordidas e o agarrão aos 3 s. Com o cão junto a uma parede que não lhe
-  deixa espaço ao lado dele, o arremesso vai para o lado aberto, e não contra a parede e de volta
-  para cima do cão. Só morde quem aterra no cão: encostar-se a ele, saltar ao lado dele ou
-  atravessá-lo, mesmo a saltar para fora dele, não (Bites Who Lands On It, ADR 0056). Sem esse
-  valor, como nos outros demónios, a personagem é só empurrada para fora de cima dele (ADR 0022).
+- mordem quem lhes está em cima. A personagem que aterra num cão, mesmo só na ponta das costas,
+  leva logo a mordida dele (10 SP) e um pequeno salto no sítio, 24 px para cima, e leva outra a
+  cada 0,4 s enquanto lá ficar, deste cão ou de outro (Back Bite Interval, #271). Nada a empurra
+  para fora: tem de sair a andar ou a saltar. Se ficar, o SP baixa e a mordida agarra-a como
+  qualquer pancada, e ela cai através do cão até ao chão, onde se afunda, nunca em cima dele. Em
+  cima de cinco cães seguidos, leva 8 mordidas em 3 s, sempre a 25 passos de física umas das
+  outras, sem sair do sítio. O intervalo nunca desce de 0,34 s, para que os clarões das mordidas
+  fiquem abaixo de três por segundo (WCAG 2.3.1). Antes, o empurrão fazia-a deslizar pelas costas
+  da matilha, e cada aterragem dava uma só mordida, que a atirava 300 px para longe. Com as
+  mordidas seguidas, esse arremesso levava-a de costas em costas numa matilha cerrada e, em campo
+  aberto, tirava-a do meio dos cães: a matilha do `test_demon.gd` deixava-a com o SP baixo ao fim
+  de 245 passos de física. Com o salto no sítio, são 138, contra 127 antes da mudança. A mordida entra em qualquer piscar, também no segundo depois de a
+  personagem se soltar de um agarrão. Entre dois cães, em cima dos dois, só um morde de cada vez.
+  A área que a procura cobre as costas todas: antes tinha os 48 px do demónio de pé para que foi
+  feita, e nas pontas das costas do cão ninguém era mordido. Só morde quem está em cima do cão:
+  encostar-se a ele, saltar ao lado dele ou atravessá-lo, mesmo a saltar para fora dele, não
+  (Bites Who Lands On It, ADR 0056). Um demónio pode ainda atirar a personagem ao longo do chão
+  (Back Bite Knockback Distance), e junto a uma parede que não lhe deixa espaço ao lado atira-a
+  para o lado aberto. Sem a mordida, como nos outros demónios, a personagem é só empurrada para
+  fora de cima dele (ADR 0022).
 
 Todos os saltos de um demónio caem com a mesma gravidade e com o mesmo ângulo, como um salto dado
 com menos força: um salto mais curto é mais baixo e mais rápido. O de 420 px sobe 32 px e dura
@@ -525,18 +543,79 @@ experimentadas e recusadas: a personagem cortada pelos espinhos (Cut Apart) e ra
 O cão
 grande (`scenes/characters/demon/big_demon.tscn`), na fase 2 do nível 1, é o demónio normal 1,25 vezes maior: o corpo
 (140 × 70 px), a caixa de ataque, a arte e as verificações aos pés. No ecrã, distingue-se do cão
-normal pelo tamanho e pela arte, escurecida a 60 % do brilho, para que a diferença se leia de
-relance e não dependa só do tamanho; os avisos de ataque clareiam-na na mesma proporção que no cão
-normal. Tem valores próprios (`scenes/characters/demon/big_demon_stats.tres`), iguais aos do cão normal
+normal pelo tamanho e pela arte, num tom verde pálido próprio (Self Modulate do `Sprite`, 0,8; 1;
+0,85), para que a diferença se leia de relance e não dependa só do tamanho; os avisos de ataque
+clareiam-na na mesma proporção que no cão normal. O tom tem 95 % do brilho do cão normal e fica longe
+do amarelo dos avisos, para que o cão grande parado não pareça um cão a avisar. Antes, a arte estava
+escurecida a 60 % do brilho, e na gruta, onde o mais escuro se desenha mais longe, o cão grande
+parecia estar atrás dos outros, entalado entre eles (#271). Tem valores próprios (`scenes/characters/demon/big_demon_stats.tres`), iguais aos do cão normal
 exceto no dano: 25 SP no salto e 12,5 SP na mordida, contra 20 e 10. A fase 2 fica assim mais
 exigente: com 100 SP e sem tempo para regenerar, o quarto salto do cão grande já agarra a personagem,
 em vez do quinto. O `test_big_dog.gd` falha se os valores dos dois cães diferirem em algo além do
 dano, para que nenhuma afinação do cão normal fique por passar para o grande. Falha também se a arte
-do cão grande deixar de ser mais escura, parado, a avisar ou atordoado. O maior cão
-(`scenes/characters/demon/biggest_demon.tscn`), no fim da fase 3 do nível 1, é o demónio normal oito
-vezes maior (corpo de 896 × 448 px, caixa de ataque, arte e verificações aos pés) com um anel de
-proximidade de 736 px de alcance à volta do meio do corpo: chegar perto dele abre os portões da sua
-lista Opens. Por agora não faz mais nada de diferente de um cão normal.
+do cão grande, parado, a avisar ou atordoado, perder o tom próprio (saturação abaixo de 0,15), se o
+tom ficar a menos de 60° do matiz de um aviso ou se descer abaixo de 90 % do brilho do cão normal.
+O maior cão
+(`scenes/characters/demon/biggest_demon.tscn`), no fim da fase 3 do nível 1, é o demónio normal 1,5
+vezes maior (corpo de 168 × 84 px, caixa de ataque, arte e verificações aos pés), um pouco maior do
+que o cão grande, com um anel de proximidade de 736 px de alcance à volta do meio do corpo: chegar
+perto dele abre os portões da sua lista Opens. É o cão que persegue a personagem até ao fim (#271):
+depois de a notar no ecrã, nunca desiste dela (Never Gives Up), esteja ela escondida, fora do ecrã ou
+longe; só o ataque depende de a ver. Não vai direito a ela: segue-lhe o rasto (Follows Trail), como
+um cão pelo cheiro. A classe pura `DemonTrail` guarda um passo cada vez que a personagem aterra num
+chão a outra altura, com o sítio onde ela deixou o chão anterior e o sítio onde aterrou, até 32
+passos. O cão percorre-os pela ordem: sobe com um salto calculado para aterrar onde ela aterrou, que
+o motor de física simula contra o nível antes de o cão saltar, e desce onde ela desceu. Na descida, a
+simulação ignora a personagem, para que o corpo dela no caminho não anule a descida (o cão é empurrado
+para o lado dela). Na subida conta com ela: um salto que toque nela falha. Se ela estiver parada onde
+o cão aterraria, ele aponta para o lado dela, do seu próprio lado, e só salta se houver chão debaixo
+do meio do corpo nesse sítio. Numa plataforma larga, sobe e aterra ao lado dela. Numa plataforma mais
+estreita do que os dois, venha o cão de baixo ou de lado, não salta e ladra-lhe de baixo, como num
+refúgio, até ela sair dali. O mesmo acontece num chão largo, se ela estiver parada perto da beira do
+lado do cão, sem espaço para o corpo dele ao lado: para chegar ao outro lado, o cão teria de lhe
+saltar por cima. Numa plataforma de sentido único, acaba por passar por baixo dela para o outro lado
+e sobe por aí. As costas de um cão não contam como chão do rasto. Se o cão cair ou for atirado para um chão por onde já passou, retoma o
+rasto a partir daí. Enquanto a vê ao seu alcance, persegue-a como os outros cães e esquece o rasto.
+Um passo que não consegue dar (mais alto do que o salto, um fosso largo demais para o saltar, ou uma
+descida sem chão onde aterrar) faz-lhe largar o rasto durante o Trail Retry Time (1,5 s): persegue-a
+como os outros cães, e ladra quando ela está fora do seu alcance, e depois tenta outra vez. Se ela
+aterrar noutro chão antes disso, o cão tenta logo, sem esperar o resto do tempo. A caminho
+de um salto, nunca sai do seu chão para um fosso mais largo do que o corpo. O salto dele vai até à
+altura do salto dela (Jump Height de 240 px;
+medido: sobe um degrau de 224 px e não um de 280 px, e sobe para uma plataforma de sentido único de
+144 px, mais estreita do que o corpo), e o Max Drop de 1536 px cobre a descida mais funda do caminho
+de fuga, a chaminé atrás do portão 3 (1488 px), com um tile de folga (medido: desce 700 px de uma
+beira em campo aberto). Com Drops Down Shafts, uma descida que bate numa parede escorrega por ela
+abaixo, como o corpo faz, e o cão desce poços mais estreitos do que o seu salto (medido: um poço de
+192 px de largura e 1488 px de fundo); só o maior cão o tem. O rasto tem três limites conhecidos:
+um salto da personagem por cima de um buraco mais largo do que o cão, sem mudar de altura, não fica
+no rasto; um salto dela de parede em parede não se repete; e dois chãos à mesma altura contam como
+um só. Custo medido (`tests/measures/measure_dog_trail.gd`, três execuções alternadas de 300
+frames): o frame inteiro leva em média 213 a 214 µs com o rasto ligado e 200 a 215 µs sem ele, uma
+diferença dentro do ruído da medição. A fuga pensada é esse caminho: a
+personagem encontra-o no salão do fundo, volta para oeste, sobe a coluna até ao portão 3, que o anel
+dele abriu, segue o corredor e cai pela chaminé no salão, com ele atrás. A saída fica fechada pelo
+portão 4, na passagem por baixo do pilar entre o posto do cão e o F, até a personagem usar o mecanismo
+a meio do corredor, entre o poço e a chaminé; saltar por cima do cão no salão não leva a lado nenhum.
+Para que ele a possa seguir, o fundo oeste do salão sobe em quatro degraus de 192, 192, 144 e 96 px
+(antes, dois de 384 e 240 px), as plataformas da coluna deixaram de cair e a chaminé passou de 3 para
+4 tiles de largura (192 px, para um corpo de 168 px). O `test_level1_escape_loop.gd` verifica estas
+medidas na cena; o `test_dog_trail.gd` verifica que o cão faz o caminho todo atrás dela, no nível 1,
+até voltar ao salão pela chaminé; o `test_dog_shafts.gd`, que desce o degrau, o poço e a chaminé do
+corredor; e o `test_level1_exit_gate.gd`, que não há outra passagem para o F. Antes era oito vezes
+maior (896 × 448 px) e tapava o salão. Os
+valores dos cães medem a distância à personagem a partir do meio do
+corpo, o que num corpo maior deixa os ataques curtos: a 1,5 vezes, encosta-se a ela a 108 px, e a
+mordida do cão normal só chega a 100. Tem por isso valores próprios
+(`scenes/characters/demon/biggest_demon_stats.tres`), os do cão normal com cada distância à
+personagem medida a partir da cara, 28 px mais longe do meio, arredondados à dezena: vê-a até 1130 px, perde-a a 1630 px,
+morde a 130 px, salta a 390 px e recua para 160 px; a variação da matilha (Pack Variation) desce para
+0,08, para que o recuo varie os mesmos 13 px que no cão normal. A área da mordida nas costas tem as
+medidas dele (168 × 72 px). O `test_biggest_dog.gd` falha se os valores dele diferirem dos do cão
+normal em algo além destas distâncias, da perseguição sem fim, do salto e da descida, ou se estas
+distâncias deixarem de ser as do cão medidas a partir da cara, a visão incluída; falha também se não
+notar, morder ou perseguir a personagem como descrito, se as costas dele não morderem ou se a atacar
+escondida atrás de uma parede.
 
 ### Linha de vista
 
@@ -787,6 +866,28 @@ deslocadas por parte de um tile, e o texto põe-nas nos tiles mais próximos. O 
 pela verificação em papel, que, para essas faixas, conta como pico cada tile em que tocam, e a personagem real
 percorre-o. Duas zonas de câmara passaram a mostrar menos por baixo, para não deixarem ver o nível de baixo entre as
 plataformas novas: a do salão desce 48 px em vez de 96, e a de cima do T não desce.
+
+Para a fuga ao maior cão (#271), o caminho de volta do salão do fundo até ao portão 3 passou a servir também ao cão,
+que tem de o seguir. A cena foi alterada com a opção `-- --reshape`, que agora troca também plataformas que desabam:
+68 tiles mudaram. As 8 plataformas que desabam da coluna, entre o salão e o portão 3, passaram a fixas (28 tiles), para
+que as que a personagem pisa ao subir continuem lá para o cão. A chaminé atrás do portão 3 passou de 3 para 4 tiles de
+largura (12 tiles), para caber o corpo do cão (168 px). Dois blocos de 4 tiles de largura (28 tiles) dividem o fundo
+oeste do salão em quatro degraus de 192, 192, 144 e 96 px, que a personagem alcança sempre sem parede e o cão salta;
+antes eram dois, de 384 e 240 px. O contorno de pedras (8 pedras trocadas por 19) e as rochas soltas (33 trocadas por
+71) foram refeitos à volta dos tiles alterados; uma pedra que o `--reshape` não reconheceu, e que ficou a flutuar
+dentro da chaminé alargada, foi retirada à mão. Uma das plataformas tinha sido deslocada 1 px no editor; o
+`--reshape` reconhece agora cada plataforma pelo tile em que está. O `test_level1_escape_loop.gd` verifica os
+degraus, as plataformas e a chaminé na cena. Para obrigar a este caminho, a passagem por baixo do pilar, entre o
+posto do cão e o F, ganhou o portão 4 (2 × 6 tiles, sobe para dentro do pilar), aberto pelo mecanismo 3, a meio do
+corredor entre o poço e a chaminé. O `--reshape` não acrescenta portões, por isso os dois nós foram acrescentados à
+mão na cena, e o mapa e o construtor passaram a ter o portão 4 e o mecanismo `w`. No topo da coluna, a plataforma
+de sentido único à altura do corredor ganhou um tile e passou a encostar à rocha, porque o vão de 1 tile entre as duas
+parava o cão maior (a perseguição de um cão pára onde o seu chão acaba), e o teto sobe um tile por cima dela, para a
+arte do cão não roçar na rocha (de 144 para 192 px de vão). A verificação das zonas de câmara
+que mostram o nível de baixo, no `test_level1.gd`, contava como rocha as plataformas de sentido único e o espaço por
+baixo delas como nível de baixo; conta-as agora como ar, porque o ecrã vê através delas e o espaço por baixo é a
+mesma sala. Deixou assim de apontar a zona da coluna, e baixou ou deixou de apontar cinco zonas das fases 1 e 2 pelo
+mesmo motivo.
 
 O caminho que este teste repete foi encontrado por uma verificação em papel, fora do repositório, que simula o
 movimento da personagem fotograma a fotograma. A primeira versão divergia do jogo: aplicava a gravidade no fotograma
@@ -1201,16 +1302,17 @@ Remote; os restantes valores são lidos sempre que são usados.
     ├── addons/        plugins de terceiros: o Dialogue Manager, que dá as falas
     ├── assets/        arte e som
     │   ├── audio/       som, por tipo: os efeitos sonoros em sfx/ e os ambientes em ambience/
-    │   ├── fonts/       tipos de letra: a Tinos, de reserva para a Times New Roman dos menus
-    │   └── sprites/     uma pasta por grupo: player/, demon_lust/, environment/, backgrounds/, ramps/ e menu/ (a arte dos menus)
+    │   ├── fonts/       tipos de letra: a Tinos, de reserva para a Times New Roman dos menus, e a Atkinson Hyperlegible Next e a Literata dos avisos do tutorial
+    │   ├── sprites/     uma pasta por grupo: player/, demon_lust/, environment/, backgrounds/, ramps/ e menu/ (a arte dos menus)
+    │   └── ui/          imagens da interface: os ícones dos botões do comando nos avisos (prompts/)
     ├── dialogue/      as falas, um ficheiro .dialogue por nível
     ├── scenes/        cenas, scripts e ficheiros de dados, por tipo e, dentro de cada tipo, por sistema
-    │   ├── autoload/    serviços globais: as opções do jogador (Settings), o registo moral (Moral), o progresso do jogo (GameState), as estatísticas da partida (RunStats), as tentações (Offers, em offers/, com o ritmo das ofertas por mortes), a gravação e os perfis de controlos
+    │   ├── autoload/    serviços globais: as opções do jogador (Settings), o registo moral (Moral), o progresso do jogo (GameState), as estatísticas da partida (RunStats), as tentações (Offers, em offers/, com o ritmo das ofertas por mortes), o último aparelho usado, teclado ou comando (LastDevice), a gravação e os perfis de controlos
     │   ├── characters/  a personagem (player/), o crucifixo (crucifix/), os demónios (demon/, com os estados em states/, e os que falam, Velvet e Asmodeu) e os componentes que mais de um sistema usa (components/)
     │   ├── levels/      uma pasta por nível: a sala de teste (test_room/), a sala de treino (gym/) e o nível 1 (lust/, com os construtores e os mapas em texto em builders/); na raiz, as peças e os scripts comuns e o fundo de que os níveis partem (background/)
     │   ├── objects/     peças com comportamento: portões (gates/), plataformas (platforms/) e armadilhas (traps/)
     │   ├── others/      câmara (camera/), atividade fora do ecrã (activity/, o ActivityTracker, que adormece o que está parado longe do ecrã), som ambiente (ambience/, as camadas de sons soltos, os fundos e as brasas que o vento leva), depuração (debug/), resposta aos impactos (feedback/), todos os shaders (shaders/) e conjuntos de tiles (tilesets/)
-    │   └── screens/     menus, ecrã das opções, o balão de diálogo e indicador de gravação
+    │   └── screens/     menus, ecrã das opções, o balão de diálogo, indicador de gravação e a barra de alma (soul_hud/)
     ├── tests/         testes automáticos (test_*.gd), que correm sem janela
     │   ├── launchers/ abrem o jogo num ponto escolhido, para ver à mão (por agora, o fim da fase 2)
     │   ├── measures/  medições, que imprimem números em vez de verificar resultados
@@ -1275,7 +1377,13 @@ sem erros num clone novo.
 
 Para um nível aparecer no New Game, acrescenta-se à lista Levels do Main, no Inspector do `main.tscn`
 (Add Element › New LevelEntry, com o título e a cena). A ordem da lista é a dos botões. Um elemento
-deixado vazio, ou sem cena, fica fora do menu, com um aviso no Output.
+deixado vazio, ou sem cena, fica fora do menu, com um aviso no Output. Um elemento com In Menu
+desligado também fica fora do menu, sem aviso, mas continua na lista, e voltar a ligá-lo devolve-lhe
+o botão. É o caso das salas feitas para o desenvolvimento: a sala de teste, o blockout antigo do
+nível 1 e a sala de treino. Assim, quem joga não as encontra, e o grupo continua a abri-las com F6.
+O `test_main_flow.gd` verifica que as três continuam na lista, fora do menu, e que o nível 1 está nele.
+Com um só nível no menu, como agora, o New Game começa-o logo, sem mostrar a lista; com dois ou
+mais, mostra a lista.
 
 O nó raiz de cada nível tem o script `scenes/levels/level.gd` (`Level`), com a personagem do nível no campo
 Player do Inspector. Quando a personagem morre, este script espera 0,7 s, para que a morte se veja,
@@ -1316,6 +1424,7 @@ godot --headless --fixed-fps 60 --path Projeto --script res://tests/test_wall_ju
 godot --headless --fixed-fps 60 --path Projeto --script res://tests/test_ledge_assist.gd
 godot --headless --fixed-fps 60 --path Projeto --script res://tests/test_jump_signals.gd
 godot --headless --fixed-fps 60 --path Projeto --script res://tests/test_debug_overlay.gd
+godot --headless --fixed-fps 60 --path Projeto --script res://tests/test_lighting_debug_page.gd
 godot --headless --fixed-fps 60 --path Projeto --script res://tests/test_demon_debug_view.gd
 godot --headless --fixed-fps 60 --path Projeto --script res://tests/test_game_camera.gd
 godot --headless --fixed-fps 60 --path Projeto --script res://tests/test_camera_window.gd
@@ -1353,6 +1462,7 @@ godot --headless --fixed-fps 60 --path Projeto --script res://tests/test_big_dog
 godot --headless --fixed-fps 60 --path Projeto --script res://tests/test_biggest_dog.gd
 godot --headless --fixed-fps 60 --path Projeto --script res://tests/test_level1_phase3.gd
 godot --headless --fixed-fps 60 --path Projeto --script res://tests/test_level1_phase3_route.gd
+godot --headless --fixed-fps 60 --path Projeto --script res://tests/test_level1_escape_loop.gd
 godot --headless --fixed-fps 60 --path Projeto --script res://tests/test_settings.gd
 godot --headless --fixed-fps 60 --path Projeto --script res://tests/test_options.gd
 godot --headless --fixed-fps 60 --path Projeto --script res://tests/test_crucifix.gd
@@ -1383,6 +1493,9 @@ godot --headless --fixed-fps 60 --path Projeto --script res://tests/test_grab_es
 godot --headless --fixed-fps 60 --path Projeto --script res://tests/test_crucifix_block.gd
 godot --headless --fixed-fps 60 --path Projeto --script res://tests/test_sinking_drawing.gd
 godot --headless --fixed-fps 60 --path Projeto --script res://tests/test_level_restart.gd
+godot --headless --fixed-fps 60 --path Projeto --script res://tests/test_save_game.gd
+godot --headless --fixed-fps 60 --path Projeto --script res://tests/test_save_slots.gd
+godot --headless --fixed-fps 60 --path Projeto --script res://tests/test_save_slots_menu.gd
 godot --headless --fixed-fps 60 --path Projeto --script res://tests/test_moral_record.gd
 godot --headless --fixed-fps 60 --path Projeto --script res://tests/test_run_record.gd
 godot --headless --fixed-fps 60 --path Projeto --script res://tests/test_deaths_log.gd
@@ -1402,6 +1515,7 @@ godot --headless --fixed-fps 60 --path Projeto --script res://tests/test_activit
 godot --headless --fixed-fps 60 --path Projeto --script res://tests/test_demon_activity.gd
 godot --headless --fixed-fps 60 --path Projeto --script res://tests/test_parallax_activity.gd
 godot --headless --fixed-fps 60 --path Projeto --script res://tests/test_resources_load.gd
+godot --headless --fixed-fps 60 --path Projeto --script res://tests/test_soul_hud.gd
 ```
 
 O `test_input_profiles.gd` escreve seis ERROR, das tentativas de atribuir teclas inválidas, todos
@@ -1409,7 +1523,11 @@ esperados. O `test_soul_points.gd` escreve quatro ERROR, das quantidades de dano
 inválidas, também esperados. O `test_moral_record.gd` escreve seis WARNING, de uma tentação
 desconhecida (aceite e consultada), de um tom desconhecido e de três tempos de escuta inválidos,
 igualmente esperados. O `test_run_record.gd` escreve três WARNING, de mortes sem nível, sem zona e
-na fase 0, também esperados.
+na fase 0, também esperados. O `test_save_game.gd`, o `test_save_slots.gd` e o
+`test_save_slots_menu.gd` criam de propósito gravações danificadas, de uma versão futura e com
+campos do tipo errado: cada leitura de um ficheiro danificado dá um ERROR de leitura do Godot, e
+cada leitura de uma gravação que o jogo não pode usar dá um WARNING. O `test_save_slots.gd`
+escreve ainda dois ERROR, de pedir os slots 0 e 4, que não existem.
 
 Todos os scripts de testes e de medidas estendem `tests/support/base_test.gd`, diretamente ou
 através de outro ficheiro de suporte. Antes de o autoload `Settings` estar pronto, esse ficheiro
@@ -1428,7 +1546,9 @@ Os testes dos menus estendem `tests/support/menu_test.gd`, que cria a cena princ
 teclas, botões do comando e botões do rato como o jogador, e reúne o acesso aos nós dos menus, ao
 foco e à personagem do nível. Usam um ficheiro de opções próprio e terminam com duas verificações:
 o botão Quit não foi carregado e o ficheiro de opções do jogador ficou igual (texto e data de
-gravação). O caso do ficheiro estragado do `test_settings.gd` escreve um ERROR e um WARNING, ambos
+gravação). Um teste que termine antes dessas verificações, por exemplo porque o jogo fechou por si
+em vez de usar o fecho substituto do teste, sai com código 1. Sem esta guarda, o Godot sairia com
+código 0 e o teste passaria sem ter verificado nada. O caso do ficheiro estragado do `test_settings.gd` escreve um ERROR e um WARNING, ambos
 esperados.
 
 O `measure_movement.gd` não verifica resultados: imprime as medidas da secção "Medidas para o
@@ -1547,7 +1667,7 @@ A personagem não lê o teclado diretamente. Um nó filho, `PlayerInput` (`scene
 o único que lê as ações da personagem no Input Map, e responde em cada passo de física a cinco
 perguntas: a direção da corrida e, para os botões de saltar e do crucifixo, se acabaram de ser
 premidos e se continuam premidos. A personagem recebe
-este nó pelo Inspector, no campo Input. Uma inteligência artificial, uma cena animada ou um teste
+este nó pelo Inspector, no campo Input. Um controlador automático, uma cena animada ou um teste
 controlam a personagem colocando nesse campo outro nó que estenda `PlayerInput`, sem alterar o
 movimento. É o primeiro passo do padrão Component descrito por Nystrom (2014, capítulo
 "Component"), que separa a entrada do resto do objeto. Quando existirem, a pausa, o diálogo e a
@@ -1704,11 +1824,12 @@ teclado, e não pela letra impressa, pelo que o WASD se mantém num teclado AZER
 | `interact` | E | X / Square |
 | `crucifix` | Shift | RT / R2 (eixo 5) |
 | `pause` | Escape | Start |
+| `debug_god_mode` / `debug_noclip` | F1 / F2 | — |
 | `toggle_debug_overlay` | F3 | — |
 | `debug_damage` | F4 | — |
 | `debug_accept_offer` / `debug_refuse_offer` | F7 / F8 | — |
 | `debug_reset_run` | F9 | — |
-| `debug_phase_1` / `debug_phase_2` / `debug_phase_3` | 1 / 2 / 3 (só com o overlay visível) | — |
+| `debug_phase_1` / `debug_phase_2` / `debug_phase_3` | 1 / 2 / 3 (só na página dos números do overlay) | — |
 | `ui_accept` | Enter, Espaço | A / Cross |
 | `ui_cancel` | Escape | B / Circle |
 
@@ -1793,7 +1914,7 @@ indústria:
 
 - **Componente** (Nystrom, 2014, capítulo "Component"). O crucifixo é uma cena própria
   (`scenes/characters/crucifix/crucifix.tscn`), filha da personagem. Lê o botão através do mesmo `PlayerInput` da
-  personagem, pelo que uma inteligência artificial, uma cena animada ou um teste também o controlam.
+  personagem, pelo que um controlador automático, uma cena animada ou um teste também o controlam.
 - **Modificadores de movimento.** A personagem não sabe que o crucifixo existe. Aceita
   modificadores (`MovementModifier`), cada um com uma fração da velocidade, uma fração da altura do
   salto e a indicação de que impede o salto, guardados pelo nome de quem os colocou. As frações
@@ -2112,13 +2233,16 @@ tem de ser chão plano. A caixa de colisão cobre o tronco (66 × 54 px), sem a 
   (ADR 0056). A mordida nas costas usa as mesmas peças. O `DemonBackBite`
   (`scenes/characters/demon/demon_back_bite.gd`) procura o corpo da personagem num espaço com a largura do cão e
   48 px de altura, por cima das costas, alto o bastante para a encontrar antes de ela aterrar, mesmo
-  a cair à velocidade máxima. Liga a sua `Hitbox` em cada passo em que ela aterra no cão, segundo a
-  colisão do último movimento dela, e por isso nunca morde quem só lhe toca de lado ou por baixo,
-  nem quem o atravessa. Se ela entrar nas costas a andar, de um chão à altura delas, é empurrada
-  para fora antes de ser encontrada: não é mordida, mas também não fica em cima. A primeira mordida
-  a acertar arruma as que outros cães tenham ligado para ela, e nenhuma outra se liga até ela sair
-  do chão. Assim, entre dois cães, só um morde, também quando ela, agarrada, cai através de um para
-  as costas do outro. Ao ligar a mordida, vê se ela cabe ao lado do cão, do lado para onde seria
+  a cair à velocidade máxima. Liga a sua `Hitbox` em cada passo em que ela está em cima do cão,
+  segundo a colisão do último movimento dela, desde que tenha passado Back Bite Interval desde a
+  última mordida nas costas que a acertou, de qualquer cão (#271). Guarda esse passo num registo
+  partilhado por todos os cães, pelo identificador da personagem, e por isso dois cães nunca a
+  mordem mais depressa do que um. Nunca morde quem só lhe toca de lado ou por baixo, nem quem o
+  atravessa. A primeira mordida a acertar arruma as que outros cães tenham ligado para ela, e assim,
+  entre dois cães, só um morde de cada vez. Enquanto a mordida está ligada, o cão está no grupo
+  `can_be_stood_on` do `KnockOff`, e a personagem não é empurrada para fora dele. Só a personagem
+  pede ao `KnockOff` que poupe esse grupo; os demónios só verificam a camada da personagem, que
+  nunca está no grupo. Ao ligar a mordida, vê se ela cabe ao lado do cão, do lado para onde seria
   atirada; se uma parede não deixar, a `Hitbox` atira-a para o outro lado (`knockback_side`). A
   `Hitbox` só entra na física enquanto está ligada, e num demónio sem a mordida o `DemonBackBite`
   fica todo fora da física. Um cão que ainda não a tinha visto e a agarra pelas costas fica com ela
@@ -2294,6 +2418,29 @@ tem de ser chão plano. A caixa de colisão cobre o tronco (66 × 54 px), sem a 
   sobreposições de passagem (cruzamentos ao recuar) ou sem espaço, como num buraco de um corpo. Na
   caça, com a personagem à vista, um demónio em movimento passa pelos outros, e só um encostado a
   ela o trava (ADR 0053); parado, afasta-se como os outros, e no vaivém vira junto de um parado.
+  Com corpos de tamanhos diferentes, como o cão normal e o cão grande, cada distância conta a metade
+  de cada um dos dois corpos, para que o espaço entre eles seja sempre Pack Spacing (#271). Antes,
+  cada demónio tomava o vizinho por um do seu tamanho: o cão normal não reconhecia o grande como
+  encostado à personagem e atravessava-o, e o grande parava a 38 px de um normal em vez de 24
+  (`test_mixed_pack.gd`).
+- **Sem tremer num aperto (#271).** Com três cães entre uma parede e a personagem encurralada contra
+  outra, não há posição que cumpra a separação, a distância de recuo e a vez de atacar ao mesmo
+  tempo, e as regras alternavam a cada passo: cada cão voltava para trás 48 a 59 vezes em 10 s,
+  algumas de um passo para o seguinte. Agora, enquanto a personagem fica do mesmo lado, um demónio
+  não volta para trás antes de Min Turn Time (0,15 s, nos `DemonStats`) desde a última volta, e
+  fica parado até lá. A investida, o arremesso, o salto, a descida, o recuo depois de uma mordida e
+  a passagem da personagem para o outro lado continuam a virá-lo de imediato. O valor fica acima
+  das voltas do tremor (1 a 6 passos) e abaixo do troço mais curto do vaivém (0,22 s: 60 px à
+  velocidade mais alta que a variação dá à ronda), por isso o vaivém nunca espera. Com 0,25 s, a
+  matilha mordia 10 % menos. No mesmo caso, cada cão volta agora 39 a 43 vezes em 10 s, e a volta
+  mais rápida passou a 9 passos (`test_wedged_dogs.gd`). O cão deixa de tremer, mas o conflito
+  continua: no aperto, ainda volta cerca de 4 vezes por segundo e fica sobreposto a outro.
+  Resolver o conflito entre as regras, uma a uma, mexia nos ADR 0046 e 0052 a 0055 e ficou de fora
+  (ADR 0070). Custo das duas mudanças, medido pelo `measure_demon.gd` (três execuções de cada
+  versão, alternadas, no mesmo computador): com 50 demónios no ecrã, +9 a +16 % por passo (a
+  perseguir, 3291 para 3761 µs; em ronda, 1849 para 2150 µs); com 10, +2 a +11 %; com 50 parados
+  fora do ecrã, nada (996 para 999 µs). Cerca de um terço vem da espera nas voltas e o resto da
+  conta com os dois corpos em cada par de demónios. Entre execuções, o mesmo caso varia até 10 %.
 - **Ninguém fica em cima de ninguém (ADR 0047).** O componente `KnockOff`
   (`scenes/characters/components/knock_off.gd`) diz para que lado empurrar quem está de pé em cima da personagem ou
   de um demónio; quem o usa põe a velocidade (600 px/s nos dois). Antes, o demónio não tinha
@@ -2312,7 +2459,9 @@ tem de ser chão plano. A caixa de colisão cobre o tronco (66 × 54 px), sem a 
   mordida (ADR 0056). Quem está agarrado também não é empurrado: atravessa logo o corpo em que está
   de pé, e o seguinte, se estiver em cima de dois, para que nenhum agarrão a segure em cima de um
   cão; cai até ao chão e afunda-se lá (ADR 0056). Por isso o `KnockOff` atravessa vários corpos ao
-  mesmo tempo, cada um até as caixas se afastarem.
+  mesmo tempo, cada um até as caixas se afastarem. A personagem também não é empurrada de cima de
+  um cão que morde quem lhe está em cima: leva uma mordida a cada 0,4 s até sair a andar ou a
+  saltar, e já não desliza pelas costas da matilha (#271).
 
 Antes de decidir se a perseguição precisava de ser otimizada, fixaram-se dois limites para 50
 demónios a perseguir ao mesmo tempo, muitos mais do que um ecrã terá: um limite para a média por
@@ -2531,6 +2680,11 @@ a mordida não paga nada. A primeira versão, com duas áreas em todos os demón
 também a esses. Ficou de lado procurar a personagem pela área de visão que o cão já tem: poupava a
 área, mas obrigava a uma visão maior do que o cão e a refazer os testes.
 
+A mordida contínua nas costas (#271; 2026-11-19) não mudou o custo de forma mensurável. Em três
+execuções alternadas com a versão anterior, as medianas das dez partes da medida variaram entre
+−11 % e +26 %, e as execuções da mesma versão já diferem até 34 % entre si. O custo novo só existe
+com a personagem por cima de um cão, e a medida nunca a põe lá.
+
 O `test_demon.gd` verifica, com a personagem e o crucifixo verdadeiros, a visão (a distância e as
 paredes), a perseguição e a desistência, a paragem nas bordas e nos degraus, o aviso e o seu tempo,
 a altura, a distância e a direção do salto, também num salto mais rápido e num de metade da
@@ -2621,9 +2775,13 @@ descolar e aterrar. O `test_demon_path.gd` (6 casos) verifica a pilha do caminho
 `test_stacked_bodies.gd` (10 casos) verifica que nem a personagem nem um demónio ficam um em cima
 do outro: saem para o lado, nunca para cima, também num buraco de um corpo, num canto, durante um
 agarrão e com o demónio a andar, e com os corpos sobrepostos nenhum ataque acerta. O
-`test_dog_back_bite.gd` (21 casos) verifica a mordida nas costas dos cães: uma por aterragem, com o
-SP e o arremesso certos, também entre dois cães e na borda das costas, até 1 px, de seis alturas, e
-outra a cada aterragem no mesmo cão; a matilha que deixa de a levar por cima; nada de lado, a
+`test_dog_back_bite.gd` (23 casos) verifica a mordida nas costas dos cães: logo ao aterrar, com o
+SP certo, e outra a cada Back Bite Interval enquanto ela fica, nem antes nem depois, também de outro
+cão e sem empurrão; com um intervalo abaixo de 0,34 s nos Stats, as mordidas vêm a cada 0,34 s,
+nunca mais de três por segundo; subir para as costas a andar, de um chão à altura delas, também
+morde; a matilha que não a leva por cima, nem pelo empurrão nem pela mordida; as duas pontas
+das costas, até 1 px; com um arremesso ao longo do chão, o arremesso certo, também entre dois cães
+e na borda das costas, de seis alturas, e outra mordida a cada aterragem no mesmo cão; nada de lado, a
 atravessar nem numa plataforma logo acima de um cão; o agarrão com o SP baixo, que a faz cair
 através do cão, também em cima de dois cães, onde só um a morde e a segura, e a fuga; o buraco
 fundo, onde as mordidas acabam num agarrão; o cão junto a uma parede, que a atira para o lado
@@ -2641,8 +2799,24 @@ tolerâncias usadas, em passos de física, e a altura atingida. Um salto complet
 240 px, o mesmo valor que os testes medem. Com a câmara ligada, mostra ainda a zona de câmara em que
 a personagem está e as distâncias atuais da antecipação e do olhar para baixo, e quantos membros do
 `ActivityTracker` estão acordados (ver "Atividade fora do ecrã"). Mostra ainda os SP,
-a velocidade atual da regeneração e se os SP estão baixos ou acabaram. A tecla F3 mostra e esconde
-o texto.
+a velocidade atual da regeneração e se os SP estão baixos ou acabaram.
+
+O texto tem páginas, e a tecla F3 passa à seguinte: escondido, números (tudo o que se descreve
+nesta secção), luz e shaders, e de novo escondido. Por cima de cada página aparece o nome dela e o
+da seguinte. Escondido, o overlay não gasta nada por frame. O nível 1 começa com o texto escondido
+e a sala de teste com os números; a página escolhida com o F3 mantém-se quando o mesmo nível
+recomeça, depois de uma morte ou de um salto de fase.
+
+A página da luz mostra os valores do protótipo de iluminação do nível 1 e é a única que lhe passa
+as teclas F1 a F12, com e sem Ctrl: fora dela, essas teclas não mudam a luz, e numa exportação de
+release não chegam ao protótipo. Antes das páginas, o protótipo lia as teclas sozinho e antes do
+overlay, pelo que ficava com o F3, o F4 e o F7 a F9, e as teclas de depuração correspondentes não
+funcionavam no nível com a luz. Agora, na página da luz, o protótipo continua a ter prioridade
+sobre essas teclas, menos o F3 sozinho, que muda de página; a sombra pintada passou do F3 para o
+Alt+F3. Nas outras páginas, as teclas de depuração funcionam também nesse nível. As teclas da luz
+chegam ao protótipo mesmo com uma fala no ecrã, porque o overlay as recebe antes do balão. O
+protótipo deixou de escrever texto próprio no ecrã. Num nível sem o protótipo, a página da luz diz
+que não há iluminação para afinar. Teste: `test_lighting_debug_page.gd`, com o protótipo verdadeiro.
 
 A tecla F4 retira à personagem o valor Debug Damage do overlay (10 SP, no Inspector), como um golpe,
 para experimentar a regeneração e os avisos antes de haver demónios. Cada toque conta uma vez,
@@ -2659,7 +2833,34 @@ crucifixo. O overlay mostra a oferta em causa, se já foi aceite, as recusas, o 
 homem ainda tem o crucifixo. As três teclas estão reservadas nos perfis de controlos, pelas mesmas
 razões do F4.
 
-Com o overlay visível (F3), as teclas 1, 2 e 3 recomeçam o nível no início dessa fase, atrás do
+As teclas F1 e F2 ligam e desligam duas ajudas de depuração, para atravessar e experimentar os
+níveis sem morrer. Com o god mode (F1), os golpes dos demónios acontecem como no jogo (o piscar, o
+tremor, o empurrão e o agarrão), mas não retiram SP; nada mata a personagem, e um agarrão que
+esgote o tempo larga-a em vez de a matar. Com o noclip (F2), a personagem voa com as teclas de
+movimento, também para cima e para baixo, a 1200 px/s (Noclip Speed, no Inspector do overlay), sem
+gravidade e através das paredes e do chão. Enquanto voa, os golpes não têm efeito, nada a mata e
+um agarrão em curso larga-a; os contactos continuam, no entanto, a ser detetados, pelo que o
+tremor do ecrã e a vibração do comando de um golpe se mantêm. Ao desligar, cai do sítio onde está.
+As duas funcionam com o texto escondido, com o jogo em pausa e com uma fala no ecrã, e uma etiqueta
+no canto superior direito indica as que estão ligadas. Na página da luz, o F1 e o F2 são do
+protótipo de iluminação, como as outras teclas que ele usa, e não mexem nas ajudas. Ficam ligadas depois de uma morte, de um
+recomeço ou de um salto de fase, até se voltar a carregar na tecla. Cada recomeço cria uma cópia
+nova do nível, com um overlay e uma personagem novos, pelo que o estado das ajudas fica guardado
+fora deles, em variáveis estáticas do overlay, e cada overlay novo entrega-o à sua personagem. Na
+personagem, cada ajuda é uma única variável. O god mode é lido apenas nos pontos por onde entram o
+dano e a morte: a perda de SP, a morte e o fim do tempo do agarrão. O noclip é lido nesses mesmos
+pontos, na reação aos golpes e no movimento. O resto do jogo não as conhece. O F4 continua a
+retirar SP com o god mode ligado, para experimentar a regeneração. As duas teclas estão reservadas
+nos perfis de controlos, pelas mesmas razões do F4. Teste: `test_debug_cheats.gd`.
+
+Há três limitações conhecidas, aceites por se tratar de uma ferramenta de depuração. Os espinhos
+detetam a personagem quando ela entra neles. Por isso, quem desliga o noclip ou o god mode já
+dentro de uma faixa de espinhos só morre quando sair e voltar a entrar. Quem desliga o noclip
+dentro de uma parede ou do chão fica entregue à separação de corpos do motor. Os sons e o tremor
+da aterragem medem a queda a partir do ponto mais alto do voo, pelo que desligar o noclip junto ao
+chão, depois de voar alto, soa como uma queda longa.
+
+Na página dos números do overlay (F3), as teclas 1, 2 e 3 recomeçam o nível no início dessa fase, atrás do
 mesmo escurecer de uma morte. No momento do recomeço, o nível (`Level.jump_to_phase`) percorre os
 seus pontos de gravação pela ordem da cena, que é a do percurso, marca no GameState os que ficam
 para trás e esquece os seguintes, pelo que a cópia nova põe a personagem no ponto dessa fase, como
@@ -2669,7 +2870,7 @@ de quem jogou até lá. Numa partida, o Main grava esse estado por cima do save,
 volta sempre ao save. Não fazem nada uma fase que o nível não tenha, um nível de uma só fase (como
 a sala de treino, onde os números escolhem as estações), o jogo em pausa e a troca de fase. Uma
 segunda tecla durante o escurecer não o recomeça e fica a última fase pedida. Estas teclas não
-estão reservadas: com o overlay escondido são do jogador, e uma tecla que o perfil Custom dê a
+estão reservadas: fora da página dos números são do jogador, e uma tecla que o perfil Custom dê a
 uma ação continua a ser só dessa ação, porque a personagem lê as ações enquanto estão premidas.
 Um teste verifica que, em cada nível do menu, os pontos que começam uma fase estão por ordem na
 cena. Teste: `test_debug_phase_jump.gd`.
@@ -2688,9 +2889,13 @@ Serve para afinar o ritmo das ofertas por mortes a jogar, sem ter de contar as m
 O overlay é uma cena própria, `scenes/others/debug/debug_overlay.tscn`, num `CanvasLayer`, pelo que não se
 desloca com a câmara. Recebe a personagem pelo Inspector e lê-a, ou fere-a com o F4, sem que ela
 dependa dele, pelo que a personagem é testada e exportada sem o overlay. Continua ativo com o jogo
-em pausa e, nas exportações de release, remove-se a si próprio, e o F4 com ele. O
-`test_debug_overlay.gd` verifica o comportamento nas versões de depuração; a remoção na versão de
-release só poderá ser confirmada na primeira exportação.
+em pausa e, nas exportações de release, remove-se a si próprio, e as teclas de depuração com ele. O
+`test_debug_overlay.gd` verifica o comportamento nas versões de depuração. O overlay pergunta ao
+Godot se a versão é de depuração (`OS.is_debug_build()`) num método próprio, que o
+`test_debug_cheats.gd` substitui para responder como uma versão de release. O teste verifica que,
+nesse caso, o overlay se remove antes de ler qualquer tecla e de entregar as ajudas à personagem,
+pelo que o F1, o F2 e o F4 não fazem nada, mesmo com as ajudas ligadas antes. Só a primeira
+exportação de release confirmará que o `OS.is_debug_build()` devolve falso.
 
 Na sala de teste, uma segunda vista (`scenes/others/debug/demon_debug_view.gd`) desenha sobre cada demónio o
 estado em que está e há quanto tempo (em frames de física, que param na pausa, como os tempos dos
@@ -2698,7 +2903,7 @@ estados), e uma seta para onde está virado. Ao longo do chão, desenha o
 posto e o troço da ronda. Enquanto o demónio persegue ou procura, marca com uma cruz o último sítio
 onde viu a personagem, e enquanto a vê, uma linha até ela. Serve para experimentar e afinar os
 estados dos demónios enquanto o retângulo provisório não os mostra, sem mudar o demónio nem os
-níveis, que não a têm. Aparece e desaparece com o F3, junto com o overlay, e remove-se a si própria
+níveis, que não a têm. Aparece com o overlay, em qualquer das duas páginas, e desaparece quando ele se esconde, e remove-se a si própria
 fora das versões de depuração. Para experimentar a procura, a sala tem uma parede de esconderijo no
 chão, em x 1700, à esquerda do demónio do chão (x 2400), com 144 px de altura, mais do que a
 personagem (96 px) e menos do que o seu salto (240 px). Ficou desse lado porque, mais à direita,
@@ -2904,9 +3109,18 @@ outra por acaso:
 | Ordem | O que se desenha | Como |
 |---|---|---|
 | 1 | camadas Far, Middle e Near do fundo | primeiro nó da cena do nível, com Z Index 0 |
-| 2 | plano de jogo: tiles, peças, personagem, demónios | nós seguintes do nível, com Z Index 0 |
+| 2 | plano de jogo: portões, personagem, demónios, tiles e as outras peças, por esta ordem | nós seguintes do nível, com Z Index 0 |
 | 3 | camada Front do fundo | Z Index 10 |
 | 4 | interface e overlay de depuração | `CanvasLayer`, por cima de tudo |
+
+No plano de jogo, os tiles vêm depois da personagem e dos demónios, para que a rocha tape a parte
+da arte que passa do corpo, como a cauda de um cão encostado a uma parede (#271). A personagem vem
+antes dos demónios, porque estes se movem depois dela em cada passo de física (a mordida nas costas
+conta com isso). Um demónio que avisa, investe ou agarra sobe para Z Index 1, para ficar por cima
+da personagem e dos outros demónios. A iluminação do nível 1 põe a rocha também em 1, e com o mesmo
+Z Index vale a ordem dos nós, por isso esse demónio continua por baixo da rocha; sem a iluminação, a
+rocha fica em 0 e ele passa por cima dela. O `test_dogs_behind_rock.gd` verifica a ordem com a
+iluminação, e também que a marca de alerta e os picos continuam por cima da rocha.
 
 #### Linha de vista: um componente por objeto
 
@@ -3010,15 +3224,74 @@ O menu principal e a pausa seguem a maqueta do grupo: fundo preto, a personagem 
 esquerda, iluminada por uma luz que entra pelo canto superior direito, e as opções à direita, em
 maiúsculas, com uma cruz de cada lado da opção selecionada. A pausa tem a mesma composição, mas o
 preto fica a 60 % de opacidade, para se continuar a ver o jogo por trás. As opções e os controlos
-abrem na mesma coluna, com o mesmo estilo.
+abrem na mesma coluna, com o mesmo estilo. As opções abrem num ecrã com quatro separadores em linha
+(Audio, Display, Controls e Accessibility), com o primeiro já escolhido, para o jogador nunca ver
+todas as opções de uma vez. As setas ou o D-pad percorrem os separadores, que dão a volta do último
+ao primeiro, e a página muda de imediato; a seta para baixo, ou o Enter, entra na página. O
+separador escolhido fica a branco e sublinhado, e a área das páginas tem a altura da maior, para o
+ecrã não saltar ao trocar de separador. A seleção é marcada por uma faixa clara atrás da linha, do
+separador ou do botão, que desliza para a nova seleção. A faixa tem uma barra clara de 3 px à
+esquerda: medida num frame gravado, a barra tem um contraste de 17:1 com o fundo, enquanto a faixa
+sozinha fica em 1,6:1 (o tema `OptionsRowHighlight`). A barra cumpre assim o contraste de 3:1 que o
+critério 1.4.11 das WCAG 2.2 (nível AA) pede aos indicadores de foco. O critério 2.4.13 (nível AAA),
+que pede também uma área mínima à volta do elemento, não foi o objetivo. Neste ecrã a faixa substitui as cruzes do
+menu principal, para haver uma só marca de seleção, também nas linhas de três colunas. O rato por
+cima de um separador não o escolhe, para não trocar de página a caminho de uma opção; o separador
+escolhe-se com um clique. Por baixo das
+páginas, uma linha explica a opção selecionada. Reset to defaults e Back ficam numa barra à parte,
+em baixo e em letra mais pequena, com as teclas do Back ao lado (Esc / B). O Esc ou o B fecham as
+opções a partir de qualquer separador.
 
 - **Fundo partilhado** (`scenes/screens/menu_backdrop.tscn`): o preto (Background Alpha), os raios
   de luz e a personagem. Os raios são um shader (`scenes/others/shaders/god_rays.gdshader`), somado
   ao que está por trás, que ondula lentamente; a cor, a intensidade, a direção, o alcance e o brilho
   junto à origem afinam-se no material do nó Rays.
 - **Personagem:** desenhada pelo grupo já com a luz e as sombras pintadas
-  (`assets/sprites/menu/menu_character.png`), e mostrada tal como está. O
+  (`assets/sprites/menu/menu_character.png`). O
   `scenes/screens/builders/build_menu_art.gd` traz a personagem e a cruz para o projeto, recortadas.
+  O ecrã nunca está parado: a personagem respira (cresce 0,6 % a partir dos pés, a cada 4,2 s) e
+  afunda até 8 px a cada 6,5 s; os dois períodos não são múltiplos um do outro, para o olho não
+  apanhar a repetição. Um fogo por baixo, à esquerda, ilumina-a de baixo e solta fumo em três camadas
+  e brasas em quatro (`scenes/screens/menu_embers.gd`: faíscas, cinza e discos desfocados junto à
+  lente). Uma só chama comanda a luz, o brilho, o fumo e as brasas, com uma oscilação lenta, de até
+  30 % da luz do fogo, e uma rápida, de 3 %. Com as opções
+  abertas, a personagem recua para a esquerda e escurece, e cada camada do fogo recua com a sua
+  profundidade (as de trás menos, as da frente mais), o que dá relevo à cena. Tudo se afina no
+  Inspector do nó MenuBackdrop (grupos Idle, Fire, Recede, Depth e Rays) e de cada camada de brasas.
+  Medido a 18/11 no PC do Joaquim: as brasas custam 0,34 ms de CPU por frame e o fundo inteiro 0,73 a
+  0,78 ms de GPU. Medido a 19/11 em 10 s de menu gravado, com as regras de flashes das WCAG 2.2
+  (`tools/accessibility/wcag_flashes.py`, que diz também como gravar os frames):
+  cada brasa pode piscar num píxel, mas só 0,05 % do ecrã passa de 3 flashes por segundo (cerca de
+  1100 px a 1920 × 1080). O limite são 21 824 px, 25 % de um campo de visão de 10° num ecrã de
+  1024 × 768 ([técnica G176 da W3C](https://www.w3.org/WAI/WCAG22/Techniques/general/G176)). Não há
+  flashes vermelhos, porque nenhum píxel chega a vermelho saturado.
+- **Sons e vibração** (`scenes/screens/menu_feedback.gd`, um nó por menu): um clique ao mudar de
+  opção, um golpe ao escolher e um som surdo ao voltar, cada um com um impulso no comando em uso. Um
+  interruptor e uma lista fazem um clique próprio; dentro de uma lista, mudar de item faz o clique,
+  escolher faz o golpe e fechar sem escolher faz o som de voltar. Uma tecla aceite ao remapear faz o
+  golpe, e o Esc que cancela a espera faz o som de voltar. Uma tecla ou o comando recusados fazem o
+  som de recusa: dois golpes surdos, o segundo mais grave, 230 ms ao todo. Distingue-se do som
+  de voltar pelo número de golpes e não só pela altura, porque cada som se ouve sozinho, sem o outro
+  ao lado para comparar, e porque um tom ainda mais grave sairia da gama que as colunas de um
+  portátil conseguem tocar. Num diálogo, como a pergunta antes de um
+  jogo novo por cima de uma gravação, só a resposta soa: o No dá apenas o som de voltar. O Quit
+  escurece o ecrã durante um tempo próprio (Main › Quit Fade Time, 0,25 s) e só depois fecha o jogo,
+  para o golpe se ouvir e a janela fechar a partir do preto e não do menu aceso; os números da
+  partida gravam-se antes do fade. Esse tempo é separado do das fases (Main › Fade Time), para um
+  fade de fase mais lento ou mais rápido não mudar o Quit, e não desce abaixo de 0,15 s, porque a
+  variante mais longa do golpe dura 140 ms e o fecho não a pode cortar (o `test_main_flow.gd`
+  verifica-o). O clique e o golpe sorteiam entre variantes sem repetir a anterior
+  (`AudioStreamRandomizer`), para uma série de cliques não soar a máquina. A seleção que o próprio
+  jogo muda (um ecrã a abrir) não faz som: só conta a que vem até 150 ms depois de uma tecla do
+  jogador. Dois cliques ficam a pelo menos 35 ms um do outro, para uma lista percorrida depressa não
+  virar um zumbido. A mistura está nos ficheiros: o
+  `tools/audio/make_menu_sounds.py` corta, filtra e põe cada som à intensidade do seu evento (o
+  máximo de 50 ms de RMS: mudar −27 dBFS, escolher −18, voltar −22, recusa −23, barra −29,
+  interruptor −25, que fica em −27,5 porque o pico não passa de −1 dBFS), e todos os volumes da cena
+  ficam a 0 dB. Assim o
+  clique fica 9 dB abaixo do golpe. O script reproduz os ficheiros do repositório byte a byte. Se
+  faltar um som na cena, o jogo usa um feito em código (`menu_sound_synth.gd`), com a sua própria
+  mistura: o clique 11 dB abaixo do golpe.
 - **Cruzes** (`scenes/screens/menu_crosses.gd`): seguem o foco, de teclado, comando ou rato, e
   deslizam para a opção selecionada; o rato por cima de um botão dá-lhe o foco. Ficam só nos botões:
   um slider mostra a sua própria seleção.
@@ -3045,9 +3318,25 @@ e remapeamento por captura da tecla seguinte.
   W, E, A, S e D livres para os upgrades. O Custom começa como cópia do predefinido.
 - O `Settings` guarda o perfil escolhido e as teclas do perfil personalizado e aplica-os ao Input
   Map. Como nenhum script lê teclas diretamente, a personagem e o crucifixo não mudaram.
-- No ecrã Controls (`scenes/screens/controls_menu.gd`), carregar no botão de uma ação do perfil Custom faz o
-  ecrã esperar pela próxima tecla ou botão do rato. O Esc ou o B cancelam sem alterar nada. A espera
-  apanha a tecla antes de qualquer outro nó, pelo que o Esc não fecha a pausa.
+- No separador Controls (`scenes/screens/controls_menu.gd`), carregar no botão de uma ação do perfil Custom faz o
+  ecrã esperar pela próxima tecla ou botão do rato. O Esc ou o B cancelam sem alterar nada. Uma
+  tecla que não pode ser usada (as reservadas, como o F3 do overlay de depuração ou a tecla Windows) é recusada: o botão
+  diz qual foi, soa o som de recusa, e a espera continua. O resto do comando, menos o B, também é
+  recusado, com o texto «Gamepad stays fixed: press a key (B cancels)», porque o comando é o mesmo em
+  todos os perfis. Antes, era ignorado em silêncio, e o jogador não sabia se o jogo o tinha recebido.
+  Um botão é recusado a cada carregão. Um eixo (o stick, um gatilho, como o RT do crucifixo) envia
+  uma série de eventos ao longo do movimento, por isso é recusado uma só vez, quando passa de metade
+  do curso, num sentido ou no outro, e só volta a sê-lo depois de regressar abaixo de 30 % do curso.
+  Essa folga impede que o ruído de um carregão lento, a oscilar à volta de metade, conte como vários
+  carregões. Cada espera começa sem eixos registados, porque um eixo largado fora da espera não é
+  visto. Um modificador (Shift, Ctrl, Alt) só fica atribuído quando é largado, se
+  entretanto nada mais foi carregado e o jogo não perdeu nem recuperou o foco, porque carregado pode
+  ser o início de um atalho. Enquanto está em baixo, o botão diz «Shift: let go to use it». Antes, um
+  Alt+Tab durante a espera deixava a ação com o Alt. Shift com outra tecla atribui a outra tecla. A
+  tecla Windows não conta como modificador: está reservada e é recusada logo ao ser carregada,
+  porque largá-la abre o menu Iniciar e tira o foco ao jogo; atribuída, abriria o Iniciar sempre que
+  fosse usada a jogar. A espera apanha a tecla antes de qualquer outro nó, pelo que o Esc não fecha a
+  pausa.
 - Conflitos: se a tecla escolhida pertencia a outra ação, essa ação perde-a e, se ficar sem
   nenhuma, recebe as teclas antigas da primeira (troca). Nenhuma ação fica sem tecla. Preferiu-se a
   troca a um aviso de conflito, porque não deixa o jogador num estado em que uma ação não funciona.
@@ -3056,8 +3345,8 @@ e remapeamento por captura da tecla seguinte.
   `mouse:left`), e nunca como números nem como objetos do Godot. Assim, o ficheiro lê-se e corrige-se
   à mão, acrescentar ou reordenar perfis não troca o perfil de quem já o tinha escolhido, e um
   ficheiro alterado à mão não cria objetos arbitrários. Um perfil ou uma tecla inválidos dão os
-  valores predefinidos. O botão Reset to defaults das opções não mexe nos controlos; o ecrã Controls
-  tem o seu próprio Reset.
+  valores predefinidos. O botão Reset to defaults das opções não mexe nos controlos; o separador
+  Controls tem o seu próprio Reset.
 - O `Settings` só altera uma ação no Input Map quando as teclas mudam: retirar uma tecla a uma ação
   solta essa ação, o que largaria uma tecla que o jogador estivesse a premir.
 - Nos testes, o `Settings` guarda as opções só em memória e não lê nem escreve o ficheiro do
@@ -3065,6 +3354,53 @@ e remapeamento por captura da tecla seguinte.
 
 O tamanho da letra e os espaços entre elementos estão num único tema, `themes/ui_theme.tres`, e nenhum
 nó define o seu próprio tamanho de letra: uma futura opção de tamanho do texto altera apenas o tema.
+
+#### Avisos do tutorial: faixa em baixo e último aparelho
+
+Os avisos do tutorial do nível 1 (andar, saltar, salto na parede e crucifixo) aparecem numa faixa em
+baixo, ao centro, e não no cenário. O sítio, as letras e as medidas resultam de uma pesquisa e de
+capturas das quatro zonas do tutorial no nível com luz.
+
+- Sítio. A faixa (`scenes/levels/prompt_band.tscn`) fica a 40 px do fundo do ecrã e tem 80 px de
+  altura. Nas quatro zonas, em duas capturas, fica 41 a 82 px abaixo dos pés do homem, sobre o preto
+  por baixo do chão, sem tapar o homem nem os buracos.
+- Um aviso de cada vez: o primeiro, da esquerda para a direita, que a câmara vê e que o homem ainda
+  não passou. Cada aviso fica pelo menos 2 s (`min_show_time` do nó Tutorial), para não piscar
+  numa corrida. Este valor é uma estimativa, a confirmar num playtest. Enquanto a Velvet fala, a
+  faixa esconde-se, para não ficar por baixo do balão.
+- Leitura. A legenda usa a Literata (peso 600, 36 px) e o nome da tecla usa a Atkinson Hyperlegible
+  Next (peso 700), uma letra desenhada para leitores com baixa visão. A placa é escura e
+  semitransparente. O contraste da legenda medido nas capturas é de 16:1. Sobre um fundo branco
+  seria de 6,8:1, acima do mínimo de 4,5:1 que a WCAG recomenda para texto.
+- Teclado e comando. No teclado, o aviso desenha uma tecla com o nome da tecla do perfil escolhido.
+  No comando, mostra o ícone do botão (Kenney Input Prompts, tingido com o bege da interface). Um
+  botão sem ícone mostra o nome numa tecla. As letras, as cores e as molduras estão no tema
+  (`themes/ui_theme.tres`, variações `Prompt*`); os ícones e o seu tamanho (56 px) estão no
+  `scenes/levels/prompt_glyph.tscn`. Assim, a arte do grupo pode substituí-los sem mexer no código.
+- Limite: os ícones são sempre os de um comando Xbox. Num comando PlayStation ou Nintendo, os
+  botões estão no mesmo sítio, mas o desenho muda: o X da Xbox, que fala com a Velvet, é o quadrado
+  da PlayStation. Reconhecer a família do comando fica para uma tarefa à parte.
+- Troca automática. O autoload `LastDevice` (`scenes/autoload/last_device.gd`) guarda o último
+  aparelho usado, porque o Godot 4.7 não tem uma função para isso. Conta apenas o que faria uma
+  ação: uma tecla, botão ou gatilho premido, ou um stick inclinado para lá da zona morta dessa ação
+  (0,2 no andar). Ecos, teclas largadas, o rato a mexer e um stick em repouso não contam, para que um
+  stick com folga não faça os avisos trocar. Ligar um comando passa ao comando; desligar o último
+  comando usado volta ao teclado.
+- O `LastDevice` ouve o sinal `window_input` da janela, que recebe todos os eventos antes de qualquer
+  nó, também em pausa, antes de qualquer menu os tratar. A alternativa, o `_input` de um nó, perdia
+  os eventos que outro nó marcasse como tratados e os que uma lista aberta engolisse.
+- Custo medido por evento: 0,5 a 0,7 µs com o aparelho em uso, porque um evento desse aparelho não
+  pode mudar nada e sai logo; cerca de 11 µs para um stick em repouso com o teclado em uso, que tem
+  de ser comparado com todas as ações.
+- No `project.godot`, a opção `ignore_joypad_on_unfocused_application` está ligada, para que um
+  comando pousado não mexa no jogo com a janela em segundo plano.
+- A tecla da Velvet e a do portão continuam no cenário, com o desenho da faixa e a mesma troca: o
+  `KeyPrompt` usa o mesmo `PromptGlyph`. Por isso, todas as teclas do cenário passaram de 80 px, com
+  a letra dos menus, para 56 px, com a Atkinson Hyperlegible Next. Sem faixa, o `TutorialHints`
+  desenha os avisos no cenário, como antes, e é o que acontece nas cenas antigas do nível 1.
+- Testes: `test_last_device.gd` (o que conta, o que não conta, a pausa e os comandos) e
+  `test_prompt_band.gd` (a tecla e o ícone, o sítio da faixa, o contraste, um aviso de cada vez e a
+  Velvet).
 
 #### Registo moral: escondido, uma soma e dois limiares
 
@@ -3080,7 +3416,8 @@ ela, contando uma só vez, mesmo que volte a ser aceite. Cada portagem roubada n
 do que um atalho, porque esse nível tem três. Uma resposta arrogante soma meio ponto e uma humilde tira meio ponto. Ouvir uma proposta
 só conta a partir de alguns segundos, e cada proposta tem um máximo; ouvida outra vez, por exemplo
 depois de recomeçar a fase, conta apenas a escuta mais longa. Dois limiares transformam o total no
-estádio 0, 1 ou 2, que escolhe a variante das falas do homem: quanto mais alto, pior ele fala.
+estádio 0, 1 ou 2, que escolhe as respostas que a alma ainda pode dar: quanto mais alto, menos
+respostas humildes aparecem.
 Cada resposta conta sempre que é dada. Por isso, uma conversa com respostas não se repete quando a
 fase recomeça; essa regra pertence ao estado do jogo (`GameState`), que guarda as conversas já
 ouvidas, e não ao registo moral.
@@ -3092,10 +3429,13 @@ deve pesar tanto como a soberba. A soma única foi preferida a contar apenas as 
 ignoraria a soberba nas respostas, e a ter um limiar por categoria, que daria seis valores difíceis
 de afinar e de explicar.
 
-O tom também escolhe falas diretamente. No presente da Asmodeu, o homem fala com soberba se o
-estádio já subiu ou se deu mais respostas arrogantes do que humildes (`Moral.leans_arrogant()`).
-Assim, um homem que respondeu sempre com arrogância fala com arrogância, mesmo antes de os pontos
-chegarem ao estádio 1. Contar as respostas não soma pontos.
+O tom também escolhe respostas diretamente. No presente da Asmodeu, a recusa humilde deixa de
+aparecer se o estádio já subiu ou se a alma deu mais respostas arrogantes do que humildes
+(`Moral.leans_arrogant()`). Assim, quem respondeu sempre com arrogância perde a resposta humilde,
+mesmo antes de os pontos chegarem ao estádio 1. Contar as respostas não soma pontos. Como a alma só
+diz o que o jogador escolhe (#277), a degradação vê-se no que ela já não consegue dizer, e nunca em
+falas que o jogador não escolheu. O estádio 2 pede 3 pontos e quase não é atingido no nível 1 (o
+atalho vale 1 e cada resposta arrogante 0,5), por isso o presente usa já o estádio 1.
 
 | Valor | Referência |
 |---|---|
@@ -3108,7 +3448,7 @@ chegarem ao estádio 1. Contar as respostas não soma pontos.
 | Ouvir uma proposta | 0,1 pontos por segundo além de 3 s, até 0,5 por proposta |
 | Estádio 1 / estádio 2 | a partir de 1 / de 3 pontos |
 
-São valores de referência, a afinar em jogo. Com eles, um atalho basta para a fala piorar, o atalho
+São valores de referência, a afinar em jogo. Com eles, um atalho basta para a alma perder a resposta humilde do presente, o atalho
 e o dom juntos chegam ao estádio 2, e as três portagens juntas pesam pouco mais do que um atalho.
 As regras estão numa classe sem nós
 (`MoralRecord`), testada isoladamente; o autoload limita-se a disponibilizá-la. O `reset()` limpa o
@@ -3294,30 +3634,29 @@ conversas.
 
 #### Gravação do jogo
 
-O jogo tem uma só gravação automática, sem pontos de gravação visíveis no cenário: chegar ao fim de
-uma fase é o checkpoint. Um jogo novo e cada entrada numa fase gravam, e o tutorial conta como uma
-fase: ao passar dele para a sala inicial, o nó `SavePoint` grava, e dali em diante a fase 1 começa
-nessa sala. O Continue do menu principal, que só aparece quando há uma gravação utilizável, regressa
-ao ponto da última gravação. O fluxo está no
-`main.gd`; os dados estão em `user://save.cfg`, um `ConfigFile`, o mesmo recurso do Godot que guarda
-as opções.
+O jogo tem três gravações automáticas, os slots, sem pontos de gravação visíveis no cenário:
+chegar ao fim de uma fase é o checkpoint. Um jogo novo e cada entrada numa fase gravam no slot em
+jogo, e o tutorial conta como uma fase: ao passar dele para a sala inicial, o nó `SavePoint` grava,
+e dali em diante a fase 1 começa nessa sala. O fluxo está no `main.gd`; cada slot é um
+`ConfigFile`, o mesmo recurso do Godot que guarda as opções.
 
 | Guarda-se | Porquê |
 |---|---|
-| A fase | É o ponto para onde o Continue regressa. |
+| A cena da fase | É o ponto para onde o Continue regressa. |
+| O número da fase e a hora da gravação | O menu mostra-os no slot, e a hora decide qual foi o último slot jogado. |
 | O registo moral | O julgamento final depende de tudo o que o homem fez. |
 | Se ainda tem o crucifixo | Perdê-lo é definitivo. |
 | Os upgrades aceites | Os dons dos demónios ficam para os níveis seguintes. |
 | O ponto de chegada na fase, se houver | Depois de um atalho, a morte e o Continue voltam lá, e não ao início da fase. |
 | Os acontecimentos únicos, como já ter falado com a Velvet | Não se repetem, nem contam duas vezes. |
-| O nome do homem | As falas usam-no; o ecrã do nome ainda não existe. |
+| O nome da alma | Só a fala da Velvet que o repete o usa (cue `named`); o ecrã do nome ainda não existe (#277). |
 
 As estatísticas da partida (`RunStats`: mortes e tempo por fase) são a exceção no sentido contrário:
 uma morte tem de ficar contada, por isso a morte nunca as repõe. Guardam-se num ficheiro próprio, ao
-lado da gravação (`user://save_run.cfg`), em cada gravação, em cada morte e ao sair para o menu ou
-fechar o jogo. O Continue repõe-nas e um jogo novo apaga-as. Ficam fora do `save.cfg` para que a
-morte continue a não alterar a gravação: o que lá está volta a ser exatamente o que estava no último
-checkpoint.
+lado da gravação do slot (`save_run.cfg` ao lado do `save.cfg`), com a hora da escrita, em cada
+gravação, em cada morte e ao sair para o menu ou fechar o jogo. O Continue repõe-nas e um jogo novo
+apaga-as. Ficam fora da gravação para que a morte continue a não a alterar: o que lá está volta a
+ser exatamente o que estava no último checkpoint.
 
 Não se guardam os SP, os demónios, a câmara nem as tolerâncias do movimento: cada fase é uma cena
 nova e reconstrói-os. As opções do jogador ficam em ficheiro próprio, porque não pertencem a uma
@@ -3335,10 +3674,34 @@ que ela dá. Sair antes de responder não guarda nada, nem as respostas de tom d
 conversa repete-se no Continue. Um nível que não
 inicia o jogo, como o Test room, fica fora disto: não grava nem repõe nada.
 A gravação escreve primeiro uma cópia e só depois a coloca no lugar da anterior, para que um jogo
-fechado a meio não destrua a última gravação. Uma gravação danificada, de outra versão ou de uma
-cena que já não existe conta como inexistente. Escolher o nível que inicia o jogo (`LevelEntry`,
-Starts Game) começa uma nova partida: havendo gravação, o jogo pede confirmação antes de a substituir,
-com a opção de a manter já selecionada.
+fechado a meio não destrua a última gravação. Uma gravação danificada, de uma versão mais recente
+do que a do jogo ou de uma cena que já não existe não se pode continuar.
+
+**Slots.** O slot 1 é o ficheiro que o jogo já usava antes dos slots, `user://save.cfg`; os slots 2
+e 3 são o `save_2.cfg` e o `save_3.cfg`, cada um com as estatísticas ao lado. Por serem ficheiros
+separados, um slot danificado não esconde os outros. Ficou de lado um ficheiro de índice com o
+resumo dos três: seria uma segunda fonte da mesma informação, que um jogo fechado a meio podia
+deixar desatualizada, e um índice danificado esconderia os três slots.
+
+- **Continue:** aparece quando algum slot tem uma gravação utilizável e abre o último slot jogado,
+  isto é, o da hora mais recente, seja a da gravação, seja a da última escrita das estatísticas.
+  Quem joga sem chegar a um checkpoint e sai volta assim a esse slot, e não a outro gravado depois.
+  A partir daí, tudo o que o jogo grava vai para esse slot.
+- **Load:** aparece por baixo do Continue e lista os três slots, cada um com o nível, a fase, o
+  tempo de jogo, as mortes e a data, escrita como 2026-11-19 17:40 para se ler da mesma forma em
+  qualquer país. Abre com o último slot jogado selecionado. Um slot vazio, ou com um ficheiro que não
+  se lê ("Can't be read"), aparece na lista, mas não se pode escolher. No caso mais comprido medido
+  (10h 33m e 127 mortes), o texto ocupa 534 dos 600 px do botão.
+- **New Game:** sem nenhum ficheiro de gravação, começa logo no slot 1. Caso contrário, mostra os
+  slots com o primeiro vazio selecionado. Um slot ocupado, ou com um ficheiro que não se lê, pede
+  confirmação antes de ser substituído, com a opção de o manter já selecionada.
+
+**Versões.** O ficheiro guarda a versão do formato. A versão 2 é a dos slots e acrescenta a fase e
+a hora. Uma gravação da versão 1, de antes dos slots, continua a abrir como slot 1: sem fase, e com a
+data da alteração mais recente dos seus dois ficheiros, a gravação e as estatísticas. Se for do nível 1 sem luz, abre no nível 1 com luz, que o
+substituiu no menu. A gravação seguinte passa-a à versão 2. A data mostra a hora deste computador
+com o desfasamento de hoje em relação ao UTC, pelo que uma gravação feita do outro lado de uma
+mudança de hora aparece com uma hora de diferença.
 
 #### Sala de treino
 
@@ -4032,9 +4395,9 @@ disponível começam no seu ponto. Se a sincronia está certa confirma-se a joga
   por Diogo, do grupo, por edição e mistura de sons com licença CC0 (domínio público), que não pede
   atribuição e permite qualquer uso, incluindo o vídeo, as apresentações e o portefólio.
 - `level1_cave_map.png` e `level1_cave_shade.png`, em `Projeto/assets/sprites/backgrounds/`:
-  imagens provisórias geradas com IA (Claude) a partir do mapa do nível 1, sem material de
+  imagens provisórias feitas a partir do mapa do nível 1, sem material de
   terceiros. A primeira dá a cor de cada área do fundo e a segunda escurece o fundo junto à rocha.
-  Na zona da fase 3 e na sala da Asmodeu, foram repintadas com IA (Claude), por scripts fora do repositório que
+  Na zona da fase 3 e na sala da Asmodeu, foram repintadas por scripts fora do repositório que
   ajustam um modelo às imagens das fases 1 e 2 e só alteram os píxeis por onde essas zonas passam.
   Saem ou refazem-se quando o mapa ou as áreas mudarem.
 - `fire_low_sheet.png`, `fire_bonfire_sheet.png`, `fire_leaning_sheet.png` e
@@ -4049,9 +4412,43 @@ disponível começam no seu ponto. Se a sincronia está certa confirma-se a joga
   original (#263).
 - `asmodeus.png`, em `Projeto/assets/sprites/asmodeus/`: a figura da Asmodeu, desenhada pelo Cisco,
   do grupo, para a visual novel de CDJ, recortada e reduzida do PNG original (#263).
+- `soul_frame.png`, `soul_aura_1.png` a `soul_aura_8.png`, `cross_ready.png`, `cross_spent.png` e
+  `power_arrow.png`, em `Projeto/assets/sprites/hud/`: a barra de alma (moldura, aura animada, as duas
+  cruzes do crucifixo e a seta dos poderes), desenhadas pelo grupo, usadas tal como foram entregues.
+- Sons dos menus, em `Projeto/assets/audio/ui/` (#267), todos de domínio público (CC0), cortados,
+  filtrados e misturados pelo `tools/audio/make_menu_sounds.py`, cada um à intensidade do seu evento
+  (ver "Aspeto dos menus"):
+  - `menu_move_1.wav` a `menu_move_4.wav` (mudar de opção): cliques de rato: «mouse_click.wav», de
+    Six Ways (https://freesound.org/s/223445/), «mouse-click-single-00.flac», de pbimal
+    (https://freesound.org/s/534103/), «Mouse 2 Button Fast Click», de aphom000
+    (https://freesound.org/s/687107/), e `mouseclick1`, do pacote «51 UI sound effects (buttons,
+    switches and clicks)», de Kenney
+    (https://opengameart.org/content/51-ui-sound-effects-buttons-switches-and-clicks).
+  - `menu_confirm_1.wav` e `menu_confirm_2.wav` (escolher): os dois primeiros cliques de rato, cada
+    um com «Mute Bass Drum.wav», de Lynx_5969 (https://freesound.org/s/418725/), saturado para se
+    ouvir em colunas pequenas.
+  - `menu_back_1.wav` (voltar): o primeiro clique de rato, mais grave, com o mesmo bombo, mais baixo.
+  - `menu_refuse.wav` (recusa ao remapear): o som de voltar duas vezes, a segunda 90 ms depois e
+    mais grave.
+  - `menu_tick.wav` (barras deslizantes): `tick_001`, do pacote «Interface Sounds», de Kenney
+    (https://opengameart.org/content/interface-sounds).
+  - `menu_switch.wav` (interruptores): «Small_Flashlight_Click_on_02.wav», de Rudmer_Rotteveel
+    (https://freesound.org/s/457463/).
+
+  Os sons do Freesound vêm das pré-visualizações (OGG); os originais em WAV pedem uma conta no site
+  e substituem-nas na versão final.
 - Tinos, de The Tinos Project Authors. SIL Open Font License 1.1. Letra de reserva dos menus, com as
   medidas da Times New Roman, em `Projeto/assets/fonts/` (com a licença em `Tinos-OFL.txt`).
   https://github.com/googlefonts/tinos
+- Atkinson Hyperlegible Next, de The Atkinson Hyperlegible Next Project Authors, e Literata, de The
+  Literata Project Authors. SIL Open Font License 1.1. Letras dos avisos do tutorial, em
+  `Projeto/assets/fonts/` (com as licenças em `AtkinsonHyperlegibleNext-OFL.txt` e
+  `Literata-OFL.txt`), copiadas do repositório google/fonts (https://github.com/google/fonts), que
+  as publica a partir dos repositórios de origem: https://github.com/googlefonts/atkinson-hyperlegible-next
+  e https://github.com/googlefonts/literata
+- Kenney Input Prompts 1.5A, de Kenney (www.kenney.nl). Domínio público (CC0). Ícones dos botões A,
+  X e RT e do stick esquerdo de um comando Xbox, a 128 px, em `Projeto/assets/ui/prompts/` (com a
+  licença em `Kenney-License.txt`). https://kenney.nl/assets/input-prompts
 
 ## Licença
 

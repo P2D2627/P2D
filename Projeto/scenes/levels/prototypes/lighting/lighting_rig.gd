@@ -1,6 +1,9 @@
 extends Node2D
-## PROTOTYPE (#257): lights level 1 in two ways, to compare by eye and by cost, and is then
-## rewritten, never copied. Add it as the level's last child.
+## PROTOTYPE (#257): lights level 1 in two ways, to compare by eye and by cost. Add it as the
+## level's last child. The game plays it as it is, fenced in (ADR 0068): level1_lit.tscn is
+## level1.tscn with this rig as its last child, the menu's New Game starts it, its keys work only on
+## the debug overlay's lighting page and never in an exported game, and test_level1_lit.gd holds
+## the approved look; each part is rewritten, with tests, when it changes.
 ## A, hybrid (chosen): the level's dark color (CanvasModulate); soft lights without shadows on the
 ## world's and the parallax's light masks, smaller ones on the rock's (tiles and stone rim), so rock
 ## faces glow; a wide, faint fill light on the man.
@@ -26,10 +29,12 @@ extends Node2D
 ## grade of the whole frame that takes the hue of level 1's ramp and keeps each colour's brightness;
 ## the fires' own ramp, each at its own speed; one air for the backdrop's layers, fading into the
 ## background's colour; a rim of light on the characters (mode A, the only one with lights).
-## Keys: F1 mode (current look, A, B), F2 glow, F3 the painted shade, F4 vision (off, SDF, polygon),
-## F5/F6 darkness, F7 blur what he does not see, F9 how soft the edge of his sight is, F10/F11 the
-## man's light, F12 depth; with Ctrl (Shift raises the crucifix): F1 grade, F2 the fires' ramp, F3 one
-## air, F4 rim light, F12 the rocks in front.
+## Keys, on the lighting page of the debug overlay (F3), which passes them on (handle_debug_key) and
+## shows the settings (get_debug_text): F1 mode (current look, A, B), F2 glow, F4 vision (off, SDF,
+## polygon), F5/F6 darkness, F7 blur what he does not see, F9 how soft the edge of his sight is,
+## F10/F11 the man's light, F12 depth; with Ctrl (Shift raises the crucifix): F1 grade, F2 the fires'
+## ramp, F3 one air, F4 rim light, F12 the rocks in front; Alt+F3 the painted shade, since F3 alone
+## turns the overlay's page.
 ## The man in the scene (#261, proto_man_look.gd): his body lit by the scene and not by the light he
 ## carries (mode A), the scenery's ink round him, a squash as he lands, a short trail of ash (or
 ## light) as he moves fast, and a contact shadow (off: the stone rim hides it;
@@ -286,8 +291,6 @@ static var squash_on: bool = true
 ## The grade's table, built once: a restart after a death keeps it.
 static var _grade_table: ImageTexture3D
 
-var hud_label: Label
-
 var _level: Node2D
 var _tiles: TileMapLayer
 var _player: Node2D
@@ -354,6 +357,7 @@ var _last_vision_usec: int = 0
 
 
 func _ready() -> void:
+	add_to_group(DebugOverlay.LIGHTING_GROUP)
 	_setup.call_deferred()
 
 
@@ -369,13 +373,14 @@ func _process(delta: float) -> void:
 		_update_propagation(delta)
 	if vision != VISION_OFF and mode != Mode.CURRENT:
 		_update_vision()
-	_update_hud()
 
 
-func _unhandled_key_input(event: InputEvent) -> void:
+## A key from the debug overlay's lighting page; true if it changed a setting. Only the overlay
+## calls it, so the keys do nothing on its other pages or in a release export, where it frees itself.
+func handle_debug_key(event: InputEvent) -> bool:
 	var key := event as InputEventKey
 	if key == null or not key.pressed or key.echo or not _ready_done:
-		return
+		return false
 	match key.physical_keycode:
 		KEY_F1:
 			if key.ctrl_pressed:
@@ -388,10 +393,13 @@ func _unhandled_key_input(event: InputEvent) -> void:
 			else:
 				glow_on = not glow_on
 		KEY_F3:
+			# F3 alone is the overlay's page key and never gets here; Alt+F3 is the painted shade.
 			if key.ctrl_pressed:
 				fog_on = not fog_on
-			else:
+			elif key.alt_pressed:
 				shade_on = not shade_on
+			else:
+				return false
 		KEY_F4:
 			if key.ctrl_pressed:
 				rim_on = not rim_on
@@ -415,7 +423,7 @@ func _unhandled_key_input(event: InputEvent) -> void:
 		KEY_F8:
 			# Without Ctrl, F8 is the game's own debug key (and stops a run from the editor): left alone.
 			if not key.ctrl_pressed:
-				return
+				return false
 			ink_on = not ink_on
 		KEY_F9:
 			if key.ctrl_pressed:
@@ -438,9 +446,27 @@ func _unhandled_key_input(event: InputEvent) -> void:
 			else:
 				depth_on = not depth_on
 		_:
-			return
+			return false
 	_apply()
-	get_viewport().set_input_as_handled()
+	return true
+
+
+## The settings and their keys, for the debug overlay's lighting page.
+func get_debug_text() -> String:
+	return ("F1 mode: %s    F2 glow: %s    Alt+F3 painted shade: %s    F4 vision: %s\n"
+			% [MODE_NAMES[mode], _on(glow_on), _on(shade_on), VISION_NAMES[vision]]
+			+ "F7 blur unseen: %s    F9 soft edge: x%.1f    F5/F6 darkness: %.2f    F10/F11 man's light: %d px"
+			% [_on(unseen_blur_on), SOFTNESS_STEPS[softness_step], ambient, man_radius]
+			+ "    F12 depth: %s    Ctrl+F12 rocks in front: %s\n" % [_on(depth_on), _on(foreground_on)]
+			+ "Ctrl+F1 grade: %s    Ctrl+F2 fires' ramp: %s    Ctrl+F3 one air: %s    Ctrl+F4 rim light: %s%s\n"
+			% [_on(grade_on), _on(fire_ramp_on), _on(fog_on), _on(rim_on),
+			"    (current look: none of these)" if mode == Mode.CURRENT else ""]
+			+ "Ctrl+F5 man lit by the scene: %s    Ctrl+F6 outline: %s    Ctrl+F7 trail: %s    Ctrl+F8 ink style: %s\n"
+			% [_on(scene_light_on), _on(outline_on), TRAIL_NAMES[trail], _on(ink_on)]
+			+ "Ctrl+F9 crucifix's light: %s    Ctrl+F10 dogs' ash: %s    Ctrl+F11 squash: %s\n"
+			% [_on(crucifix_fx_on), _on(dog_smoke_on), _on(squash_on)]
+			+ "vision CPU: %.2f ms    B aura: %.2f ms    dogs, spikes, fires: line of sight (#253)"
+			% [_last_vision_usec / 1000.0, _last_aura_usec / 1000.0])
 
 
 func set_mode(new_mode: Mode) -> void:
@@ -504,6 +530,10 @@ func measure_vision_update(times: int) -> float:
 
 func _setup() -> void:
 	_level = get_parent() as Node2D
+	# In level1_lit.tscn the rig is part of the scene, so the level's _ready adds its own nodes (the
+	# restart timer, the death iris) after it: last again, it stands where it does when it is added
+	# to a level that is ready.
+	_level.move_child(self, -1)
 	_tiles = _level.get_node("Tiles") as TileMapLayer
 	_player = _level.get_node("Player") as Node2D
 	_shade = _level.get_node_or_null("Backdrop/Shade") as CanvasItem
@@ -1457,7 +1487,7 @@ class VisionFan extends Node2D:
 
 
 ## Glow and the grade, in the environment's one pass over the frame. Canvas layers up to the first
-## one at or above Background Canvas Max Layer take them; the HUD, on layer 10, does not.
+## one at or above Background Canvas Max Layer take them; the debug overlay, on layer 100, does not.
 func _add_glow() -> void:
 	_environment = Environment.new()
 	_environment.background_mode = Environment.BG_CANVAS
@@ -1624,25 +1654,6 @@ func _apply() -> void:
 		_art.z_index = front
 	_foreground.visible = foreground_on
 	_foreground.set_process(foreground_on)
-
-
-func _update_hud() -> void:
-	if hud_label == null:
-		return
-	hud_label.text = ("LIGHTING (#257)    F1 mode: %s    F2 glow: %s    F3 painted shade: %s    F4 vision: %s\n"
-			% [MODE_NAMES[mode], _on(glow_on), _on(shade_on), VISION_NAMES[vision]]
-			+ "F7 blur unseen: %s    F9 soft edge: x%.1f    F5/F6 darkness: %.2f    F10/F11 man's light: %d px"
-			% [_on(unseen_blur_on), SOFTNESS_STEPS[softness_step], ambient, man_radius]
-			+ "    F12 depth: %s    Ctrl+F12 rocks in front: %s\n" % [_on(depth_on), _on(foreground_on)]
-			+ "Ctrl+F1 grade: %s    Ctrl+F2 fires' ramp: %s    Ctrl+F3 one air: %s    Ctrl+F4 rim light: %s%s\n"
-			% [_on(grade_on), _on(fire_ramp_on), _on(fog_on), _on(rim_on),
-			"    (current look: none of these)" if mode == Mode.CURRENT else ""]
-			+ "Ctrl+F5 man lit by the scene: %s    Ctrl+F6 outline: %s    Ctrl+F7 trail: %s    Ctrl+F8 ink style: %s\n"
-			% [_on(scene_light_on), _on(outline_on), TRAIL_NAMES[trail], _on(ink_on)]
-			+ "Ctrl+F9 crucifix's light: %s    Ctrl+F10 dogs' ash: %s    Ctrl+F11 squash: %s\n"
-			% [_on(crucifix_fx_on), _on(dog_smoke_on), _on(squash_on)]
-			+ "vision CPU: %.2f ms    B aura: %.2f ms    dogs, spikes, fires: line of sight (#253)"
-			% [_last_vision_usec / 1000.0, _last_aura_usec / 1000.0])
 
 
 func _on(value: bool) -> String:

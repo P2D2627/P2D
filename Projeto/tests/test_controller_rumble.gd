@@ -845,7 +845,7 @@ func _the_options_screen_switches_constant_vibration_and_plays_a_sample() -> boo
 	var options: OptionsMenu = OPTIONS_SCENE.instantiate() as OptionsMenu
 	root.add_child(options)
 	options.open()
-	await process_frame
+	await _show_accessibility(options)
 	var toggle: CheckButton = _accessibility_switch(options)
 	var sliders: Array[HSlider] = _accessibility_sliders(options)
 	var passed: bool = toggle != null and sliders.size() == 2
@@ -898,7 +898,7 @@ func _the_options_closed_mid_drag_still_play_the_sample() -> bool:
 	var options: OptionsMenu = OPTIONS_SCENE.instantiate() as OptionsMenu
 	root.add_child(options)
 	options.open()
-	await process_frame
+	await _show_accessibility(options)
 	var sliders: Array[HSlider] = _accessibility_sliders(options)
 	var passed: bool = sliders.size() == 2
 	var what: String = "the accessibility grid has %d sliders (2)" % sliders.size()
@@ -910,7 +910,7 @@ func _the_options_closed_mid_drag_still_play_the_sample() -> bool:
 		(options.get_node(^"%BackButton") as Button).pressed.emit()
 		_mouse_release_on(slider, start)
 		options.open()
-		await process_frame
+		await _show_accessibility(options)
 		_press_on(PAD)
 		Input.stop_joy_vibration(PAD)
 		slider.value = SAMPLE_STEPPED
@@ -1030,6 +1030,13 @@ func _point_on(slider: HSlider, ratio: float) -> Vector2:
 func _frames(count: int) -> void:
 	for frame: int in count:
 		await process_frame
+
+
+## Selects the options screen's Accessibility tab, as the arrows do, so its page shows, and waits a
+## frame for the page's layout: the mouse can only reach a slider that shows, where it is drawn.
+func _show_accessibility(options: OptionsMenu) -> void:
+	(options.get_node(^"%AccessibilityTab") as Button).grab_focus()
+	await process_frame
 
 
 func _accessibility_sliders(options: OptionsMenu) -> Array[HSlider]:

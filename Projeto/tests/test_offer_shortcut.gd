@@ -1,14 +1,15 @@
 # Checks Lust's shortcut in the main scene. In a new game in the old blockout's phase 1, accepting it
-# through Offers, with no balloon showing, takes the man behind the fade to level 1, standing at the
-# ArrivalPoint by Asmodeus's tent at the level's end, not at its start, and saves level 1 with that
-# point. A death there brings him back to the tent, and so does Continue. The tests use a save file of their own.
+# through Offers, with no balloon showing, takes the man behind the fade to level 1 with its light, as
+# New Game plays it, standing at the ArrivalPoint by Asmodeus's tent at the level's end, not at its
+# start, and saves that level with that point. A death there brings him back to the tent, and so does Continue. The tests use a save file of their own.
 # Run from the repository root; the exit code is 0 on pass and 1 on fail:
 # godot --headless --fixed-fps 60 --path Projeto --script res://tests/test_offer_shortcut.gd
 extends "res://tests/support/menu_test.gd"
 
 const SAVE_PATH: String = "user://test_offer_shortcut.cfg"
 const PHASE_1_PATH: String = "res://scenes/levels/lust/LustLevel_Phase1_Cave.tscn"
-const LEVEL_1_PATH: String = "res://scenes/levels/lust/level1.tscn"
+## Where the shortcut takes him: level 1 with its light.
+const LEVEL_1_PATH: String = "res://scenes/levels/lust/level1_lit.tscn"
 const LEVEL_1_ROOT: StringName = &"Level1"
 const SHORTCUT: StringName = &"lust_shortcut"
 const TENT: StringName = &"asmodeus_tent"

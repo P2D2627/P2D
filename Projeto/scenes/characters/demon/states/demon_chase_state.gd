@@ -10,6 +10,7 @@ extends DemonState
 ## on the run is over, it backs off with Retreat Distance in Stats (RETREAT); with Waits At Retreat
 ## Distance, it keeps that far from him until it can attack again, and then runs at him (ADR 0051).
 ## With Retreat Pace Width, it paces there, as when it waits for him to take hits (ADR 0052).
+## With Follows Trail, while he is out of its sight or reach, it goes by his trail instead (#271).
 
 
 ## Leaving the chase ends a bite under way, and the backing off after it.
@@ -18,7 +19,7 @@ func exit() -> void:
 
 
 func physics_update(delta: float) -> void:
-	if not _demon.keeps_after_target():
+	if not _demon.keeps_after_target() or _demon.goes_by_trail(delta):
 		return
 	var gap: float = _demon.get_gap_to_target()
 	if _demon.is_man_out_of_reach():

@@ -3,8 +3,9 @@
 #   Refusing, he stays in the level; the camera cutscene of phase 2 plays, with the dogs moving,
 #   and after it he moves again, with the dogs.
 # - An offer his deaths brought waits while he stands outside its zone, and she makes it from
-#   asmodeus_deaths once he walks into it; it waits until he answers. Accepting takes him to the tent at the level's end: he
-#   stands there, not at phase 2's start, though he reached it. No more offers come for his deaths.
+#   asmodeus_deaths once he walks into it; it waits until he answers. Accepting takes him to the tent at the end of level 1
+#   with its light, as New Game plays it: he stands there, not at phase 2's start, though he reached
+#   it. No more offers come for his deaths.
 # - At the tent she gives the gift, then the stairs, and only then the level ends: the main menu
 #   shows, no level in the slot, and the save keeps level 1 at the tent, marked as done. Continue
 #   brings him back to the tent, in the level, with no talk and the dogs still.
@@ -25,13 +26,20 @@ extends "res://tests/support/menu_test.gd"
 
 const SAVE_PATH: String = "user://test_lust_asmodeus.cfg"
 const LEVEL_PATH: String = "res://scenes/levels/lust/level1.tscn"
+## Where Lust's shortcut takes him: level 1 with its light.
+const SHORTCUT_PATH: String = "res://scenes/levels/lust/level1_lit.tscn"
 const SHORTCUT: StringName = &"lust_shortcut"
 const TENT: StringName = &"asmodeus_tent"
-## The answers of Lust's shortcut cues: the first two accept it, the last two refuse it.
-const ACCEPT: int = 0
-const REFUSE: int = 2
-## The answer of asmodeus_gift that refuses the charm.
+## The answers of Lust's shortcut cues: the first two refuse it, the last two accept it.
+const ACCEPT: int = 2
+const REFUSE: int = 0
+## The answer of asmodeus_gift that refuses the charm and always shows ("Keep your tricks").
 const KEEP_IT: int = 1
+## How many answers an offer has; any other choice (the cross, "What gift?", the stairs) gets its
+## first answer.
+const OFFER_ANSWERS: int = 4
+## Choices answered in one talk before giving up, in case a jump loops.
+const MAX_CHOICES: int = 8
 ## Frames to wait for her to start talking, for a line, or for a phase change with its fade.
 const TALK_FRAMES: int = 180
 ## Frames he stands outside the offer's zone, with no offer made.
@@ -131,7 +139,7 @@ func _phase_2_then_deaths_then_the_shortcut_and_the_ending() -> Array[bool]:
 	var ended: bool = await wait_until(func() -> bool:
 		return level_in(main) == null and _is_shown(main, ^"%MainPanel"), TALK_FRAMES)
 	results.append(report(changed and at_the_tent and closed
-			and saved_at == "%s at %s" % [LEVEL_PATH, TENT] and gift_said and stairs_said and ended,
+			and saved_at == "%s at %s" % [SHORTCUT_PATH, TENT] and gift_said and stairs_said and ended,
 			("Shortcut: a new level %s, at the tent %s, no more offers %s, saved %s; the gift %s, "
 			+ "the stairs %s, then the level ends to the menu %s")
 			% [changed, at_the_tent, closed, saved_at, gift_said, stairs_said, ended]))
@@ -352,23 +360,33 @@ func _talk(level: Level, cue: String) -> DialogueBalloon:
 	return found[0] if not found.is_empty() else null
 
 
-## Skips to the answers, picks the one at index (none when -1), skips the rest, and says whether
-## her talk then ended.
+## Skips the lines and answers each choice until her talk ends: at the offer's answers, the one at
+## index (none when -1, and then the talk must have no offer), at any other choice the first. Says
+## whether the talk ended, and with index set, whether the offer was answered.
 func _answer(level: Level, balloon: DialogueBalloon, index: int) -> bool:
 	var asmodeus: Asmodeus = level.get_node(^"Asmodeus") as Asmodeus
 	var ended: Array[bool] = [false]
 	asmodeus.talk_ended.connect(func(_cue: String) -> void: ended[0] = true, CONNECT_ONE_SHOT)
-	balloon.skip_to_the_next_choice()
-	if index >= 0:
+	var offer_answered: bool = false
+	for i: int in MAX_CHOICES:
+		if not is_instance_valid(balloon) or ended[0]:
+			break
+		balloon.skip_to_the_next_choice()
 		await wait_until(func() -> bool:
-			return not is_instance_valid(balloon) or balloon.is_at_a_choice(), TALK_FRAMES)
-		if not is_instance_valid(balloon) or not balloon.is_at_a_choice():
+			return not is_instance_valid(balloon) or ended[0] or balloon.is_at_a_choice(), TALK_FRAMES)
+		if not is_instance_valid(balloon) or ended[0] or not balloon.is_at_a_choice():
+			break
+		var line: DialogueLine = balloon.dialogue_line
+		var at_offer: bool = line.responses.size() == OFFER_ANSWERS and not offer_answered
+		if at_offer and index < 0:
 			return false
-		balloon.next(balloon.dialogue_line.responses[index].next_id)
+		balloon.next(line.responses[index if at_offer else 0].next_id)
+		offer_answered = offer_answered or at_offer
 		await wait_until(func() -> bool:
-			return not is_instance_valid(balloon) or balloon.dialogue_line != null, TALK_FRAMES)
-		if is_instance_valid(balloon) and balloon.dialogue_line != null:
-			balloon.skip_to_the_next_choice()
+			return not is_instance_valid(balloon) or ended[0] or balloon.dialogue_line != line,
+			TALK_FRAMES)
+	if index >= 0 and not offer_answered:
+		return false
 	return await wait_until(func() -> bool: return ended[0], TALK_FRAMES)
 
 

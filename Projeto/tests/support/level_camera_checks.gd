@@ -175,7 +175,9 @@ static func every_zone_shows_wall_past_its_sides(tiles: TileMapLayer, zones: Arr
 ## A zone's floor is its lower limit: in each of its columns, under the zone's lowest air, what the
 ## box and its Bottom Margin show is rock, or air that goes straight on down from the zone's own air
 ## (an opening). Air after some rock would be the level below, seen through the floor. Shafts, whose
-## margin is there to show the room they lead down to, are left out.
+## margin is there to show the room they lead down to, are left out. A one-way platform counts as air
+## here: the screen shows past it, and the air under it is the room it stands in, not a level below
+## (#271).
 static func every_floor_is_the_lower_limit(tiles: TileMapLayer, zones: Array[CameraZone]) -> Array:
 	var problems: Array[String] = []
 	var level: Rect2i = tiles.get_used_rect()
@@ -189,13 +191,14 @@ static func every_floor_is_the_lower_limit(tiles: TileMapLayer, zones: Array[Cam
 			var lowest: int = -1
 			for y: int in range(cells.position.y, cells.end.y):
 				var cell: Vector2i = Vector2i(x, y)
-				if _is_air(tiles, cell) and zone.has_point(tiles.to_global(tiles.map_to_local(cell))):
+				if _is_air_or_platform(tiles, cell) \
+						and zone.has_point(tiles.to_global(tiles.map_to_local(cell))):
 					lowest = y
 			if lowest < 0:
 				continue
 			var rock_seen: bool = false
 			for y: int in range(lowest + 1, cells.end.y):
-				if not _is_air(tiles, Vector2i(x, y)):
+				if not _is_air_or_platform(tiles, Vector2i(x, y)):
 					rock_seen = true
 				elif rock_seen:
 					below += 1
@@ -234,6 +237,23 @@ static func _air_past_the_sides(tiles: TileMapLayer, zone: CameraZone, camera: G
 
 static func _is_air(tiles: TileMapLayer, cell: Vector2i) -> bool:
 	return tiles.get_cell_source_id(cell) == -1
+
+
+## True when cell is air, or a platform, which the screen shows past: a tile with collision polygons,
+## on any of the TileSet's physics layers, every one of them one-way.
+static func _is_air_or_platform(tiles: TileMapLayer, cell: Vector2i) -> bool:
+	if _is_air(tiles, cell):
+		return true
+	var data: TileData = tiles.get_cell_tile_data(cell)
+	if data == null:
+		return false
+	var one_way: int = 0
+	for layer: int in tiles.tile_set.get_physics_layers_count():
+		for polygon: int in data.get_collision_polygons_count(layer):
+			if not data.is_collision_polygon_one_way(layer, polygon):
+				return false
+			one_way += 1
+	return one_way > 0
 
 
 ## Where the feet of a player standing in cell are: just above the floor under it.

@@ -1,10 +1,11 @@
 # Checks level 1's big dog, the one of phase 2: the regular dog a quarter bigger, with the regular
-# dog's stats but for the damage of its attacks, and its art drawn darker. Its body, hit box, art and
+# dog's stats but for the damage of its attacks, and its art in a tone of its own. Its body, hit box, art and
 # the other points on it are the regular dog's times SIZE, and the checks at its feet stay as far past
 # the front of its body as the regular dog's; its stats are a file of its own, equal to the regular
 # dog's in every field, and in every field of each attack but the damage; its bite and lunge take
 # BITE_DAMAGE and LUNGE_DAMAGE; a big dog put down right by the man bites him for BITE_DAMAGE; and its
-# art is drawn darker than the regular dog's in every tint its stand-in gives it, with the same tint.
+# art is drawn in a tone of its own, at about the regular dog's value, in every tint its stand-in gives
+# it, with the same tint (#271).
 # Run from the repository root; the exit code is 0 on pass and 1 on fail:
 # godot --headless --fixed-fps 60 --path Projeto --script res://tests/test_big_dog.gd
 extends "res://tests/support/player_test.gd"
@@ -31,6 +32,14 @@ const FEET_CHECKS: PackedStringArray = ["LedgeCheck", "StepCheck"]
 ## What the stand-in shows, each with a tint of its own: at rest, the warning of each attack (by its
 ## animation) and stunned.
 const SHOWN: PackedStringArray = ["rest", "lunge", "bite", "stunned"]
+## The big dog's tone: its art drawn at least this share of the regular dog's luminance, so in grey
+## it reads at the same value and apart only by its size, and with at least this saturation, so it
+## reads as a colour of its own. Darker, it read as further away, as the depth of the cave is drawn.
+const LEAST_VALUE_SHARE: float = 0.9
+const LEAST_SATURATION: float = 0.15
+## How far round the colour wheel the tone's hue must be from the hue of each warning tint, a share
+## of a turn: a sixth, 60°, so at rest the big dog never reads as a dog warning of an attack.
+const LEAST_HUE_APART: float = 1.0 / 6.0
 
 
 func _initialize() -> void:
@@ -40,12 +49,12 @@ func _initialize() -> void:
 	results.append(_its_stats_are_the_dog_s_but_for_the_damage())
 	results.append(_its_bite_and_lunge_take_more())
 	results.append(await _it_bites_the_man_for_its_damage())
-	results.append(await _its_art_is_drawn_darker_in_every_tint())
+	results.append(await _its_art_is_drawn_in_its_tone_in_every_tint())
 	finish(results)
 
 
 ## Every node of the regular dog, also those it gains later, is in the big dog where it is times SIZE,
-## with its box times SIZE, but for SET_BY_CODE and FEET_CHECKS; and its art, stride and sinking depth
+## with its box times SIZE, but for SET_BY_CODE and FEET_CHECKS; and its art, strides and sinking depth
 ## are times SIZE too.
 func _the_big_dog_is_the_dog_a_quarter_bigger() -> bool:
 	var dog: Demon = DOG_SCENE.instantiate() as Demon
@@ -71,6 +80,9 @@ func _the_big_dog_is_the_dog_a_quarter_bigger() -> bool:
 	var small_stride: float = (dog.get_node(^"DemonAnimation") as DemonAnimation).stride_length
 	if not is_equal_approx((big.get_node(^"DemonAnimation") as DemonAnimation).stride_length, small_stride * SIZE):
 		wrong.append("DemonAnimation stride_length")
+	var small_walk: float = (dog.get_node(^"DemonAnimation") as DemonAnimation).walk_stride_length
+	if not is_equal_approx((big.get_node(^"DemonAnimation") as DemonAnimation).walk_stride_length, small_walk * SIZE):
+		wrong.append("DemonAnimation walk_stride_length")
 	var small_depth: float = (dog.get_node(^"SinkingDrawing") as SinkingDrawing).depth
 	if not is_equal_approx((big.get_node(^"SinkingDrawing") as SinkingDrawing).depth, small_depth * SIZE):
 		wrong.append("SinkingDrawing depth")
@@ -136,9 +148,10 @@ func _it_bites_the_man_for_its_damage() -> bool:
 			% [distance, bite_range, bitten, first, BITE_DAMAGE])
 
 
-## The big dog's art is drawn darker than the regular dog's in each of SHOWN, with the same tint from
-## its stand-in: the darker art outlives the stand-in setting the art's Modulate on every frame drawn.
-func _its_art_is_drawn_darker_in_every_tint() -> bool:
+## The big dog's art is drawn in its tone, at about the regular dog's value, in each of SHOWN, with
+## the same tint from its stand-in: the tone outlives the stand-in setting the art's Modulate on
+## every frame drawn (#271).
+func _its_art_is_drawn_in_its_tone_in_every_tint() -> bool:
 	var dog: Demon = DOG_SCENE.instantiate() as Demon
 	var big: Demon = BIG_SCENE.instantiate() as Demon
 	dog.position = Vector2(FLOOR_LEFT / 2.0, 0.0)
@@ -148,21 +161,23 @@ func _its_art_is_drawn_darker_in_every_tint() -> bool:
 	# With no physics frames the dogs never change state, so only _show tints them.
 	dog.set_physics_process(false)
 	big.set_physics_process(false)
-	var not_darker: Array[String] = []
+	var not_in_tone: Array[String] = []
 	for shown: String in SHOWN:
 		_show(dog, shown)
 		_show(big, shown)
 		# process_frame comes before the nodes' _process on its frame: one more for the stand-in's.
 		await process_frame
 		await process_frame
-		if not _drawn_darker(big, dog):
-			not_darker.append(shown)
+		if not _drawn_in_its_tone(big, dog):
+			not_in_tone.append(shown)
+	var tone: Color = (big.get_node(^"Sprite") as CanvasItem).self_modulate
 	dog.queue_free()
 	big.queue_free()
 	await physics_frame
-	return report(not_darker.is_empty(),
-			"Art: the big dog's drawn darker than the dog's, with the same tint, in %s; not in %s"
-			% [SHOWN, not_darker])
+	return report(not_in_tone.is_empty(),
+			("Art: the big dog's drawn in its tone %s (saturation at least %.2f), with the dog's "
+			+ "tint and at least %.0f %% of its luminance, in %s; not in %s") % [tone,
+			LEAST_SATURATION, LEAST_VALUE_SHARE * 100.0, SHOWN, not_in_tone])
 
 
 ## Gives demon's stand-in the tint of shown, as the demon's own signals do.
@@ -177,13 +192,27 @@ func _show(demon: Demon, shown: String) -> void:
 			placeholder._on_demon_warning_started(_attack_of(demon.stats, StringName(shown)))
 
 
-## True when big's art takes from its stand-in the tint dog's takes, and is drawn darker than dog's.
-func _drawn_darker(big: Demon, dog: Demon) -> bool:
+## True when big's art takes from its stand-in the tint dog's takes, and is drawn in a tone of its
+## own, LEAST_SATURATION at least and LEAST_HUE_APART from the hue of either warning tint, with
+## LEAST_VALUE_SHARE of the luminance of dog's at least.
+func _drawn_in_its_tone(big: Demon, dog: Demon) -> bool:
 	var big_art: CanvasItem = big.get_node(^"Sprite") as CanvasItem
 	var dog_art: CanvasItem = dog.get_node(^"Sprite") as CanvasItem
 	var big_drawn: Color = big_art.modulate * big_art.self_modulate
 	var dog_drawn: Color = dog_art.modulate * dog_art.self_modulate
-	return big_art.modulate == dog_art.modulate and big_drawn.get_luminance() < dog_drawn.get_luminance()
+	var placeholder: DemonPlaceholder = big.get_node(^"Placeholder") as DemonPlaceholder
+	var tone: Color = big_art.self_modulate
+	return big_art.modulate == dog_art.modulate \
+			and tone.s >= LEAST_SATURATION \
+			and _hue_apart(tone, placeholder.warning_tint) >= LEAST_HUE_APART \
+			and _hue_apart(tone, placeholder.bite_warning_tint) >= LEAST_HUE_APART \
+			and big_drawn.get_luminance() >= LEAST_VALUE_SHARE * dog_drawn.get_luminance()
+
+
+## How far apart the hues of two colours are round the colour wheel, a share of a turn, 0 to 0.5.
+func _hue_apart(one: Color, other: Color) -> float:
+	var apart: float = absf(one.h - other.h)
+	return minf(apart, 1.0 - apart)
 
 
 ## The size of demon's body.

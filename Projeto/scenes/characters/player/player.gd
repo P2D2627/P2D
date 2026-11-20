@@ -53,6 +53,8 @@ const WALL_SIDES: Array[float] = [-1.0, 1.0]
 const Snag := preload("res://scenes/characters/player/snag.gd")
 ## His death in brambles (#263).
 const BrambleDeath := preload("res://scenes/characters/player/bramble_death.gd")
+## Noclip Speed until the debug overlay gives its own, in px/s: about twice his top run speed.
+const DEFAULT_NOCLIP_SPEED: float = 1200.0
 
 ## Movement values. Every player that uses the same file shares them.
 @export var stats: PlayerMovementStats
@@ -72,6 +74,32 @@ var snag: Snag = null
 ## How he dies when brambles kill him, which the strips call as they do; it puts itself here as it
 ## gets ready. With none, he just dies where he is.
 var bramble_death: BrambleDeath = null
+## Debug only, from the debug overlay's F1 (#273): hits still land, throw him and grab him, but take
+## no SP (lose_sp()), and nothing kills him: die() does nothing, and a grab that runs out of time
+## lets him go. Nothing in the game sets it, and release builds have no overlay to set it.
+var god_mode: bool = false
+## Debug only, from the debug overlay's F2 (#273): he flies with the move keys at Noclip Speed, up
+## and down too, with no gravity and through everything, and nothing touches him: he is invincible,
+## his HitReaction lets no hit in and his GrabEscape lets him go. He keeps his layer, so what senses
+## him, as a camera zone or an exit, still does. Turned on or off, he stops where he is, a knockback
+## ends and Jump's kept press and coyote frames are forgotten, so turned off in the air he falls.
+var noclip: bool = false:
+	set(value):
+		if value == noclip:
+			return
+		noclip = value
+		velocity = Vector2.ZERO
+		_knockback_frames_left = 0
+		_coyote_frames_left = 0
+		_wall_coyote_frames_left = 0
+		_jump_buffer_frames_left = 0
+		if noclip:
+			_mask_before_noclip = collision_mask
+			collision_mask = 0
+		else:
+			collision_mask = _mask_before_noclip
+## How fast he flies in noclip, in px/s. The debug overlay gives its own.
+var noclip_speed: float = DEFAULT_NOCLIP_SPEED
 ## In the air until the first move_and_slide() finds the floor.
 var _state: State = State.IN_AIR
 ## Physics frames left in which Jump still works after leaving the floor without jumping.
@@ -124,6 +152,8 @@ var _wall_hit: KinematicCollision2D = KinematicCollision2D.new()
 var _hugging: bool = false
 ## True when this physics frame began with him going up, for _assist_onto_a_ledge().
 var _was_rising: bool = false
+## His collision mask before noclip emptied it, given back when noclip ends.
+var _mask_before_noclip: int = 0
 
 ## The drawing faces left; it is mirrored while the player faces right.
 @onready var _sprite: AnimatedSprite2D = $Sprite
@@ -144,6 +174,12 @@ func _ready() -> void:
 func _physics_process(delta: float) -> void:
 	if _pinned:
 		velocity = Vector2.ZERO
+		return
+	# Dead, the body stays where it is until the room starts over: with noclip's empty mask, the
+	# fall of a death held still would take it through the floor.
+	if noclip:
+		if not _is_dead:
+			_fly()
 		return
 	_was_rising = velocity.y < 0.0
 	_update_state()
@@ -234,6 +270,12 @@ func is_knocked_back() -> bool:
 	return _knockback_frames_left > 0
 
 
+## True while a shove carries him off a body he can't stand on (ADR 0022), as of his last physics
+## frame.
+func is_shoved_off() -> bool:
+	return _knock_off.is_shoving()
+
+
 ## A demon's grab (ADR 0021): from the next physics frame he is GRABBED until release(). He stops
 ## at once and a knockback under way ends; in that state he can't run or jump, in the air he rises
 ## no more and comes down straight, no faster than Grabbed Fall Speed, against a wall too, and nothing shoves
@@ -286,9 +328,9 @@ func get_facing() -> float:
 ## The man dies at once, as on spikes, whatever his SP: he stops where he is, with no run and no jump,
 ## and says so with died, once. The level listens and starts over, and reads get_death_cause() to
 ## count the death: cause names what killed him, as spikes or the demon that held him, and source
-## which one, when that matters, as the strip of spikes he fell on.
+## which one, when that matters, as the strip of spikes he fell on. Invincible, he does not die.
 func die(cause: StringName = UNKNOWN_CAUSE, source: StringName = &"") -> void:
-	if _is_dead:
+	if _is_dead or is_invincible():
 		return
 	_is_dead = true
 	_death_cause = cause if not cause.is_empty() else UNKNOWN_CAUSE
@@ -300,6 +342,18 @@ func die(cause: StringName = UNKNOWN_CAUSE, source: StringName = &"") -> void:
 
 func is_dead() -> bool:
 	return _is_dead
+
+
+## SP the game takes from him, as a hit or brambles do: none while he is invincible. The debug
+## overlay's F4 goes straight to his SoulPoints, so it still takes SP in god mode.
+func lose_sp(amount: float) -> void:
+	if not is_invincible():
+		soul_points.take_damage(amount)
+
+
+## True in god mode and in noclip, the debug cheats (#273): nothing takes his SP or kills him.
+func is_invincible() -> bool:
+	return god_mode or noclip
 
 
 ## What he died of, as die() was told; empty while alive.
@@ -363,9 +417,11 @@ func _update_facing() -> void:
 ## says: along its top at Knock Off Speed, as a knockback that lasts until he lands on something
 ## else. Landing is not the only way onto one: a shove that is stopped, or a demon that gets under
 ## him, leaves him there too (ADR 0022). Held still, he is not shoved: he falls through it (ADR
-## 0056).
+## 0056). On a demon in KnockOff's Stand On Group, as a dog whose back bites, he is not shoved
+## either: its bites keep at him until he walks or jumps off (#271).
 func _shove_off_what_cannot_be_stood_on() -> void:
-	var direction: float = _knock_off.update(knock_off_layers, _held_still or _grabbed)
+	var direction: float = _knock_off.update(knock_off_layers, _held_still or _grabbed,
+			KnockOff.STAND_ON_GROUP)
 	if direction == 0.0:
 		return
 	velocity = Vector2(direction * stats.knock_off_speed, 0.0)
@@ -531,6 +587,17 @@ func _end_the_hug() -> void:
 	if _hugging:
 		velocity.x = 0.0
 		_hugging = false
+
+
+## Noclip's flight: the move keys set his velocity at Noclip Speed, in eight directions, with no
+## gravity, ramp or modifier, and the move hits nothing, as his mask is empty. The state still
+## follows each move, so the flight is in the air, and the grab a flight starts in ends there.
+func _fly() -> void:
+	_update_state()
+	var direction: Vector2 = Vector2(input.get_run_direction(), input.get_vertical_direction())
+	velocity = direction.limit_length(1.0) * noclip_speed
+	move_and_slide()
+	_update_facing()
 
 
 ## Held by a demon: gravity pulls off the floor, up to Grabbed Fall Speed, and nothing else moves

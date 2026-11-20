@@ -2,16 +2,16 @@
 
 importer="texture"
 type="CompressedTexture2D"
-uid="uid://c8oc4nomufpqi"
-path="res://.godot/imported/dog_idle.png-c80b53758d736993cb87f6e87932c7df.ctex"
+uid="uid://dbioaqdbnkfg2"
+path="res://.godot/imported/xbox_rt.png-ffcca15329f92712a1e2d320b1ee9158.ctex"
 metadata={
 "vram_texture": false
 }
 
 [deps]
 
-source_file="res://assets/sprites/demon_lust/dog_idle.png"
-dest_files=["res://.godot/imported/dog_idle.png-c80b53758d736993cb87f6e87932c7df.ctex"]
+source_file="res://assets/ui/prompts/xbox_rt.png"
+dest_files=["res://.godot/imported/xbox_rt.png-ffcca15329f92712a1e2d320b1ee9158.ctex"]
 
 [params]
 

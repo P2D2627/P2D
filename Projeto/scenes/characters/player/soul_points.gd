@@ -80,7 +80,9 @@ func get_regen_rate() -> float:
 
 
 ## Takes amount SP away, down to 0. A negative, infinite or nan amount is an error and changes
-## nothing; so does any damage once the SP has run out.
+## nothing; so does any damage once the SP has run out. What hurts the man in the game goes through
+## Player.lose_sp(), so the debug cheats can stop it (#273); only the debug overlay's F4 comes here
+## straight.
 func take_damage(amount: float) -> void:
 	if not _is_valid_amount(amount) or amount == 0.0 or is_depleted():
 		return

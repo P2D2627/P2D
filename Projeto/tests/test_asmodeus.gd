@@ -8,10 +8,12 @@
 extends "res://tests/support/player_test.gd"
 
 const ASMODEUS_SCENE: PackedScene = preload("res://scenes/characters/demon/asmodeus.tscn")
-## A cue with no answers, so a skip runs it to the end.
+## Her last cue; the first answer at each of its choices runs it to the end.
 const CUE: String = "stairs"
 ## Frames to wait for a line to come, or for the talk to end.
 const LINE_FRAMES: int = 60
+## Choices answered before giving up, in case a jump loops.
+const MAX_CHOICES: int = 8
 
 
 func _initialize() -> void:
@@ -40,9 +42,7 @@ func _a_talk_holds_the_man_and_lets_him_go_after() -> bool:
 	var balloons: int = asmodeus.find_children("*", "CanvasLayer", false, false).size()
 	var held: bool = (asmodeus.visible and asmodeus.is_talking() and player.get_speed_multiplier() == 0.0
 			and player.is_jump_blocked() and crucifix.is_blocked() and balloon != null and balloons == 1)
-	if balloon != null:
-		balloon.skip_to_the_next_choice()
-	var over: bool = await wait_until(func() -> bool: return not ended.is_empty(), LINE_FRAMES)
+	var over: bool = balloon != null and await _talk_to_the_end(balloon, ended)
 	var let_go: bool = (player.get_speed_multiplier() == 1.0 and not player.is_jump_blocked()
 			and not crucifix.is_blocked() and not asmodeus.visible and not asmodeus.is_talking())
 	asmodeus.queue_free()
@@ -83,3 +83,23 @@ func _balloon_of(asmodeus: Asmodeus) -> DialogueBalloon:
 				return true
 		return false, LINE_FRAMES)
 	return found[0] if not found.is_empty() else null
+
+
+## Skips the lines and picks the first answer at each choice, until the talk says it ended (ended
+## gets its cue); whether it did.
+func _talk_to_the_end(balloon: DialogueBalloon, ended: Array[String]) -> bool:
+	for i: int in MAX_CHOICES:
+		if not is_instance_valid(balloon) or not ended.is_empty():
+			break
+		balloon.skip_to_the_next_choice()
+		await wait_until(func() -> bool:
+			return not is_instance_valid(balloon) or not ended.is_empty() or balloon.is_at_a_choice(),
+			LINE_FRAMES)
+		if not is_instance_valid(balloon) or not ended.is_empty() or not balloon.is_at_a_choice():
+			break
+		var line: DialogueLine = balloon.dialogue_line
+		balloon.next(line.responses[0].next_id)
+		await wait_until(func() -> bool:
+			return (not is_instance_valid(balloon) or not ended.is_empty()
+					or balloon.dialogue_line != line), LINE_FRAMES)
+	return await wait_until(func() -> bool: return not ended.is_empty(), LINE_FRAMES)

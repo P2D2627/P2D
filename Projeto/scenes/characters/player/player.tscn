@@ -42,6 +42,7 @@
 [ext_resource type="AudioStream" uid="uid://dhjj60suxe3wx" path="res://assets/audio/sfx/footstep_d_4.wav" id="35_step_d_4"]
 [ext_resource type="AudioStream" uid="uid://bvys8jgo4savk" path="res://assets/audio/sfx/footstep_d_5.wav" id="36_step_d_5"]
 [ext_resource type="AudioStream" uid="uid://3cyxk2laasuc" path="res://assets/audio/sfx/footstep_d_6.wav" id="37_step_d_6"]
+[ext_resource type="Texture2D" path="res://assets/sprites/player/main_character_wall_slide_384.png" id="21_wall_slide"]
 
 [sub_resource type="RectangleShape2D" id="RectangleShape2D_player"]
 size = Vector2(48, 96)
@@ -146,6 +147,14 @@ region = Rect2(3840, 0, 384, 384)
 atlas = ExtResource("4_g4c7l")
 region = Rect2(4224, 0, 384, 384)
 
+[sub_resource type="AtlasTexture" id="AtlasTexture_wall_slide0"]
+atlas = ExtResource("21_wall_slide")
+region = Rect2(0, 0, 384, 384)
+
+[sub_resource type="AtlasTexture" id="AtlasTexture_wall_slide1"]
+atlas = ExtResource("21_wall_slide")
+region = Rect2(384, 0, 384, 384)
+
 [sub_resource type="SpriteFrames" id="SpriteFrames_g4v7s"]
 animations = [{
 "frames": [{
@@ -242,6 +251,17 @@ animations = [{
 "loop": 1,
 "name": &"walk",
 "speed": 18.0
+}, {
+"frames": [{
+"duration": 1.0,
+"texture": SubResource("AtlasTexture_wall_slide0")
+}, {
+"duration": 1.0,
+"texture": SubResource("AtlasTexture_wall_slide1")
+}],
+"loop": true,
+"name": &"wall_slide",
+"speed": 6.0
 }]
 
 [node name="Player" type="CharacterBody2D" unique_id=1108148048 node_paths=PackedStringArray("input", "soul_points")]

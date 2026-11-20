@@ -1,13 +1,14 @@
 # Checks DemonAnimation and the dog's drawing in demon.tscn. The choice alone, from the demon's state
 # as the man's comes from his: standing ones (idle, alert, warning, repelled, stunned, grab) show
-# idle; walking ones (chase, patrol, return, search, retreat, out of reach) run at Run Min Speed or
-# faster and show idle slower; leaping ones (lunge, thrown, jump, drop) and any state off the floor
-# show the run's stretched frame. The run keeps pace with the ground: one loop of its frames for
-# every Stride Length it runs, at any speed. In the scene: the body lies down, wider than high, as the
-# dog is drawn; the drawing has the run, looping, with its frames, and idle; the stand-in rectangle
-# no longer shows; the dog faces the way the demon faces; standing it shows idle, and chasing the
-# man it runs. The stand-in's shapes never reach the dog: squashed for a warning or flat while
-# stunned, the dog keeps its size, while it takes the stand-in's tint and Z Index.
+# idle; moving ones (chase, patrol, return, search, retreat, out of reach) walk from Run Min Speed and
+# run from Walk Max Speed, and show idle slower; leaping ones (lunge, thrown, jump, drop) and any state
+# off the floor show the run's stretched frame. The walk and the run keep pace with the ground: one loop
+# of their frames for every stride, at any speed. In the scene: the body lies down, wider than high, as
+# the dog is drawn; the drawing has the run and the walk, looping, with their frames, and idle, looping
+# with its frames; the stand-in rectangle no longer shows; the dog faces the way the demon faces;
+# standing it plays idle, and chasing the man it runs. The stand-in's shapes never reach the dog:
+# squashed for a warning or flat while stunned, the dog keeps its size, while it takes the stand-in's
+# tint and Z Index.
 # Run from the repository root; the exit code is 0 on pass and 1 on fail:
 # godot --headless --fixed-fps 60 --path Projeto --script res://tests/test_demon_animation.gd
 extends "res://tests/support/player_test.gd"
@@ -18,12 +19,17 @@ const FLOOR_RIGHT: float = 2000.0
 const START: Vector2 = Vector2(0.0, -2.0)
 ## Where the man stands for the demon to see him and chase him.
 const SEEN_X: float = 300.0
-## Speeds well above Run Min Speed and below it, in px/s.
+## Speeds above Walk Max Speed, between it and Run Min Speed, and below Run Min Speed, in px/s.
 const FAST: float = 400.0
+const PATROL: float = 150.0
 const SLOW: float = 5.0
 const RUN_MIN_SPEED: float = 20.0
-## The run's frames as drawn in dog_movement.png.
+const WALK_MAX_SPEED: float = 250.0
+## The run's frames as drawn in dog_movement.png, the walk's in dog_walk_full.png and idle's in
+## dog_idle_full.png.
 const RUN_FRAMES: int = 8
+const WALK_FRAMES: int = 8
+const IDLE_FRAMES: int = 4
 const SETTLE_FRAMES: int = 10
 ## Frames given to the demon to see the man and run after him.
 const CHASE_FRAMES: int = 60
@@ -68,6 +74,9 @@ func _each_state_floor_and_speed_gives_its_pose() -> bool:
 	for state: Demon.State in WALKING:
 		cases.append([state, true, 0.0, DemonAnimation.Pose.IDLE])
 		cases.append([state, true, SLOW, DemonAnimation.Pose.IDLE])
+		cases.append([state, true, PATROL, DemonAnimation.Pose.WALK])
+		cases.append([state, true, -PATROL, DemonAnimation.Pose.WALK])
+		cases.append([state, true, WALK_MAX_SPEED, DemonAnimation.Pose.RUN])
 		cases.append([state, true, FAST, DemonAnimation.Pose.RUN])
 		cases.append([state, true, -FAST, DemonAnimation.Pose.RUN])
 		cases.append([state, false, FAST, DemonAnimation.Pose.LEAP])
@@ -77,7 +86,7 @@ func _each_state_floor_and_speed_gives_its_pose() -> bool:
 	var wrong: Array[String] = []
 	for case: Array in cases:
 		var got: DemonAnimation.Pose = DemonAnimation.pose_for(case[0], case[1], case[2],
-				RUN_MIN_SPEED)
+				RUN_MIN_SPEED, WALK_MAX_SPEED)
 		if got != case[3]:
 			wrong.append("%s floor %s %.0f px/s: %s, not %s" % [Demon.State.find_key(case[0]),
 					case[1], case[2], DemonAnimation.Pose.find_key(got),
@@ -116,10 +125,15 @@ func _in_the_scene_the_dog_lies_down_stands_and_runs() -> bool:
 	var has_run: bool = frames.has_animation(DemonAnimation.RUN)
 	var run_ok: bool = (has_run and frames.get_frame_count(DemonAnimation.RUN) == RUN_FRAMES
 			and frames.get_animation_loop(DemonAnimation.RUN))
-	var has_idle: bool = frames.has_animation(DemonAnimation.IDLE)
+	var has_walk: bool = frames.has_animation(DemonAnimation.WALK)
+	var walk_ok: bool = (has_walk and frames.get_frame_count(DemonAnimation.WALK) == WALK_FRAMES
+			and frames.get_animation_loop(DemonAnimation.WALK))
+	var has_idle: bool = (frames.has_animation(DemonAnimation.IDLE)
+			and frames.get_frame_count(DemonAnimation.IDLE) == IDLE_FRAMES
+			and frames.get_animation_loop(DemonAnimation.IDLE))
 	await process_frame
 	var standing_state: String = Demon.State.find_key(demon.get_state())
-	var stands_idle: bool = sprite.animation == DemonAnimation.IDLE
+	var stands_idle: bool = sprite.animation == DemonAnimation.IDLE and sprite.is_playing()
 	var faces_as_the_demon: bool = sprite.flip_h == (demon.get_facing() < 0.0)
 	var man: Player = await spawn_on_floor(Vector2(SEEN_X, START.y))
 	var ran: bool = false
@@ -131,14 +145,16 @@ func _in_the_scene_the_dog_lies_down_stands_and_runs() -> bool:
 	demon.queue_free()
 	if man != null:
 		await remove_player(man)
-	var passed: bool = (body.x > body.y and run_ok and has_idle and hidden_rectangle
+	var passed: bool = (body.x > body.y and run_ok and walk_ok and has_idle and hidden_rectangle
 			and stands_idle and faces_as_the_demon and ran)
 	return report(passed,
-			("In the scene: body %s, lying down %s; run with %d frames, looping %s; idle %s; "
-			+ "rectangle hidden %s; in %s it shows idle %s; facing as the demon %s; chasing it "
-			+ "runs %s") % [body, body.x > body.y,
-			frames.get_frame_count(DemonAnimation.RUN) if has_run else 0, run_ok, has_idle,
-			hidden_rectangle, standing_state, stands_idle, faces_as_the_demon, ran])
+			("In the scene: body %s, lying down %s; run with %d frames, looping %s; walk with %d "
+			+ "frames, looping %s; idle with %d frames, looping %s; rectangle hidden %s; in %s it "
+			+ "plays idle %s; facing as the demon %s; chasing it runs %s") % [body, body.x > body.y,
+			frames.get_frame_count(DemonAnimation.RUN) if has_run else 0, run_ok,
+			frames.get_frame_count(DemonAnimation.WALK) if has_walk else 0, walk_ok,
+			frames.get_frame_count(DemonAnimation.IDLE), has_idle, hidden_rectangle,
+			standing_state, stands_idle, faces_as_the_demon, ran])
 
 
 ## The stand-in lying flat while stunned and drawn over the man while it grabs: the dog keeps its

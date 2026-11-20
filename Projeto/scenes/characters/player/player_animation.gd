@@ -96,6 +96,11 @@ func _process(delta: float) -> void:
 				fast_fall_speed))
 	elif sprite.animation != animation or not sprite.is_playing():
 		sprite.play(animation)
+	# Sliding down, he faces the wall, as pushing into it turns him, also when he was let go while
+	# turned away. wall_slide's art is stored turned over, so facing right it shows as drawn, with
+	# the wall on his right. get_wall_normal() only holds while is_on_wall().
+	if animation == WALL_SLIDE and player.is_on_wall():
+		sprite.flip_h = player.get_wall_normal().x < 0.0
 	if animation == WALK:
 		sprite.speed_scale = walk_speed_scale(absf(player.velocity.x))
 	else:

@@ -1,8 +1,59 @@
 [gd_resource type="Theme" format=3]
 
 [ext_resource type="SystemFont" path="res://themes/main_font.tres" id="1_font"]
+[ext_resource type="FontVariation" path="res://assets/fonts/prompt_key_font.tres" id="2_key_font"]
+[ext_resource type="FontVariation" path="res://assets/fonts/prompt_caption_font.tres" id="3_caption_font"]
 
 [sub_resource type="StyleBoxEmpty" id="StyleBoxEmpty_none"]
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_prompt_plate"]
+content_margin_left = 28.0
+content_margin_top = 12.0
+content_margin_right = 28.0
+content_margin_bottom = 12.0
+bg_color = Color(0.03, 0.02, 0.04, 0.72)
+corner_radius_top_left = 14
+corner_radius_top_right = 14
+corner_radius_bottom_right = 14
+corner_radius_bottom_left = 14
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_prompt_key"]
+content_margin_left = 14.0
+content_margin_top = 0.0
+content_margin_right = 14.0
+content_margin_bottom = 0.0
+bg_color = Color(0.1, 0.07, 0.12, 0.9)
+border_width_left = 3
+border_width_top = 3
+border_width_right = 3
+border_width_bottom = 3
+border_color = Color(0.93, 0.89, 0.84, 1)
+corner_radius_top_left = 8
+corner_radius_top_right = 8
+corner_radius_bottom_right = 8
+corner_radius_bottom_left = 8
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_row"]
+bg_color = Color(0.66, 0.6, 0.54, 0.24)
+border_width_left = 3
+border_color = Color(0.93, 0.88, 0.8, 1)
+corner_radius_top_right = 6
+corner_radius_bottom_right = 6
+
+[sub_resource type="StyleBoxEmpty" id="StyleBoxEmpty_tab"]
+content_margin_left = 8.0
+content_margin_top = 4.0
+content_margin_right = 8.0
+content_margin_bottom = 10.0
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_tab_selected"]
+content_margin_left = 8.0
+content_margin_top = 4.0
+content_margin_right = 8.0
+content_margin_bottom = 10.0
+draw_center = false
+border_width_bottom = 3
+border_color = Color(1, 1, 1, 1)
 
 [resource]
 default_font = ExtResource("1_font")
@@ -26,4 +77,51 @@ MenuOption/base_type = &"Button"
 MenuOption/font_sizes/font_size = 64
 MenuFirstOption/base_type = &"Button"
 MenuFirstOption/font_sizes/font_size = 110
+MenuSlot/base_type = &"Button"
+MenuSlot/font_sizes/font_size = 32
+OptionsBinding/base_type = &"Button"
+OptionsBinding/font_sizes/font_size = 32
+OptionsChoice/base_type = &"OptionButton"
+OptionsChoice/font_sizes/font_size = 32
+OptionsGrid/base_type = &"GridContainer"
+OptionsGrid/constants/v_separation = 8
+OptionsDescription/base_type = &"Label"
+OptionsDescription/colors/font_color = Color(0.66, 0.6, 0.54, 1)
+OptionsDescription/font_sizes/font_size = 28
+OptionsLabel/base_type = &"Label"
+OptionsLabel/font_sizes/font_size = 32
+OptionsList/base_type = &"VBoxContainer"
+OptionsList/constants/separation = 12
+OptionsPrompt/base_type = &"Button"
+OptionsPrompt/font_sizes/font_size = 30
+OptionsRowHighlight/base_type = &"Panel"
+OptionsRowHighlight/styles/panel = SubResource("StyleBoxFlat_row")
+OptionsTab/base_type = &"Button"
+OptionsTab/colors/font_color = Color(0.55, 0.52, 0.5, 1)
+OptionsTab/font_sizes/font_size = 40
+OptionsTab/styles/hover = SubResource("StyleBoxEmpty_tab")
+OptionsTab/styles/hover_pressed = SubResource("StyleBoxEmpty_tab")
+OptionsTab/styles/normal = SubResource("StyleBoxEmpty_tab")
+OptionsTab/styles/pressed = SubResource("StyleBoxEmpty_tab")
+OptionsTabSelected/base_type = &"Button"
+OptionsTabSelected/colors/font_color = Color(1, 1, 1, 1)
+OptionsTabSelected/font_sizes/font_size = 40
+OptionsTabSelected/styles/hover = SubResource("StyleBoxFlat_tab_selected")
+OptionsTabSelected/styles/hover_pressed = SubResource("StyleBoxFlat_tab_selected")
+OptionsTabSelected/styles/normal = SubResource("StyleBoxFlat_tab_selected")
+OptionsTabSelected/styles/pressed = SubResource("StyleBoxFlat_tab_selected")
+PromptCaption/base_type = &"Label"
+PromptCaption/colors/font_color = Color(0.93, 0.89, 0.84, 1)
+PromptCaption/font_sizes/font_size = 36
+PromptCaption/fonts/font = ExtResource("3_caption_font")
+PromptKey/base_type = &"PanelContainer"
+PromptKey/styles/panel = SubResource("StyleBoxFlat_prompt_key")
+PromptKeyName/base_type = &"Label"
+PromptKeyName/colors/font_color = Color(0.93, 0.89, 0.84, 1)
+PromptKeyName/font_sizes/font_size = 39
+PromptKeyName/fonts/font = ExtResource("2_key_font")
+PromptPlate/base_type = &"PanelContainer"
+PromptPlate/styles/panel = SubResource("StyleBoxFlat_prompt_plate")
+PromptRow/base_type = &"HBoxContainer"
+PromptRow/constants/separation = 16
 VBoxContainer/constants/separation = 20

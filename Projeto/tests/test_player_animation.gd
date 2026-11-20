@@ -8,7 +8,9 @@
 # standing he is idle, running he walks, in the air he jumps, and a jump from standing shows its
 # frames in order, from the crouch to the braced landing. Running, the walk plays one loop every
 # Steps Per Loop × Step Length, so the feet keep to the ground; landing while running, the walk
-# starts from its first frame, with the legs together.
+# starts from its first frame, with the legs together. Sliding down a wall he shows wall_slide,
+# turned to the wall: the art, drawn with the wall on his right, is stored turned over, so the
+# Sprite, flipped when he faces right, shows it as drawn against a wall on his right.
 # Run from the repository root; the exit code is 0 on pass and 1 on fail:
 # godot --headless --fixed-fps 60 --path Projeto --script res://tests/test_player_animation.gd
 extends "res://tests/support/player_test.gd"
@@ -36,6 +38,13 @@ const RUN_UP_FRAMES: int = 30
 ## Speeds for the jump's frames: the top of the jump is under APEX, bracing from FAST_FALL.
 const APEX: float = 300.0
 const FAST_FALL: float = 900.0
+## The walls the man slides down, each side of the start, and how high above the floor he starts.
+const WALL_GAP: float = 600.0
+const WALL_THICKNESS: float = 100.0
+const WALL_HEIGHT: float = 2000.0
+const SLIDE_START_HEIGHT: float = 1200.0
+## Frames given to reach the wall and slide down it.
+const SLIDE_FRAMES: int = 120
 
 
 func _initialize() -> void:
@@ -50,6 +59,8 @@ func _initialize() -> void:
 	results.append(await _a_jump_shows_its_frames_in_order())
 	results.append(await _running_the_walk_loops_every_steps_per_loop_step_lengths())
 	results.append(await _landing_while_running_starts_the_walk_from_its_first_frame())
+	results.append(await _down_a_wall_he_slides_turned_to_it(1.0))
+	results.append(await _down_a_wall_he_slides_turned_to_it(-1.0))
 	finish(results)
 
 
@@ -285,3 +296,38 @@ func _landing_while_running_starts_the_walk_from_its_first_frame() -> bool:
 	return report(in_air and landed and walking and first_frame == 0,
 			"Landing while running: in the air %s, landed %s, walking %s on frame %d (expected 0)"
 			% [in_air, landed, walking, first_frame])
+
+
+## Pressed against a wall on side (1 right, -1 left) and sliding down it, he shows wall_slide facing
+## the wall: flipped with the wall on his right, which shows the stored art as drawn; let go and
+## turned away, he stays on it and the drawing turns back to the wall.
+func _down_a_wall_he_slides_turned_to_it(side: float) -> bool:
+	var face: float = side * WALL_GAP
+	var wall: StaticBody2D = make_wall(face if side > 0.0 else face - WALL_THICKNESS,
+			face + WALL_THICKNESS if side > 0.0 else face, -WALL_HEIGHT)
+	var player: Player = spawn_player(Vector2(face - side * 100.0, -SLIDE_START_HEIGHT))
+	var stand_in: StandInInput = put_a_stand_in(player)
+	var sprite: AnimatedSprite2D = player.get_node(^"Sprite") as AnimatedSprite2D
+	stand_in.run_direction = side
+	var sliding: bool = await wait_until(func() -> bool:
+			return player.get_state() == Player.State.ON_WALL and player.velocity.y > 0.0,
+			SLIDE_FRAMES)
+	await process_frame
+	var shown: StringName = sprite.animation
+	var flipped: bool = sprite.flip_h
+	# Let go, he stays on the wall; turned the other way, as a last press away would leave him, the
+	# drawing turns back to the wall on the next frame drawn.
+	stand_in.run_direction = 0.0
+	sprite.flip_h = side < 0.0
+	await physics_frame
+	await process_frame
+	var still_on: bool = player.get_state() == Player.State.ON_WALL
+	var turned_back: bool = sprite.flip_h == (side > 0.0)
+	await remove_player(player)
+	wall.queue_free()
+	var side_name: String = "right" if side > 0.0 else "left"
+	return report(sliding and shown == PlayerAnimation.WALL_SLIDE and flipped == (side > 0.0)
+			and still_on and turned_back,
+			("Wall on his %s: sliding %s, shows %s, flipped %s (%s); let go, on the wall %s, turned "
+			+ "back to it %s") % [side_name, sliding, shown,
+			flipped, side > 0.0, still_on, turned_back])
