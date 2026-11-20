@@ -77,8 +77,9 @@ quando se usa o outro aparelho, quando se liga um comando e quando se desliga o 
 | Interagir | E | Ctrl | X / Square |
 
 O terceiro perfil, Custom, começa igual ao predefinido, e cada ação pode receber outra tecla ou
-botão do rato. O Esc e as teclas de depuração (F1 a F4, F7, F8 e F9) estão reservados; o 1, o 2 e o
-3, que com o texto de depuração visível recomeçam numa fase, não estão. As teclas W,
+botão do rato. O Esc, as teclas de depuração (F1 a F4, F7, F8 e F9) e a tecla Windows, que ao ser
+largada abre o menu Iniciar e tira o foco ao jogo, estão reservados; o 1, o 2 e o
+3, que na página dos números do texto de depuração recomeçam numa fase, não estão. As teclas W,
 E, A, S e D do perfil das setas ficam livres para os upgrades.
 
 | Ação | Teclado | Comando |
@@ -2719,7 +2720,8 @@ gravidade e através das paredes e do chão. Enquanto voa, os golpes não têm e
 um agarrão em curso larga-a; os contactos continuam, no entanto, a ser detetados, pelo que o
 tremor do ecrã e a vibração do comando de um golpe se mantêm. Ao desligar, cai do sítio onde está.
 As duas funcionam com o texto escondido, com o jogo em pausa e com uma fala no ecrã, e uma etiqueta
-no canto superior direito indica as que estão ligadas. Ficam ligadas depois de uma morte, de um
+no canto superior direito indica as que estão ligadas. Na página da luz, o F1 e o F2 são do
+protótipo de iluminação, como as outras teclas que ele usa, e não mexem nas ajudas. Ficam ligadas depois de uma morte, de um
 recomeço ou de um salto de fase, até se voltar a carregar na tecla. Cada recomeço cria uma cópia
 nova do nível, com um overlay e uma personagem novos, pelo que o estado das ajudas fica guardado
 fora deles, em variáveis estáticas do overlay, e cada overlay novo entrega-o à sua personagem. Na
@@ -2736,7 +2738,7 @@ dentro de uma parede ou do chão fica entregue à separação de corpos do motor
 da aterragem medem a queda a partir do ponto mais alto do voo, pelo que desligar o noclip junto ao
 chão, depois de voar alto, soa como uma queda longa.
 
-Com o overlay visível (F3), as teclas 1, 2 e 3 recomeçam o nível no início dessa fase, atrás do
+Na página dos números do overlay (F3), as teclas 1, 2 e 3 recomeçam o nível no início dessa fase, atrás do
 mesmo escurecer de uma morte. No momento do recomeço, o nível (`Level.jump_to_phase`) percorre os
 seus pontos de gravação pela ordem da cena, que é a do percurso, marca no GameState os que ficam
 para trás e esquece os seguintes, pelo que a cópia nova põe a personagem no ponto dessa fase, como

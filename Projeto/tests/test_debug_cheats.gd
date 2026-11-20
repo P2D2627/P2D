@@ -90,6 +90,7 @@ func _initialize() -> void:
 	results.append(await _noclip_turned_on_dead_leaves_the_body_where_it_is())
 	results.append(await _without_a_man_the_label_stays_empty())
 	results.append(_the_move_keys_give_the_flight_its_height())
+	results.append(await _on_the_lighting_page_f1_and_f2_go_to_the_rig())
 	_turn_cheats_off()
 	finish(results)
 
@@ -506,6 +507,34 @@ func _the_move_keys_give_the_flight_its_height() -> bool:
 			"Move Up %.0f, Move Down %.0f, neither %.0f; expected -1, 1 and 0" % [up, down, none])
 
 
+## On the lighting page the lighting rig gets F1 and F2 first, as its other keys, so they change the
+## light and leave the cheats as they are; on the numbers page, F1 is God Mode again.
+func _on_the_lighting_page_f1_and_f2_go_to_the_rig() -> bool:
+	_turn_cheats_off()
+	var man: Player = await spawn_on_floor(START)
+	if man == null:
+		return report(false, "Lighting page: the man never landed")
+	var lighting: FakeLighting = FakeLighting.new()
+	root.add_child(lighting)
+	var overlay: DebugOverlay = await _spawn_overlay(false, man)
+	overlay.show_page(DebugOverlay.Page.LIGHTING)
+	_press_key(KEY_F1)
+	_press_key(KEY_F2)
+	var to_the_rig: PackedStringArray = lighting.keys.duplicate()
+	var cheats_there: bool = man.god_mode or man.noclip
+	overlay.show_page(DebugOverlay.Page.NUMBERS)
+	_press_key(KEY_F1)
+	var god_on_numbers: bool = man.god_mode
+	_turn_cheats_off()
+	await _remove(overlay)
+	lighting.queue_free()
+	await remove_player(man)
+	return report(to_the_rig == PackedStringArray(["F1", "F2"]) and not cheats_there
+			and god_on_numbers,
+			("Lighting page: the rig got %s, cheats on %s; numbers page: F1 turns God Mode on %s")
+			% [to_the_rig, cheats_there, god_on_numbers])
+
+
 ## Flies the man direction for FLIGHT_FRAMES, then stops him, and gives how far he went.
 func _fly(man: Player, flyer: FlyingStandIn, direction: Vector2) -> Vector2:
 	var from: Vector2 = man.position
@@ -688,6 +717,24 @@ class FlyingStandIn extends "res://tests/support/stand_in_input.gd":
 
 	func get_vertical_direction() -> float:
 		return vertical_direction
+
+
+## Stands in for the lighting rig: a text of its own, and the keys it is given, by name.
+class FakeLighting extends Node:
+	var keys: PackedStringArray = []
+
+	func _ready() -> void:
+		add_to_group(DebugOverlay.LIGHTING_GROUP)
+
+	func get_debug_text() -> String:
+		return "fake lighting settings"
+
+	func handle_debug_key(event: InputEvent) -> bool:
+		var key: InputEventKey = event as InputEventKey
+		if key == null or not key.pressed or key.echo:
+			return false
+		keys.append(OS.get_keycode_string(key.physical_keycode))
+		return true
 
 
 ## The debug overlay as a release build runs it, where OS.is_debug_build() is false.
