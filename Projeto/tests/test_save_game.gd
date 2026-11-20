@@ -276,8 +276,9 @@ func _past_the_tutorial_a_death_starts_in_the_hall() -> bool:
 			% [marked, says_so, moral_saved, restarted, at_hall, camera_there, undone])
 
 
-## Play with a save asks first, and only then: No leaves the save, Yes starts over. The test room is
-## no new run, so it just starts.
+## Play with a save asks first, and only then: No leaves the save, with Play selected again, and Yes
+## starts over. With one level, Play starts it at once, so the question comes straight from Play.
+## The test room is no new run, so it just starts.
 func _a_new_game_over_a_save_asks_first() -> bool:
 	_delete_save()
 	_progress().mark_event(AN_EVENT)
@@ -287,14 +288,14 @@ func _a_new_game_over_a_save_asks_first() -> bool:
 	var dialog: ConfirmationDialog = main_menu_node(main, ^"%ReplaceSaveDialog") as ConfirmationDialog
 	await tap(KEY_DOWN)
 	await tap(KEY_ENTER)
-	await tap(KEY_ENTER)
 	var asked: bool = (dialog.visible and level_in(main) == null
 			and dialog.gui_get_focus_owner() == dialog.get_cancel_button())
 	await tap(KEY_ENTER)
 	await process_frame
 	var no_leaves_it: bool = (not dialog.visible and level_in(main) == null
 			and SaveFile.new().read().get("scene", "") == PHASE_2_PATH
-			and _state_text() == kept_state)
+			and _state_text() == kept_state
+			and root.gui_get_focus_owner() == main_menu_node(main, ^"%PlayButton"))
 	await tap(KEY_ENTER)
 	var asked_again: bool = dialog.visible
 	dialog.get_ok_button().pressed.emit()

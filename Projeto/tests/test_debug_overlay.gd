@@ -1,6 +1,10 @@
 # Smoke test of the debug overlay. The test room has the overlay, shown and running from the start
-# and linked to the room's player. Toggle Debug Overlay is on F3; F3 hides the overlay and stops its
-# processing, F3 again brings both back, and holding F3 toggles only once. While the game is paused,
+# and linked to the room's player. Toggle Debug Overlay is on F3; from the numbers page, F3 goes to
+# the lighting page, then hides the overlay and stops its processing, then brings the numbers back,
+# and holding F3 turns only one page. Each shown page has its name and the next above its text. The
+# lighting page shows the lighting rig's text (a stand-in here), or that the level has none, and
+# gives it the keys only there, Ctrl ones too, before the debug actions on the same keys and before
+# a line on screen that takes every key; F3 alone still turns the page. While the game is paused,
 # F3 and the text keep working. Without a player, the text is the frame rate and the two worst step
 # times; with one, a second line follows its state and velocity, and goes away when the player is
 # freed. A third line shows the man's SP out of Max SP, the speed regeneration gives, and whether it
@@ -59,6 +63,8 @@ const LINES_BEFORE_ANY_JUMP: int = 5
 const MAX_DEATHS_FOR_AN_OFFER: int = 40
 ## Repeats the keyboard sends while F3 is held down, in the held-key case.
 const KEY_REPEATS: int = 3
+## The overlay's pages, hidden included: as many F3 presses bring it back to where it was.
+const PAGE_COUNT: int = 3
 ## The SP values of the SP line case, set on its own copy of the stats so the .tres can change.
 const SP_MAX: float = 100.0
 const SP_LOW_THRESHOLD: float = 25.0
@@ -82,7 +88,11 @@ func _initialize() -> void:
 	results.append(_the_toggle_is_on_f3())
 	results.append(_the_debug_damage_is_on_f4())
 	results.append(await _the_test_room_shows_the_overlay_from_the_start())
-	results.append(await _f3_hides_the_overlay_and_f3_again_shows_it())
+	results.append(await _f3_goes_through_the_pages_in_order())
+	results.append(await _each_shown_page_names_itself_and_the_next())
+	results.append(await _the_lighting_page_shows_the_rig_s_text_or_that_there_is_none())
+	results.append(await _the_lighting_keys_reach_the_rig_only_on_its_page())
+	results.append(await _a_line_on_screen_leaves_the_lighting_keys_to_the_rig())
 	results.append(await _holding_f3_toggles_only_once())
 	results.append(await _while_paused_f3_and_the_text_keep_working())
 	results.append(await _without_a_player_the_text_is_the_performance_line())
@@ -138,17 +148,91 @@ func _the_test_room_shows_the_overlay_from_the_start() -> bool:
 	return report(passed, what)
 
 
-## F3 hides the overlay and stops its processing, and a second F3 brings both back.
-func _f3_hides_the_overlay_and_f3_again_shows_it() -> bool:
+## From the numbers page, F3 goes to the lighting page, then hides the overlay and stops its
+## processing, then brings the numbers back: each shown page runs, hidden is idle.
+func _f3_goes_through_the_pages_in_order() -> bool:
 	var overlay: DebugOverlay = await _spawn_overlay(true)
-	_press_f3()
-	var hidden: bool = not overlay.visible and not overlay.is_processing()
-	_press_f3()
-	var shown: bool = overlay.visible and overlay.is_processing()
+	var states: PackedStringArray = [_page_state(overlay)]
+	for _press: int in PAGE_COUNT:
+		_press_f3()
+		states.append(_page_state(overlay))
 	await _remove(overlay)
-	return report(hidden and shown,
-			"F3: hidden and idle after the first press %s, shown and running after the second %s"
-			% [hidden, shown])
+	var expected: PackedStringArray = ["NUMBERS shown running", "LIGHTING shown running",
+			"HIDDEN hidden idle", "NUMBERS shown running"]
+	return report(states == expected, "F3 from the numbers page: %s" % ", ".join(states))
+
+
+## Above each shown page, its name and where F3 goes next.
+func _each_shown_page_names_itself_and_the_next() -> bool:
+	var overlay: DebugOverlay = await _spawn_overlay(true)
+	var numbers: String = _page_title(overlay)
+	_press_f3()
+	var lighting: String = _page_title(overlay)
+	await _remove(overlay)
+	var named: bool = (numbers.begins_with("numbers") and numbers.contains("F3: lighting")
+			and lighting.begins_with("lighting") and lighting.contains("F3: hide"))
+	return report(named, "Page titles: numbers \"%s\", lighting \"%s\"" % [numbers, lighting])
+
+
+## The lighting page shows the text of the node in Lighting Group, the rig; in a level without
+## one, that there is none.
+func _the_lighting_page_shows_the_rig_s_text_or_that_there_is_none() -> bool:
+	var overlay: DebugOverlay = await _spawn_overlay(true)
+	overlay.show_page(DebugOverlay.Page.LIGHTING)
+	await _wait_process_frames(TEXT_FRAMES)
+	var without: String = _text(overlay)
+	var lighting: FakeLighting = FakeLighting.new()
+	root.add_child(lighting)
+	# The overlay looks for a rig that came later only every Lighting Lookup Frames frames.
+	await _wait_process_frames(DebugOverlay.LIGHTING_LOOKUP_FRAMES + TEXT_FRAMES)
+	var with_rig: String = _text(overlay)
+	await _remove(overlay)
+	lighting.queue_free()
+	return report(without == DebugOverlay.NO_LIGHTING_TEXT and with_rig == FakeLighting.TEXT,
+			"Lighting page: without a rig \"%s\", with one \"%s\"" % [without, with_rig])
+
+
+## The lighting keys reach the rig only on its page, with or without Ctrl, and there they win over
+## the debug actions on the same F keys (F4, Ctrl+F7). F3 alone still turns the page.
+func _the_lighting_keys_reach_the_rig_only_on_its_page() -> bool:
+	var lighting: FakeLighting = FakeLighting.new()
+	root.add_child(lighting)
+	var overlay: DebugOverlay = await _spawn_overlay(false)
+	_press_key(KEY_F10, true)
+	overlay.show_page(DebugOverlay.Page.NUMBERS)
+	_press_key(KEY_F10, true)
+	var elsewhere: PackedStringArray = lighting.keys.duplicate()
+	overlay.show_page(DebugOverlay.Page.LIGHTING)
+	_press_key(KEY_F10, true)
+	_press_key(KEY_F4)
+	_press_key(KEY_F7, true)
+	_press_f3()
+	var on_its_page: PackedStringArray = lighting.keys.duplicate()
+	var page_after_f3: String = DebugOverlay.Page.find_key(overlay.get_page())
+	await _remove(overlay)
+	lighting.queue_free()
+	var expected: PackedStringArray = ["Ctrl+F10", "F4", "Ctrl+F7"]
+	return report(elsewhere.is_empty() and on_its_page == expected and page_after_f3 == "HIDDEN",
+			"Lighting keys: hidden and numbers %s, lighting page %s, the page after F3 %s"
+			% [elsewhere, on_its_page, page_after_f3])
+
+
+## A node after the overlay that takes every unhandled key, as a line on screen does, still leaves
+## the lighting keys to the rig on its page.
+func _a_line_on_screen_leaves_the_lighting_keys_to_the_rig() -> bool:
+	var lighting: FakeLighting = FakeLighting.new()
+	root.add_child(lighting)
+	var overlay: DebugOverlay = await _spawn_overlay(false)
+	overlay.show_page(DebugOverlay.Page.LIGHTING)
+	var line: KeySwallower = KeySwallower.new()
+	root.add_child(line)
+	_press_key(KEY_F10, true)
+	var given: PackedStringArray = lighting.keys.duplicate()
+	await _remove(overlay)
+	line.queue_free()
+	lighting.queue_free()
+	return report(given == PackedStringArray(["Ctrl+F10"]),
+			"A line on screen after the overlay: the rig got %s" % [given])
 
 
 ## Without a player, the text is one line, with the frame rate and both frame times.
@@ -380,23 +464,25 @@ func _the_jump_line_says_what_each_jump_was_and_keeps_it() -> bool:
 			% [lines_before, has_offers_line, "\", \"".join(heard)])
 
 
-## Holding F3 down sends repeats after the first press, and only that first press toggles.
+## Holding F3 down sends repeats after the first press, and only that first press turns the page.
 func _holding_f3_toggles_only_once() -> bool:
 	var overlay: DebugOverlay = await _spawn_overlay(true)
 	root.push_input(_f3_event(true, false))
 	for _repeat: int in KEY_REPEATS:
 		root.push_input(_f3_event(true, true))
 	root.push_input(_f3_event(false, false))
-	var hidden: bool = not overlay.visible
+	var page: String = DebugOverlay.Page.find_key(overlay.get_page())
 	await _remove(overlay)
-	return report(hidden, "F3 held, with %d repeats: hidden %s" % [KEY_REPEATS, hidden])
+	return report(page == "LIGHTING",
+			"F3 held, with %d repeats: from the numbers page to %s" % [KEY_REPEATS, page])
 
 
-## While the game is paused, the overlay keeps processing: F3 still hides and shows it, and the
-## text is still written.
+## While the game is paused, the overlay keeps processing: F3 still hides it, after the lighting
+## page, and shows it again, and the text is still written.
 func _while_paused_f3_and_the_text_keep_working() -> bool:
 	var overlay: DebugOverlay = await _spawn_overlay(true)
 	paused = true
+	_press_f3()
 	_press_f3()
 	var hidden: bool = not overlay.visible
 	_press_f3()
@@ -590,9 +676,9 @@ func _press_f3() -> void:
 	_press_key(KEY_F3)
 
 
-func _press_key(keycode: Key) -> void:
-	root.push_input(_key_event(keycode, true, false))
-	root.push_input(_key_event(keycode, false, false))
+func _press_key(keycode: Key, ctrl: bool = false) -> void:
+	root.push_input(_key_event(keycode, true, false, ctrl))
+	root.push_input(_key_event(keycode, false, false, ctrl))
 
 
 func _f3_event(pressed: bool, echo: bool) -> InputEventKey:
@@ -600,13 +686,51 @@ func _f3_event(pressed: bool, echo: bool) -> InputEventKey:
 
 
 ## A key event; echo marks the repeats the keyboard sends while a key is held down.
-func _key_event(keycode: Key, pressed: bool, echo: bool) -> InputEventKey:
+func _key_event(keycode: Key, pressed: bool, echo: bool, ctrl: bool = false) -> InputEventKey:
 	var key: InputEventKey = InputEventKey.new()
 	key.keycode = keycode
 	key.physical_keycode = keycode
 	key.pressed = pressed
 	key.echo = echo
+	key.ctrl_pressed = ctrl
 	return key
+
+
+## The overlay's page, whether it shows and whether it processes, as "NUMBERS shown running".
+func _page_state(overlay: DebugOverlay) -> String:
+	return "%s %s %s" % [DebugOverlay.Page.find_key(overlay.get_page()),
+			"shown" if overlay.visible else "hidden", "running" if overlay.is_processing() else "idle"]
+
+
+func _page_title(overlay: DebugOverlay) -> String:
+	return (overlay.get_node(^"%PageLabel") as Label).text
+
+
+## Stands in for the lighting rig: a text of its own, and the keys it is given, as "Ctrl+F10".
+class FakeLighting extends Node:
+	const TEXT: String = "fake lighting settings"
+
+	var keys: PackedStringArray = []
+
+	func _ready() -> void:
+		add_to_group(DebugOverlay.LIGHTING_GROUP)
+
+	func get_debug_text() -> String:
+		return TEXT
+
+	func handle_debug_key(event: InputEvent) -> bool:
+		var key: InputEventKey = event as InputEventKey
+		if key == null or not key.pressed or key.echo:
+			return false
+		keys.append(("Ctrl+" if key.ctrl_pressed else "") + OS.get_keycode_string(key.physical_keycode))
+		return true
+
+
+## Takes every unhandled key, as the dialogue balloon does with what it does not let through.
+class KeySwallower extends Node:
+	func _unhandled_input(event: InputEvent) -> void:
+		if event is InputEventKey:
+			get_viewport().set_input_as_handled()
 
 
 ## The keys of an action in the Input Map, by name, such as "F3"; none if the action is missing.

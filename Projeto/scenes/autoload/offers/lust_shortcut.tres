@@ -5,7 +5,7 @@
 
 [sub_resource type="Resource" id="Resource_effect"]
 script = ExtResource("2_effect")
-scene_path = "res://scenes/levels/lust/level1.tscn"
+scene_path = "res://scenes/levels/lust/level1_lit.tscn"
 arrival = &"asmodeus_tent"
 
 [resource]

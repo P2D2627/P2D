@@ -21,6 +21,7 @@
 [ext_resource type="Script" uid="uid://bdnxim87jkgcy" path="res://scenes/levels/save_point.gd" id="17_da51d"]
 [ext_resource type="PackedScene" path="res://scenes/others/camera/game_camera.tscn" id="18_pxqua"]
 [ext_resource type="Script" uid="uid://5h2rn0f8fhj4" path="res://scenes/levels/tutorial_hints.gd" id="18_tuthints"]
+[ext_resource type="PackedScene" path="res://scenes/levels/prompt_band.tscn" id="19_promptband"]
 [ext_resource type="PackedScene" path="res://scenes/characters/demon/biggest_demon.tscn" id="20_582oy"]
 [ext_resource type="Shader" uid="uid://duj3ttr03u8nt" path="res://scenes/others/shaders/rim_fade.gdshader" id="22_582oy"]
 [ext_resource type="Texture2D" uid="uid://diktymkmfusim" path="res://assets/sprites/environment/floor_strip.png" id="23_nc60i"]
@@ -48297,10 +48298,13 @@ visible = false
 color = Color(0.95, 0.4, 0.1, 0.6)
 polygon = PackedVector2Array(-48, -144, 48, -144, 48, 0, -48, 0)
 
-[node name="Tutorial" type="Node2D" parent="." unique_id=1095261905 node_paths=PackedStringArray("player")]
+[node name="PromptBand" parent="." instance=ExtResource("19_promptband")]
+
+[node name="Tutorial" type="Node2D" parent="." unique_id=1095261905 node_paths=PackedStringArray("player", "band")]
 position = Vector2(0, 16608)
 script = ExtResource("18_tuthints")
 player = NodePath("../Player")
+band = NodePath("../PromptBand")
 
 [node name="WakePoint" type="Marker2D" parent="Tutorial" unique_id=815974862]
 position = Vector2(216, 960)

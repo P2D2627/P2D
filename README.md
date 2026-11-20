@@ -27,35 +27,44 @@ cada sala) está em `docs/nivel1_desenho.md`, e os artigos que o fundamentam em 
 1. Instalar o Godot 4.7.x, versão standard (não a versão .NET).
 2. No Project Manager, importar `Projeto/project.godot`. O projeto Godot encontra-se na subpasta
    `Projeto/`, e não na raiz do repositório.
-3. Premir F5. O jogo abre no menu principal: New Game mostra a lista de níveis, Settings abre as opções
-   e Quit fecha o jogo. Uma cena aberta com F6 corre sozinha, sem menus nem pausa.
-4. A sala de teste tem um bloco elevado, com duas bordas, para experimentar os saltos a partir de
+3. Premir F5. O jogo abre no menu principal: New Game começa o nível 1, Settings abre as opções
+   e Quit fecha o jogo. Uma cena aberta com F6 corre sozinha, sem menus nem pausa. A sala de teste,
+   o blockout antigo e a sala de treino servem o desenvolvimento e ficam fora do menu: abrem-se com
+   F6 (ver "Estrutura", em "Para quem programa").
+4. A sala de teste (`scenes/levels/test_room/test_room.tscn`, com F6) tem um bloco elevado, com duas bordas, para experimentar os saltos a partir de
    uma borda, e uma chaminé de 120 px entre a parede esquerda e um pilar suspenso, por baixo do qual
    se entra a andar. A sala é maior do que o ecrã, e a câmara segue a personagem desde o início. Para
    a direita há uma corrida longa, uma escada de quatro degraus de 200 px, uma segunda chaminé de
    120 px junto à parede direita e, no topo desta, uma passagem que termina numa queda de 1500 px.
    Há dois demónios, um no chão da corrida longa e outro na passagem do topo (ver "Demónios").
-   Durante o jogo, a tecla F3 mostra e esconde o texto de depuração descrito em "Overlay de
-   depuração", e a tecla F4 retira 10 SP à personagem, como um golpe, para experimentar a
-   regeneração descrita em "SP".
-5. O nível 1 (New Game ▸ Level 1: Lust) é uma só cena, `scenes/levels/lust/level1.tscn`, com o tutorial e as
-   fases 1, 2 e 3, e é ele que inicia uma partida nova. No início das fases 2 e 3, a Asmodeu
+   Durante o jogo, a tecla F3 passa pelas páginas do texto de depuração descrito em "Overlay de
+   depuração" (números, luz e shaders, escondido), e a tecla F4 retira 10 SP à personagem, como um
+   golpe, para experimentar a regeneração descrita em "SP".
+5. O nível 1 é uma só cena, `scenes/levels/lust/level1.tscn`, com o tutorial e as fases 1, 2 e 3,
+   e é ele que inicia uma partida nova. O New Game abre-o com a iluminação aprovada no protótipo,
+   pela cena `scenes/levels/lust/level1_lit.tscn`, que herda o nível e lhe junta o `LightingRig`.
+   O código do protótipo entra sem reescrita. O `test_level1_lit.gd` verifica que o nível arranca
+   sem erros, com os mesmos nós do protótipo, que os efeitos ligados por defeito são os aprovados e
+   que o recomeço e o atalho da Asmodeu mantêm a luz. As duas cenas contam como o mesmo nível nas
+   estatísticas da partida (`id` = `level1`), para que passar de uma para a outra não reponha as
+   mortes nem volte a abrir as ofertas por mortes. No início das fases 2 e 3, a Asmodeu
    aparece e oferece o atalho; depois de várias mortes nessas fases, volta a oferecê-lo à entrada
    da zona onde ele morre (ver "Ofertas por mortes"). Na saída, depois da fase 3 ou pelo atalho,
    ela oferece o dom e despede-se, e o jogo volta ao menu principal. O blockout antigo, com uma cena
-   por fase, continua na lista como Level 1: Lust (old blockout), sem iniciar partida. Cada cena
-   também corre sozinha com F6, sem gravar nada.
+   por fase, continua na lista Levels do Main como Level 1: Lust (old blockout), fora do menu e sem
+   iniciar partida. Cada cena também corre sozinha com F6, sem gravar nada.
 6. Entrar numa fase grava o jogo, o que é indicado por "Saving..." no canto do ecrã, e o menu
    principal passa a mostrar Continue, descrito em "Gravação do jogo".
-7. A sala de treino (New Game ▸ Gym (training room)) põe à prova, uma de cada vez, as mecânicas que já
+7. A sala de treino (`scenes/levels/gym/gym.tscn`, com F6) põe à prova, uma de cada vez, as mecânicas que já
    existem: movimento, paredes e chaminés, câmara, zona fixa da câmara, cães, matilha e agarrão,
    crucifixo, SP e morte. Cada estação ocupa um ecrã e tem uma placa que explica o que experimentar.
    As teclas 1 a 9 levam ao início da estação com esse número, e o 0 à décima. Quem morre recomeça
    no início da estação onde estava. Ver "Sala de treino".
 Os controlos de teclado e rato escolhem-se em Settings ▸ Controls, entre três perfis. O comando é
-igual em todos. As teclas desenhadas no tutorial (`scenes/levels/key_prompt.gd`) mostram a tecla do
-perfil escolhido e, com um comando ligado, o botão do comando, com os nomes de um comando Xbox (A, B,
-RT, LS ← para o stick esquerdo); mudam no momento em que o comando se liga ou desliga.
+igual em todos. No nível 1, os avisos do tutorial aparecem numa faixa em baixo, ao centro, um de
+cada vez (ver "Avisos do tutorial"). Cada aviso mostra a tecla do perfil escolhido ou, se o último
+aparelho usado foi o comando, o ícone do botão de um comando Xbox (A, X, RT, stick esquerdo). Muda
+quando se usa o outro aparelho, quando se liga um comando e quando se desliga o último comando usado.
 
 | Ação | WASD (predefinido) | Setas e QWEASD | Comando |
 |---|---|---|---|
@@ -68,8 +77,9 @@ RT, LS ← para o stick esquerdo); mudam no momento em que o comando se liga ou 
 | Interagir | E | Ctrl | X / Square |
 
 O terceiro perfil, Custom, começa igual ao predefinido, e cada ação pode receber outra tecla ou
-botão do rato. O Esc e as teclas de depuração (F1 a F4, F7, F8 e F9) estão reservados; o 1, o 2 e o
-3, que com o texto de depuração visível recomeçam numa fase, não estão. As teclas W,
+botão do rato. O Esc, as teclas de depuração (F1 a F4, F7, F8 e F9) e a tecla Windows, que ao ser
+largada abre o menu Iniciar e tira o foco ao jogo, estão reservados; o 1, o 2 e o
+3, que na página dos números do texto de depuração recomeçam numa fase, não estão. As teclas W,
 E, A, S e D do perfil das setas ficam livres para os upgrades.
 
 | Ação | Teclado | Comando |
@@ -77,9 +87,9 @@ E, A, S e D do perfil das setas ficam livres para os upgrades.
 | Pausar e retomar | Esc | Start |
 | Confirmar nos menus | Enter / Espaço | A / Cross |
 | Voltar nos menus | Esc | B / Circle |
-| Mostrar e esconder o texto de depuração | F3 | — |
+| Passar à página seguinte do texto de depuração (números, luz e shaders, escondido) | F3 | — |
 | Retirar 10 SP à personagem (só na versão de depuração) | F4 | — |
-| Recomeçar o nível na fase 1, 2 ou 3 (com o texto de depuração visível) | 1 / 2 / 3 | — |
+| Recomeçar o nível na fase 1, 2 ou 3 (na página dos números do texto de depuração) | 1 / 2 / 3 | — |
 
 ## Mecânicas implementadas
 
@@ -1200,11 +1210,12 @@ Remote; os restantes valores são lidos sempre que são usados.
     ├── addons/        plugins de terceiros: o Dialogue Manager, que dá as falas
     ├── assets/        arte e som
     │   ├── audio/       som, por tipo: os efeitos sonoros em sfx/
-    │   ├── fonts/       tipos de letra: a Tinos, de reserva para a Times New Roman dos menus
-    │   └── sprites/     uma pasta por grupo: player/, demon_lust/, environment/, backgrounds/, ramps/ e menu/ (a arte dos menus)
+    │   ├── fonts/       tipos de letra: a Tinos, de reserva para a Times New Roman dos menus, e a Atkinson Hyperlegible Next e a Literata dos avisos do tutorial
+    │   ├── sprites/     uma pasta por grupo: player/, demon_lust/, environment/, backgrounds/, ramps/ e menu/ (a arte dos menus)
+    │   └── ui/          imagens da interface: os ícones dos botões do comando nos avisos (prompts/)
     ├── dialogue/      as falas, um ficheiro .dialogue por nível
     ├── scenes/        cenas, scripts e ficheiros de dados, por tipo e, dentro de cada tipo, por sistema
-    │   ├── autoload/    serviços globais: as opções do jogador (Settings), o registo moral (Moral), o progresso do jogo (GameState), as estatísticas da partida (RunStats), as tentações (Offers, em offers/, com o ritmo das ofertas por mortes), a gravação e os perfis de controlos
+    │   ├── autoload/    serviços globais: as opções do jogador (Settings), o registo moral (Moral), o progresso do jogo (GameState), as estatísticas da partida (RunStats), as tentações (Offers, em offers/, com o ritmo das ofertas por mortes), o último aparelho usado, teclado ou comando (LastDevice), a gravação e os perfis de controlos
     │   ├── characters/  a personagem (player/), o crucifixo (crucifix/), os demónios (demon/, com os estados em states/, e os que falam, Velvet e Asmodeu) e os componentes que mais de um sistema usa (components/)
     │   ├── levels/      uma pasta por nível: a sala de teste (test_room/), a sala de treino (gym/) e o nível 1 (lust/, com os construtores e os mapas em texto em builders/); na raiz, as peças e os scripts comuns e o fundo de que os níveis partem (background/)
     │   ├── objects/     peças com comportamento: portões (gates/), plataformas (platforms/) e armadilhas (traps/)
@@ -1272,7 +1283,13 @@ sem erros num clone novo.
 
 Para um nível aparecer no New Game, acrescenta-se à lista Levels do Main, no Inspector do `main.tscn`
 (Add Element › New LevelEntry, com o título e a cena). A ordem da lista é a dos botões. Um elemento
-deixado vazio, ou sem cena, fica fora do menu, com um aviso no Output.
+deixado vazio, ou sem cena, fica fora do menu, com um aviso no Output. Um elemento com In Menu
+desligado também fica fora do menu, sem aviso, mas continua na lista, e voltar a ligá-lo devolve-lhe
+o botão. É o caso das salas feitas para o desenvolvimento: a sala de teste, o blockout antigo do
+nível 1 e a sala de treino. Assim, quem joga não as encontra, e o grupo continua a abri-las com F6.
+O `test_main_flow.gd` verifica que as três continuam na lista, fora do menu, e que o nível 1 está nele.
+Com um só nível no menu, como agora, o New Game começa-o logo, sem mostrar a lista; com dois ou
+mais, mostra a lista.
 
 O nó raiz de cada nível tem o script `scenes/levels/level.gd` (`Level`), com a personagem do nível no campo
 Player do Inspector. Quando a personagem morre, este script espera 0,7 s, para que a morte se veja,
@@ -1313,6 +1330,7 @@ godot --headless --fixed-fps 60 --path Projeto --script res://tests/test_wall_ju
 godot --headless --fixed-fps 60 --path Projeto --script res://tests/test_ledge_assist.gd
 godot --headless --fixed-fps 60 --path Projeto --script res://tests/test_jump_signals.gd
 godot --headless --fixed-fps 60 --path Projeto --script res://tests/test_debug_overlay.gd
+godot --headless --fixed-fps 60 --path Projeto --script res://tests/test_lighting_debug_page.gd
 godot --headless --fixed-fps 60 --path Projeto --script res://tests/test_demon_debug_view.gd
 godot --headless --fixed-fps 60 --path Projeto --script res://tests/test_game_camera.gd
 godot --headless --fixed-fps 60 --path Projeto --script res://tests/test_camera_window.gd
@@ -1421,7 +1439,9 @@ Os testes dos menus estendem `tests/support/menu_test.gd`, que cria a cena princ
 teclas, botões do comando e botões do rato como o jogador, e reúne o acesso aos nós dos menus, ao
 foco e à personagem do nível. Usam um ficheiro de opções próprio e terminam com duas verificações:
 o botão Quit não foi carregado e o ficheiro de opções do jogador ficou igual (texto e data de
-gravação). O caso do ficheiro estragado do `test_settings.gd` escreve um ERROR e um WARNING, ambos
+gravação). Um teste que termine antes dessas verificações, por exemplo porque o jogo fechou por si
+em vez de usar o fecho substituto do teste, sai com código 1. Sem esta guarda, o Godot sairia com
+código 0 e o teste passaria sem ter verificado nada. O caso do ficheiro estragado do `test_settings.gd` escreve um ERROR e um WARNING, ambos
 esperados.
 
 O `measure_movement.gd` não verifica resultados: imprime as medidas da secção "Medidas para o
@@ -1702,7 +1722,7 @@ teclado, e não pela letra impressa, pelo que o WASD se mantém num teclado AZER
 | `debug_damage` | F4 | — |
 | `debug_accept_offer` / `debug_refuse_offer` | F7 / F8 | — |
 | `debug_reset_run` | F9 | — |
-| `debug_phase_1` / `debug_phase_2` / `debug_phase_3` | 1 / 2 / 3 (só com o overlay visível) | — |
+| `debug_phase_1` / `debug_phase_2` / `debug_phase_3` | 1 / 2 / 3 (só na página dos números do overlay) | — |
 | `ui_accept` | Enter, Espaço | A / Cross |
 | `ui_cancel` | Escape | B / Circle |
 
@@ -2657,8 +2677,24 @@ tolerâncias usadas, em passos de física, e a altura atingida. Um salto complet
 240 px, o mesmo valor que os testes medem. Com a câmara ligada, mostra ainda a zona de câmara em que
 a personagem está e as distâncias atuais da antecipação e do olhar para baixo, e quantos membros do
 `ActivityTracker` estão acordados (ver "Atividade fora do ecrã"). Mostra ainda os SP,
-a velocidade atual da regeneração e se os SP estão baixos ou acabaram. A tecla F3 mostra e esconde
-o texto.
+a velocidade atual da regeneração e se os SP estão baixos ou acabaram.
+
+O texto tem páginas, e a tecla F3 passa à seguinte: escondido, números (tudo o que se descreve
+nesta secção), luz e shaders, e de novo escondido. Por cima de cada página aparece o nome dela e o
+da seguinte. Escondido, o overlay não gasta nada por frame. O nível 1 começa com o texto escondido
+e a sala de teste com os números; a página escolhida com o F3 mantém-se quando o mesmo nível
+recomeça, depois de uma morte ou de um salto de fase.
+
+A página da luz mostra os valores do protótipo de iluminação do nível 1 e é a única que lhe passa
+as teclas F1 a F12, com e sem Ctrl: fora dela, essas teclas não mudam a luz, e numa exportação de
+release não chegam ao protótipo. Antes das páginas, o protótipo lia as teclas sozinho e antes do
+overlay, pelo que ficava com o F3, o F4 e o F7 a F9, e as teclas de depuração correspondentes não
+funcionavam no nível com a luz. Agora, na página da luz, o protótipo continua a ter prioridade
+sobre essas teclas, menos o F3 sozinho, que muda de página; a sombra pintada passou do F3 para o
+Alt+F3. Nas outras páginas, as teclas de depuração funcionam também nesse nível. As teclas da luz
+chegam ao protótipo mesmo com uma fala no ecrã, porque o overlay as recebe antes do balão. O
+protótipo deixou de escrever texto próprio no ecrã. Num nível sem o protótipo, a página da luz diz
+que não há iluminação para afinar. Teste: `test_lighting_debug_page.gd`, com o protótipo verdadeiro.
 
 A tecla F4 retira à personagem o valor Debug Damage do overlay (10 SP, no Inspector), como um golpe,
 para experimentar a regeneração e os avisos antes de haver demónios. Cada toque conta uma vez,
@@ -2684,7 +2720,8 @@ gravidade e através das paredes e do chão. Enquanto voa, os golpes não têm e
 um agarrão em curso larga-a; os contactos continuam, no entanto, a ser detetados, pelo que o
 tremor do ecrã e a vibração do comando de um golpe se mantêm. Ao desligar, cai do sítio onde está.
 As duas funcionam com o texto escondido, com o jogo em pausa e com uma fala no ecrã, e uma etiqueta
-no canto superior direito indica as que estão ligadas. Ficam ligadas depois de uma morte, de um
+no canto superior direito indica as que estão ligadas. Na página da luz, o F1 e o F2 são do
+protótipo de iluminação, como as outras teclas que ele usa, e não mexem nas ajudas. Ficam ligadas depois de uma morte, de um
 recomeço ou de um salto de fase, até se voltar a carregar na tecla. Cada recomeço cria uma cópia
 nova do nível, com um overlay e uma personagem novos, pelo que o estado das ajudas fica guardado
 fora deles, em variáveis estáticas do overlay, e cada overlay novo entrega-o à sua personagem. Na
@@ -2701,7 +2738,7 @@ dentro de uma parede ou do chão fica entregue à separação de corpos do motor
 da aterragem medem a queda a partir do ponto mais alto do voo, pelo que desligar o noclip junto ao
 chão, depois de voar alto, soa como uma queda longa.
 
-Com o overlay visível (F3), as teclas 1, 2 e 3 recomeçam o nível no início dessa fase, atrás do
+Na página dos números do overlay (F3), as teclas 1, 2 e 3 recomeçam o nível no início dessa fase, atrás do
 mesmo escurecer de uma morte. No momento do recomeço, o nível (`Level.jump_to_phase`) percorre os
 seus pontos de gravação pela ordem da cena, que é a do percurso, marca no GameState os que ficam
 para trás e esquece os seguintes, pelo que a cópia nova põe a personagem no ponto dessa fase, como
@@ -2711,7 +2748,7 @@ de quem jogou até lá. Numa partida, o Main grava esse estado por cima do save,
 volta sempre ao save. Não fazem nada uma fase que o nível não tenha, um nível de uma só fase (como
 a sala de treino, onde os números escolhem as estações), o jogo em pausa e a troca de fase. Uma
 segunda tecla durante o escurecer não o recomeça e fica a última fase pedida. Estas teclas não
-estão reservadas: com o overlay escondido são do jogador, e uma tecla que o perfil Custom dê a
+estão reservadas: fora da página dos números são do jogador, e uma tecla que o perfil Custom dê a
 uma ação continua a ser só dessa ação, porque a personagem lê as ações enquanto estão premidas.
 Um teste verifica que, em cada nível do menu, os pontos que começam uma fase estão por ordem na
 cena. Teste: `test_debug_phase_jump.gd`.
@@ -2744,7 +2781,7 @@ estados), e uma seta para onde está virado. Ao longo do chão, desenha o
 posto e o troço da ronda. Enquanto o demónio persegue ou procura, marca com uma cruz o último sítio
 onde viu a personagem, e enquanto a vê, uma linha até ela. Serve para experimentar e afinar os
 estados dos demónios enquanto o retângulo provisório não os mostra, sem mudar o demónio nem os
-níveis, que não a têm. Aparece e desaparece com o F3, junto com o overlay, e remove-se a si própria
+níveis, que não a têm. Aparece com o overlay, em qualquer das duas páginas, e desaparece quando ele se esconde, e remove-se a si própria
 fora das versões de depuração. Para experimentar a procura, a sala tem uma parede de esconderijo no
 chão, em x 1700, à esquerda do demónio do chão (x 2400), com 144 px de altura, mais do que a
 personagem (96 px) e menos do que o seu salto (240 px). Ficou desse lado porque, mais à direita,
@@ -3060,15 +3097,74 @@ O menu principal e a pausa seguem a maqueta do grupo: fundo preto, a personagem 
 esquerda, iluminada por uma luz que entra pelo canto superior direito, e as opções à direita, em
 maiúsculas, com uma cruz de cada lado da opção selecionada. A pausa tem a mesma composição, mas o
 preto fica a 60 % de opacidade, para se continuar a ver o jogo por trás. As opções e os controlos
-abrem na mesma coluna, com o mesmo estilo.
+abrem na mesma coluna, com o mesmo estilo. As opções abrem num ecrã com quatro separadores em linha
+(Audio, Display, Controls e Accessibility), com o primeiro já escolhido, para o jogador nunca ver
+todas as opções de uma vez. As setas ou o D-pad percorrem os separadores, que dão a volta do último
+ao primeiro, e a página muda de imediato; a seta para baixo, ou o Enter, entra na página. O
+separador escolhido fica a branco e sublinhado, e a área das páginas tem a altura da maior, para o
+ecrã não saltar ao trocar de separador. A seleção é marcada por uma faixa clara atrás da linha, do
+separador ou do botão, que desliza para a nova seleção. A faixa tem uma barra clara de 3 px à
+esquerda: medida num frame gravado, a barra tem um contraste de 17:1 com o fundo, enquanto a faixa
+sozinha fica em 1,6:1 (o tema `OptionsRowHighlight`). A barra cumpre assim o contraste de 3:1 que o
+critério 1.4.11 das WCAG 2.2 (nível AA) pede aos indicadores de foco. O critério 2.4.13 (nível AAA),
+que pede também uma área mínima à volta do elemento, não foi o objetivo. Neste ecrã a faixa substitui as cruzes do
+menu principal, para haver uma só marca de seleção, também nas linhas de três colunas. O rato por
+cima de um separador não o escolhe, para não trocar de página a caminho de uma opção; o separador
+escolhe-se com um clique. Por baixo das
+páginas, uma linha explica a opção selecionada. Reset to defaults e Back ficam numa barra à parte,
+em baixo e em letra mais pequena, com as teclas do Back ao lado (Esc / B). O Esc ou o B fecham as
+opções a partir de qualquer separador.
 
 - **Fundo partilhado** (`scenes/screens/menu_backdrop.tscn`): o preto (Background Alpha), os raios
   de luz e a personagem. Os raios são um shader (`scenes/others/shaders/god_rays.gdshader`), somado
   ao que está por trás, que ondula lentamente; a cor, a intensidade, a direção, o alcance e o brilho
   junto à origem afinam-se no material do nó Rays.
 - **Personagem:** desenhada pelo grupo já com a luz e as sombras pintadas
-  (`assets/sprites/menu/menu_character.png`), e mostrada tal como está. O
+  (`assets/sprites/menu/menu_character.png`). O
   `scenes/screens/builders/build_menu_art.gd` traz a personagem e a cruz para o projeto, recortadas.
+  O ecrã nunca está parado: a personagem respira (cresce 0,6 % a partir dos pés, a cada 4,2 s) e
+  afunda até 8 px a cada 6,5 s; os dois períodos não são múltiplos um do outro, para o olho não
+  apanhar a repetição. Um fogo por baixo, à esquerda, ilumina-a de baixo e solta fumo em três camadas
+  e brasas em quatro (`scenes/screens/menu_embers.gd`: faíscas, cinza e discos desfocados junto à
+  lente). Uma só chama comanda a luz, o brilho, o fumo e as brasas, com uma oscilação lenta, de até
+  30 % da luz do fogo, e uma rápida, de 3 %. Com as opções
+  abertas, a personagem recua para a esquerda e escurece, e cada camada do fogo recua com a sua
+  profundidade (as de trás menos, as da frente mais), o que dá relevo à cena. Tudo se afina no
+  Inspector do nó MenuBackdrop (grupos Idle, Fire, Recede, Depth e Rays) e de cada camada de brasas.
+  Medido a 18/11 no PC do Joaquim: as brasas custam 0,34 ms de CPU por frame e o fundo inteiro 0,73 a
+  0,78 ms de GPU. Medido a 19/11 em 10 s de menu gravado, com as regras de flashes das WCAG 2.2
+  (`tools/accessibility/wcag_flashes.py`, que diz também como gravar os frames):
+  cada brasa pode piscar num píxel, mas só 0,05 % do ecrã passa de 3 flashes por segundo (cerca de
+  1100 px a 1920 × 1080). O limite são 21 824 px, 25 % de um campo de visão de 10° num ecrã de
+  1024 × 768 ([técnica G176 da W3C](https://www.w3.org/WAI/WCAG22/Techniques/general/G176)). Não há
+  flashes vermelhos, porque nenhum píxel chega a vermelho saturado.
+- **Sons e vibração** (`scenes/screens/menu_feedback.gd`, um nó por menu): um clique ao mudar de
+  opção, um golpe ao escolher e um som surdo ao voltar, cada um com um impulso no comando em uso. Um
+  interruptor e uma lista fazem um clique próprio; dentro de uma lista, mudar de item faz o clique,
+  escolher faz o golpe e fechar sem escolher faz o som de voltar. Uma tecla aceite ao remapear faz o
+  golpe, e o Esc que cancela a espera faz o som de voltar. Uma tecla ou o comando recusados fazem o
+  som de recusa: dois golpes surdos, o segundo mais grave, 230 ms ao todo. Distingue-se do som
+  de voltar pelo número de golpes e não só pela altura, porque cada som se ouve sozinho, sem o outro
+  ao lado para comparar, e porque um tom ainda mais grave sairia da gama que as colunas de um
+  portátil conseguem tocar. Num diálogo, como a pergunta antes de um
+  jogo novo por cima de uma gravação, só a resposta soa: o No dá apenas o som de voltar. O Quit
+  escurece o ecrã durante um tempo próprio (Main › Quit Fade Time, 0,25 s) e só depois fecha o jogo,
+  para o golpe se ouvir e a janela fechar a partir do preto e não do menu aceso; os números da
+  partida gravam-se antes do fade. Esse tempo é separado do das fases (Main › Fade Time), para um
+  fade de fase mais lento ou mais rápido não mudar o Quit, e não desce abaixo de 0,15 s, porque a
+  variante mais longa do golpe dura 140 ms e o fecho não a pode cortar (o `test_main_flow.gd`
+  verifica-o). O clique e o golpe sorteiam entre variantes sem repetir a anterior
+  (`AudioStreamRandomizer`), para uma série de cliques não soar a máquina. A seleção que o próprio
+  jogo muda (um ecrã a abrir) não faz som: só conta a que vem até 150 ms depois de uma tecla do
+  jogador. Dois cliques ficam a pelo menos 35 ms um do outro, para uma lista percorrida depressa não
+  virar um zumbido. A mistura está nos ficheiros: o
+  `tools/audio/make_menu_sounds.py` corta, filtra e põe cada som à intensidade do seu evento (o
+  máximo de 50 ms de RMS: mudar −27 dBFS, escolher −18, voltar −22, recusa −23, barra −29,
+  interruptor −25, que fica em −27,5 porque o pico não passa de −1 dBFS), e todos os volumes da cena
+  ficam a 0 dB. Assim o
+  clique fica 9 dB abaixo do golpe. O script reproduz os ficheiros do repositório byte a byte. Se
+  faltar um som na cena, o jogo usa um feito em código (`menu_sound_synth.gd`), com a sua própria
+  mistura: o clique 11 dB abaixo do golpe.
 - **Cruzes** (`scenes/screens/menu_crosses.gd`): seguem o foco, de teclado, comando ou rato, e
   deslizam para a opção selecionada; o rato por cima de um botão dá-lhe o foco. Ficam só nos botões:
   um slider mostra a sua própria seleção.
@@ -3095,9 +3191,25 @@ e remapeamento por captura da tecla seguinte.
   W, E, A, S e D livres para os upgrades. O Custom começa como cópia do predefinido.
 - O `Settings` guarda o perfil escolhido e as teclas do perfil personalizado e aplica-os ao Input
   Map. Como nenhum script lê teclas diretamente, a personagem e o crucifixo não mudaram.
-- No ecrã Controls (`scenes/screens/controls_menu.gd`), carregar no botão de uma ação do perfil Custom faz o
-  ecrã esperar pela próxima tecla ou botão do rato. O Esc ou o B cancelam sem alterar nada. A espera
-  apanha a tecla antes de qualquer outro nó, pelo que o Esc não fecha a pausa.
+- No separador Controls (`scenes/screens/controls_menu.gd`), carregar no botão de uma ação do perfil Custom faz o
+  ecrã esperar pela próxima tecla ou botão do rato. O Esc ou o B cancelam sem alterar nada. Uma
+  tecla que não pode ser usada (as reservadas, como o F3 do overlay de depuração ou a tecla Windows) é recusada: o botão
+  diz qual foi, soa o som de recusa, e a espera continua. O resto do comando, menos o B, também é
+  recusado, com o texto «Gamepad stays fixed: press a key (B cancels)», porque o comando é o mesmo em
+  todos os perfis. Antes, era ignorado em silêncio, e o jogador não sabia se o jogo o tinha recebido.
+  Um botão é recusado a cada carregão. Um eixo (o stick, um gatilho, como o RT do crucifixo) envia
+  uma série de eventos ao longo do movimento, por isso é recusado uma só vez, quando passa de metade
+  do curso, num sentido ou no outro, e só volta a sê-lo depois de regressar abaixo de 30 % do curso.
+  Essa folga impede que o ruído de um carregão lento, a oscilar à volta de metade, conte como vários
+  carregões. Cada espera começa sem eixos registados, porque um eixo largado fora da espera não é
+  visto. Um modificador (Shift, Ctrl, Alt) só fica atribuído quando é largado, se
+  entretanto nada mais foi carregado e o jogo não perdeu nem recuperou o foco, porque carregado pode
+  ser o início de um atalho. Enquanto está em baixo, o botão diz «Shift: let go to use it». Antes, um
+  Alt+Tab durante a espera deixava a ação com o Alt. Shift com outra tecla atribui a outra tecla. A
+  tecla Windows não conta como modificador: está reservada e é recusada logo ao ser carregada,
+  porque largá-la abre o menu Iniciar e tira o foco ao jogo; atribuída, abriria o Iniciar sempre que
+  fosse usada a jogar. A espera apanha a tecla antes de qualquer outro nó, pelo que o Esc não fecha a
+  pausa.
 - Conflitos: se a tecla escolhida pertencia a outra ação, essa ação perde-a e, se ficar sem
   nenhuma, recebe as teclas antigas da primeira (troca). Nenhuma ação fica sem tecla. Preferiu-se a
   troca a um aviso de conflito, porque não deixa o jogador num estado em que uma ação não funciona.
@@ -3106,8 +3218,8 @@ e remapeamento por captura da tecla seguinte.
   `mouse:left`), e nunca como números nem como objetos do Godot. Assim, o ficheiro lê-se e corrige-se
   à mão, acrescentar ou reordenar perfis não troca o perfil de quem já o tinha escolhido, e um
   ficheiro alterado à mão não cria objetos arbitrários. Um perfil ou uma tecla inválidos dão os
-  valores predefinidos. O botão Reset to defaults das opções não mexe nos controlos; o ecrã Controls
-  tem o seu próprio Reset.
+  valores predefinidos. O botão Reset to defaults das opções não mexe nos controlos; o separador
+  Controls tem o seu próprio Reset.
 - O `Settings` só altera uma ação no Input Map quando as teclas mudam: retirar uma tecla a uma ação
   solta essa ação, o que largaria uma tecla que o jogador estivesse a premir.
 - Nos testes, o `Settings` guarda as opções só em memória e não lê nem escreve o ficheiro do
@@ -3115,6 +3227,53 @@ e remapeamento por captura da tecla seguinte.
 
 O tamanho da letra e os espaços entre elementos estão num único tema, `themes/ui_theme.tres`, e nenhum
 nó define o seu próprio tamanho de letra: uma futura opção de tamanho do texto altera apenas o tema.
+
+#### Avisos do tutorial: faixa em baixo e último aparelho
+
+Os avisos do tutorial do nível 1 (andar, saltar, salto na parede e crucifixo) aparecem numa faixa em
+baixo, ao centro, e não no cenário. O sítio, as letras e as medidas resultam de uma pesquisa e de
+capturas das quatro zonas do tutorial no nível com luz.
+
+- Sítio. A faixa (`scenes/levels/prompt_band.tscn`) fica a 40 px do fundo do ecrã e tem 80 px de
+  altura. Nas quatro zonas, em duas capturas, fica 41 a 82 px abaixo dos pés do homem, sobre o preto
+  por baixo do chão, sem tapar o homem nem os buracos.
+- Um aviso de cada vez: o primeiro, da esquerda para a direita, que a câmara vê e que o homem ainda
+  não passou. Cada aviso fica pelo menos 2 s (`min_show_time` do nó Tutorial), para não piscar
+  numa corrida. Este valor é uma estimativa, a confirmar num playtest. Enquanto a Velvet fala, a
+  faixa esconde-se, para não ficar por baixo do balão.
+- Leitura. A legenda usa a Literata (peso 600, 36 px) e o nome da tecla usa a Atkinson Hyperlegible
+  Next (peso 700), uma letra desenhada para leitores com baixa visão. A placa é escura e
+  semitransparente. O contraste da legenda medido nas capturas é de 16:1. Sobre um fundo branco
+  seria de 6,8:1, acima do mínimo de 4,5:1 que a WCAG recomenda para texto.
+- Teclado e comando. No teclado, o aviso desenha uma tecla com o nome da tecla do perfil escolhido.
+  No comando, mostra o ícone do botão (Kenney Input Prompts, tingido com o bege da interface). Um
+  botão sem ícone mostra o nome numa tecla. As letras, as cores e as molduras estão no tema
+  (`themes/ui_theme.tres`, variações `Prompt*`); os ícones e o seu tamanho (56 px) estão no
+  `scenes/levels/prompt_glyph.tscn`. Assim, a arte do grupo pode substituí-los sem mexer no código.
+- Limite: os ícones são sempre os de um comando Xbox. Num comando PlayStation ou Nintendo, os
+  botões estão no mesmo sítio, mas o desenho muda: o X da Xbox, que fala com a Velvet, é o quadrado
+  da PlayStation. Reconhecer a família do comando fica para uma tarefa à parte.
+- Troca automática. O autoload `LastDevice` (`scenes/autoload/last_device.gd`) guarda o último
+  aparelho usado, porque o Godot 4.7 não tem uma função para isso. Conta apenas o que faria uma
+  ação: uma tecla, botão ou gatilho premido, ou um stick inclinado para lá da zona morta dessa ação
+  (0,2 no andar). Ecos, teclas largadas, o rato a mexer e um stick em repouso não contam, para que um
+  stick com folga não faça os avisos trocar. Ligar um comando passa ao comando; desligar o último
+  comando usado volta ao teclado.
+- O `LastDevice` ouve o sinal `window_input` da janela, que recebe todos os eventos antes de qualquer
+  nó, também em pausa, antes de qualquer menu os tratar. A alternativa, o `_input` de um nó, perdia
+  os eventos que outro nó marcasse como tratados e os que uma lista aberta engolisse.
+- Custo medido por evento: 0,5 a 0,7 µs com o aparelho em uso, porque um evento desse aparelho não
+  pode mudar nada e sai logo; cerca de 11 µs para um stick em repouso com o teclado em uso, que tem
+  de ser comparado com todas as ações.
+- No `project.godot`, a opção `ignore_joypad_on_unfocused_application` está ligada, para que um
+  comando pousado não mexa no jogo com a janela em segundo plano.
+- A tecla da Velvet e a do portão continuam no cenário, com o desenho da faixa e a mesma troca: o
+  `KeyPrompt` usa o mesmo `PromptGlyph`. Por isso, todas as teclas do cenário passaram de 80 px, com
+  a letra dos menus, para 56 px, com a Atkinson Hyperlegible Next. Sem faixa, o `TutorialHints`
+  desenha os avisos no cenário, como antes, e é o que acontece nas cenas antigas do nível 1.
+- Testes: `test_last_device.gd` (o que conta, o que não conta, a pausa e os comandos) e
+  `test_prompt_band.gd` (a tecla e o ícone, o sítio da faixa, o contraste, um aviso de cada vez e a
+  Velvet).
 
 #### Registo moral: escondido, uma soma e dois limiares
 
@@ -3646,9 +3805,40 @@ opção de volume, todos a enviar para o Master, e o Alerts, a enviar para o SFX
 - `soul_frame.png`, `soul_aura_1.png` a `soul_aura_8.png`, `cross_ready.png`, `cross_spent.png` e
   `power_arrow.png`, em `Projeto/assets/sprites/hud/`: a barra de alma (moldura, aura animada, as duas
   cruzes do crucifixo e a seta dos poderes), desenhadas pelo grupo, usadas tal como foram entregues.
+- Sons dos menus, em `Projeto/assets/audio/ui/` (#267), todos de domínio público (CC0), cortados,
+  filtrados e misturados pelo `tools/audio/make_menu_sounds.py`, cada um à intensidade do seu evento
+  (ver "Aspeto dos menus"):
+  - `menu_move_1.wav` a `menu_move_4.wav` (mudar de opção): cliques de rato: «mouse_click.wav», de
+    Six Ways (https://freesound.org/s/223445/), «mouse-click-single-00.flac», de pbimal
+    (https://freesound.org/s/534103/), «Mouse 2 Button Fast Click», de aphom000
+    (https://freesound.org/s/687107/), e `mouseclick1`, do pacote «51 UI sound effects (buttons,
+    switches and clicks)», de Kenney
+    (https://opengameart.org/content/51-ui-sound-effects-buttons-switches-and-clicks).
+  - `menu_confirm_1.wav` e `menu_confirm_2.wav` (escolher): os dois primeiros cliques de rato, cada
+    um com «Mute Bass Drum.wav», de Lynx_5969 (https://freesound.org/s/418725/), saturado para se
+    ouvir em colunas pequenas.
+  - `menu_back_1.wav` (voltar): o primeiro clique de rato, mais grave, com o mesmo bombo, mais baixo.
+  - `menu_refuse.wav` (recusa ao remapear): o som de voltar duas vezes, a segunda 90 ms depois e
+    mais grave.
+  - `menu_tick.wav` (barras deslizantes): `tick_001`, do pacote «Interface Sounds», de Kenney
+    (https://opengameart.org/content/interface-sounds).
+  - `menu_switch.wav` (interruptores): «Small_Flashlight_Click_on_02.wav», de Rudmer_Rotteveel
+    (https://freesound.org/s/457463/).
+
+  Os sons do Freesound vêm das pré-visualizações (OGG); os originais em WAV pedem uma conta no site
+  e substituem-nas na versão final.
 - Tinos, de The Tinos Project Authors. SIL Open Font License 1.1. Letra de reserva dos menus, com as
   medidas da Times New Roman, em `Projeto/assets/fonts/` (com a licença em `Tinos-OFL.txt`).
   https://github.com/googlefonts/tinos
+- Atkinson Hyperlegible Next, de The Atkinson Hyperlegible Next Project Authors, e Literata, de The
+  Literata Project Authors. SIL Open Font License 1.1. Letras dos avisos do tutorial, em
+  `Projeto/assets/fonts/` (com as licenças em `AtkinsonHyperlegibleNext-OFL.txt` e
+  `Literata-OFL.txt`), copiadas do repositório google/fonts (https://github.com/google/fonts), que
+  as publica a partir dos repositórios de origem: https://github.com/googlefonts/atkinson-hyperlegible-next
+  e https://github.com/googlefonts/literata
+- Kenney Input Prompts 1.5A, de Kenney (www.kenney.nl). Domínio público (CC0). Ícones dos botões A,
+  X e RT e do stick esquerdo de um comando Xbox, a 128 px, em `Projeto/assets/ui/prompts/` (com a
+  licença em `Kenney-License.txt`). https://kenney.nl/assets/input-prompts
 
 ## Licença
 

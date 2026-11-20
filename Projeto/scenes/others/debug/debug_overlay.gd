@@ -1,18 +1,27 @@
 class_name DebugOverlay
 extends CanvasLayer
 
-## Text in a corner of the screen with the numbers that help tune the game while playing. The
-## Toggle Debug Overlay action shows and hides it, and Debug Damage hurts the player. Debug Accept
-## Offer and Debug Refuse Offer answer the last offer made, or the first not yet accepted, as the
-## lines would, so a shortcut or a gift can be tried without playing up to it; Debug Reset Run
-## starts the run state over, offers and moral record included. While the text shows, Debug Phase 1
-## to 3 (the keys 1 to 3) start the level over at that phase (Level.jump_to_phase); hidden, or in a
-## level of one phase, as the gym and its stations, the keys go on to the game. Debug God Mode (F1)
-## and Debug Noclip (F2) turn the man's two cheats on and off (#273), also with the text hidden and
-## while paused, and a label of their own shows while either is on. They stay on in the next copy of
-## the level, as after a death or a jump to a phase, until pressed again. Outside debug builds it
-## frees itself before any of this, so a release export never shows it and nothing happens through
-## it. Its scene sets the process mode to Always, so it keeps working while the game is paused.
+## Text in a corner of the screen that helps tune the game while playing, in pages. The Toggle Debug
+## Overlay action (F3) goes to the next page: hidden, numbers, lighting and shaders, and hidden
+## again. Each page shows its name and the next one above its text, and the page chosen with F3 stays
+## through a restart of the same level, as after a death. The numbers page has the numbers
+## of the man, the camera and the run; the lighting page has the lighting rig's settings, from the
+## node in Lighting Group, and passes it the keys, so they change the light only there. Debug Damage
+## hurts the player. Debug Accept Offer and Debug Refuse Offer answer the last offer made, or the
+## first not yet accepted, as the lines would, so a shortcut or a gift can be tried without playing
+## up to it; Debug Reset Run starts the run state over, offers and moral record included. On the
+## numbers page, Debug Phase 1 to 3 (the keys 1 to 3) start the level over at that phase
+## (Level.jump_to_phase); on the other pages, or in a level of one phase, as the gym and its
+## stations, the keys go on to the game. Debug God Mode (F1) and Debug Noclip (F2) turn the man's two
+## cheats on and off (#273), also with the text hidden and while paused, and a label of their own
+## shows while either is on; on the lighting page the rig gets F1 and F2 first, as its other keys.
+## They stay on in the next copy of the level, as after a death or a jump to a phase, until pressed
+## again. Outside debug builds it frees itself, so a release export never shows it and nothing
+## happens through it, the lighting keys and the cheats included. Its scene sets the process mode to
+## Always, so it keeps working while the game is paused.
+
+## The pages, in the order Toggle Debug Overlay goes through them.
+enum Page { HIDDEN, NUMBERS, LIGHTING }
 
 const TOGGLE_ACTION: StringName = &"toggle_debug_overlay"
 const DAMAGE_ACTION: StringName = &"debug_damage"
@@ -34,14 +43,33 @@ const RESET_RUN_ACTION: StringName = &"debug_reset_run"
 const PHASE_ACTIONS: Array[StringName] = [&"debug_phase_1", &"debug_phase_2", &"debug_phase_3"]
 const MS_PER_SECOND: float = 1000.0
 const SECONDS_PER_MINUTE: int = 60
+## The group of the node that gives the lighting page its text and takes its keys, the lighting
+## rig. Such a node has get_debug_text() -> String, and handle_debug_key(event: InputEvent) -> bool,
+## true if the key changed a setting.
+const LIGHTING_GROUP: StringName = &"debug_lighting"
+## Above each shown page: its name, then where F3 goes next.
+const PAGE_TITLES: Dictionary[Page, String] = {
+	Page.NUMBERS: "numbers   (F3: lighting and shaders)",
+	Page.LIGHTING: "lighting and shaders   (F3: hide)",
+}
+## The lighting page's text in a level with no lighting rig.
+const NO_LIGHTING_TEXT: String = "no lighting rig in this level"
+## Frames between two looks for the lighting rig while the lighting page shows without one: a level
+## with no rig has none to find, and a level adds its rig after its overlay is ready.
+const LIGHTING_LOOKUP_FRAMES: int = 30
 
+## The page last chosen with F3 in this session, and the scene of the level it was chosen in: a new
+## copy of that level, as after a death or a jump to a phase, opens on that page. An overlay that is
+## not in a level's scene never takes it.
+static var _chosen_page: Page = Page.HIDDEN
+static var _chosen_in: String = ""
 ## Whether God Mode (F1) and Noclip (F2) are on. Static, so they outlive the overlay: a death or a
 ## jump to a phase starts the level over as a new copy, with a new overlay and a new man, and each
 ## overlay gives them to its man as it gets ready. Only F1 and F2 change them, and the tests.
 static var god_mode: bool = false
 static var noclip: bool = false
 
-## Whether the text shows when the scene starts.
+## On, the overlay starts on the numbers page; off, hidden.
 @export var start_visible: bool = true
 ## SP a press of Debug Damage takes from the player, as a hit would, so the regeneration and the
 ## warnings can be tried before anything in the game hurts.
@@ -62,7 +90,13 @@ var _last_jump: String = ""
 ## The y the last jump took off from, and the smallest y it has reached since, in px.
 var _take_off_y: float = 0.0
 var _peak_y: float = 0.0
+var _page: Page = Page.HIDDEN
+## The node in Lighting Group, kept once found; null until then.
+var _lighting: Node = null
+## Frames left before the next look for the lighting rig; 0 looks at the next need.
+var _frames_to_lookup: int = 0
 
+@onready var _page_label: Label = %PageLabel
 @onready var _label: Label = %Label
 ## The cheats' label, empty while both are off. It is on a layer of its own: hiding the overlay's
 ## layer does not reach another one, so it shows with the text hidden.
@@ -80,7 +114,11 @@ func _ready() -> void:
 	if not _is_debug_build():
 		queue_free()
 		return
-	_set_shown(start_visible)
+	var level_scene: String = _level_scene()
+	if not level_scene.is_empty() and level_scene == _chosen_in:
+		show_page(_chosen_page)
+	else:
+		show_page(Page.NUMBERS if start_visible else Page.HIDDEN)
 	# _physics_process only follows a jump up, so it starts off.
 	set_physics_process(false)
 	if is_instance_valid(player):
@@ -89,9 +127,21 @@ func _ready() -> void:
 	_give_the_cheats()
 
 
+## On the lighting page, the lighting rig gets each key first, F3 alone excepted. Shortcut input
+## runs before any unhandled input, so neither a line on screen nor the debug actions on the same F
+## keys (F4, F7 to F9, which also take their key with Ctrl held) take them: the rig keeps the keys
+## it had when it read them itself, before the overlay had pages. A key it does not use goes on.
+func _shortcut_input(event: InputEvent) -> void:
+	if (_page == Page.LIGHTING and not event.is_action(TOGGLE_ACTION, true)
+			and _lighting_takes(event)):
+		get_viewport().set_input_as_handled()
+
+
 func _unhandled_input(event: InputEvent) -> void:
 	if event.is_action_pressed(TOGGLE_ACTION):
-		_set_shown(not visible)
+		show_page(((_page + 1) % Page.size()) as Page)
+		_chosen_page = _page
+		_chosen_in = _level_scene()
 		get_viewport().set_input_as_handled()
 	elif event.is_action_pressed(DAMAGE_ACTION):
 		_hurt_player()
@@ -115,17 +165,21 @@ func _unhandled_input(event: InputEvent) -> void:
 		if _offers != null:
 			_offers.clear()
 		get_viewport().set_input_as_handled()
-	elif visible and _jump_to_phase(event):
+	elif _page == Page.NUMBERS and _jump_to_phase(event):
 		get_viewport().set_input_as_handled()
 
 
 ## Rewrites the text on every frame while it shows, with new strings each time, which only debug
-## builds pay for. Each section is its own function. The player's sections need a player that still
-## exists, and the camera's a camera: none may be linked, or it may have been freed. The activity
-## section needs the level's ActivityTracker. The offers' section is about his run, so it shows
-## with a player too, and with the autoloads Offers and Moral; the run's numbers, with a player and
-## the autoload RunStats.
+## builds pay for. The lighting page is the rig's text. On the numbers page, each section is its
+## own function. The player's sections need a player that still exists, and the camera's a camera:
+## none may be linked, or it may have been freed. The activity section needs the level's
+## ActivityTracker. The offers' section is about his run, so it shows with a player too, and with
+## the autoloads Offers and Moral; the run's numbers, with a player and the autoload RunStats.
 func _process(_delta: float) -> void:
+	if _page == Page.LIGHTING:
+		_frames_to_lookup = maxi(_frames_to_lookup - 1, 0)
+		_label.text = _lighting_text()
+		return
 	var text: String = _performance_section()
 	if is_instance_valid(player):
 		text += "\n" + _player_section()
@@ -153,6 +207,21 @@ func _physics_process(_delta: float) -> void:
 	_peak_y = minf(_peak_y, player.global_position.y)
 	if player.velocity.y >= 0.0:
 		set_physics_process(false)
+
+
+## Shows page, with its title. While hidden, _process does not run, so the text costs nothing per
+## frame. Jumps are still followed up, so the numbers are right as soon as they show again.
+func show_page(page: Page) -> void:
+	_page = page
+	var shown: bool = page != Page.HIDDEN
+	visible = shown
+	set_process(shown)
+	_page_label.text = PAGE_TITLES.get(page, "")
+	_frames_to_lookup = 0
+
+
+func get_page() -> Page:
+	return _page
 
 
 ## Takes Debug Damage SP from the player, as a hit would, unless the game is paused. Works with the
@@ -242,11 +311,33 @@ func _is_pressed(event: InputEvent, action: StringName) -> bool:
 	return InputMap.has_action(action) and event.is_action_pressed(action)
 
 
-## While hidden, _process does not run, so the text costs nothing per frame. Jumps are still
-## followed up, so the text is right as soon as it shows again.
-func _set_shown(shown: bool) -> void:
-	visible = shown
-	set_process(shown)
+## The lighting rig's text, or that the level has none.
+func _lighting_text() -> String:
+	var lighting: Node = _lighting_node()
+	return lighting.call(&"get_debug_text") as String if lighting != null else NO_LIGHTING_TEXT
+
+
+## Whether the lighting rig changed a setting with the key in event; false with no rig.
+func _lighting_takes(event: InputEvent) -> bool:
+	var lighting: Node = _lighting_node()
+	return lighting != null and lighting.call(&"handle_debug_key", event) == true
+
+
+## The node in Lighting Group. While none is kept, looked for at once when the lighting page opens
+## and then every Lighting Lookup Frames frames, never on every frame.
+func _lighting_node() -> Node:
+	if is_instance_valid(_lighting):
+		return _lighting
+	if _frames_to_lookup > 0:
+		return null
+	_lighting = get_tree().get_first_node_in_group(LIGHTING_GROUP)
+	_frames_to_lookup = LIGHTING_LOOKUP_FRAMES
+	return _lighting
+
+
+## The scene of the level the overlay is in, which owns it; empty outside a level's scene.
+func _level_scene() -> String:
+	return owner.scene_file_path if owner != null else ""
 
 
 ## Frames per second, and the slowest process step and slowest physics step, all over the last

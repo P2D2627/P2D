@@ -5,8 +5,9 @@
 # rest of the game. It keeps the tests away from the player's settings and from quitting:
 # the autoload Settings saves to a test file, and Quit, instead of closing the game, counts as a
 # failure. finish adds two checks: Quit was never pressed, and the player's settings file is as it
-# was, by its text and the time it was last written. A test extends this file instead of SceneTree,
-# with
+# was, by its text and the time it was last written. A test that ends before finish fails: the
+# game's own quit, run in a test instead of the one the test puts, would end it with exit code 0
+# and its checks unrun. A test extends this file instead of SceneTree, with
 # extends "res://tests/support/menu_test.gd"
 extends "res://tests/support/player_test.gd"
 
@@ -16,6 +17,9 @@ const UI_THEME_PATH: String = "res://themes/ui_theme.tres"
 const SETTINGS_TEST_PATH: String = "user://test_menus.cfg"
 ## Process frames after a key or button goes down, and again after it comes up.
 const TAP_FRAMES: int = 2
+## How long finish waits, in real ms, for the audio server's mix thread to let go of the sounds a
+## removed menu was still playing: quitting before reports them as resources still in use.
+const AUDIO_RELEASE_MS: int = 50
 
 ## The autoload Settings, once a main scene has been made; null before.
 var settings: GameSettings
@@ -24,6 +28,8 @@ var _quit_presses: int = 0
 ## The player's settings file when the first main scene was made, as player_file_state() gives
 ## it.
 var _player_file_before: Array = []
+## True once finish has given the verdict.
+var _finished: bool = false
 
 
 ## This file only holds what the menu tests share, so on its own it says so and stops.
@@ -32,9 +38,19 @@ func _initialize() -> void:
 	quit(1)
 
 
+## Runs as the test ends, however it ends. Without a verdict from finish, the exit code becomes 1.
+func _finalize() -> void:
+	if not _finished:
+		printerr("FAIL: the test ended before finish gave its verdict, as when the game quits itself.")
+		quit(1)
+
+
 ## Before the verdict: Quit was never pressed, and the player's settings file is as it was. The test
-## file goes away.
+## file goes away. A sound still playing is let go first: the mix thread drops it within
+## Audio Release ms, and the audio server frees it on the next frame.
 func finish(results: Array[bool]) -> void:
+	OS.delay_msec(AUDIO_RELEASE_MS)
+	await process_frame
 	results.append(report(_quit_presses == 0, "Quit pressed during the test: %d times"
 			% _quit_presses))
 	if _player_file_before.is_empty():
@@ -44,6 +60,7 @@ func finish(results: Array[bool]) -> void:
 			% same))
 	if FileAccess.file_exists(SETTINGS_TEST_PATH):
 		DirAccess.remove_absolute(ProjectSettings.globalize_path(SETTINGS_TEST_PATH))
+	_finished = true
 	super(results)
 
 
@@ -72,9 +89,15 @@ func new_main(levels: Variant = null) -> Node:
 	return main
 
 
-## A main scene with its first level started from the menu: Play, then the first level's button.
+## A main scene with a level started from the menu: Play, then the level's button. The level is the
+## test room, given as the only one, so the menus' tests do not hang on what the main scene's menu
+## offers.
 func new_main_in_a_level() -> Node:
-	var main: Node = await new_main()
+	var room: LevelEntry = LevelEntry.new()
+	room.title = "Test room"
+	room.scene = load("res://scenes/levels/test_room/test_room.tscn") as PackedScene
+	var levels: Array[LevelEntry] = [room]
+	var main: Node = await new_main(levels)
 	await tap(KEY_ENTER)
 	await tap(KEY_ENTER)
 	return main
@@ -134,6 +157,23 @@ func press_joypad(button: JoyButton, pressed: bool) -> void:
 func tap_joypad_in_one_frame(button: JoyButton) -> void:
 	Input.parse_input_event(_joypad_event(button, true))
 	Input.parse_input_event(_joypad_event(button, false))
+	await _wait_tap_frames()
+
+
+## A gamepad axis, the left stick's down by default, pushed all the way and let go, with the several
+## events a real push sends on its way, past the half and back.
+func push_axis(axis: JoyAxis = JOY_AXIS_LEFT_Y) -> void:
+	for value: float in [0.3, 0.6, 1.0, 0.6, 0.0]:
+		await move_axis(axis, value)
+
+
+## One event of a gamepad axis, of the gamepad numbered device: it is now at value.
+func move_axis(axis: JoyAxis, value: float, device: int = 0) -> void:
+	var motion: InputEventJoypadMotion = InputEventJoypadMotion.new()
+	motion.device = device
+	motion.axis = axis
+	motion.axis_value = value
+	Input.parse_input_event(motion)
 	await _wait_tap_frames()
 
 
