@@ -12,7 +12,8 @@ extends DemonState
 ## 0045). With none, it stands facing him. It chases him again as soon as he is back within its
 ## reach, on a floor or in the air. It never gives up while it sees him; it gives up as the chase
 ## does, but only once a ledge or a wall has hidden him for Out Of Reach Wait, since it knows he is
-## up or down there (ADR 0044).
+## up or down there (ADR 0044). With Follows Trail and a step of his trail to take from its floor, it
+## goes back to the chase, which takes it (#271).
 
 ## The x the demon paces around: where it stopped, or where it stopped going after him.
 var _anchor_x: float = 0.0
@@ -41,6 +42,9 @@ func enter() -> void:
 func physics_update(delta: float) -> void:
 	_demon.velocity.x = 0.0
 	if not _demon.keeps_after_target(true):
+		return
+	if _demon.has_trail_to_follow():
+		_demon.change_state_and_act(Demon.State.CHASE, delta)
 		return
 	if _demon.get_target_height() <= _demon.stats.get_reach_height():
 		_demon.change_state(Demon.State.CHASE)

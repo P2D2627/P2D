@@ -12,9 +12,15 @@ extends RefCounted
 ## later, the two stop colliding with each other until their boxes are apart (ADR 0047). A held
 ## body is not shoved: it passes through the one it stands on at once, and then through the next
 ## one under it, so what holds it never holds it on top of another, as the man a dog grabs on its
-## back, who sinks on the floor below it (ADR 0056). It reads the last move_and_slide(), so its body
-## calls update() before moving.
+## back, who sinks on the floor below it (ADR 0056). A body that names a group to update() is not
+## shoved off the bodies in it: the man names STAND_ON_GROUP, so he stands on a dog whose back bites
+## him instead (#271). The demons name none, and their Knock Off Layers hold only the man's layer,
+## who is never in the group. It reads the last move_and_slide(), so its body calls update() before
+## moving.
 
+## The bodies the man may stand on, as a dog whose back bites him: its bites, not a shove, make him
+## get off.
+const STAND_ON_GROUP: StringName = &"can_be_stood_on"
 ## Physics frames the body stays on top once its shove was stopped both ways, before the two pass
 ## through each other: a tenth of a second, so a stop that clears by itself, as a demon walking off,
 ## never makes them pass.
@@ -48,15 +54,17 @@ func _init(body: CharacterBody2D) -> void:
 
 
 ## Which way to shove the body this frame, 1 to the right, -1 to the left, or 0 when it isn't on a
-## body on layers, is going up, is held, or starts to pass through it. Held on one, it passes
-## through it at once.
-func update(layers: int, held: bool) -> float:
+## body on layers, is going up, is held, stands on one in stand_on_group, or starts to pass through
+## it. Held on one, it passes through it at once, also on one in stand_on_group.
+func update(layers: int, held: bool, stand_on_group: StringName = &"") -> float:
 	_update_floor_body()
 	_stop_passing_once_apart()
 	var on_one: bool = is_instance_valid(_floor_body) and _floor_body.collision_layer & layers != 0
 	if held and on_one:
 		_pass_through(_floor_body as PhysicsBody2D)
-	if held or _body.velocity.y < 0.0 or not on_one:
+	var may_stand: bool = on_one and not stand_on_group.is_empty() \
+			and _floor_body.is_in_group(stand_on_group)
+	if held or _body.velocity.y < 0.0 or not on_one or may_stand:
 		_get_off()
 		return _direction
 	if _direction == 0.0:

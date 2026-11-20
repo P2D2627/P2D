@@ -1,9 +1,13 @@
 class_name BiggestDemon
 extends Demon
 
-## Level 1's biggest dog, at the end of phase 3: for now the regular dog, eight times its size in its scene
-## (body, hit box, art and checks), with a ring around it that opens Opens the first time the man comes inside.
-## How he is beaten comes later; this is only the dog and the ring.
+## Level 1's biggest dog, at the end of phase 3: the regular dog half again as big in its scene (body, hit box,
+## art and checks), with a ring around it that opens Opens the first time the man comes inside. It goes after
+## him to the end (#271): its stats, biggest_demon_stats.tres, are the regular dog's with each distance to the
+## man measured from its face, not its middle, so it sees and attacks him as far out of its body as the regular
+## dog does; once it chases him it never gives up, and it jumps up as high as he jumps. His way to be rid of it is
+## back round, from the last hall up to gate 3, which its ring opens, and down the chimney behind it into the hall
+## again; its Max Drop reaches the chimney's depth, though it does not yet follow him that way (#201).
 
 ## The gates the ring opens.
 @export var opens: Array[Gate] = []
