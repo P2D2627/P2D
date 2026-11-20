@@ -22,12 +22,12 @@ enum TileKind { EMPTY, ROCK, PLATFORM, OTHER }
 
 const PHASE_3_MAP_PATH: String = "res://scenes/levels/lust/builders/level1_phase3.txt"
 const BIGGEST_DOG_SCENE: PackedScene = preload("res://scenes/characters/demon/biggest_demon.tscn")
-const PHASE_3_LEGEND: String = "#.-=^[]dG123uvPF"
+const PHASE_3_LEGEND: String = "#.-=^[]dG1234uvwPF"
 const WALL_SPIKES_LEFT: String = "["
 const WALL_SPIKES_RIGHT: String = "]"
 const BIGGEST_DOG: String = "G"
-const GATE_DIGITS: String = "123"
-const UNLOCKER_LETTERS: String = "uv"
+const GATE_DIGITS: String = "1234"
+const UNLOCKER_LETTERS: String = "uvw"
 ## Every node it adds is named with this in front, so phase 3's pieces are told apart from the rest.
 const PREFIX: String = "P3"
 const PHASE_3_SAVE: String = "Phase3Save"

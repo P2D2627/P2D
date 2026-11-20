@@ -559,20 +559,49 @@ vezes maior (corpo de 168 × 84 px, caixa de ataque, arte e verificações aos p
 que o cão grande, com um anel de proximidade de 736 px de alcance à volta do meio do corpo: chegar
 perto dele abre os portões da sua lista Opens. É o cão que persegue a personagem até ao fim (#271):
 depois de a notar no ecrã, nunca desiste dela (Never Gives Up), esteja ela escondida, fora do ecrã ou
-longe, e vai sempre para onde ela está; só o ataque depende de a ver. O salto dele vai até à altura
-do salto dela (Jump Height de 240 px; medido: sobe um degrau de 224 px e não um de 280 px), e o Max
-Drop de 1536 px cobre a descida mais funda do caminho de fuga, a chaminé atrás do portão 3 (1488 px),
-com um tile de folga (medido: desce 700 px de uma beira em campo aberto). A fuga pensada é esse
-caminho: a personagem encontra-o no salão do fundo, volta para oeste, sobe a coluna até ao portão 3,
-que o anel dele abriu, segue o corredor e cai pela chaminé no salão, com ele atrás, até à saída. Para
-que ele a possa seguir, o fundo oeste do salão sobe em quatro degraus de 192, 192, 144 e 96 px (antes,
-dois de 384 e 240 px), as plataformas da coluna deixaram de cair e a chaminé passou de 3 para 4 tiles
-de largura (192 px, para um corpo de 168 px). O `test_level1_escape_loop.gd` verifica estas medidas
-na cena e que o Max Drop chega ao fundo da chaminé. O cão ainda não faz este caminho, e é o passo
-seguinte da #271: vai direito à personagem, pelo que não segue uma subida em ziguezague, e a descida
-dele é um salto em arco, que numa chaminé ou num poço estreito bate na parede do outro lado. Nada
-obriga ainda a este caminho: o chão do salão continua livre até à saída, e saltar por cima do cão
-custa uma mordida. Antes era oito vezes maior (896 × 448 px) e tapava o salão. Os
+longe; só o ataque depende de a ver. Não vai direito a ela: segue-lhe o rasto (Follows Trail), como
+um cão pelo cheiro. A classe pura `DemonTrail` guarda um passo cada vez que a personagem aterra num
+chão a outra altura, com o sítio onde ela deixou o chão anterior e o sítio onde aterrou, até 32
+passos. O cão percorre-os pela ordem: sobe com um salto calculado para aterrar onde ela aterrou, que
+o motor de física simula contra o nível antes de o cão saltar, e desce onde ela desceu. Na descida, a
+simulação ignora a personagem, para que o corpo dela no caminho não anule a descida (o cão é empurrado
+para o lado dela). Na subida conta com ela: um salto que toque nela falha. Se ela estiver parada onde
+o cão aterraria, ele aponta para o lado dela, do seu próprio lado, e só salta se houver chão debaixo
+do meio do corpo nesse sítio. Numa plataforma larga, sobe e aterra ao lado dela. Numa plataforma mais
+estreita do que os dois, venha o cão de baixo ou de lado, não salta e ladra-lhe de baixo, como num
+refúgio, até ela sair dali. O mesmo acontece num chão largo, se ela estiver parada perto da beira do
+lado do cão, sem espaço para o corpo dele ao lado: para chegar ao outro lado, o cão teria de lhe
+saltar por cima. Numa plataforma de sentido único, acaba por passar por baixo dela para o outro lado
+e sobe por aí. As costas de um cão não contam como chão do rasto. Se o cão cair ou for atirado para um chão por onde já passou, retoma o
+rasto a partir daí. Enquanto a vê ao seu alcance, persegue-a como os outros cães e esquece o rasto.
+Um passo que não consegue dar (mais alto do que o salto, um fosso largo demais para o saltar, ou uma
+descida sem chão onde aterrar) faz-lhe largar o rasto durante o Trail Retry Time (1,5 s): persegue-a
+como os outros cães, e ladra quando ela está fora do seu alcance, e depois tenta outra vez. Se ela
+aterrar noutro chão antes disso, o cão tenta logo, sem esperar o resto do tempo. A caminho
+de um salto, nunca sai do seu chão para um fosso mais largo do que o corpo. O salto dele vai até à
+altura do salto dela (Jump Height de 240 px;
+medido: sobe um degrau de 224 px e não um de 280 px, e sobe para uma plataforma de sentido único de
+144 px, mais estreita do que o corpo), e o Max Drop de 1536 px cobre a descida mais funda do caminho
+de fuga, a chaminé atrás do portão 3 (1488 px), com um tile de folga (medido: desce 700 px de uma
+beira em campo aberto). Com Drops Down Shafts, uma descida que bate numa parede escorrega por ela
+abaixo, como o corpo faz, e o cão desce poços mais estreitos do que o seu salto (medido: um poço de
+192 px de largura e 1488 px de fundo); só o maior cão o tem. O rasto tem três limites conhecidos:
+um salto da personagem por cima de um buraco mais largo do que o cão, sem mudar de altura, não fica
+no rasto; um salto dela de parede em parede não se repete; e dois chãos à mesma altura contam como
+um só. Custo medido (`tests/measures/measure_dog_trail.gd`, três execuções alternadas de 300
+frames): o frame inteiro leva em média 213 a 214 µs com o rasto ligado e 200 a 215 µs sem ele, uma
+diferença dentro do ruído da medição. A fuga pensada é esse caminho: a
+personagem encontra-o no salão do fundo, volta para oeste, sobe a coluna até ao portão 3, que o anel
+dele abriu, segue o corredor e cai pela chaminé no salão, com ele atrás. A saída fica fechada pelo
+portão 4, na passagem por baixo do pilar entre o posto do cão e o F, até a personagem usar o mecanismo
+a meio do corredor, entre o poço e a chaminé; saltar por cima do cão no salão não leva a lado nenhum.
+Para que ele a possa seguir, o fundo oeste do salão sobe em quatro degraus de 192, 192, 144 e 96 px
+(antes, dois de 384 e 240 px), as plataformas da coluna deixaram de cair e a chaminé passou de 3 para
+4 tiles de largura (192 px, para um corpo de 168 px). O `test_level1_escape_loop.gd` verifica estas
+medidas na cena; o `test_dog_trail.gd` verifica que o cão faz o caminho todo atrás dela, no nível 1,
+até voltar ao salão pela chaminé; o `test_dog_shafts.gd`, que desce o degrau, o poço e a chaminé do
+corredor; e o `test_level1_exit_gate.gd`, que não há outra passagem para o F. Antes era oito vezes
+maior (896 × 448 px) e tapava o salão. Os
 valores dos cães medem a distância à personagem a partir do meio do
 corpo, o que num corpo maior deixa os ataques curtos: a 1,5 vezes, encosta-se a ela a 108 px, e a
 mordida do cão normal só chega a 100. Tem por isso valores próprios
@@ -846,9 +875,17 @@ antes eram dois, de 384 e 240 px. O contorno de pedras (8 pedras trocadas por 19
 71) foram refeitos à volta dos tiles alterados; uma pedra que o `--reshape` não reconheceu, e que ficou a flutuar
 dentro da chaminé alargada, foi retirada à mão. Uma das plataformas tinha sido deslocada 1 px no editor; o
 `--reshape` reconhece agora cada plataforma pelo tile em que está. O `test_level1_escape_loop.gd` verifica os
-degraus, as plataformas e a chaminé na cena. A verificação das zonas de câmara que mostram o nível de baixo, no
-`test_level1.gd`, passa a apontar também a zona da coluna: conta como rocha a plataforma fixa logo abaixo dela, e o
-espaço por baixo, que é o da sala do fundo, como nível de baixo.
+degraus, as plataformas e a chaminé na cena. Para obrigar a este caminho, a passagem por baixo do pilar, entre o
+posto do cão e o F, ganhou o portão 4 (2 × 6 tiles, sobe para dentro do pilar), aberto pelo mecanismo 3, a meio do
+corredor entre o poço e a chaminé. O `--reshape` não acrescenta portões, por isso os dois nós foram acrescentados à
+mão na cena, e o mapa e o construtor passaram a ter o portão 4 e o mecanismo `w`. No topo da coluna, a plataforma
+de sentido único à altura do corredor ganhou um tile e passou a encostar à rocha, porque o vão de 1 tile entre as duas
+parava o cão maior (a perseguição de um cão pára onde o seu chão acaba), e o teto sobe um tile por cima dela, para a
+arte do cão não roçar na rocha (de 144 para 192 px de vão). A verificação das zonas de câmara
+que mostram o nível de baixo, no `test_level1.gd`, contava como rocha as plataformas de sentido único e o espaço por
+baixo delas como nível de baixo; conta-as agora como ar, porque o ecrã vê através delas e o espaço por baixo é a
+mesma sala. Deixou assim de apontar a zona da coluna, e baixou ou deixou de apontar cinco zonas das fases 1 e 2 pelo
+mesmo motivo.
 
 O caminho que este teste repete foi encontrado por uma verificação em papel, fora do repositório, que simula o
 movimento da personagem fotograma a fotograma. A primeira versão divergia do jogo: aplicava a gravidade no fotograma

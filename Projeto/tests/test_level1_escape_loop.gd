@@ -33,8 +33,9 @@ const RAY_DEPTH: float = 2000.0
 const COLUMN_FROM_COLUMN: int = 65
 ## The levels' TileSet: the one-way platform is the rock tile's alternative 1.
 const ONE_WAY_ALTERNATIVE: int = 1
-## The one-way platform tiles in the column: the 8 platforms that collapsed before (#271).
-const FIXED_PLATFORM_TILES: int = 28
+## The one-way platform tiles in the column: the 8 platforms that collapsed before (#271), 28 tiles, and the tile
+## that joins the top one to the rock at the corridor's height, where a 1-tile gap stopped the biggest dog.
+const FIXED_PLATFORM_TILES: int = 29
 ## How far apart, in px, the dog's body is tried down the chimney.
 const CHIMNEY_STEP: float = 12.0
 ## Heights in px: one in the corridor behind gate 3, above its floor, from where a ray finds that floor,

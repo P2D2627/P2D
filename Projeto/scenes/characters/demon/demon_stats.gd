@@ -31,6 +31,16 @@ const MIN_BACK_BITE_INTERVAL: float = 0.34
 ## gone from the scene ends. Chases Only On Screen still holds for starting it, and it attacks him
 ## only while it sees him. The level starts over when he dies, so it never chases him back to a save.
 @export var never_gives_up: bool = false
+## Whether the demon goes after the man by his trail (#271), as a dog by his scent: while he is out
+## of its sight or out of its reach, it goes by the floors he went by, in order, up and down where he
+## went up and down (DemonTrail), never straight to where he is; with him in its sight and within its
+## reach, it chases him as any demon does. Up, it jumps onto where he landed with Jump Height; down,
+## it drops with Max Drop. Made for the demon that Never Gives Up, which keeps after him out of sight.
+@export var follows_trail: bool = false
+## Seconds a demon with Follows Trail lets go of the man's trail for, once a step of it stops it, as
+## one higher than its Jump Height or a drop that lands nowhere: it chases him as any demon does,
+## barking out of his reach, and then tries that step again.
+@export_range(0.1, 10.0, 0.1, "suffix:s") var trail_retry_time: float = 1.5
 ## Seconds the demon stands, turned to the man, once it notices him and before it chases him: the
 ## alert (ADR 0035), which DemonMark shows with a "!" and DemonSounds with a beep (ADR 0040). At 0
 ## it chases him at once, with no alert, so with no mark and no beep either.
@@ -100,6 +110,11 @@ const MIN_BACK_BITE_INTERVAL: float = 0.34
 ## down by its lunge's gravity, so with no lunge in Attacks it never drops. At 0 it never drops, and
 ## stops at the end of its floor.
 @export_range(0.0, 960.0, 1.0, "or_greater", "suffix:px") var max_drop: float = 0.0
+## With it, a leap down whose arc meets a wall slides down that wall, as the demon's body does, and
+## goes on across once past it, so the demon follows the man down a shaft narrower than its leap, as
+## level 1's chimney behind gate 3 (#271). Without it, a wall in the arc stops the leap, and the demon
+## stays at the end of its floor. A ceiling in the arc stops it either way.
+@export var drops_down_shafts: bool = false
 
 @export_group("Attacks")
 ## The demon's attacks, in order: of those it can start at the man, it starts the first in the
@@ -278,6 +293,11 @@ func get_search_frames() -> int:
 ## out_of_reach_wait in whole physics frames, rounded to the nearest one.
 func get_out_of_reach_frames() -> int:
 	return _to_frames(out_of_reach_wait)
+
+
+## trail_retry_time in whole physics frames, rounded to the nearest one.
+func get_trail_retry_frames() -> int:
+	return _to_frames(trail_retry_time)
 
 
 ## A pause of share of the way from Out Of Reach Pause Min to Max, share from 0 to 1, in whole

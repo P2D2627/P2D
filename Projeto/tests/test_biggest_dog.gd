@@ -204,7 +204,8 @@ func _the_biggest_dog_is_awake_round_his_whole_ring() -> bool:
 ## back. How far it sees, from its eyes to the man's head, reaches as far beyond its face as the
 ## regular dog's. Pack Variation varies its Retreat Distance by as many px as the regular dog's,
 ## not by the same share of a longer distance. And it goes after the man as he goes: it never gives
-## up on him, jumps up as high as he jumps, and leaps down any drop a demon can.
+## up on him, jumps up as high as he jumps, leaps down any drop a demon can, follows his trail and
+## drops down shafts (#271, phase C).
 func _its_stats_are_the_dog_s_measured_from_its_face() -> bool:
 	var dog: Demon = DOG_SCENE.instantiate() as Demon
 	var big: Demon = BIGGEST_SCENE.instantiate() as Demon
@@ -213,11 +214,12 @@ func _its_stats_are_the_dog_s_measured_from_its_face() -> bool:
 	if own_file:
 		var further: float = _half_width_of(big) - _half_width_of(dog)
 		var skip: Array[String] = ["attacks", "sight_distance", "sight_behind_share", "pack_variation",
-				"never_gives_up", "jump_height", "max_drop"]
+				"never_gives_up", "jump_height", "max_drop", "follows_trail", "drops_down_shafts"]
 		skip.append_array(FROM_THE_FACE)
 		wrong = _different_fields(dog.stats, big.stats, skip)
-		if big.stats.get(&"never_gives_up") != true:
-			wrong.append("never_gives_up")
+		for flag: String in ["never_gives_up", "follows_trail", "drops_down_shafts"]:
+			if big.stats.get(flag) != true:
+				wrong.append(flag)
 		if not is_equal_approx(big.stats.jump_height, _man_jump_height()):
 			wrong.append("jump_height")
 		if not is_equal_approx(big.stats.max_drop, LOOP_DROP):
