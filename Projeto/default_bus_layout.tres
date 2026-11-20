@@ -22,6 +22,12 @@ attack_us = 2000.0
 release_ms = 600.0
 sidechain = &"Gusts"
 
+[sub_resource type="AudioEffectPanner" id="AudioEffectPanner_thunder_background"]
+resource_name = "Panner"
+
+[sub_resource type="AudioEffectPanner" id="AudioEffectPanner_thunder_main"]
+resource_name = "Panner"
+
 [resource]
 bus/1/name = &"Music"
 bus/1/solo = false
@@ -71,3 +77,31 @@ bus/7/mute = false
 bus/7/bypass_fx = false
 bus/7/volume_db = 0.0
 bus/7/send = &"Ambience"
+bus/8/name = &"Thunder"
+bus/8/solo = false
+bus/8/mute = false
+bus/8/bypass_fx = false
+bus/8/volume_db = 0.0
+bus/8/send = &"Ambience"
+bus/9/name = &"ThunderBacklayer"
+bus/9/solo = false
+bus/9/mute = false
+bus/9/bypass_fx = false
+bus/9/volume_db = -12.0
+bus/9/send = &"Thunder"
+bus/10/name = &"ThunderBackground"
+bus/10/solo = false
+bus/10/mute = false
+bus/10/bypass_fx = false
+bus/10/volume_db = 0.0
+bus/10/send = &"Thunder"
+bus/10/effect/0/effect = SubResource("AudioEffectPanner_thunder_background")
+bus/10/effect/0/enabled = true
+bus/11/name = &"ThunderMain"
+bus/11/solo = false
+bus/11/mute = false
+bus/11/bypass_fx = false
+bus/11/volume_db = 0.0
+bus/11/send = &"Thunder"
+bus/11/effect/0/effect = SubResource("AudioEffectPanner_thunder_main")
+bus/11/effect/0/enabled = true

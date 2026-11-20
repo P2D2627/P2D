@@ -53,6 +53,12 @@ enum Travel { NONE, LEFT_TO_RIGHT, RIGHT_TO_LEFT }
 @export_range(0.0, 0.5, 0.01) var unpanned_share: float = 0.33
 ## Which way the unpanned sounds travel across the screen, told with sound_played.
 @export var unpanned_travel: Travel = Travel.NONE
+## Pans each unpanned sound to a side picked at random, as far as a pan picked between x and y
+## (0 the centre, 1 all in one speaker), through the Panner on Unpanned Player's bus (BusPan): the
+## sound keeps its own stereo, moved to that side, and travels from it towards the other. 0 and 0
+## leave the unpanned sounds as they are. The panner pans all the bus plays, so keep Min Gap
+## longer than the longest sound.
+@export var side_pan: Vector2 = Vector2.ZERO
 
 @export_group("Timing")
 ## The shortest wait from the start of one sound to the start of the next, and from start() to the
@@ -94,6 +100,9 @@ func _ready() -> void:
 	if not _has_placed() and not _has_unpanned():
 		push_warning("AmbienceLayer %s: no Sounds or Unpanned Sounds, with their player, to play."
 				% name)
+	if _side_panned() and BusPan.panner_of(unpanned_player.bus) == null:
+		push_warning("AmbienceLayer %s: Side Pan is set, but the bus %s has no Panner."
+				% [name, unpanned_player.bus])
 	if autostart:
 		start()
 
@@ -134,8 +143,15 @@ func is_running() -> bool:
 func _play_one() -> void:
 	if _next_is_unpanned():
 		_last_unpanned = true
+		var travel: int = _unpanned_travel_sign()
+		if _side_panned():
+			var side: float = -1.0 if randf() < 0.5 else 1.0
+			BusPan.set_pan(unpanned_player.bus, side * randf_range(minf(side_pan.x, side_pan.y),
+					maxf(side_pan.x, side_pan.y)))
+			# From its side towards the other, as a placed sound.
+			travel = -int(side)
 		unpanned_player.play()
-		sound_played.emit(_screen_centre(), _unpanned_travel_sign())
+		sound_played.emit(_screen_centre(), travel)
 		return
 	if not _has_placed():
 		return
@@ -170,6 +186,11 @@ func _has_placed() -> bool:
 
 func _has_unpanned() -> bool:
 	return unpanned_player != null and unpanned_sounds != null
+
+
+## Whether the unpanned sounds are panned to a side: Side Pan is not 0 and 0.
+func _side_panned() -> bool:
+	return _has_unpanned() and maxf(side_pan.x, side_pan.y) > 0.0
 
 
 func _unpanned_travel_sign() -> int:

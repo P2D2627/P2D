@@ -3666,8 +3666,8 @@ toca, com o áudio a misturar em tempo real e sem saída, cada som do crucifixo,
 personagem, lidos das cenas, e verifica que cada alerta baixa o ambiente entre 5 e 18 dB e cada som
 da personagem 3 dB no máximo; demora cerca de 100 s. Se os alertas se ouvem bem por cima do
 ambiente confirma-se a jogar. O `test_settings.gd` confirma a lista de buses: os cinco com
-opção de volume, todos a enviar para o Master, o Alerts, a enviar para o SFX, e o Beds e o Gusts, a
-enviar para o Ambience.
+opção de volume, todos a enviar para o Master, o Alerts, a enviar para o SFX, o Beds, o Gusts e o
+Thunder, a enviar para o Ambience, e os três buses dos trovões, a enviar para o Thunder.
 
 O `test_ambience_bed.gd` verifica, também com um som silencioso, que um fundo toca nos seus dois
 leitores, no bus Ambience; que entra a partir do silêncio, nunca passa de Loud dB e depois varia
@@ -3679,6 +3679,85 @@ de tempo do hitstop, a passagem seguinte chega ao fim de 4,93 s de tempo real, e
 os dois fundos do nível 1 tocam no Ambience ou num bus que envia para ele (o Beds), cada um com o
 seu som, e só se realinham ao fim de
 mais de meia hora. Se o ambiente se repete ou respira bem só se ouve a jogar.
+
+#### Trovões e relâmpagos
+
+O nível 1 tem uma trovoada fora de vista, em três camadas, seguindo as indicações de quem fez os
+sons (Diogo, do grupo), com os ficheiros em `assets/audio/ambience/thunder/`:
+
+- ThunderBacklayer, o fundo da trovoada, a camada mais baixa: `thunder_spontaneous_backlayer_1.wav`
+  (17,7 s) e `_2.wav` (15,6 s), de 32 a 48 s uns dos outros (cerca de 40 s, com um desvio ao acaso),
+  ao centro, sem posição. Nunca tocam os dois ao mesmo tempo: o intervalo mais curto, 32 s, é mais
+  longo do que o ficheiro mais longo no tom mais grave, 18,4 s.
+- ThunderBackground, os trovões ao longe: `thunder_background_1.wav` (3,9 s) e `_2.wav` (4,0 s), de
+  9 a 15 s uns dos outros (cerca de 12 s), cada um entre 50 e 80 % para um lado escolhido ao acaso.
+- ThunderMain, os trovões principais: `thunder_1.wav` (4,9 s) e `thunder_2.wav` (7,6 s), um
+  relâmpago de 26 a 38 s depois do anterior (cerca de 32 s). Primeiro vê-se a luz e só 2 a 6 s
+  depois se ouve o trovão, a 35 % para o lado de onde veio a luz.
+
+Em todas, o ficheiro é escolhido ao acaso e o tom varia até 4 % de cada vez. As duas primeiras são
+camadas de ambiente (`AmbienceLayer`); a terceira é um nó próprio, `ThunderLayer`
+(`scenes/others/ambience/thunder_layer.tscn`), porque toca o som segundos depois do acontecimento
+que o anuncia. Cada trovão principal é um recurso `ThunderStrike` (em
+`scenes/others/ambience/strikes/`), que junta o som e o relâmpago que o precede.
+
+Os trovões guardam a imagem estéreo e a reverberação com que foram gravados. Para os pôr de um lado,
+os buses ThunderBackground e ThunderMain têm um efeito Panner do Godot, que o nó acerta antes de
+cada som: o Panner passa parte de um canal para o outro em vez de baixar um deles, e o som mantém a
+largura e o volume. Ficou de lado colocar o som num leitor 2D ao lado do ecrã, como as rajadas,
+porque o lado dependeria então da distância no ecrã e do zoom da câmara, e não do valor pedido. Como
+o Panner move tudo o que toca no bus, dois sons da mesma camada nunca se sobrepõem: no ThunderMain,
+o intervalo mais curto (26 s) é maior do que o atraso mais longo e o trovão mais longo no tom mais
+grave somados (13,9 s); no ThunderBackground, 9 s contra 4,2 s.
+
+Cada camada tem o seu bus, e os três enviam para um bus Thunder, que envia para o Ambience: os
+trovões seguem a opção de volume do ambiente e baixam com ele debaixo dos alertas. Medidos com o
+ffmpeg (norma EBU R128), os ficheiros principais têm −20,0 e −26,5 LUFS, os de fundo −28,7 e −31,0
+LUFS e os do fundo da trovoada −21,3 e −25,5 LUFS: estes últimos, os mais fortes depois do
+`thunder_1`, têm de ser os mais baixos. Os leitores estão a −6 dB, como os sons sem posição das
+outras camadas, o ThunderBacklayer a −12 dB e os outros dois a 0 dB; somados os ganhos, antes do
+Ambience, o fundo da trovoada fica entre −39 e −44 LUFS, os trovões ao longe entre −35 e −37 e os
+principais entre −26 e −33. Afinam-se a ouvir, no painel de áudio do Godot.
+
+O relâmpago é a luz que um nó `LightningFlash` (`scenes/others/ambience/lightning_flash.tscn`)
+desenha sobre o fundo do nível: um shader, desenhado como o último filho do nó Backdrop (como as
+brasas do vento), ilumina de cor-de-rosa (1,0; 0,45; 0,82) o que o fundo mostra, mais do lado de
+onde veio o relâmpago, sem tocar na rocha onde se joga nem na personagem. É uma primeira versão,
+feita para ser substituída: o `ThunderLayer` só anuncia cada relâmpago (com um sinal), e outro
+shader com os mesmos parâmetros, ou outro nó que ouça o mesmo sinal, muda o aspeto sem mexer no som.
+Ficaram de lado tingir todo o fundo, que não mostra de que lado veio a luz, e uma camada de luz à
+frente de tudo, que parece o flash de uma câmara e é mais agressiva para quem é fotossensível. Numa
+imagem do nível 1 durante o primeiro relâmpago, vindo da esquerda, o fundo fica rosa, mais claro à
+esquerda, e a rocha, a personagem e as indicações do tutorial ficam como estavam.
+
+A luz segue a forma de cada trovão. Medidos em janelas de 50 ms, o `thunder_1` é um estalo
+próximo: forte desde os primeiros 50 ms, com uma segunda explosão entre 0,6 e 0,75 s, e já 24 dB
+abaixo do pico a 1,5 s. O `thunder_2` é um trovão que rola, com o pico 8,8 dB abaixo: o golpe
+principal aos 0,4 s, forte até 1,4 s, duas subidas aos 1,9 e 2,6 s, e apaga-se até cerca de 4,5 s.
+Um script fora do repositório transforma esta medição na curva de luz de cada `ThunderStrike`, duas
+vezes mais rápida do que o som: cada pico forte (pelo menos 5 dB acima das quebras à sua volta e a
+menos de 12 dB do pico do ficheiro) é um clarão, que sobe em 25 ms e cai para cerca de um terço em 0,12 s, e
+o rolar do trovão é um brilho mais fraco por baixo. O brilho segue a raiz quadrada da amplitude, mais
+próxima do que se vê e do que se ouve do que uma relação direta. O `thunder_1` dá dois clarões, aos
+0,09 e 0,33 s, com o brilho máximo, e apaga-se em 1,9 s; o `thunder_2`, com 0,60 do brilho, sobe
+num brilho que rola durante 0,35 s, tem três clarões, aos 0,40, 0,70 e 0,97 s, e apaga-se em 2,8 s.
+As curvas podem ser corrigidas à mão no Inspector.
+
+Por causa da fotossensibilidade, nada pisca mais de três vezes num segundo (critério da WCAG). O
+script só mantém um clarão se nenhum segundo ficar com mais de três e se estiver a pelo menos 0,2 s
+de outro; contando como um clarão uma subida e uma descida de pelo menos um décimo do brilho máximo,
+o `thunder_1` pisca 2 vezes e o `thunder_2` 3 vezes no segundo em que mais pisca.
+
+O `test_thunder.gd` verifica que os três buses dos trovões enviam para o Thunder, e este para o
+Ambience, que os dois buses com lado têm um Panner e que o do fundo da trovoada é o mais baixo; que,
+em 16 relâmpagos, cada trovão chega dentro do atraso pedido depois da sua luz, com o mesmo som, do
+mesmo lado, com o pan e o tom pedidos, que os relâmpagos ficam entre o intervalo mais curto e o mais
+longo e vêm dos dois lados; que `stop()` suspende os relâmpagos mas não um trovão já anunciado, e a
+pausa suspende os dois; que a luz se desenha em último lugar no fundo, vem do lado do relâmpago,
+segue a curva do relâmpago frame a frame e apaga-se quando ela acaba; que uma camada de ambiente com
+Side Pan põe cada som para um lado, dentro dos limites; que os dois relâmpagos do nível 1 não piscam
+mais de três vezes num segundo; e que as três camadas do nível 1 têm os intervalos, os ficheiros, os
+buses e os lados acima. Se a luz e o som combinam confirma-se a jogar.
 
 #### Sons no mundo: o fogo e as suas brasas
 
@@ -3877,6 +3956,11 @@ disponível começam no seu ponto. Se a sincronia está certa confirma-se a joga
   `Projeto/assets/audio/textures/fire/crackles/`: o som das fogueiras, feito por Diogo, do grupo,
   por edição de sons com licença CC0 (domínio público), que não pede atribuição e permite qualquer
   uso, incluindo o vídeo, as apresentações e o portefólio.
+- Os seis trovões, em `Projeto/assets/audio/ambience/thunder/` (`thunder_1.wav`, `thunder_2.wav`,
+  `thunder_background_1.wav`, `thunder_background_2.wav`, `thunder_spontaneous_backlayer_1.wav` e
+  `thunder_spontaneous_backlayer_2.wav`): os trovões de ambiente do nível 1, feitos por Diogo, do
+  grupo, por edição e mistura de sons com licença CC0 (domínio público), que não pede atribuição e
+  permite qualquer uso, incluindo o vídeo, as apresentações e o portefólio.
 - `level1_cave_map.png` e `level1_cave_shade.png`, em `Projeto/assets/sprites/backgrounds/`:
   imagens provisórias geradas com IA (Claude) a partir do mapa do nível 1, sem material de
   terceiros. A primeira dá a cor de cada área do fundo e a segunda escurece o fundo junto à rocha.

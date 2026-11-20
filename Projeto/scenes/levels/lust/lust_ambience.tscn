@@ -10,6 +10,15 @@
 [ext_resource type="AudioStream" path="res://assets/audio/ambience/wind/passing/one_shot_wind_5.wav" id="8_wind_5"]
 [ext_resource type="AudioStream" path="res://assets/audio/ambience/wind/low_rumble/one_shot_wind_3_low.wav" id="9_wind_3"]
 [ext_resource type="AudioStream" path="res://assets/audio/ambience/wind/low_rumble/one_shot_wind_4_low.wav" id="10_wind_4"]
+[ext_resource type="AudioStream" path="res://assets/audio/ambience/thunder/thunder_spontaneous_backlayer_1.wav" id="11_backlayer_1"]
+[ext_resource type="AudioStream" path="res://assets/audio/ambience/thunder/thunder_spontaneous_backlayer_2.wav" id="12_backlayer_2"]
+[ext_resource type="AudioStream" path="res://assets/audio/ambience/thunder/thunder_background_1.wav" id="13_background_1"]
+[ext_resource type="AudioStream" path="res://assets/audio/ambience/thunder/thunder_background_2.wav" id="14_background_2"]
+[ext_resource type="PackedScene" path="res://scenes/others/ambience/thunder_layer.tscn" id="15_thunder"]
+[ext_resource type="Script" path="res://scenes/others/ambience/thunder_strike.gd" id="16_strike"]
+[ext_resource type="Resource" path="res://scenes/others/ambience/strikes/thunder_1.tres" id="17_strike_1"]
+[ext_resource type="Resource" path="res://scenes/others/ambience/strikes/thunder_2.tres" id="18_strike_2"]
+[ext_resource type="PackedScene" path="res://scenes/others/ambience/lightning_flash.tscn" id="19_flash"]
 
 [sub_resource type="AudioStreamRandomizer" id="AudioStreamRandomizer_passing"]
 random_pitch = 1.06
@@ -35,6 +44,24 @@ streams_count = 2
 stream_0/stream = ExtResource("9_wind_3")
 stream_0/weight = 1.0
 stream_1/stream = ExtResource("10_wind_4")
+stream_1/weight = 1.0
+
+[sub_resource type="AudioStreamRandomizer" id="AudioStreamRandomizer_backlayer"]
+playback_mode = 1
+random_pitch = 1.04
+streams_count = 2
+stream_0/stream = ExtResource("11_backlayer_1")
+stream_0/weight = 1.0
+stream_1/stream = ExtResource("12_backlayer_2")
+stream_1/weight = 1.0
+
+[sub_resource type="AudioStreamRandomizer" id="AudioStreamRandomizer_background"]
+playback_mode = 1
+random_pitch = 1.04
+streams_count = 2
+stream_0/stream = ExtResource("13_background_1")
+stream_0/weight = 1.0
+stream_1/stream = ExtResource("14_background_2")
 stream_1/weight = 1.0
 
 [node name="LustAmbience" type="Node" unique_id=891567832]
@@ -71,3 +98,23 @@ max_gap = 19.0
 [node name="WindEmbers" parent="." node_paths=PackedStringArray("wind_layer") instance=ExtResource("5_embers")]
 wind_layer = NodePath("../PassingWind")
 in_backdrop = true
+
+[node name="ThunderBacklayer" parent="." instance=ExtResource("4_layer")]
+unpanned_sounds = SubResource("AudioStreamRandomizer_backlayer")
+bus = &"ThunderBacklayer"
+min_gap = 32.0
+max_gap = 48.0
+
+[node name="ThunderBackground" parent="." instance=ExtResource("4_layer")]
+unpanned_sounds = SubResource("AudioStreamRandomizer_background")
+bus = &"ThunderBackground"
+side_pan = Vector2(0.5, 0.8)
+min_gap = 9.0
+max_gap = 15.0
+
+[node name="ThunderMain" parent="." instance=ExtResource("15_thunder")]
+strikes = Array[ExtResource("16_strike")]([ExtResource("17_strike_1"), ExtResource("18_strike_2")])
+bus = &"ThunderMain"
+
+[node name="LightningFlash" parent="." node_paths=PackedStringArray("thunder_layer") instance=ExtResource("19_flash")]
+thunder_layer = NodePath("../ThunderMain")

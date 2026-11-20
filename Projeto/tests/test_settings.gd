@@ -24,9 +24,11 @@ const TEST_PATH: String = "user://test_settings.cfg"
 const VOLUME_TOLERANCE: float = 0.0001
 ## The buses after the ones with a volume option, each with the bus it sends to and whose option it
 ## follows: Alerts holds the sounds that turn the ambience down, and follows SFX; Beds holds the
-## ambience's beds and Gusts its passing gusts, which turn the beds down, and both follow Ambience.
+## ambience's beds and Gusts its passing gusts, which turn the beds down, and both follow Ambience;
+## Thunder gathers the three thunder layers' buses and follows Ambience too.
 const SUB_BUSES: Dictionary[StringName, StringName] = {&"Alerts": &"SFX", &"Beds": &"Ambience",
-		&"Gusts": &"Ambience"}
+		&"Gusts": &"Ambience", &"Thunder": &"Ambience", &"ThunderBacklayer": &"Thunder",
+		&"ThunderBackground": &"Thunder", &"ThunderMain": &"Thunder"}
 const BUS_LAYOUT_PATH: String = "res://default_bus_layout.tres"
 ## A volume option at half, 6.02 dB under the mix, and how far a bus's dB may be from the expected.
 const HALF_VOLUME: float = 0.5
