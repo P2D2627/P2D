@@ -153,8 +153,6 @@ func _measure_glow_sources(rig: LightingRig) -> void:
 	LightingRig.glow_on = false
 	_set_shaders(false, true, true, false)
 	rig.set_mode(LightingRig.Mode.HYBRID)
-	if rig.hud_label != null:
-		rig.hud_label.visible = false
 	await _wait(10)
 	var image: Image = root.get_texture().get_image()
 	image.convert(Image.FORMAT_RGBA8)
@@ -175,8 +173,6 @@ func _measure_glow_sources(rig: LightingRig) -> void:
 				if flame.has_point(pixel):
 					inside += 1
 					break
-	if rig.hud_label != null:
-		rig.hud_label.visible = true
 	var share: float = 100.0 * float(inside) / float(sources) if sources > 0 else 0.0
 	print("Glow sources, frame %d x %d: %d px at or above %.2f, %.1f %% inside the %d flames on screen %s"
 			% [width, image.get_height(), sources, LightingRig.GLOW_THRESHOLD, share, flames.size(), flames])

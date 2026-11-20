@@ -1,50 +1,68 @@
-# Checks the controls screen, through the main scene. Controls, on the options screen, swaps it for
-# the controls screen with the profile list selected, and Esc swaps them back onto Controls. A fixed
+# Checks the controls screen, through the main scene. The options screen's Controls tab shows it,
+# and down from the tab selects the profile list; Esc there closes the options onto Settings. A fixed
 # profile shows its bindings on buttons that do not press. Picking Custom from the list makes them
 # press: Enter on an action's button waits, and the next key or mouse button remaps the action, on
 # the screen and in Settings. A key another action had swaps over, on the screen too, and Reset
-# brings the custom profile back to the default one. While waiting, a reserved key is ignored, and
-# Esc or B stop waiting, change nothing and keep the screen open; in the pause, Esc also keeps the
-# game paused. In a level with Arrows and QWEASD, Q raises the crucifix, Shift (the default
-# profile's key) does not, and Ctrl is Interact. The autoload Settings saves to a test file (see
-# tests/support/menu_test.gd), so the player's file is never touched, and every case starts and
-# ends on the default controls.
+# brings the custom profile back to the default one. While waiting, a reserved key remaps nothing,
+# the action's button names it as a key that can't be used and the wait goes on; a second one takes
+# its place on the button, and a key with no name is named "That key". On the gamepad, A starts the
+# wait as Enter does; while it waits, the gamepad is refused a push at a time, a button but B, the
+# stick or a trigger (noise, either way, a second gamepad), with a text that fits the button. A
+# modifier binds as it is let go, with nothing pressed meanwhile, and Alt+Tab binds nothing. Esc or B
+# stop waiting, change nothing and keep the screen open, after a refused key too, and the next wait
+# starts afresh; in the pause, Esc also keeps the game paused. In a level with Arrows and QWEASD, Q
+# raises the crucifix, Shift (the default profile's key) does not, and Ctrl is Interact. The
+# autoload Settings saves to a test file (see tests/support/menu_test.gd), so the player's file is
+# never touched, and every case starts and ends on the default controls.
 # Run from the repository root; the exit code is 0 on pass and 1 on fail:
 # godot --headless --fixed-fps 60 --path Projeto --script res://tests/test_controls.gd
 extends "res://tests/support/menu_test.gd"
 
 ## Physics frames the level is watched for.
 const WATCH_FRAMES: int = 30
+## Repeats the keyboard sends while a modifier is held long, in the case that holds Shift.
+const KEY_REPEATS: int = 3
 
 
 func _initialize() -> void:
 	var results: Array[bool] = []
-	results.append(await _controls_opens_its_screen_and_esc_comes_back())
+	results.append(await _the_controls_tab_shows_the_controls_and_esc_closes_the_options())
 	results.append(await _a_fixed_profile_shows_its_bindings_on_buttons_that_do_not_press())
 	results.append(await _in_custom_a_key_or_mouse_button_remaps_an_action())
 	results.append(await _a_key_another_action_had_swaps_over_on_the_screen())
 	results.append(await _reset_brings_the_custom_profile_back_to_the_default())
-	results.append(await _while_waiting_a_reserved_key_is_ignored_and_b_stops())
+	results.append(await _while_waiting_a_reserved_key_is_refused_and_b_stops())
+	results.append(await _a_refused_key_is_named_on_the_button_and_the_wait_goes_on())
+	results.append(await _a_second_refused_key_takes_the_first_one_s_place())
+	results.append(await _a_key_with_no_name_is_refused_as_that_key())
+	results.append(await _while_waiting_the_gamepad_is_refused_a_push_at_a_time())
+	results.append(await _a_stick_let_go_between_two_waits_is_refused_again_in_the_next())
+	results.append(await _an_axis_is_refused_once_a_push_noise_direction_and_gamepad_included())
+	results.append(await _alt_tab_while_waiting_remaps_nothing_and_the_wait_goes_on())
+	results.append(await _a_modifier_remaps_as_it_is_let_go_with_nothing_pressed_meanwhile())
+	results.append(await _each_modifier_alone_remaps_as_it_is_let_go())
+	results.append(await _the_windows_key_is_refused_as_it_goes_down())
 	results.append(await _esc_while_waiting_changes_nothing_and_stays())
+	results.append(await _esc_after_a_refused_key_stops_the_wait_and_the_next_starts_afresh())
 	results.append(await _in_the_pause_esc_while_waiting_keeps_the_game_paused())
 	results.append(await _with_arrows_and_qweasd_q_raises_the_crucifix_and_ctrl_interacts())
 	finish(results)
 
 
-func _controls_opens_its_screen_and_esc_comes_back() -> bool:
+func _the_controls_tab_shows_the_controls_and_esc_closes_the_options() -> bool:
 	var main: Node = await _new_main_with_default_controls()
-	var options: Node = await _open_controls_in_the_main_menu(main)
+	var options: Control = await _open_controls_in_the_main_menu(main) as Control
 	var controls: Control = _controls(options)
 	var shown: bool = controls != null and controls.is_visible_in_tree()
-	var options_hidden: bool = not _general(options).is_visible_in_tree()
-	var list_selected: bool = has_focus(controls.get_node_or_null(^"%ProfileOption"))
+	var list_selected: bool = controls != null and has_focus(
+			controls.get_node_or_null(^"%ProfileOption"))
 	await tap(KEY_ESCAPE)
-	var back: bool = not controls.is_visible_in_tree() and _general(options).is_visible_in_tree()
-	var on_controls_button: bool = has_focus(options.get_node_or_null(^"%ControlsButton"))
+	var closed: bool = options != null and not options.is_visible_in_tree()
+	var on_settings: bool = has_focus(main_menu_node(main, ^"%OptionsButton"))
 	await remove_main(main)
-	return report(shown and options_hidden and list_selected and back and on_controls_button,
-			"Controls: shown %s, options hidden %s, profile list selected %s; Esc back %s, on Controls %s"
-			% [shown, options_hidden, list_selected, back, on_controls_button])
+	return report(shown and list_selected and closed and on_settings,
+			"Controls: shown %s, profile list selected %s; Esc closes the options %s, onto Settings %s"
+			% [shown, list_selected, closed, on_settings])
 
 
 func _a_fixed_profile_shows_its_bindings_on_buttons_that_do_not_press() -> bool:
@@ -128,9 +146,323 @@ func _reset_brings_the_custom_profile_back_to_the_default() -> bool:
 			% [remapped, text, in_settings])
 
 
-## While Jump waits for a key, F3 is taken and ignored, and B stops the waiting with Jump unchanged
-## and the screen open.
-func _while_waiting_a_reserved_key_is_ignored_and_b_stops() -> bool:
+## While Jump waits for a key, F3, reserved for the debug overlay, is refused: Jump's button says F3
+## cannot be used, and the wait goes on; K then remaps Jump, and the button shows its keys again.
+func _a_refused_key_is_named_on_the_button_and_the_wait_goes_on() -> bool:
+	var main: Node = await _new_main_with_default_controls()
+	var controls: Control = _controls(await _open_controls_in_the_main_menu(main))
+	await _pick_profile(controls, InputProfiles.CUSTOM)
+	var menu: ControlsMenu = controls as ControlsMenu
+	var button: Button = _binding_button(controls, &"jump")
+	button.grab_focus()
+	await tap(KEY_ENTER)
+	await tap(KEY_F3)
+	var names_f3: bool = button.text == ControlsMenu.REFUSED_TEXT % "F3"
+	var still_waiting: bool = menu.is_waiting_for_a_key()
+	await tap(KEY_K)
+	var remapped: bool = settings.get_bindings(&"jump").has(InputProfiles.key(KEY_K))
+	var shows_keys: bool = not menu.is_waiting_for_a_key() and button.text.contains("K")
+	var text: String = button.text
+	await _back_to_default_controls()
+	await remove_main(main)
+	return report(names_f3 and still_waiting and remapped and shows_keys,
+			("F3 while Jump waits: the button names F3 as refused %s, still waiting %s; then K: "
+			+ "remapped %s, the button shows its keys %s (%s)")
+			% [names_f3, still_waiting, remapped, shows_keys, text])
+
+
+## While Jump waits, F3 and then F4, both reserved, are refused: the button names F4, the last one,
+## and the wait goes on.
+func _a_second_refused_key_takes_the_first_one_s_place() -> bool:
+	var main: Node = await _new_main_with_default_controls()
+	var controls: Control = _controls(await _open_controls_in_the_main_menu(main))
+	await _pick_profile(controls, InputProfiles.CUSTOM)
+	var button: Button = _binding_button(controls, &"jump")
+	button.grab_focus()
+	await tap(KEY_ENTER)
+	await tap(KEY_F3)
+	await tap(KEY_F4)
+	var text: String = button.text
+	var still_waiting: bool = (controls as ControlsMenu).is_waiting_for_a_key()
+	var unchanged: bool = settings.get_bindings(&"jump") == PackedStringArray(
+			[InputProfiles.key(KEY_SPACE)])
+	await _back_to_default_controls()
+	await remove_main(main)
+	return report(text == ControlsMenu.REFUSED_TEXT % "F4" and still_waiting and unchanged,
+			"F3, then F4, while Jump waits: the button shows '%s', still waiting %s, Jump unchanged %s"
+			% [text, still_waiting, unchanged])
+
+
+## While Jump waits, a key that arrives with no code, so with no name, is refused as "That key", and
+## the wait goes on.
+func _a_key_with_no_name_is_refused_as_that_key() -> bool:
+	var main: Node = await _new_main_with_default_controls()
+	var controls: Control = _controls(await _open_controls_in_the_main_menu(main))
+	await _pick_profile(controls, InputProfiles.CUSTOM)
+	var button: Button = _binding_button(controls, &"jump")
+	button.grab_focus()
+	await tap(KEY_ENTER)
+	await tap(KEY_NONE)
+	var text: String = button.text
+	var still_waiting: bool = (controls as ControlsMenu).is_waiting_for_a_key()
+	var unchanged: bool = settings.get_bindings(&"jump") == PackedStringArray(
+			[InputProfiles.key(KEY_SPACE)])
+	await _back_to_default_controls()
+	await remove_main(main)
+	return report(text == ControlsMenu.REFUSED_TEXT % ControlsMenu.UNNAMED_KEY and still_waiting
+			and unchanged,
+			"A key with no name while Jump waits: the button shows '%s', still waiting %s, Jump unchanged %s"
+			% [text, still_waiting, unchanged])
+
+
+## On the gamepad, A on Jump's button starts the wait, with its text: the A that started it is
+## not refused. While it waits, the gamepad is refused a push at a time: a push of the stick, with
+## the several events of its way, is refused once, and so are a push of the right trigger and A
+## again. The button says the gamepad stays fixed, with no need to grow past its width, and the wait
+## goes on with Jump unchanged and the screen open.
+func _while_waiting_the_gamepad_is_refused_a_push_at_a_time() -> bool:
+	var main: Node = await _new_main_with_default_controls()
+	var controls: Control = _controls(await _open_controls_in_the_main_menu(main))
+	await _pick_profile(controls, InputProfiles.CUSTOM)
+	var menu: ControlsMenu = controls as ControlsMenu
+	var button: Button = _binding_button(controls, &"jump")
+	var refusals: Array[int] = []
+	menu.input_refused.connect(func() -> void: refusals.append(1))
+	button.grab_focus()
+	await tap_joypad(JOY_BUTTON_A)
+	var started: String = button.text
+	var counts: Array[int] = []
+	await push_axis(JOY_AXIS_LEFT_Y)
+	counts.append(refusals.size())
+	await push_axis(JOY_AXIS_TRIGGER_RIGHT)
+	counts.append(refusals.size())
+	await tap_joypad(JOY_BUTTON_A)
+	counts.append(refusals.size())
+	var refused: String = button.text
+	var width: float = button.get_combined_minimum_size().x
+	var still_waiting: bool = menu.is_waiting_for_a_key()
+	var unchanged: bool = settings.get_bindings(&"jump") == PackedStringArray(
+			[InputProfiles.key(KEY_SPACE)])
+	var still_open: bool = controls.is_visible_in_tree()
+	await tap_joypad(JOY_BUTTON_B)
+	await _back_to_default_controls()
+	await remove_main(main)
+	return report(started == ControlsMenu.WAITING_TEXT and counts == [1, 2, 3]
+			and refused == ControlsMenu.GAMEPAD_REFUSED_TEXT
+			and width <= ControlsMenu.BINDING_WIDTH and still_waiting and unchanged and still_open,
+			("The gamepad while Jump waits: A starts it with '%s'; refusals after the stick, the "
+			+ "right trigger and A %s ([1, 2, 3]); the button shows '%s', %.0f px wide (at most "
+			+ "%.0f), still waiting %s, Jump unchanged %s, screen open %s") % [started, counts,
+			refused, width, ControlsMenu.BINDING_WIDTH, still_waiting, unchanged, still_open])
+
+
+## The stick, pushed while Jump waits, is refused; B stops the wait with the stick held, and the
+## stick is let go only then, unseen. The next wait still refuses a flick of it, so quick that its
+## first event is already past the half: no wait misses a push because the one before saw the last
+## begin.
+func _a_stick_let_go_between_two_waits_is_refused_again_in_the_next() -> bool:
+	var main: Node = await _new_main_with_default_controls()
+	var controls: Control = _controls(await _open_controls_in_the_main_menu(main))
+	await _pick_profile(controls, InputProfiles.CUSTOM)
+	var menu: ControlsMenu = controls as ControlsMenu
+	var refusals: Array[int] = []
+	menu.input_refused.connect(func() -> void: refusals.append(1))
+	_binding_button(controls, &"jump").grab_focus()
+	await tap_joypad(JOY_BUTTON_A)
+	await move_axis(JOY_AXIS_LEFT_Y, 1.0)
+	await tap_joypad(JOY_BUTTON_B)
+	await move_axis(JOY_AXIS_LEFT_Y, 0.0)
+	var in_the_first: int = refusals.size()
+	await tap_joypad(JOY_BUTTON_A)
+	var waiting_again: bool = menu.is_waiting_for_a_key()
+	await move_axis(JOY_AXIS_LEFT_Y, 1.0)
+	await move_axis(JOY_AXIS_LEFT_Y, 0.0)
+	var in_the_second: int = refusals.size() - in_the_first
+	await tap_joypad(JOY_BUTTON_B)
+	await _back_to_default_controls()
+	await remove_main(main)
+	return report(in_the_first == 1 and waiting_again and in_the_second == 1,
+			("The stick held as B stops the wait, let go after: refusals in the first wait %d, waiting "
+			+ "again %s, refusals of a flick in the second %d") % [in_the_first, waiting_again,
+			in_the_second])
+
+
+## While Jump waits, the stick is refused once a push: a slow push whose noise takes it back and forth
+## about the half of its way, the same stick pushed the other way after it came back, and the same
+## axis of a second gamepad while the first one's is held each count as one push.
+func _an_axis_is_refused_once_a_push_noise_direction_and_gamepad_included() -> bool:
+	var main: Node = await _new_main_with_default_controls()
+	var controls: Control = _controls(await _open_controls_in_the_main_menu(main))
+	await _pick_profile(controls, InputProfiles.CUSTOM)
+	var menu: ControlsMenu = controls as ControlsMenu
+	var refusals: Array[int] = []
+	menu.input_refused.connect(func() -> void: refusals.append(1))
+	_binding_button(controls, &"jump").grab_focus()
+	await tap(KEY_ENTER)
+	var counts: Array[int] = []
+	for value: float in [0.49, 0.51, 0.49, 0.51, 1.0, 0.0]:
+		await move_axis(JOY_AXIS_LEFT_Y, value)
+	counts.append(refusals.size())
+	for value: float in [-0.6, -1.0, 0.0]:
+		await move_axis(JOY_AXIS_LEFT_Y, value)
+	counts.append(refusals.size())
+	await move_axis(JOY_AXIS_LEFT_Y, 1.0, 0)
+	await move_axis(JOY_AXIS_LEFT_Y, 1.0, 1)
+	counts.append(refusals.size())
+	await move_axis(JOY_AXIS_LEFT_Y, 0.0, 0)
+	await move_axis(JOY_AXIS_LEFT_Y, 0.0, 1)
+	await tap(KEY_ESCAPE)
+	await _back_to_default_controls()
+	await remove_main(main)
+	return report(counts == [1, 2, 4],
+			("Refusals while Jump waits, after a noisy push about the half, a push the other way and "
+			+ "the same axis on two gamepads: %s ([1, 2, 4])") % [counts])
+
+
+## While Jump waits, Alt+Tab to another window: Alt goes down and the game loses the focus, in either
+## order, as both may land in one frame, and Alt comes up once the game has it back. Alt was the
+## start of a shortcut, not a binding: Jump keeps Space, and the wait goes on, with its text.
+func _alt_tab_while_waiting_remaps_nothing_and_the_wait_goes_on() -> bool:
+	var main: Node = await _new_main_with_default_controls()
+	var controls: Control = _controls(await _open_controls_in_the_main_menu(main))
+	await _pick_profile(controls, InputProfiles.CUSTOM)
+	var jump: Button = _binding_button(controls, &"jump")
+	var outcomes: Array[String] = []
+	for alt_first: bool in [true, false]:
+		jump.grab_focus()
+		await tap(KEY_ENTER)
+		if alt_first:
+			await press_key(KEY_ALT, true)
+		root.propagate_notification(Node.NOTIFICATION_APPLICATION_FOCUS_OUT)
+		await process_frame
+		if not alt_first:
+			await press_key(KEY_ALT, true)
+		root.propagate_notification(Node.NOTIFICATION_APPLICATION_FOCUS_IN)
+		await press_key(KEY_ALT, false)
+		var waiting: bool = (controls as ControlsMenu).is_waiting_for_a_key()
+		outcomes.append("%s, %s, %s" % [waiting, ", ".join(settings.get_bindings(&"jump")),
+				jump.text])
+		if waiting:
+			await tap(KEY_ESCAPE)
+		settings.reset_custom_bindings()
+	await _back_to_default_controls()
+	await remove_main(main)
+	var expected: String = "true, %s, %s" % [InputProfiles.key(KEY_SPACE), ControlsMenu.WAITING_TEXT]
+	return report(outcomes == [expected, expected],
+			"Alt+Tab while Jump waits (waiting, Jump, button): Alt first %s; focus lost first %s"
+			% [outcomes[0], outcomes[1]])
+
+
+## While Jump waits, a modifier binds as it is let go, with nothing pressed meanwhile: Shift held
+## still waits, its button saying to let it go, and let go remaps Jump to Shift, held long too, with
+## the repeats the keyboard sends. Shift held with K pressed is not a modifier alone: Jump goes to K.
+## Shift held with F3, or with a push of the stick, both refused, then let go remaps nothing: the
+## wait goes on.
+func _a_modifier_remaps_as_it_is_let_go_with_nothing_pressed_meanwhile() -> bool:
+	var main: Node = await _new_main_with_default_controls()
+	var controls: Control = _controls(await _open_controls_in_the_main_menu(main))
+	await _pick_profile(controls, InputProfiles.CUSTOM)
+	var menu: ControlsMenu = controls as ControlsMenu
+	var jump: Button = _binding_button(controls, &"jump")
+	var meanwhile: Dictionary[String, Callable] = {
+		"alone": func() -> void: await process_frame,
+		"held long": func() -> void: await _repeat(KEY_SHIFT, KEY_REPEATS),
+		"with K": func() -> void: await tap(KEY_K),
+		"with F3": func() -> void: await tap(KEY_F3),
+		"with the stick": func() -> void: await push_axis(),
+	}
+	var outcomes: Dictionary[String, String] = {}
+	for what: String in meanwhile:
+		jump.grab_focus()
+		await tap(KEY_ENTER)
+		await press_key(KEY_SHIFT, true)
+		var held: String = "%s, %s" % [menu.is_waiting_for_a_key(), jump.text]
+		await meanwhile[what].call()
+		await press_key(KEY_SHIFT, false)
+		outcomes[what] = "%s; %s, %s" % [held, menu.is_waiting_for_a_key(),
+				", ".join(settings.get_bindings(&"jump"))]
+		if menu.is_waiting_for_a_key():
+			await tap(KEY_ESCAPE)
+		settings.reset_custom_bindings()
+	await _back_to_default_controls()
+	await remove_main(main)
+	var held: String = "true, %s" % (ControlsMenu.HELD_TEXT % "Shift")
+	var expected: Dictionary[String, String] = {
+		"alone": "%s; false, %s" % [held, InputProfiles.key(KEY_SHIFT)],
+		"held long": "%s; false, %s" % [held, InputProfiles.key(KEY_SHIFT)],
+		"with K": "%s; false, %s" % [held, InputProfiles.key(KEY_K)],
+		"with F3": "%s; true, %s" % [held, InputProfiles.key(KEY_SPACE)],
+		"with the stick": "%s; true, %s" % [held, InputProfiles.key(KEY_SPACE)],
+	}
+	return report(outcomes == expected,
+			("Shift while Jump waits (waiting with it down, the button; waiting after, Jump): %s "
+			+ "(expected %s)") % [outcomes, expected])
+
+
+## While Jump waits, each modifier alone, Ctrl and Alt (Shift has the case above), remaps Jump to
+## itself as it is let go.
+func _each_modifier_alone_remaps_as_it_is_let_go() -> bool:
+	var main: Node = await _new_main_with_default_controls()
+	var controls: Control = _controls(await _open_controls_in_the_main_menu(main))
+	await _pick_profile(controls, InputProfiles.CUSTOM)
+	var jump: Button = _binding_button(controls, &"jump")
+	var bound: Array[String] = []
+	var expected: Array[String] = []
+	for modifier: Key in [KEY_CTRL, KEY_ALT]:
+		jump.grab_focus()
+		await tap(KEY_ENTER)
+		await tap(modifier)
+		bound.append(", ".join(settings.get_bindings(&"jump")))
+		expected.append(InputProfiles.key(modifier))
+		if (controls as ControlsMenu).is_waiting_for_a_key():
+			await tap(KEY_ESCAPE)
+		settings.reset_custom_bindings()
+	await _back_to_default_controls()
+	await remove_main(main)
+	return report(bound == expected,
+			"Ctrl and Alt alone, each let go while Jump waits: Jump %s (expected %s)"
+			% [bound, expected])
+
+
+## While Jump waits, the Windows key (Meta), reserved as letting it go opens the Start menu, is
+## refused as it goes down, as F3 is, not held as a modifier; let go, it changes nothing, and the
+## wait goes on.
+func _the_windows_key_is_refused_as_it_goes_down() -> bool:
+	var main: Node = await _new_main_with_default_controls()
+	var controls: Control = _controls(await _open_controls_in_the_main_menu(main))
+	await _pick_profile(controls, InputProfiles.CUSTOM)
+	var jump: Button = _binding_button(controls, &"jump")
+	jump.grab_focus()
+	await tap(KEY_ENTER)
+	await press_key(KEY_META, true)
+	var down: String = jump.text
+	await press_key(KEY_META, false)
+	var still_waiting: bool = (controls as ControlsMenu).is_waiting_for_a_key()
+	var bindings: PackedStringArray = settings.get_bindings(&"jump")
+	await tap(KEY_ESCAPE)
+	await _back_to_default_controls()
+	await remove_main(main)
+	return report(down == ControlsMenu.REFUSED_TEXT % OS.get_keycode_string(KEY_META)
+			and still_waiting and bindings == PackedStringArray([InputProfiles.key(KEY_SPACE)]),
+			"The Windows key while Jump waits: down, the button shows '%s'; let go, still waiting %s, Jump %s"
+			% [down, still_waiting, bindings])
+
+
+## A key held down long, as the keyboard repeats it: times presses marked as echoes.
+func _repeat(key: Key, times: int) -> void:
+	for _time: int in times:
+		var event: InputEventKey = InputEventKey.new()
+		event.keycode = key
+		event.physical_keycode = key
+		event.pressed = true
+		event.echo = true
+		Input.parse_input_event(event)
+		await process_frame
+
+
+## While Jump waits for a key, F3 is refused, and B stops the waiting with Jump unchanged and the
+## screen open.
+func _while_waiting_a_reserved_key_is_refused_and_b_stops() -> bool:
 	var main: Node = await _new_main_with_default_controls()
 	var controls: Control = _controls(await _open_controls_in_the_main_menu(main))
 	await _pick_profile(controls, InputProfiles.CUSTOM)
@@ -171,6 +503,37 @@ func _esc_while_waiting_changes_nothing_and_stays() -> bool:
 			% [waiting, unchanged, text, still_open])
 
 
+## While Jump waits, F3 is refused, and Esc then stops the wait: Jump unchanged, its button shows
+## Space and the screen stays open. Enter on the button waits again, with the waiting text, not the
+## refusal.
+func _esc_after_a_refused_key_stops_the_wait_and_the_next_starts_afresh() -> bool:
+	var main: Node = await _new_main_with_default_controls()
+	var controls: Control = _controls(await _open_controls_in_the_main_menu(main))
+	await _pick_profile(controls, InputProfiles.CUSTOM)
+	var menu: ControlsMenu = controls as ControlsMenu
+	var jump: Button = _binding_button(controls, &"jump")
+	jump.grab_focus()
+	await tap(KEY_ENTER)
+	await tap(KEY_F3)
+	await tap(KEY_ESCAPE)
+	var waiting: bool = menu.is_waiting_for_a_key()
+	var unchanged: bool = settings.get_bindings(&"jump") == PackedStringArray(
+			[InputProfiles.key(KEY_SPACE)])
+	var text: String = jump.text
+	var still_open: bool = controls.is_visible_in_tree()
+	jump.grab_focus()
+	await tap(KEY_ENTER)
+	var next_text: String = jump.text
+	await tap(KEY_ESCAPE)
+	await _back_to_default_controls()
+	await remove_main(main)
+	return report(not waiting and unchanged and text == "Space" and still_open
+			and next_text == ControlsMenu.WAITING_TEXT,
+			("F3, then Esc, while Jump waits: still waiting %s, Jump unchanged %s, shows '%s', screen "
+			+ "open %s; the next wait shows '%s'")
+			% [waiting, unchanged, text, still_open, next_text])
+
+
 func _in_the_pause_esc_while_waiting_keeps_the_game_paused() -> bool:
 	var main: Node = await _new_main_with_default_controls(true)
 	await tap(KEY_ESCAPE)
@@ -197,7 +560,6 @@ func _with_arrows_and_qweasd_q_raises_the_crucifix_and_ctrl_interacts() -> bool:
 	await tap(KEY_ESCAPE)
 	await _pick_profile(_controls(await _open_controls_in_the_pause(main)),
 			InputProfiles.ARROWS_AND_QWEASD)
-	await tap(KEY_ESCAPE)
 	await tap(KEY_ESCAPE)
 	await tap(KEY_ESCAPE)
 	var resumed: bool = not paused
@@ -234,11 +596,12 @@ func _back_to_default_controls() -> void:
 	await process_frame
 
 
-## Opens the options from the main menu, then the controls screen, and hands back the options.
+## Opens the options from the main menu, then, as the player does, the Controls tab and down into
+## it, and hands back the options.
 func _open_controls_in_the_main_menu(main: Node) -> Node:
 	await press_on(main.get_node_or_null(^"%MainMenu"), ^"%OptionsButton", KEY_ENTER)
 	var options: Node = main_menu_node(main, ^"%OptionsMenu")
-	await press_on(options, ^"%ControlsButton", KEY_ENTER)
+	await press_on(options, ^"%ControlsTab", KEY_DOWN)
 	return options
 
 
@@ -246,7 +609,7 @@ func _open_controls_in_the_main_menu(main: Node) -> Node:
 func _open_controls_in_the_pause(main: Node) -> Node:
 	await press_on(main.get_node_or_null(^"%PauseMenu"), ^"%OptionsButton", KEY_ENTER)
 	var options: Node = pause_node(main, ^"%OptionsMenu")
-	await press_on(options, ^"%ControlsButton", KEY_ENTER)
+	await press_on(options, ^"%ControlsTab", KEY_DOWN)
 	return options
 
 
@@ -274,10 +637,6 @@ func _remap(controls: Control, action: StringName, key: Key) -> void:
 
 func _controls(options: Node) -> Control:
 	return options.get_node_or_null(^"%ControlsMenu") as Control if options != null else null
-
-
-func _general(options: Node) -> Control:
-	return options.get_node_or_null(^"%General") as Control
 
 
 func _binding_button(controls: Control, action: StringName) -> Button:

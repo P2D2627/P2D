@@ -3,8 +3,8 @@
 # with the arrows only, jumps with Space, raises the crucifix with Q, interacts with Ctrl and leaves
 # W, E, A, S and D free. Every profile keeps the gamepad's buttons. The custom profile starts as a
 # copy of the default one; remapping an action leaves it that one binding, and a binding another
-# action had swaps over, so no action is left without one. Reserved keys (Esc, F3, F4), bindings
-# not on offer, and remapping outside the custom profile change nothing. The file keeps the profile
+# action had swaps over, so no action is left without one. Reserved keys (Esc, the debug keys, the
+# Windows key), bindings not on offer, and remapping outside the custom profile change nothing. The file keeps the profile
 # by its id and each binding as readable text, and both read back the same; a profile or bindings
 # in the file that are not on offer give the defaults. Every key and mouse button on offer reads
 # back from its name as itself. Reset brings the custom profile back to the default one, and the
@@ -147,6 +147,7 @@ func _reserved_keys_and_remaps_outside_custom_change_nothing() -> bool:
 	settings.set_custom_binding(&"jump", InputProfiles.key(KEY_ESCAPE))
 	settings.set_custom_binding(&"jump", InputProfiles.key(KEY_F3))
 	settings.set_custom_binding(&"jump", InputProfiles.key(KEY_F4))
+	settings.set_custom_binding(&"jump", InputProfiles.key(KEY_META))
 	settings.set_custom_binding(&"jump", "mouse:wheel")
 	settings.set_custom_binding(&"jump", "rubbish")
 	var not_on_offer: PackedStringArray = _differences({&"jump": [KEY_SPACE]})
@@ -195,7 +196,9 @@ func _wrong_values_in_the_file_give_the_defaults() -> bool:
 		_delete_test_file()
 		var file: ConfigFile = ConfigFile.new()
 		file.set_value("input", "profile", profile_value)
-		file.set_value("input_custom", "jump", PackedStringArray(["rubbish", "key:Escape"]))
+		# A file from before the Windows key was reserved may hold it.
+		file.set_value("input_custom", "jump", PackedStringArray(["rubbish", "key:Escape",
+				InputProfiles.key(KEY_META)]))
 		file.set_value("input_custom", "crucifix", "not a list")
 		file.save(TEST_PATH)
 		var settings: GameSettings = await _new_settings()

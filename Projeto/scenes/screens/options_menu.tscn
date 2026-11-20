@@ -3,66 +3,157 @@
 [ext_resource type="Script" path="res://scenes/screens/options_menu.gd" id="1_script"]
 [ext_resource type="PackedScene" path="res://scenes/screens/controls_menu.tscn" id="2_controls_menu"]
 
-[node name="OptionsMenu" type="VBoxContainer"]
+[node name="OptionsMenu" type="VBoxContainer" groups=["menu_no_crosses"]]
 visible = false
+theme_type_variation = &"OptionsList"
 script = ExtResource("1_script")
 
-[node name="General" type="VBoxContainer" parent="."]
-unique_name_in_owner = true
+[node name="Heading" type="Label" parent="."]
 layout_mode = 2
-
-[node name="Heading" type="Label" parent="General"]
-layout_mode = 2
-text = "Options"
+text = "Settings"
 horizontal_alignment = 1
 
-[node name="Volumes" type="GridContainer" parent="General"]
+[node name="Tabs" type="HBoxContainer" parent="."]
 unique_name_in_owner = true
 layout_mode = 2
+alignment = 1
+
+[node name="AudioTab" type="Button" parent="Tabs" groups=["menu_no_hover_focus"]]
+unique_name_in_owner = true
+layout_mode = 2
+theme_type_variation = &"OptionsTab"
+text = "AUDIO"
+
+[node name="DisplayTab" type="Button" parent="Tabs" groups=["menu_no_hover_focus"]]
+unique_name_in_owner = true
+layout_mode = 2
+theme_type_variation = &"OptionsTab"
+text = "DISPLAY"
+
+[node name="ControlsTab" type="Button" parent="Tabs" groups=["menu_no_hover_focus"]]
+unique_name_in_owner = true
+layout_mode = 2
+theme_type_variation = &"OptionsTab"
+text = "CONTROLS"
+
+[node name="AccessibilityTab" type="Button" parent="Tabs" groups=["menu_no_hover_focus"]]
+unique_name_in_owner = true
+layout_mode = 2
+theme_type_variation = &"OptionsTab"
+text = "ACCESSIBILITY"
+
+[node name="Pages" type="VBoxContainer" parent="."]
+unique_name_in_owner = true
+layout_mode = 2
+
+[node name="AudioPage" type="VBoxContainer" parent="Pages"]
+unique_name_in_owner = true
+layout_mode = 2
+theme_type_variation = &"OptionsList"
+
+[node name="Volumes" type="GridContainer" parent="Pages/AudioPage"]
+unique_name_in_owner = true
+layout_mode = 2
+theme_type_variation = &"OptionsGrid"
 columns = 3
 
-[node name="FullscreenCheck" type="CheckButton" parent="General"]
+[node name="DisplayPage" type="VBoxContainer" parent="Pages"]
+unique_name_in_owner = true
+visible = false
+layout_mode = 2
+theme_type_variation = &"OptionsList"
+
+[node name="Display" type="GridContainer" parent="Pages/DisplayPage"]
 unique_name_in_owner = true
 layout_mode = 2
+theme_type_variation = &"OptionsGrid"
+columns = 3
+
+[node name="FullscreenLabel" type="Label" parent="Pages/DisplayPage/Display"]
+layout_mode = 2
+theme_type_variation = &"OptionsLabel"
 text = "Full screen"
 
-[node name="VSyncCheck" type="CheckButton" parent="General"]
+[node name="FullscreenCheck" type="CheckButton" parent="Pages/DisplayPage/Display"]
 unique_name_in_owner = true
 layout_mode = 2
+size_flags_horizontal = 0
+
+[node name="FullscreenValue" type="Label" parent="Pages/DisplayPage/Display"]
+unique_name_in_owner = true
+layout_mode = 2
+theme_type_variation = &"OptionsLabel"
+
+[node name="VSyncLabel" type="Label" parent="Pages/DisplayPage/Display"]
+layout_mode = 2
+theme_type_variation = &"OptionsLabel"
 text = "V-Sync"
 
-[node name="FpsCapRow" type="HBoxContainer" parent="General"]
+[node name="VSyncCheck" type="CheckButton" parent="Pages/DisplayPage/Display"]
+unique_name_in_owner = true
 layout_mode = 2
+size_flags_horizontal = 0
 
-[node name="FpsCapLabel" type="Label" parent="General/FpsCapRow"]
+[node name="VSyncValue" type="Label" parent="Pages/DisplayPage/Display"]
+unique_name_in_owner = true
 layout_mode = 2
-size_flags_horizontal = 3
+theme_type_variation = &"OptionsLabel"
+
+[node name="FpsCapLabel" type="Label" parent="Pages/DisplayPage/Display"]
+layout_mode = 2
+theme_type_variation = &"OptionsLabel"
 text = "Frame rate limit"
 
-[node name="FpsCapOption" type="OptionButton" parent="General/FpsCapRow"]
+[node name="FpsCapOption" type="OptionButton" parent="Pages/DisplayPage/Display"]
+unique_name_in_owner = true
+layout_mode = 2
+size_flags_horizontal = 0
+theme_type_variation = &"OptionsChoice"
+
+[node name="FpsCapValue" type="Label" parent="Pages/DisplayPage/Display"]
+layout_mode = 2
+theme_type_variation = &"OptionsLabel"
+
+[node name="ControlsMenu" parent="Pages" instance=ExtResource("2_controls_menu")]
 unique_name_in_owner = true
 layout_mode = 2
 
-[node name="Accessibility" type="GridContainer" parent="General"]
+[node name="AccessibilityPage" type="VBoxContainer" parent="Pages"]
+unique_name_in_owner = true
+visible = false
+layout_mode = 2
+theme_type_variation = &"OptionsList"
+
+[node name="Accessibility" type="GridContainer" parent="Pages/AccessibilityPage"]
 unique_name_in_owner = true
 layout_mode = 2
+theme_type_variation = &"OptionsGrid"
 columns = 3
 
-[node name="ControlsButton" type="Button" parent="General"]
+[node name="Description" type="Label" parent="."]
 unique_name_in_owner = true
 layout_mode = 2
-text = "Controls"
+theme_type_variation = &"OptionsDescription"
+horizontal_alignment = 1
+autowrap_mode = 3
 
-[node name="ResetButton" type="Button" parent="General"]
-unique_name_in_owner = true
+[node name="Prompts" type="HBoxContainer" parent="."]
 layout_mode = 2
-text = "Reset to defaults"
+alignment = 1
 
-[node name="BackButton" type="Button" parent="General"]
+[node name="ResetButton" type="Button" parent="Prompts"]
 unique_name_in_owner = true
 layout_mode = 2
-text = "Back"
+theme_type_variation = &"OptionsPrompt"
+text = "RESET TO DEFAULTS"
 
-[node name="ControlsMenu" parent="." instance=ExtResource("2_controls_menu")]
+[node name="BackButton" type="Button" parent="Prompts"]
 unique_name_in_owner = true
 layout_mode = 2
+theme_type_variation = &"OptionsPrompt"
+text = "BACK"
+
+[node name="BackKeys" type="Label" parent="Prompts"]
+layout_mode = 2
+theme_type_variation = &"OptionsDescription"
+text = "Esc / B"

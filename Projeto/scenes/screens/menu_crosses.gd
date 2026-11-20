@@ -3,12 +3,18 @@ extends Control
 
 ## The two crosses that mark the selected option of a menu, one on each side of its text, the right
 ## one mirrored. They follow the focus: whatever button inside Menu has it, by keys, pad or mouse,
-## gets the crosses, which glide to it; on a switch, a list, a slider or away from the menu, they
-## hide, as those show their own selection. Pointing at a button
-## with the mouse gives it the focus, so the mouse and the keys always show the same option. The
+## gets the crosses, which glide to it; on a switch, a list, a slider, inside the options screen or
+## away from the menu, they hide, as those show their own selection. Pointing at a button
+## with the mouse gives it the focus, so the mouse and the keys always show the same option; a
+## button in the group NO_HOVER_FOCUS takes it only with a click. The
 ## crosses grow with the option's text.
 
 const CROSS: Texture2D = preload("res://assets/sprites/menu/menu_cross.png")
+## The group of the nodes whose buttons, their own and those inside them, never get the crosses.
+const NO_CROSSES: StringName = &"menu_no_crosses"
+## The group of the buttons the mouse selects only with a click, not by pointing at them: the
+## options screen's tabs, where selecting one changes the page.
+const NO_HOVER_FOCUS: StringName = &"menu_no_hover_focus"
 
 ## The menu whose options get the crosses; only controls inside it count. It can be a window, as
 ## the replace-save question, whose buttons are its own internal children.
@@ -24,6 +30,10 @@ var _left: TextureRect
 var _right: TextureRect
 ## The control the crosses stood by on the last frame, so they jump to the first one and glide after.
 var _last: Control
+## The control last asked about, and whether it is one of the menu's options: asked again only as
+## the focus moves, as the answer walks up the tree.
+var _checked: Control
+var _checked_is_option: bool = false
 
 
 func _ready() -> void:
@@ -37,8 +47,10 @@ func _ready() -> void:
 
 func _process(delta: float) -> void:
 	var focused: Control = get_viewport().gui_get_focus_owner()
-	if (not _is_option(focused) or not menu.is_ancestor_of(focused)
-			or not focused.is_visible_in_tree()):
+	if focused != _checked:
+		_checked = focused
+		_checked_is_option = _is_option(focused) and menu.is_ancestor_of(focused)
+	if not _checked_is_option or not focused.is_visible_in_tree():
 		_left.hide()
 		_right.hide()
 		_last = null
@@ -106,11 +118,21 @@ func _take_focus_on_hover(button: BaseButton) -> void:
 
 
 func _on_button_hovered(button: BaseButton) -> void:
-	if button.focus_mode != Control.FOCUS_NONE and button.is_visible_in_tree():
+	if (button.focus_mode != Control.FOCUS_NONE and button.is_visible_in_tree()
+			and not button.is_in_group(NO_HOVER_FOCUS)):
 		button.grab_focus()
 
 
-## Whether control is one of the menu's options: a plain button, not a switch, a box or a list.
+## Whether control is one of the menu's options: a plain button, not a switch, a box or a list, nor
+## one in the group NO_CROSSES or inside a node in it, as the options screen, which marks its
+## selection with its own band.
 func _is_option(control: Control) -> bool:
-	return (control is Button and not control is CheckButton and not control is CheckBox
-			and not control is OptionButton)
+	if not (control is Button and not control is CheckButton and not control is CheckBox
+			and not control is OptionButton):
+		return false
+	var node: Node = control
+	while node != null:
+		if node.is_in_group(NO_CROSSES):
+			return false
+		node = node.get_parent()
+	return true

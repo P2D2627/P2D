@@ -1,12 +1,12 @@
 extends Node2D
 ## PROTOTYPE (#257): runs level 1 as it is, with the lighting rig added at run time, so level1.tscn
 ## never changes. Run this scene with F6. When the man dies, the level asks to start over; as Main
-## does in the game, this puts a new copy in its place, and the rig's settings carry over.
+## does in the game, this puts a new copy in its place, and the rig's settings carry over. The rig's
+## settings and keys are on the lighting page of the level's debug overlay (F3).
 
 const LightingRig := preload("res://scenes/levels/prototypes/lighting/lighting_rig.gd")
 
 @export var level_scene: PackedScene
-@export var hud_label: Label
 
 var _level: Level
 
@@ -25,7 +25,6 @@ func _load_level() -> void:
 	_level.restart_requested.connect(_on_restart_requested)
 	var rig := LightingRig.new()
 	rig.name = "LightingRig"
-	rig.hud_label = hud_label
 	_level.add_child(rig)
 
 

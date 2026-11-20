@@ -1,0 +1,10 @@
+[gd_scene format=3]
+
+[ext_resource type="PackedScene" path="res://scenes/levels/lust/level1.tscn" id="1_level1"]
+[ext_resource type="Script" path="res://scenes/levels/prototypes/lighting/lighting_rig.gd" id="2_rig"]
+
+[node name="Level1" instance=ExtResource("1_level1")]
+id = &"level1"
+
+[node name="LightingRig" type="Node2D" parent="."]
+script = ExtResource("2_rig")

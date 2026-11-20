@@ -3,9 +3,84 @@
 [ext_resource type="Script" path="res://scenes/screens/menu_backdrop.gd" id="1_script"]
 [ext_resource type="Shader" path="res://scenes/others/shaders/god_rays.gdshader" id="2_rays"]
 [ext_resource type="Texture2D" path="res://assets/sprites/menu/menu_character.png" id="3_character"]
+[ext_resource type="Shader" path="res://scenes/others/shaders/menu_firelight.gdshader" id="4_firelight"]
+[ext_resource type="Shader" path="res://scenes/others/shaders/menu_fire_glow.gdshader" id="5_glow"]
+[ext_resource type="Shader" path="res://scenes/others/shaders/menu_smoke.gdshader" id="6_smoke"]
+[ext_resource type="Script" path="res://scenes/screens/menu_embers.gd" id="7_embers"]
+[ext_resource type="Shader" path="res://scenes/others/shaders/menu_paint_fade.gdshader" id="8_fade"]
+
+[sub_resource type="ShaderMaterial" id="ShaderMaterial_fade"]
+shader = ExtResource("8_fade")
 
 [sub_resource type="ShaderMaterial" id="ShaderMaterial_rays"]
 shader = ExtResource("2_rays")
+shader_parameter/strength = 0.6
+shader_parameter/glow = 0.55
+
+[sub_resource type="ShaderMaterial" id="ShaderMaterial_light"]
+shader = ExtResource("4_firelight")
+
+[sub_resource type="ShaderMaterial" id="ShaderMaterial_above"]
+shader = ExtResource("4_firelight")
+shader_parameter/light_color = Color(1, 0.94, 0.8, 1)
+shader_parameter/from_side = Vector2(0.7, -0.7)
+shader_parameter/reach = 0.5
+
+[sub_resource type="FastNoiseLite" id="FastNoiseLite_smoke"]
+frequency = 0.006
+fractal_octaves = 3
+
+[sub_resource type="NoiseTexture2D" id="NoiseTexture2D_smoke"]
+width = 256
+height = 256
+seamless = true
+noise = SubResource("FastNoiseLite_smoke")
+
+[sub_resource type="ShaderMaterial" id="ShaderMaterial_glow"]
+shader = ExtResource("5_glow")
+shader_parameter/strength = 0.55
+shader_parameter/around = 0.24
+shader_parameter/reach = 0.1
+shader_parameter/thin_out = 0.26
+shader_parameter/noise = SubResource("NoiseTexture2D_smoke")
+
+[sub_resource type="ShaderMaterial" id="ShaderMaterial_smoke_far"]
+shader = ExtResource("6_smoke")
+shader_parameter/smoke_color = Color(0.15, 0.15, 0.17, 1)
+shader_parameter/lit_color = Color(0.45, 0.2, 0.12, 1)
+shader_parameter/density = 0.55
+shader_parameter/rise_speed = 0.025
+shader_parameter/detail = 0.5
+shader_parameter/around = 0.24
+shader_parameter/reach = 0.12
+shader_parameter/thin_out = 0.2
+shader_parameter/noise = SubResource("NoiseTexture2D_smoke")
+
+[sub_resource type="ShaderMaterial" id="ShaderMaterial_smoke_mid"]
+shader = ExtResource("6_smoke")
+shader_parameter/smoke_color = Color(0.25, 0.24, 0.26, 1)
+shader_parameter/lit_color = Color(0.72, 0.32, 0.16, 1)
+shader_parameter/density = 0.55
+shader_parameter/rise_speed = 0.04
+shader_parameter/detail = 0.8
+shader_parameter/around = 0.22
+shader_parameter/reach = 0.1
+shader_parameter/thin_out = 0.18
+shader_parameter/offset = Vector2(3.7, 1.3)
+shader_parameter/noise = SubResource("NoiseTexture2D_smoke")
+
+[sub_resource type="ShaderMaterial" id="ShaderMaterial_smoke_near"]
+shader = ExtResource("6_smoke")
+shader_parameter/smoke_color = Color(0.3, 0.29, 0.3, 1)
+shader_parameter/lit_color = Color(0.62, 0.29, 0.16, 1)
+shader_parameter/density = 0.4
+shader_parameter/rise_speed = 0.065
+shader_parameter/detail = 1.3
+shader_parameter/around = 0.22
+shader_parameter/reach = 0.14
+shader_parameter/thin_out = 0.12
+shader_parameter/offset = Vector2(7.1, 4.4)
+shader_parameter/noise = SubResource("NoiseTexture2D_smoke")
 
 [node name="MenuBackdrop" type="Control"]
 layout_mode = 3
@@ -27,19 +102,175 @@ grow_vertical = 2
 mouse_filter = 2
 color = Color(0, 0, 0, 1)
 
-[node name="Character" type="TextureRect" parent="."]
+[node name="SmokeFar" type="ColorRect" parent="."]
+material = SubResource("ShaderMaterial_smoke_far")
+layout_mode = 1
+anchor_top = 0.45
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_vertical = 0
+mouse_filter = 2
+
+[node name="FireGlow" type="ColorRect" parent="."]
+material = SubResource("ShaderMaterial_glow")
+layout_mode = 1
+anchor_top = 0.45
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_vertical = 0
+mouse_filter = 2
+
+[node name="SmokeMid" type="ColorRect" parent="."]
+material = SubResource("ShaderMaterial_smoke_mid")
+layout_mode = 1
+anchor_top = 0.55
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_vertical = 0
+mouse_filter = 2
+
+[node name="EmbersFar" type="Control" parent="."]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 2
+script = ExtResource("7_embers")
+count = 70
+core_size = Vector2(1.5, 3.5)
+fire_at = 0.25
+plume_speed = 145.0
+burst_size = Vector2i(10, 26)
+start_heat = Vector2(0.7, 1)
+brightness = 1.4
+
+[node name="Ash" type="Control" parent="."]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 2
+script = ExtResource("7_embers")
+look = 2
+count = 8
+life = Vector2(5, 9)
+core_size = Vector2(3, 8)
+fire_at = 0.25
+plume_speed = 60.0
+curl_strength = 0.6
+response = Vector2(0.6, 1.2)
+sink = 40.0
+burst_size = Vector2i(0, 0)
+flicker_depth = 0.0
+flicker_rate = Vector2(0.5, 1.5)
+
+[node name="Character" type="Control" parent="."]
+z_index = 1
 layout_mode = 1
 anchors_preset = 2
 anchor_top = 1.0
 anchor_bottom = 1.0
+offset_left = 85.0
 offset_top = -776.0
-offset_right = 669.0
+offset_right = 754.0
 grow_vertical = 0
+mouse_filter = 2
+
+[node name="Art" type="TextureRect" parent="Character"]
+material = SubResource("ShaderMaterial_fade")
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
 mouse_filter = 2
 texture = ExtResource("3_character")
 expand_mode = 1
 
+[node name="Light" type="TextureRect" parent="Character/Art"]
+material = SubResource("ShaderMaterial_light")
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 2
+texture = ExtResource("3_character")
+expand_mode = 1
+
+[node name="AboveLight" type="TextureRect" parent="Character/Art"]
+material = SubResource("ShaderMaterial_above")
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 2
+texture = ExtResource("3_character")
+expand_mode = 1
+
+[node name="SmokeNear" type="ColorRect" parent="."]
+z_index = 1
+material = SubResource("ShaderMaterial_smoke_near")
+layout_mode = 1
+anchor_top = 0.68
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_vertical = 0
+mouse_filter = 2
+
+[node name="EmbersNear" type="Control" parent="."]
+z_index = 1
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 2
+script = ExtResource("7_embers")
+count = 45
+life = Vector2(1, 2.8)
+core_size = Vector2(2.5, 6)
+fire_at = 0.25
+response = Vector2(0.12, 0.25)
+burst_size = Vector2i(8, 20)
+start_heat = Vector2(0.7, 1)
+brightness = 1.4
+flicker_depth = 0.25
+flicker_rate = Vector2(3, 6)
+
+[node name="EmbersBokeh" type="Control" parent="."]
+z_index = 1
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 2
+script = ExtResource("7_embers")
+look = 1
+count = 5
+life = Vector2(1.5, 3)
+core_size = Vector2(16, 44)
+fire_at = 0.25
+plume_speed = 420.0
+response = Vector2(0.25, 0.5)
+burst_size = Vector2i(0, 0)
+brightness = 0.15
+flicker_depth = 0.1
+flicker_rate = Vector2(1, 2)
+
 [node name="Rays" type="ColorRect" parent="."]
+z_index = 1
 material = SubResource("ShaderMaterial_rays")
 layout_mode = 1
 anchors_preset = 15

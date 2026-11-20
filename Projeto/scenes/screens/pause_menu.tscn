@@ -5,6 +5,7 @@
 [ext_resource type="PackedScene" path="res://scenes/screens/options_menu.tscn" id="3_options_menu"]
 [ext_resource type="PackedScene" path="res://scenes/screens/menu_backdrop.tscn" id="4_backdrop"]
 [ext_resource type="Script" path="res://scenes/screens/menu_crosses.gd" id="5_crosses"]
+[ext_resource type="PackedScene" path="res://scenes/screens/menu_feedback.tscn" id="6_feedback"]
 
 [node name="PauseMenu" type="CanvasLayer"]
 process_mode = 3
@@ -17,8 +18,8 @@ background_alpha = 0.6
 
 [node name="Center" type="CenterContainer" parent="."]
 layout_mode = 3
-anchor_left = 0.48
-anchor_right = 0.98
+anchor_left = 0.42
+anchor_right = 0.92
 anchor_bottom = 1.0
 grow_horizontal = 2
 grow_vertical = 2
@@ -67,3 +68,6 @@ grow_vertical = 2
 mouse_filter = 2
 script = ExtResource("5_crosses")
 menu = NodePath("../Center")
+
+[node name="MenuFeedback" parent="." node_paths=PackedStringArray("menu") instance=ExtResource("6_feedback")]
+menu = NodePath("..")

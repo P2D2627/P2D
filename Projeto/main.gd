@@ -19,14 +19,22 @@ extends Node
 ## them.
 
 ## The levels the main menu offers, in this order: each one a title and a scene. One left empty, or
-## with no scene, stays out of the menu, with a warning.
+## with no scene, stays out of the menu, with a warning; one with In Menu off, as the rooms made for
+## development, stays out with none.
 @export var levels: Array[LevelEntry] = []
 ## Whether a level pauses when the game's window loses the focus, as with Alt+Tab.
 @export var pause_on_focus_loss: bool = true
 ## The time the screen takes to go black at a phase's exit, and again to come back in the next one.
 @export_range(0.0, 2.0, 0.05, "suffix:s") var fade_time: float = 0.25
+## The time Quit takes to make the screen black before the game ends, its own, so a slower or faster
+## phase fade leaves Quit as it is. It starts at 0.15 s, past the choice's longest blow, which Quit
+## plays (140 ms, menu_confirm_2.wav), so the window never closes on it; test_main_flow checks it.
+@export_range(0.15, 1.0, 0.05, "suffix:s") var quit_fade_time: float = 0.25
 
-## The levels the menu shows, in its order: those in levels that have a scene.
+## What ends the game once Quit has faded the screen out; a test puts its own, so it never closes.
+var quit_game: Callable = _end_the_game
+
+## The levels the menu shows, in its order: those in levels that have a scene and In Menu on.
 var _playable_levels: Array[LevelEntry] = []
 ## True from a phase's exit until the next phase has faded in. Meanwhile the level is frozen and the
 ## game does not pause.
@@ -35,6 +43,8 @@ var _changing_phase: bool = false
 var _save_file: SaveFile = SaveFile.new()
 ## True while the level in the slot is part of the saved game: from a new game or from Continue.
 var _in_the_run: bool = false
+## True from Quit until the game ends, so a second Quit is ignored.
+var _quitting: bool = false
 
 @onready var _level_slot: Node = %LevelSlot
 @onready var _main_menu: MainMenu = %MainMenu
@@ -52,6 +62,8 @@ func _ready() -> void:
 		var level: LevelEntry = levels[index]
 		if level == null or level.scene == null:
 			push_warning("Main: entry %d of Levels has no scene, so the menu leaves it out." % index)
+			continue
+		if not level.in_menu:
 			continue
 		_playable_levels.append(level)
 		titles.append(level.title)
@@ -312,8 +324,22 @@ func _change_phase(next_scene_path: String, arrival: StringName) -> void:
 	_changing_phase = false
 
 
+## The run's numbers are kept at once; then the screen goes black, in Quit Fade Time, so the choice's
+## blow is heard and the window closes on black rather than on the lit menu; only then does the game
+## end. Meanwhile the menu loses the focus and the fade stops the mouse, so no other option can be
+## chosen.
 func _on_quit_requested() -> void:
+	if _quitting:
+		return
+	_quitting = true
 	_save_the_run()
+	get_viewport().gui_release_focus()
+	_fade.mouse_filter = Control.MOUSE_FILTER_STOP
+	await _fade_to(1.0, quit_fade_time)
+	quit_game.call()
+
+
+func _end_the_game() -> void:
 	get_tree().quit()
 
 
@@ -351,9 +377,10 @@ func _clear_level() -> void:
 		_offers.clear()
 
 
-func _fade_to(alpha: float) -> void:
+## The fade to alpha, in time: a phase's Fade Time unless told otherwise.
+func _fade_to(alpha: float, time: float = fade_time) -> void:
 	var tween: Tween = create_tween()
-	tween.tween_property(_fade, ^"color:a", alpha, fade_time)
+	tween.tween_property(_fade, ^"color:a", alpha, time)
 	await tween.finished
 
 
