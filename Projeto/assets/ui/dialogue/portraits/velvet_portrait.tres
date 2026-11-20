@@ -1,0 +1,8 @@
+[gd_resource type="AtlasTexture" format=3]
+
+[ext_resource type="Texture2D" path="res://assets/sprites/demon_lust/dog_idle_sheet.png" id="1_idle"]
+
+[resource]
+atlas = ExtResource("1_idle")
+region = Rect2(236, 18, 112, 110)
+margin = Rect2(0, 12, 0, 26)
