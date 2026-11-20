@@ -4,9 +4,10 @@ Aventura de plataformas 2D desenvolvida em Godot 4 para a unidade curricular de
 **Projeto de Jogo 2D** (Mestrado em Desenvolvimento de Jogos Digitais, Universidade de Aveiro).
 Tema: *Destroy Yourself*. Título por decidir.
 
-Um homem que se considera justo acorda no inferno, convencido de que está ali por engano, e tem de
-subir sete níveis, um por pecado capital, sem poder atacar. Cada demónio oferece-lhe um atalho, e o jogo regista o que ele
-aceita.
+Uma alma sem passado acorda no inferno apenas com o nome e tem de subir sete níveis, um por pecado
+capital, sem poder atacar. Cada demónio oferece-lhe um atalho, e o jogo regista o que o jogador
+aceita. A alma só diz o que o jogador escolhe, para que as escolhas sejam dele e não de uma
+personagem já definida.
 
 > **Estado:** a personagem jogável já anda, salta e tem controlo no ar, desliza nas paredes e salta
 > delas, e o salto tolera pedidos ligeiramente fora de tempo. O jogo abre num menu principal, que dá
@@ -3289,7 +3290,8 @@ ela, contando uma só vez, mesmo que volte a ser aceite. Cada portagem roubada n
 do que um atalho, porque esse nível tem três. Uma resposta arrogante soma meio ponto e uma humilde tira meio ponto. Ouvir uma proposta
 só conta a partir de alguns segundos, e cada proposta tem um máximo; ouvida outra vez, por exemplo
 depois de recomeçar a fase, conta apenas a escuta mais longa. Dois limiares transformam o total no
-estádio 0, 1 ou 2, que escolhe a variante das falas do homem: quanto mais alto, pior ele fala.
+estádio 0, 1 ou 2, que escolhe as respostas que a alma ainda pode dar: quanto mais alto, menos
+respostas humildes aparecem.
 Cada resposta conta sempre que é dada. Por isso, uma conversa com respostas não se repete quando a
 fase recomeça; essa regra pertence ao estado do jogo (`GameState`), que guarda as conversas já
 ouvidas, e não ao registo moral.
@@ -3301,10 +3303,13 @@ deve pesar tanto como a soberba. A soma única foi preferida a contar apenas as 
 ignoraria a soberba nas respostas, e a ter um limiar por categoria, que daria seis valores difíceis
 de afinar e de explicar.
 
-O tom também escolhe falas diretamente. No presente da Asmodeu, o homem fala com soberba se o
-estádio já subiu ou se deu mais respostas arrogantes do que humildes (`Moral.leans_arrogant()`).
-Assim, um homem que respondeu sempre com arrogância fala com arrogância, mesmo antes de os pontos
-chegarem ao estádio 1. Contar as respostas não soma pontos.
+O tom também escolhe respostas diretamente. No presente da Asmodeu, a recusa humilde deixa de
+aparecer se o estádio já subiu ou se a alma deu mais respostas arrogantes do que humildes
+(`Moral.leans_arrogant()`). Assim, quem respondeu sempre com arrogância perde a resposta humilde,
+mesmo antes de os pontos chegarem ao estádio 1. Contar as respostas não soma pontos. Como a alma só
+diz o que o jogador escolhe (#277), a degradação vê-se no que ela já não consegue dizer, e nunca em
+falas que o jogador não escolheu. O estádio 2 pede 3 pontos e quase não é atingido no nível 1 (o
+atalho vale 1 e cada resposta arrogante 0,5), por isso o presente usa já o estádio 1.
 
 | Valor | Referência |
 |---|---|
@@ -3317,7 +3322,7 @@ chegarem ao estádio 1. Contar as respostas não soma pontos.
 | Ouvir uma proposta | 0,1 pontos por segundo além de 3 s, até 0,5 por proposta |
 | Estádio 1 / estádio 2 | a partir de 1 / de 3 pontos |
 
-São valores de referência, a afinar em jogo. Com eles, um atalho basta para a fala piorar, o atalho
+São valores de referência, a afinar em jogo. Com eles, um atalho basta para a alma perder a resposta humilde do presente, o atalho
 e o dom juntos chegam ao estádio 2, e as três portagens juntas pesam pouco mais do que um atalho.
 As regras estão numa classe sem nós
 (`MoralRecord`), testada isoladamente; o autoload limita-se a disponibilizá-la. O `reset()` limpa o
@@ -3519,7 +3524,7 @@ as opções.
 | Os upgrades aceites | Os dons dos demónios ficam para os níveis seguintes. |
 | O ponto de chegada na fase, se houver | Depois de um atalho, a morte e o Continue voltam lá, e não ao início da fase. |
 | Os acontecimentos únicos, como já ter falado com a Velvet | Não se repetem, nem contam duas vezes. |
-| O nome do homem | As falas usam-no; o ecrã do nome ainda não existe. |
+| O nome da alma | Só a fala da Velvet que o repete o usa (cue `named`); o ecrã do nome ainda não existe (#277). |
 
 As estatísticas da partida (`RunStats`: mortes e tempo por fase) são a exceção no sentido contrário:
 uma morte tem de ficar contada, por isso a morte nunca as repõe. Guardam-se num ficheiro próprio, ao

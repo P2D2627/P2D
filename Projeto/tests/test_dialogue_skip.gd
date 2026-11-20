@@ -1,8 +1,8 @@
-# Checks the game's balloon skipping lines. On asmodeus_offer, skipping runs to the line with the
-# four answers and stops there, with none chosen; the offer the skipped lines present is presented
-# all the same, and the lines that went by count in RunStats. At a choice, skipping does nothing.
-# Holding Jump for Skip Hold Time skips once, a short tap does not, and on stairs, which has no
-# answers, a skip runs to the end and the balloon goes. The portrait is a stand-in with the
+# Checks the game's balloon skipping lines. On asmodeus_second_offer, skipping runs to the line with
+# the four answers and stops there, with none chosen; the offer the skipped lines present is
+# presented all the same, and the lines that went by count in RunStats. At a choice, skipping does
+# nothing. Holding Jump for Skip Hold Time skips once, a short tap does not, and on waking, which
+# has no answers, a skip runs to the end and the balloon goes. The portrait is a stand-in with the
 # speaker's initial while no picture is given.
 # Run from the repository root; the exit code is 0 on pass and 1 on fail:
 # godot --headless --fixed-fps 60 --path Projeto --script res://tests/test_dialogue_skip.gd
@@ -11,6 +11,10 @@ extends "res://tests/support/player_test.gd"
 const BALLOON_SCENE: PackedScene = preload("res://scenes/screens/dialogue_balloon.tscn")
 const LUST: DialogueResource = preload("res://dialogue/lust.dialogue")
 const SHORTCUT: StringName = &"lust_shortcut"
+## Lines with no choice before the offer's four answers.
+const OFFER_CUE: StringName = &"asmodeus_second_offer"
+## Several lines and no answers at all.
+const NO_ANSWERS_CUE: StringName = &"waking"
 const ANSWERS: int = 4
 const HOLD_ACTION: StringName = &"jump"
 ## Frames to wait for a line to come, or for a skip to end.
@@ -37,7 +41,7 @@ func _initialize() -> void:
 func _a_skip_stops_at_the_answers_and_still_presents_the_offer() -> bool:
 	_stats.reset()
 	_offers.clear()
-	var balloon: DialogueBalloon = await _open(&"asmodeus_offer")
+	var balloon: DialogueBalloon = await _open(OFFER_CUE)
 	var counted: Array[int] = []
 	balloon.lines_skipped.connect(func(count: int) -> void: counted.append(count))
 	await balloon.skip_to_the_next_choice()
@@ -50,15 +54,15 @@ func _a_skip_stops_at_the_answers_and_still_presents_the_offer() -> bool:
 	await _close(balloon)
 	_offers.clear()
 	return report(at_choice and presented and in_stats and none_taken,
-			("A skip on asmodeus_offer: stops at the %d answers %s, the offer presented %s, %d lines "
-			+ "counted in RunStats %s, nothing accepted %s") % [ANSWERS, at_choice, presented, skipped,
-			in_stats, none_taken])
+			("A skip on %s: stops at the %d answers %s, the offer presented %s, %d lines "
+			+ "counted in RunStats %s, nothing accepted %s") % [OFFER_CUE, ANSWERS, at_choice, presented,
+			skipped, in_stats, none_taken])
 
 
 func _at_a_choice_a_skip_does_nothing() -> bool:
 	_stats.reset()
 	_offers.clear()
-	var balloon: DialogueBalloon = await _open(&"asmodeus_offer")
+	var balloon: DialogueBalloon = await _open(OFFER_CUE)
 	await balloon.skip_to_the_next_choice()
 	var line: DialogueLine = balloon.dialogue_line
 	var counted_before: int = _stats.get_skipped_lines()
@@ -73,7 +77,7 @@ func _at_a_choice_a_skip_does_nothing() -> bool:
 func _a_hold_skips_and_a_tap_does_not() -> bool:
 	_stats.reset()
 	_offers.clear()
-	var balloon: DialogueBalloon = await _open(&"asmodeus_offer")
+	var balloon: DialogueBalloon = await _open(OFFER_CUE)
 	var hold_frames: int = ceili(balloon.skip_hold_time * 60.0)
 	Input.action_press(HOLD_ACTION)
 	await wait_frames(hold_frames / 3)
@@ -92,7 +96,7 @@ func _a_hold_skips_and_a_tap_does_not() -> bool:
 
 func _with_no_answers_a_skip_ends_the_talk() -> bool:
 	_stats.reset()
-	var balloon: DialogueBalloon = await _open(&"stairs")
+	var balloon: DialogueBalloon = await _open(NO_ANSWERS_CUE)
 	var left: Array[bool] = [false]
 	balloon.tree_exited.connect(func() -> void: left[0] = true)
 	balloon.skip_to_the_next_choice()
@@ -100,8 +104,8 @@ func _with_no_answers_a_skip_ends_the_talk() -> bool:
 	if not gone:
 		await _close(balloon)
 	return report(gone and _stats.get_skipped_lines() > 0,
-			"on stairs, a skip runs to the end and the balloon goes %s (%d lines)"
-			% [gone, _stats.get_skipped_lines()])
+			"on %s, a skip runs to the end and the balloon goes %s (%d lines)"
+			% [NO_ANSWERS_CUE, gone, _stats.get_skipped_lines()])
 
 
 func _the_stand_in_portrait_shows_the_initial() -> bool:
