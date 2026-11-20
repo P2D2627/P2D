@@ -6,7 +6,8 @@ extends Node
 ## though not to the hits that pierce it, as a level-1 pack's (ADR 0055). With SP low, or when the
 ## hit would take his SP to 0, it takes nothing and says so with grab_hit instead: a demon never
 ## kills with a hit, it grabs. While the man is held, every hit grabs, whatever his SP, so none
-## takes SP or throws him then.
+## takes SP or throws him then. With the debug cheats (#273), a hit in god mode does all of this but
+## take SP (Player.lose_sp()), and in noclip no hit does anything.
 
 ## A hit that grabs instead of hurting, from the Hitbox that landed it.
 signal grab_hit(hitbox: Hitbox)
@@ -28,11 +29,13 @@ func _ready() -> void:
 
 
 func _on_hurtbox_hit_received(hitbox: Hitbox) -> void:
+	if player.noclip:
+		return
 	var soul_points: SoulPoints = player.soul_points
 	if _held or soul_points.is_low() or hitbox.damage >= soul_points.get_sp():
 		grab_hit.emit(hitbox)
 		return
-	soul_points.take_damage(hitbox.damage)
+	player.lose_sp(hitbox.damage)
 	player.knock_back(_throw_side(hitbox), hitbox.knockback_distance, hitbox.knockback_height)
 	hurtbox.start_invulnerability(invulnerable_time, true)
 

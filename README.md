@@ -68,7 +68,7 @@ RT, LS ← para o stick esquerdo); mudam no momento em que o comando se liga ou 
 | Interagir | E | Ctrl | X / Square |
 
 O terceiro perfil, Custom, começa igual ao predefinido, e cada ação pode receber outra tecla ou
-botão do rato. O Esc e as teclas de depuração (F3, F4, F7, F8 e F9) estão reservados; o 1, o 2 e o
+botão do rato. O Esc e as teclas de depuração (F1 a F4, F7, F8 e F9) estão reservados; o 1, o 2 e o
 3, que com o texto de depuração visível recomeçam numa fase, não estão. As teclas W,
 E, A, S e D do perfil das setas ficam livres para os upgrades.
 
@@ -1697,6 +1697,7 @@ teclado, e não pela letra impressa, pelo que o WASD se mantém num teclado AZER
 | `interact` | E | X / Square |
 | `crucifix` | Shift | RT / R2 (eixo 5) |
 | `pause` | Escape | Start |
+| `debug_god_mode` / `debug_noclip` | F1 / F2 | — |
 | `toggle_debug_overlay` | F3 | — |
 | `debug_damage` | F4 | — |
 | `debug_accept_offer` / `debug_refuse_offer` | F7 / F8 | — |
@@ -2674,6 +2675,32 @@ crucifixo. O overlay mostra a oferta em causa, se já foi aceite, as recusas, o 
 homem ainda tem o crucifixo. As três teclas estão reservadas nos perfis de controlos, pelas mesmas
 razões do F4.
 
+As teclas F1 e F2 ligam e desligam duas ajudas de depuração, para atravessar e experimentar os
+níveis sem morrer. Com o god mode (F1), os golpes dos demónios acontecem como no jogo (o piscar, o
+tremor, o empurrão e o agarrão), mas não retiram SP; nada mata a personagem, e um agarrão que
+esgote o tempo larga-a em vez de a matar. Com o noclip (F2), a personagem voa com as teclas de
+movimento, também para cima e para baixo, a 1200 px/s (Noclip Speed, no Inspector do overlay), sem
+gravidade e através das paredes e do chão. Enquanto voa, os golpes não têm efeito, nada a mata e
+um agarrão em curso larga-a; os contactos continuam, no entanto, a ser detetados, pelo que o
+tremor do ecrã e a vibração do comando de um golpe se mantêm. Ao desligar, cai do sítio onde está.
+As duas funcionam com o texto escondido, com o jogo em pausa e com uma fala no ecrã, e uma etiqueta
+no canto superior direito indica as que estão ligadas. Ficam ligadas depois de uma morte, de um
+recomeço ou de um salto de fase, até se voltar a carregar na tecla. Cada recomeço cria uma cópia
+nova do nível, com um overlay e uma personagem novos, pelo que o estado das ajudas fica guardado
+fora deles, em variáveis estáticas do overlay, e cada overlay novo entrega-o à sua personagem. Na
+personagem, cada ajuda é uma única variável. O god mode é lido apenas nos pontos por onde entram o
+dano e a morte: a perda de SP, a morte e o fim do tempo do agarrão. O noclip é lido nesses mesmos
+pontos, na reação aos golpes e no movimento. O resto do jogo não as conhece. O F4 continua a
+retirar SP com o god mode ligado, para experimentar a regeneração. As duas teclas estão reservadas
+nos perfis de controlos, pelas mesmas razões do F4. Teste: `test_debug_cheats.gd`.
+
+Há três limitações conhecidas, aceites por se tratar de uma ferramenta de depuração. Os espinhos
+detetam a personagem quando ela entra neles. Por isso, quem desliga o noclip ou o god mode já
+dentro de uma faixa de espinhos só morre quando sair e voltar a entrar. Quem desliga o noclip
+dentro de uma parede ou do chão fica entregue à separação de corpos do motor. Os sons e o tremor
+da aterragem medem a queda a partir do ponto mais alto do voo, pelo que desligar o noclip junto ao
+chão, depois de voar alto, soa como uma queda longa.
+
 Com o overlay visível (F3), as teclas 1, 2 e 3 recomeçam o nível no início dessa fase, atrás do
 mesmo escurecer de uma morte. No momento do recomeço, o nível (`Level.jump_to_phase`) percorre os
 seus pontos de gravação pela ordem da cena, que é a do percurso, marca no GameState os que ficam
@@ -2703,9 +2730,13 @@ Serve para afinar o ritmo das ofertas por mortes a jogar, sem ter de contar as m
 O overlay é uma cena própria, `scenes/others/debug/debug_overlay.tscn`, num `CanvasLayer`, pelo que não se
 desloca com a câmara. Recebe a personagem pelo Inspector e lê-a, ou fere-a com o F4, sem que ela
 dependa dele, pelo que a personagem é testada e exportada sem o overlay. Continua ativo com o jogo
-em pausa e, nas exportações de release, remove-se a si próprio, e o F4 com ele. O
-`test_debug_overlay.gd` verifica o comportamento nas versões de depuração; a remoção na versão de
-release só poderá ser confirmada na primeira exportação.
+em pausa e, nas exportações de release, remove-se a si próprio, e as teclas de depuração com ele. O
+`test_debug_overlay.gd` verifica o comportamento nas versões de depuração. O overlay pergunta ao
+Godot se a versão é de depuração (`OS.is_debug_build()`) num método próprio, que o
+`test_debug_cheats.gd` substitui para responder como uma versão de release. O teste verifica que,
+nesse caso, o overlay se remove antes de ler qualquer tecla e de entregar as ajudas à personagem,
+pelo que o F1, o F2 e o F4 não fazem nada, mesmo com as ajudas ligadas antes. Só a primeira
+exportação de release confirmará que o `OS.is_debug_build()` devolve falso.
 
 Na sala de teste, uma segunda vista (`scenes/others/debug/demon_debug_view.gd`) desenha sobre cada demónio o
 estado em que está e há quanto tempo (em frames de física, que param na pausa, como os tempos dos
