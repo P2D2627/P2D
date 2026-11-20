@@ -55,7 +55,8 @@ func _physics_process(delta: float) -> void:
 	# Only on a change: each one makes the player combine his modifiers again.
 	if _modifier.speed_multiplier != speed_multiplier:
 		_modifier.speed_multiplier = speed_multiplier
-	player.soul_points.take_damage(sp_per_second * delta)
+	# Through Player.lose_sp(), so in god mode or noclip, the debug cheats (#273), he never dies here.
+	player.lose_sp(sp_per_second * delta)
 	# A demon's grab sinks his drawing at its own pace; the brambles do not fight it for the drawing.
 	if not player.is_grabbed():
 		sink_changed.emit(get_sink())

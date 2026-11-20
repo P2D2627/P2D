@@ -194,10 +194,11 @@ func _on_body_entered(body: Node2D) -> void:
 	if catches and player.snag != null:
 		player.snag.catch(self, CAUSE)
 		return
-	# A man something else killed can still fall in: the brambles do not kill him a second time.
+	# A man something else killed can still fall in: the brambles do not kill him a second time. Nor
+	# do they catch one die() leaves alive, as in god mode, a debug cheat (#273).
 	var was_dead: bool = player.is_dead()
 	player.die(CAUSE, name)
-	if not was_dead and player.bramble_death != null:
+	if player.is_dead() and not was_dead and player.bramble_death != null:
 		# Up, away from the brambles: the strip's own up, turned with it; his feet's height above
 		# the ground they grow from, along it.
 		var up: Vector2 = -global_transform.y.normalized()

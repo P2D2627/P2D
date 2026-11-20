@@ -1,26 +1,27 @@
 class_name DebugOverlay
 extends CanvasLayer
 
-## Text in a corner of the screen that helps tune the game while playing, in pages. The Toggle Debug
-## Overlay action (F3) goes to the next page: hidden, numbers, lighting and shaders, and hidden
-## again. Each page shows its name and the next one above its text, and the page chosen with F3 stays
-## through a restart of the same level, as after a death. The numbers page has the numbers
-## of the man, the camera and the run; the lighting page has the lighting rig's settings, from the
-## node in Lighting Group, and passes it the keys, so they change the light only there. Debug Damage
-## hurts the player. Debug Accept Offer and Debug Refuse Offer answer the last offer made, or the
-## first not yet accepted, as the lines would, so a shortcut or a gift can be tried without playing
-## up to it; Debug Reset Run starts the run state over, offers and moral record included. On the
-## numbers page, Debug Phase 1 to 3 (the keys 1 to 3) start the level over at that phase
-## (Level.jump_to_phase); on the other pages, or in a level of one phase, as the gym and its
-## stations, the keys go on to the game. Outside debug builds it frees itself, so a release export
-## never shows it and nothing happens through it, the lighting keys included. Its scene sets the
-## process mode to Always, so it keeps working while the game is paused.
-
-## The pages, in the order Toggle Debug Overlay goes through them.
-enum Page { HIDDEN, NUMBERS, LIGHTING }
+## Text in a corner of the screen with the numbers that help tune the game while playing. The
+## Toggle Debug Overlay action shows and hides it, and Debug Damage hurts the player. Debug Accept
+## Offer and Debug Refuse Offer answer the last offer made, or the first not yet accepted, as the
+## lines would, so a shortcut or a gift can be tried without playing up to it; Debug Reset Run
+## starts the run state over, offers and moral record included. While the text shows, Debug Phase 1
+## to 3 (the keys 1 to 3) start the level over at that phase (Level.jump_to_phase); hidden, or in a
+## level of one phase, as the gym and its stations, the keys go on to the game. Debug God Mode (F1)
+## and Debug Noclip (F2) turn the man's two cheats on and off (#273), also with the text hidden and
+## while paused, and a label of their own shows while either is on. They stay on in the next copy of
+## the level, as after a death or a jump to a phase, until pressed again. Outside debug builds it
+## frees itself before any of this, so a release export never shows it and nothing happens through
+## it. Its scene sets the process mode to Always, so it keeps working while the game is paused.
 
 const TOGGLE_ACTION: StringName = &"toggle_debug_overlay"
 const DAMAGE_ACTION: StringName = &"debug_damage"
+const GOD_MODE_ACTION: StringName = &"debug_god_mode"
+const NOCLIP_ACTION: StringName = &"debug_noclip"
+## What the cheats' label says for each, and between the two when both are on.
+const GOD_MODE_TEXT: String = "GOD MODE"
+const NOCLIP_TEXT: String = "NOCLIP"
+const CHEAT_SEPARATOR: String = "   "
 # TEMPORARY, debug only: Debug Accept Offer (F7), Debug Refuse Offer (F8) and Debug Reset Run (F9)
 # try the offers before the lines reach them in play. Once every offer is answered in its
 # .dialogue and the levels lead up to it, remove them: these three constants, their branches in
@@ -33,28 +34,14 @@ const RESET_RUN_ACTION: StringName = &"debug_reset_run"
 const PHASE_ACTIONS: Array[StringName] = [&"debug_phase_1", &"debug_phase_2", &"debug_phase_3"]
 const MS_PER_SECOND: float = 1000.0
 const SECONDS_PER_MINUTE: int = 60
-## The group of the node that gives the lighting page its text and takes its keys, the lighting
-## rig. Such a node has get_debug_text() -> String, and handle_debug_key(event: InputEvent) -> bool,
-## true if the key changed a setting.
-const LIGHTING_GROUP: StringName = &"debug_lighting"
-## Above each shown page: its name, then where F3 goes next.
-const PAGE_TITLES: Dictionary[Page, String] = {
-	Page.NUMBERS: "numbers   (F3: lighting and shaders)",
-	Page.LIGHTING: "lighting and shaders   (F3: hide)",
-}
-## The lighting page's text in a level with no lighting rig.
-const NO_LIGHTING_TEXT: String = "no lighting rig in this level"
-## Frames between two looks for the lighting rig while the lighting page shows without one: a level
-## with no rig has none to find, and a level adds its rig after its overlay is ready.
-const LIGHTING_LOOKUP_FRAMES: int = 30
 
-## The page last chosen with F3 in this session, and the scene of the level it was chosen in: a new
-## copy of that level, as after a death or a jump to a phase, opens on that page. An overlay that is
-## not in a level's scene never takes it.
-static var _chosen_page: Page = Page.HIDDEN
-static var _chosen_in: String = ""
+## Whether God Mode (F1) and Noclip (F2) are on. Static, so they outlive the overlay: a death or a
+## jump to a phase starts the level over as a new copy, with a new overlay and a new man, and each
+## overlay gives them to its man as it gets ready. Only F1 and F2 change them, and the tests.
+static var god_mode: bool = false
+static var noclip: bool = false
 
-## On, the overlay starts on the numbers page; off, hidden.
+## Whether the text shows when the scene starts.
 @export var start_visible: bool = true
 ## SP a press of Debug Damage takes from the player, as a hit would, so the regeneration and the
 ## warnings can be tried before anything in the game hurts.
@@ -65,6 +52,9 @@ static var _chosen_in: String = ""
 ## The camera whose zone, look ahead and look down the text shows. Without one, there is no camera
 ## line.
 @export var camera: GameCamera
+## How fast the man flies in noclip (F2), in px/s.
+@export_range(100.0, 4000.0, 10.0, "suffix:px/s") var noclip_speed: float = (
+		Player.DEFAULT_NOCLIP_SPEED)
 
 ## The last jump, as text, kept until the next one: what it jumped off and the tolerance frames it
 ## used. Empty until the first jump.
@@ -80,6 +70,9 @@ var _frames_to_lookup: int = 0
 
 @onready var _page_label: Label = %PageLabel
 @onready var _label: Label = %Label
+## The cheats' label, empty while both are off. It is on a layer of its own: hiding the overlay's
+## layer does not reach another one, so it shows with the text hidden.
+@onready var _cheat_label: Label = %CheatLabel
 @onready var _offers: GameOffers = get_node_or_null(^"/root/Offers") as GameOffers
 @onready var _moral: GameMoral = get_node_or_null(^"/root/Moral") as GameMoral
 @onready var _progress: GameProgress = get_node_or_null(^"/root/GameState") as GameProgress
@@ -90,7 +83,7 @@ var _frames_to_lookup: int = 0
 
 
 func _ready() -> void:
-	if not OS.is_debug_build():
+	if not _is_debug_build():
 		queue_free()
 		return
 	var level_scene: String = _level_scene()
@@ -103,6 +96,7 @@ func _ready() -> void:
 	if is_instance_valid(player):
 		player.jumped.connect(_on_jumped)
 		player.wall_jumped.connect(_on_wall_jumped)
+	_give_the_cheats()
 
 
 ## On the lighting page, the lighting rig gets each key first, F3 alone excepted. Shortcut input
@@ -123,6 +117,14 @@ func _unhandled_input(event: InputEvent) -> void:
 		get_viewport().set_input_as_handled()
 	elif event.is_action_pressed(DAMAGE_ACTION):
 		_hurt_player()
+		get_viewport().set_input_as_handled()
+	elif _is_pressed(event, GOD_MODE_ACTION):
+		god_mode = not god_mode
+		_give_the_cheats()
+		get_viewport().set_input_as_handled()
+	elif _is_pressed(event, NOCLIP_ACTION):
+		noclip = not noclip
+		_give_the_cheats()
 		get_viewport().set_input_as_handled()
 	elif _is_pressed(event, ACCEPT_OFFER_ACTION):
 		_answer_offer(true)
@@ -200,6 +202,28 @@ func _hurt_player() -> void:
 	if get_tree().paused or not is_instance_valid(player) or not is_instance_valid(player.soul_points):
 		return
 	player.soul_points.take_damage(debug_damage)
+
+
+## Gives God Mode and Noclip as they are to the man, with Noclip Speed, and names the ones on in
+## their label. With no man, as in a scene whose overlay has none, they reach no one, so the label
+## says nothing.
+func _give_the_cheats() -> void:
+	var names: PackedStringArray = []
+	if is_instance_valid(player):
+		player.god_mode = god_mode
+		player.noclip_speed = noclip_speed
+		player.noclip = noclip
+		if god_mode:
+			names.append(GOD_MODE_TEXT)
+		if noclip:
+			names.append(NOCLIP_TEXT)
+	_cheat_label.text = CHEAT_SEPARATOR.join(names)
+
+
+## Whether the game runs as a debug build, where the overlay works. On its own so a test can answer
+## as a release build would, which a debug run can't make OS.is_debug_build() do.
+func _is_debug_build() -> bool:
+	return OS.is_debug_build()
 
 
 ## Accepts or refuses the offer the debug keys answer, unless the game is paused.

@@ -17,10 +17,11 @@ extends Node
 ## so its demon holds on and lets go, and sink_hold() in between, so it sinks with him, also when it
 ## joins half way down. At his death they hold on and his Hurtbox closes, since the room starts
 ## over. Dead from something else while held, as on spikes, the grab ends as a death there and then:
-## no press counts any more, and died tells the prompt. It only says when the grab starts and ends,
-## and how far he sank: the player's scene
-## connects grabbed, broke_free and sink_changed to what else changes, such as the crucifix going
-## down and his drawing sinking.
+## no press counts any more, and died tells the prompt. With the debug cheats (#273), noclip lets
+## him go at once, and in god mode the time running out lets him go instead of killing him; either
+## way he goes free as by presses, and the next grab starts afresh. It only says when the grab
+## starts and ends, and how far he sank: the player's scene connects grabbed, broke_free and
+## sink_changed to what else changes, such as the crucifix going down and his drawing sinking.
 
 ## A demon grabbed the man; he can't run or jump until broke_free.
 signal grabbed
@@ -81,6 +82,9 @@ func _ready() -> void:
 func _physics_process(delta: float) -> void:
 	if not is_held():
 		return
+	if player.noclip:
+		_let_go_for_a_cheat()
+		return
 	var pressed: bool = player.input.is_jump_just_pressed()
 	_pressed_in_grab = _pressed_in_grab or pressed
 	var hold: bool = is_hold_to_escape()
@@ -93,6 +97,8 @@ func _physics_process(delta: float) -> void:
 			_sink(_rules.get_sink())
 		GrabRules.State.FREE:
 			_break_free()
+		GrabRules.State.DEAD when player.is_invincible():
+			_let_go_for_a_cheat()
 		GrabRules.State.DEAD:
 			_sink(_rules.get_sink())
 			hurtbox.set_closed(true)
@@ -181,6 +187,13 @@ func _break_free() -> void:
 			holder.end_hold(hurtbox)
 	_holders.clear()
 	broke_free.emit()
+
+
+## The man goes free although the grab's rules did not free him, for a debug cheat (#273). The
+## rules go with the grab, so is_held() is false at once and the next grab starts afresh.
+func _let_go_for_a_cheat() -> void:
+	_break_free()
+	_rules = null
 
 
 ## Tells the man's drawing and the demons holding him how far he has sunk.

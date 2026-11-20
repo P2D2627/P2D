@@ -12,6 +12,11 @@ func get_run_direction() -> float:
 	return signf(Input.get_axis(&"move_left", &"move_right"))
 
 
+## -1 to go up, 1 to go down, 0 for neither. Only noclip's flight, a debug cheat (#273), reads it.
+func get_vertical_direction() -> float:
+	return signf(Input.get_axis(&"move_up", &"move_down"))
+
+
 ## True on the physics frame Jump is pressed.
 func is_jump_just_pressed() -> bool:
 	return Input.is_action_just_pressed(&"jump")

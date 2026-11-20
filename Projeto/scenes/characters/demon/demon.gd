@@ -192,6 +192,12 @@ var _knock_off: KnockOff = KnockOff.new(self)
 ## True if the demon was shoved off the man on the last physics frame, so the shove is checked once
 ## more after he leaves its sight area, and ends.
 var _was_shoving: bool = false
+## The way the demon last moved along the floor, 1 for right and -1 for left, 0 since it left the
+## floor or was carried; the seconds since it last turned back; and the man's side of it on its last
+## move (_hold_back_a_quick_turn).
+var _last_way: float = 0.0
+var _since_turn: float = INF
+var _man_side_then: float = 0.0
 
 @onready var _senses: DemonSenses = %Senses
 ## Finds the other demons within Pack Spacing of this one's body, to either side.
@@ -267,6 +273,8 @@ func _physics_process(delta: float) -> void:
 	if not _packmates.is_empty():
 		_keep_apart_from_packmates()
 	_stop_at_the_man(delta)
+	# Last, over the push apart too: the push and the chase taking turns are the tremble (#271).
+	_hold_back_a_quick_turn(delta)
 	if shove != 0.0:
 		velocity = Vector2(shove * stats.knock_off_speed, 0.0)
 	move_and_slide()
@@ -314,6 +322,12 @@ func _make_states() -> void:
 ## man while it chases him and backs off from him.
 func get_facing() -> float:
 	return _facing
+
+
+## Half the size of the demon's body box, in px, for the other demons of a pack, which keep Pack
+## Spacing between its body and theirs whatever the size of each.
+func get_half_size() -> Vector2:
+	return _half_size
 
 
 ## True while the demon is after the man and saw him on this physics frame or the one before, for
@@ -874,7 +888,7 @@ func go_after(gap: float, delta: float, keeps_back: bool = false) -> void:
 	var ahead: Demon = _packmate_ahead(gap)
 	if ahead != null:
 		var apart: float = absf(ahead.global_position.x - global_position.x)
-		room = minf(room, apart - 2.0 * _half_size.x - stats.pack_spacing)
+		room = minf(room, apart - _apart_from(ahead))
 	var top_speed: float = _chase_speed() * _chase_share(direction)
 	var speed: float = clampf(room / delta, -retreat_speed(), top_speed)
 	if is_on_floor() and is_edge_ahead(direction * signf(speed)):
@@ -959,14 +973,14 @@ func _scan_packmates_near() -> void:
 	_overlapping_ahead.fill(0)
 	_overlapping_behind.fill(0)
 	var own: Vector2 = get_global_position()
-	var reach: float = _apart_from_packmates() + PACK_TOLERANCE if stats.pack_spacing > 0.0 else 0.0
-	var overlap: float = 2.0 * _half_size.x
-	var farthest: float = maxf(reach, overlap)
+	var keeps_apart: bool = stats.pack_spacing > 0.0
 	for mate: Demon in _packmates:
 		var at: Vector2 = mate.get_global_position()
 		var apart: float = at.x - own.x
 		var distance: float = absf(apart)
-		if distance > farthest:
+		var overlap: float = _half_size.x + mate.get_half_size().x
+		var reach: float = overlap + stats.pack_spacing + PACK_TOLERANCE if keeps_apart else 0.0
+		if distance > maxf(reach, overlap):
 			continue
 		var speed: float = mate.get_velocity().x
 		var going: float = signf(speed)
@@ -996,7 +1010,7 @@ func _chase_share(direction: float) -> float:
 	if stats.pace_spread <= 0.0 or direction == 0.0:
 		return 1.0
 	for mate: Demon in _packmates:
-		if absf(mate.global_position.x - global_position.x) < 2.0 * _half_size.x \
+		if absf(mate.global_position.x - global_position.x) < _half_size.x + mate.get_half_size().x \
 				and signf(mate.velocity.x) == direction and _moves_faster(mate) \
 				and _shares_floor_with(mate):
 			return 1.0 - stats.pace_spread
@@ -1057,8 +1071,8 @@ func _hunts() -> bool:
 ## one at his side counts, since it has that spot: the others it passes through. One that stands,
 ## patrols, walks back or searches is not after him, so it never holds back a chase. A demon past
 ## the man is on his other side, not between, so two demons can come at him from both sides. Every
-## demon is this scene, so their bodies are the same size. Of two on one spot, the one put in the
-## scene first is ahead.
+## demon keeps Pack Spacing from the other's body, whatever the size of each (_apart_from). Of two on
+## one spot, the one put in the scene first is ahead.
 func _packmate_ahead(gap: float) -> Demon:
 	if stats.pack_spacing <= 0.0:
 		return null
@@ -1081,7 +1095,7 @@ func _packmate_ahead(gap: float) -> Demon:
 ## True when the other demon's body touches or overlaps the body of the man this demon is after.
 func _is_at_the_man_s_side(mate: Demon) -> bool:
 	return absf(_target.get_man().global_position.x - mate.global_position.x) \
-			<= _target.get_half_size().x + _half_size.x + PACK_TOLERANCE
+			<= _target.get_half_size().x + mate.get_half_size().x + PACK_TOLERANCE
 
 
 ## For its states: true when, with Pack Spacing, another demon on its floor stands that way, 1 for
@@ -1092,7 +1106,7 @@ func is_packmate_in_the_way(direction: float) -> bool:
 		return false
 	for mate: Demon in _packmates:
 		var ahead: float = (mate.global_position.x - global_position.x) * direction
-		if ahead > 0.0 and ahead <= _apart_from_packmates() + PACK_TOLERANCE \
+		if ahead > 0.0 and ahead <= _apart_from(mate) + PACK_TOLERANCE \
 				and _shares_floor_with(mate):
 			return true
 	return false
@@ -1108,7 +1122,7 @@ func room_before_a_packmate(direction: float) -> float:
 	for mate: Demon in _packmates:
 		var ahead: float = (mate.global_position.x - global_position.x) * direction
 		if ahead > 0.0 and _shares_floor_with(mate):
-			room = minf(room, maxf(ahead - _apart_from_packmates(), 0.0))
+			room = minf(room, maxf(ahead - _apart_from(mate), 0.0))
 	return room
 
 
@@ -1129,7 +1143,7 @@ func room_behind_a_searching_packmate(gap: float) -> float:
 		var is_ahead: bool = signf(apart) == signf(gap) if apart != 0.0 \
 				else mate.get_instance_id() < get_instance_id()
 		if is_ahead:
-			room = minf(room, maxf(absf(apart) - 2.0 * _half_size.x - stats.pack_spacing, 0.0))
+			room = minf(room, maxf(absf(apart) - _apart_from(mate), 0.0))
 	return room
 
 
@@ -1229,7 +1243,7 @@ func _can_get_nearer(gap: float) -> bool:
 	if ahead == null:
 		return true
 	var apart: float = absf(ahead.global_position.x - global_position.x)
-	return apart > _apart_from_packmates() + PACK_TOLERANCE
+	return apart > _apart_from(ahead) + PACK_TOLERANCE
 
 
 ## True when the demon, the man gap px away along the floor, starts the attack on this physics frame
@@ -1408,12 +1422,12 @@ func _keep_apart_from_packmates() -> void:
 			or (velocity.x != 0.0 and _hunts()):
 		return
 	var nearest: Demon = null
-	var nearest_apart: float = _apart_from_packmates() - PACK_TOLERANCE
+	var most_inside: float = PACK_TOLERANCE
 	for mate: Demon in _packmates:
-		var apart: float = absf(mate.global_position.x - global_position.x)
-		if apart < nearest_apart and _shares_floor_with(mate) and _yields_to(mate):
+		var inside: float = _apart_from(mate) - absf(mate.global_position.x - global_position.x)
+		if inside > most_inside and _shares_floor_with(mate) and _yields_to(mate):
 			nearest = mate
-			nearest_apart = apart
+			most_inside = inside
 	if nearest == null:
 		return
 	var away: float = signf(global_position.x - nearest.global_position.x)
@@ -1422,6 +1436,30 @@ func _keep_apart_from_packmates() -> void:
 	if is_edge_ahead(away):
 		return
 	velocity.x = away * maxf(stats.pack_push_speed, velocity.x * away)
+
+
+## Stands the demon still on this frame instead of turning it back along the floor again sooner than
+## Min Turn Time after its last turn back, while the man stays on the same side of it, so the pack's
+## rules taking turns in a crowd never make it tremble (#271). A walk that turns at its ends, as a
+## pace, turns at once. Off the floor or carried, it turns at once; backing off after a bite, too,
+## but that turn counts, so a back-off cut short by the pack is not followed at once by a step forward.
+func _hold_back_a_quick_turn(delta: float) -> void:
+	_since_turn += delta
+	if _state in STATES_THAT_CARRY_IT or not is_on_floor():
+		_last_way = 0.0
+		return
+	var way: float = signf(velocity.x)
+	if way == 0.0:
+		return
+	var man_side: float = signf(get_gap_to_target()) if has_target() else 0.0
+	if _last_way != 0.0 and way != _last_way:
+		if man_side == _man_side_then and _since_turn < stats.min_turn_time \
+				and _state != State.RETREAT:
+			velocity.x = 0.0
+			return
+		_since_turn = 0.0
+	_last_way = way
+	_man_side_then = man_side
 
 
 ## True when this demon steps away from the other one, too near it, keeping the chase's rules (ADR
@@ -1437,15 +1475,17 @@ func _yields_to(mate: Demon) -> bool:
 	var man_x: float = _target.get_man().global_position.x
 	var to_me: float = man_x - global_position.x
 	var to_mate: float = man_x - mate.global_position.x
-	var touching: float = _target.get_half_size().x + _half_size.x - PACK_TOLERANCE
-	if to_me * to_mate < 0.0 and absf(to_me) >= touching and absf(to_mate) >= touching:
+	var man_half: float = _target.get_half_size().x - PACK_TOLERANCE
+	if to_me * to_mate < 0.0 and absf(to_me) >= man_half + _half_size.x \
+			and absf(to_mate) >= man_half + mate.get_half_size().x:
 		return false
 	return mate.has_target()
 
 
-## How far apart, in px, two demons' middles stand with Pack Spacing between their bodies.
-func _apart_from_packmates() -> float:
-	return 2.0 * _half_size.x + stats.pack_spacing
+## How far apart, in px, this demon's middle and the other's stand with Pack Spacing between their
+## bodies, whatever the size of each, as a big dog's and a regular one's.
+func _apart_from(mate: Demon) -> float:
+	return _half_size.x + mate.get_half_size().x + stats.pack_spacing
 
 
 ## True when the other demon stands on about this one's floor: on a floor, less than half a body

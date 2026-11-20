@@ -77,9 +77,8 @@ quando se usa o outro aparelho, quando se liga um comando e quando se desliga o 
 | Interagir | E | Ctrl | X / Square |
 
 O terceiro perfil, Custom, começa igual ao predefinido, e cada ação pode receber outra tecla ou
-botão do rato. O Esc, as teclas de depuração (F3, F4, F7, F8 e F9) e a tecla Windows, que ao ser
-largada abre o menu Iniciar e tira o foco ao jogo, estão reservados; o 1, o 2 e o
-3, que na página dos números do texto de depuração recomeçam numa fase, não estão. As teclas W,
+botão do rato. O Esc e as teclas de depuração (F1 a F4, F7, F8 e F9) estão reservados; o 1, o 2 e o
+3, que com o texto de depuração visível recomeçam numa fase, não estão. As teclas W,
 E, A, S e D do perfil das setas ficam livres para os upgrades.
 
 | Ação | Teclado | Comando |
@@ -1717,6 +1716,7 @@ teclado, e não pela letra impressa, pelo que o WASD se mantém num teclado AZER
 | `interact` | E | X / Square |
 | `crucifix` | Shift | RT / R2 (eixo 5) |
 | `pause` | Escape | Start |
+| `debug_god_mode` / `debug_noclip` | F1 / F2 | — |
 | `toggle_debug_overlay` | F3 | — |
 | `debug_damage` | F4 | — |
 | `debug_accept_offer` / `debug_refuse_offer` | F7 / F8 | — |
@@ -2306,6 +2306,29 @@ tem de ser chão plano. A caixa de colisão cobre o tronco (66 × 54 px), sem a 
   sobreposições de passagem (cruzamentos ao recuar) ou sem espaço, como num buraco de um corpo. Na
   caça, com a personagem à vista, um demónio em movimento passa pelos outros, e só um encostado a
   ela o trava (ADR 0053); parado, afasta-se como os outros, e no vaivém vira junto de um parado.
+  Com corpos de tamanhos diferentes, como o cão normal e o cão grande, cada distância conta a metade
+  de cada um dos dois corpos, para que o espaço entre eles seja sempre Pack Spacing (#271). Antes,
+  cada demónio tomava o vizinho por um do seu tamanho: o cão normal não reconhecia o grande como
+  encostado à personagem e atravessava-o, e o grande parava a 38 px de um normal em vez de 24
+  (`test_mixed_pack.gd`).
+- **Sem tremer num aperto (#271).** Com três cães entre uma parede e a personagem encurralada contra
+  outra, não há posição que cumpra a separação, a distância de recuo e a vez de atacar ao mesmo
+  tempo, e as regras alternavam a cada passo: cada cão voltava para trás 48 a 59 vezes em 10 s,
+  algumas de um passo para o seguinte. Agora, enquanto a personagem fica do mesmo lado, um demónio
+  não volta para trás antes de Min Turn Time (0,15 s, nos `DemonStats`) desde a última volta, e
+  fica parado até lá. A investida, o arremesso, o salto, a descida, o recuo depois de uma mordida e
+  a passagem da personagem para o outro lado continuam a virá-lo de imediato. O valor fica acima
+  das voltas do tremor (1 a 6 passos) e abaixo do troço mais curto do vaivém (0,22 s: 60 px à
+  velocidade mais alta que a variação dá à ronda), por isso o vaivém nunca espera. Com 0,25 s, a
+  matilha mordia 10 % menos. No mesmo caso, cada cão volta agora 39 a 43 vezes em 10 s, e a volta
+  mais rápida passou a 9 passos (`test_wedged_dogs.gd`). O cão deixa de tremer, mas o conflito
+  continua: no aperto, ainda volta cerca de 4 vezes por segundo e fica sobreposto a outro.
+  Resolver o conflito entre as regras, uma a uma, mexia nos ADR 0046 e 0052 a 0055 e ficou de fora
+  (ADR 0070). Custo das duas mudanças, medido pelo `measure_demon.gd` (três execuções de cada
+  versão, alternadas, no mesmo computador): com 50 demónios no ecrã, +9 a +16 % por passo (a
+  perseguir, 3291 para 3761 µs; em ronda, 1849 para 2150 µs); com 10, +2 a +11 %; com 50 parados
+  fora do ecrã, nada (996 para 999 µs). Cerca de um terço vem da espera nas voltas e o resto da
+  conta com os dois corpos em cada par de demónios. Entre execuções, o mesmo caso varia até 10 %.
 - **Ninguém fica em cima de ninguém (ADR 0047).** O componente `KnockOff`
   (`scenes/characters/components/knock_off.gd`) diz para que lado empurrar quem está de pé em cima da personagem ou
   de um demónio; quem o usa põe a velocidade (600 px/s nos dois). Antes, o demónio não tinha
@@ -2687,7 +2710,33 @@ crucifixo. O overlay mostra a oferta em causa, se já foi aceite, as recusas, o 
 homem ainda tem o crucifixo. As três teclas estão reservadas nos perfis de controlos, pelas mesmas
 razões do F4.
 
-Na página dos números do overlay (F3), as teclas 1, 2 e 3 recomeçam o nível no início dessa fase, atrás do
+As teclas F1 e F2 ligam e desligam duas ajudas de depuração, para atravessar e experimentar os
+níveis sem morrer. Com o god mode (F1), os golpes dos demónios acontecem como no jogo (o piscar, o
+tremor, o empurrão e o agarrão), mas não retiram SP; nada mata a personagem, e um agarrão que
+esgote o tempo larga-a em vez de a matar. Com o noclip (F2), a personagem voa com as teclas de
+movimento, também para cima e para baixo, a 1200 px/s (Noclip Speed, no Inspector do overlay), sem
+gravidade e através das paredes e do chão. Enquanto voa, os golpes não têm efeito, nada a mata e
+um agarrão em curso larga-a; os contactos continuam, no entanto, a ser detetados, pelo que o
+tremor do ecrã e a vibração do comando de um golpe se mantêm. Ao desligar, cai do sítio onde está.
+As duas funcionam com o texto escondido, com o jogo em pausa e com uma fala no ecrã, e uma etiqueta
+no canto superior direito indica as que estão ligadas. Ficam ligadas depois de uma morte, de um
+recomeço ou de um salto de fase, até se voltar a carregar na tecla. Cada recomeço cria uma cópia
+nova do nível, com um overlay e uma personagem novos, pelo que o estado das ajudas fica guardado
+fora deles, em variáveis estáticas do overlay, e cada overlay novo entrega-o à sua personagem. Na
+personagem, cada ajuda é uma única variável. O god mode é lido apenas nos pontos por onde entram o
+dano e a morte: a perda de SP, a morte e o fim do tempo do agarrão. O noclip é lido nesses mesmos
+pontos, na reação aos golpes e no movimento. O resto do jogo não as conhece. O F4 continua a
+retirar SP com o god mode ligado, para experimentar a regeneração. As duas teclas estão reservadas
+nos perfis de controlos, pelas mesmas razões do F4. Teste: `test_debug_cheats.gd`.
+
+Há três limitações conhecidas, aceites por se tratar de uma ferramenta de depuração. Os espinhos
+detetam a personagem quando ela entra neles. Por isso, quem desliga o noclip ou o god mode já
+dentro de uma faixa de espinhos só morre quando sair e voltar a entrar. Quem desliga o noclip
+dentro de uma parede ou do chão fica entregue à separação de corpos do motor. Os sons e o tremor
+da aterragem medem a queda a partir do ponto mais alto do voo, pelo que desligar o noclip junto ao
+chão, depois de voar alto, soa como uma queda longa.
+
+Com o overlay visível (F3), as teclas 1, 2 e 3 recomeçam o nível no início dessa fase, atrás do
 mesmo escurecer de uma morte. No momento do recomeço, o nível (`Level.jump_to_phase`) percorre os
 seus pontos de gravação pela ordem da cena, que é a do percurso, marca no GameState os que ficam
 para trás e esquece os seguintes, pelo que a cópia nova põe a personagem no ponto dessa fase, como
@@ -2716,9 +2765,13 @@ Serve para afinar o ritmo das ofertas por mortes a jogar, sem ter de contar as m
 O overlay é uma cena própria, `scenes/others/debug/debug_overlay.tscn`, num `CanvasLayer`, pelo que não se
 desloca com a câmara. Recebe a personagem pelo Inspector e lê-a, ou fere-a com o F4, sem que ela
 dependa dele, pelo que a personagem é testada e exportada sem o overlay. Continua ativo com o jogo
-em pausa e, nas exportações de release, remove-se a si próprio, e o F4 com ele. O
-`test_debug_overlay.gd` verifica o comportamento nas versões de depuração; a remoção na versão de
-release só poderá ser confirmada na primeira exportação.
+em pausa e, nas exportações de release, remove-se a si próprio, e as teclas de depuração com ele. O
+`test_debug_overlay.gd` verifica o comportamento nas versões de depuração. O overlay pergunta ao
+Godot se a versão é de depuração (`OS.is_debug_build()`) num método próprio, que o
+`test_debug_cheats.gd` substitui para responder como uma versão de release. O teste verifica que,
+nesse caso, o overlay se remove antes de ler qualquer tecla e de entregar as ajudas à personagem,
+pelo que o F1, o F2 e o F4 não fazem nada, mesmo com as ajudas ligadas antes. Só a primeira
+exportação de release confirmará que o `OS.is_debug_build()` devolve falso.
 
 Na sala de teste, uma segunda vista (`scenes/others/debug/demon_debug_view.gd`) desenha sobre cada demónio o
 estado em que está e há quanto tempo (em frames de física, que param na pausa, como os tempos dos
@@ -2932,9 +2985,18 @@ outra por acaso:
 | Ordem | O que se desenha | Como |
 |---|---|---|
 | 1 | camadas Far, Middle e Near do fundo | primeiro nó da cena do nível, com Z Index 0 |
-| 2 | plano de jogo: tiles, peças, personagem, demónios | nós seguintes do nível, com Z Index 0 |
+| 2 | plano de jogo: portões, personagem, demónios, tiles e as outras peças, por esta ordem | nós seguintes do nível, com Z Index 0 |
 | 3 | camada Front do fundo | Z Index 10 |
 | 4 | interface e overlay de depuração | `CanvasLayer`, por cima de tudo |
+
+No plano de jogo, os tiles vêm depois da personagem e dos demónios, para que a rocha tape a parte
+da arte que passa do corpo, como a cauda de um cão encostado a uma parede (#271). A personagem vem
+antes dos demónios, porque estes se movem depois dela em cada passo de física (a mordida nas costas
+conta com isso). Um demónio que avisa, investe ou agarra sobe para Z Index 1, para ficar por cima
+da personagem e dos outros demónios. A iluminação do nível 1 põe a rocha também em 1, e com o mesmo
+Z Index vale a ordem dos nós, por isso esse demónio continua por baixo da rocha; sem a iluminação, a
+rocha fica em 0 e ele passa por cima dela. O `test_dogs_behind_rock.gd` verifica a ordem com a
+iluminação, e também que a marca de alerta e os picos continuam por cima da rocha.
 
 #### Linha de vista: um componente por objeto
 
