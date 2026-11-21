@@ -197,6 +197,12 @@ func get_look_down() -> float:
 	return _lead.y
 
 
+## The zone it keeps to: of those the player is in, the one he entered last; null outside every
+## zone. The level counts his deaths and time in it, so they are where he sees them.
+func get_zone() -> CameraZone:
+	return _zone if _is_live(_zone) else null
+
+
 ## The zone the player is in, or "none". For the debug overlay.
 func get_zone_name() -> String:
 	return String(_zone.name) if _is_live(_zone) else "none"
