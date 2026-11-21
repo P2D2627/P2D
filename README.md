@@ -78,7 +78,7 @@ quando se usa o outro aparelho, quando se liga um comando e quando se desliga o 
 | Interagir | E | Ctrl | X / Square |
 
 O terceiro perfil, Custom, começa igual ao predefinido, e cada ação pode receber outra tecla ou
-botão do rato. O Esc, as teclas de depuração (F1 a F4, F7, F8 e F9) e a tecla Windows, que ao ser
+botão do rato. O Esc, as teclas de depuração (F1 a F4 e F7 a F10) e a tecla Windows, que ao ser
 largada abre o menu Iniciar e tira o foco ao jogo, estão reservados; o 1, o 2 e o
 3, que na página dos números do texto de depuração recomeçam numa fase, não estão. As teclas W,
 E, A, S e D do perfil das setas ficam livres para os upgrades.
@@ -1829,6 +1829,7 @@ teclado, e não pela letra impressa, pelo que o WASD se mantém num teclado AZER
 | `debug_damage` | F4 | — |
 | `debug_accept_offer` / `debug_refuse_offer` | F7 / F8 | — |
 | `debug_reset_run` | F9 | — |
+| `debug_camera_next` | F10 | — |
 | `debug_phase_1` / `debug_phase_2` / `debug_phase_3` | 1 / 2 / 3 (só na página dos números do overlay) | — |
 | `ui_accept` | Enter, Espaço | A / Cross |
 | `ui_cancel` | Escape | B / Circle |
@@ -2834,6 +2835,13 @@ crucifixo. O overlay mostra a oferta em causa, se já foi aceite, as recusas, o 
 homem ainda tem o crucifixo. As três teclas estão reservadas nos perfis de controlos, pelas mesmas
 razões do F4.
 
+A tecla F10 troca a câmara para a forma seguinte de enquadrar o homem (#282): a da própria câmara, com
+as zonas, e depois cada modo que a cena da câmara tiver (ver «Câmara»; por agora não tem nenhum).
+Funciona também com o texto escondido, e a forma escolhida mantém-se na cópia seguinte do nível, como
+depois de uma morte. Na página dos números, uma linha própria indica a forma em uso. Na página da
+iluminação, a F10 pertence ao rig, como as restantes teclas F. Está reservada nos perfis de controlos,
+pelas mesmas razões do F4, e o balão das falas deixa-a passar, como às outras teclas de depuração.
+
 As teclas F1 e F2 ligam e desligam duas ajudas de depuração, para atravessar e experimentar os
 níveis sem morrer. Com o god mode (F1), os golpes dos demónios acontecem como no jogo (o piscar, o
 tremor, o empurrão e o agarrão), mas não retiram SP; nada mata a personagem, e um agarrão que
@@ -2926,6 +2934,20 @@ usa uma suavização exponencial, com o peso `1 - exp(-k·Δt)`, e as deslocaç�
 solução exata de uma mola criticamente amortecida, que regressa à posição de equilíbrio o mais
 depressa possível sem oscilar. Em ambos os casos, o resultado não depende da duração do passo de
 física. A personagem emite o sinal `landed`, que a câmara usa para reenquadrar ao aterrar.
+
+A câmara pode enquadrar a personagem de outras formas, para as comparar em playtest (#282). Segue o
+padrão Strategy: cada forma alternativa é um nó filho da câmara do tipo `CameraBrain`
+(`camera_brain.gd`, uma classe abstrata), que em cada passo de física indica apenas o centro do ecrã e o
+zoom. A câmara conserva tudo o resto: as cenas cinemáticas, o tremor, a vibração, o motion blur e o que
+se mantém ativo junto ao ecrã. Sem nenhum `CameraBrain` em uso, a câmara executa o código anterior sem
+qualquer alteração, o que os testes da câmara já existentes confirmam sem terem sido modificados. Na
+troca não há saltos: a forma nova parte da posição e do zoom do ecrã, e o regresso à forma da própria
+câmara desliza como no fim de uma cena cinemática, no máximo a 2000 px/s na horizontal. Ficaram de
+parte duas alternativas: uma `Camera2D` por forma de enquadramento, que duplicaria o tremor, a
+vibração e o feedback (ou os mudaria de nó a cada troca), e a passagem do código atual para um
+`CameraBrain`, que alteraria código já validado antes de se saber se a câmara atual se mantém. Por
+agora a cena da câmara ainda não tem nenhum `CameraBrain`, e a tecla F10 deixa a câmara como está; a
+câmara de zoom fixo é a segunda fase da #282.
 
 As zonas (`CameraZone`, uma `Area2D` na camada `camera_bounds`) são lidas pela geometria das suas
 formas retangulares, com a transformação completa (uma zona escalada tem o retângulo que o editor

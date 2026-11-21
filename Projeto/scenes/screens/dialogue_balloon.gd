@@ -33,7 +33,7 @@ const STAGE_WIDTH: float = 1920.0
 ## can be paused, and the debug keys.
 @export var lets_through: Array[StringName] = [&"pause", &"toggle_debug_overlay", &"debug_damage",
 		&"debug_god_mode", &"debug_noclip", &"debug_accept_offer", &"debug_refuse_offer",
-		&"debug_reset_run", &"debug_phase_1", &"debug_phase_2", &"debug_phase_3"]
+		&"debug_reset_run", &"debug_phase_1", &"debug_phase_2", &"debug_phase_3", &"debug_camera_next"]
 ## Advances the lines; held, skips them.
 @export var next_action: StringName = &"ui_accept"
 ## Shows a line whole at once while it is still being typed.
