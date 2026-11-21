@@ -724,6 +724,10 @@ A câmara segue a personagem com técnicas descritas por Keren (2015), escolhida
 deste jogo: a corrida, as chaminés, as subidas e as quedas. As medidas foram obtidas nos testes, a
 60 passos de física por segundo, num ecrã de 1920×1080.
 
+Para comparar em playtest, a câmara tem também uma forma de zoom fixo, que se escolhe com a tecla F10
+nos builds de depuração (ver "Câmara" em "Para quem programa"). A tabela seguinte descreve a forma
+atual, com as zonas.
+
 | Técnica | Comportamento | Medida |
 |---|---|---|
 | Janela | a câmara só se desloca quando a personagem sai de um retângulo à volta do ponto que segue: 64 px para cada lado, 250 px acima e nenhum abaixo | um salto completo (240 px) e o balanço numa chaminé de 120 px (72 px) não movem a câmara |
@@ -1608,6 +1612,15 @@ números estão em "Câmara".
 
 ```
 godot --headless --fixed-fps 60 --path Projeto --script res://tests/measures/measure_camera_shake.gd
+```
+
+O `measure_camera_space.gd` também não verifica resultados: no nível 1, mede quanto do ecrã cada forma
+de enquadrar da câmara enche com rocha lisa e a que distância do centro deixa a personagem, e quanto
+demora a primeira troca para cada forma. Compara ainda um ecrã de zoom fixo com vários zooms e
+posições da personagem. Demora cerca de 4 minutos. Os números estão em "Câmara".
+
+```
+godot --headless --fixed-fps 60 --path Projeto --script res://tests/measures/measure_camera_space.gd
 ```
 
 O `measure_controller_rumble.gd` também não verifica resultados: mede quanto custa o nó que faz
@@ -2836,9 +2849,9 @@ homem ainda tem o crucifixo. As três teclas estão reservadas nos perfis de con
 razões do F4.
 
 A tecla F10 troca a câmara para a forma seguinte de enquadrar o homem (#282): a da própria câmara, com
-as zonas, e depois cada modo que a cena da câmara tiver (ver «Câmara»; por agora não tem nenhum).
-Funciona também com o texto escondido, e a forma escolhida mantém-se na cópia seguinte do nível, como
-depois de uma morte. Na página dos números, uma linha própria indica a forma em uso. Na página da
+as zonas, e depois cada modo que a cena da câmara tiver (ver «Câmara»; hoje, a câmara de zoom fixo,
+`Fixed`). Funciona também com o texto escondido, e a forma escolhida mantém-se na cópia seguinte do
+nível, como depois de uma morte: a câmara nova começa já enquadrada por ela, sem deslizar. Na página dos números, uma linha própria indica a forma em uso. Na página da
 iluminação, a F10 pertence ao rig, como as restantes teclas F. Está reservada nos perfis de controlos,
 pelas mesmas razões do F4, e o balão das falas deixa-a passar, como às outras teclas de depuração.
 
@@ -2945,9 +2958,65 @@ troca não há saltos: a forma nova parte da posição e do zoom do ecrã, e o r
 câmara desliza como no fim de uma cena cinemática, no máximo a 2000 px/s na horizontal. Ficaram de
 parte duas alternativas: uma `Camera2D` por forma de enquadramento, que duplicaria o tremor, a
 vibração e o feedback (ou os mudaria de nó a cada troca), e a passagem do código atual para um
-`CameraBrain`, que alteraria código já validado antes de se saber se a câmara atual se mantém. Por
-agora a cena da câmara ainda não tem nenhum `CameraBrain`, e a tecla F10 deixa a câmara como está; a
-câmara de zoom fixo é a segunda fase da #282.
+`CameraBrain`, que alteraria código já validado antes de se saber se a câmara atual se mantém.
+
+A cena da câmara traz uma forma alternativa, a câmara de zoom fixo (nó `Fixed`, script
+`FixedFraming`, valores em `FixedFramingStats`). Responde às queixas do playtest de 20/11: rocha a
+mais no ecrã, um zoom que muda em fronteiras que o jogador não vê e a personagem fora do centro. O
+zoom é sempre 1,4. Na horizontal, a personagem fica centrada; na vertical, fica 25 % da altura do ecrã
+abaixo do centro, porque por baixo do chão só há rocha. O ecrã segue um ponto de foco, que só se
+desloca quando a personagem sai de uma zona morta à volta dele: 28 px para cada lado e, no ar, um
+salto completo para cima, pelo que um salto não move o ecrã. No chão, o foco acompanha logo a altura
+da personagem. O ecrã aproxima-se do foco com uma mola criticamente amortecida, no máximo a
+2000 px/s. Enquanto a personagem arrasta o foco, o ecrã aponta à frente dele a distância a que a mola
+fica para trás (2v/ω), pelo que, a uma velocidade constante, o ecrã não fica para trás nem passa à
+frente. A correr, o ecrã mostra mais 5 % da sua largura à frente da personagem; ao fim de 0,35 s de
+queda, mais do que dura a descida de um salto completo, mostra mais por baixo dela. Deslizar por uma
+parede não conta como queda, para a subida de uma chaminé não fazer o ecrã subir e descer. Com o
+corpo no ecrã, mantém-no a pelo menos 10 % do ecrã das bordas. Uma personagem colocada a mais de
+200 px num só passo, e não deslocada, é enquadrada nesse mesmo passo. Depois de uma morte ou de um
+salto de fase, o nível recomeça numa cópia nova, cuja câmara começa já enquadrada.
+
+Os limites do ecrã vêm do mapa e não de zonas desenhadas. A classe `RockMap`
+(`scenes/levels/rock_map.gd`) lê os tiles do nível uma vez: um tile com colisão que não seja de
+sentido único é rocha, incluindo as rampas, também quando estão viradas ou rodadas no editor. A
+partir da posição da personagem, encontra o espaço aberto ligado a ela, por preenchimento (flood
+fill). O ecrã fica dentro da caixa desse espaço, alargada 2 tiles, e dentro dos limites da própria
+câmara definidos no nível, que a câmara lhe passa; junto à borda, estes limites prevalecem sobre a
+margem de 10 %. Assim, um mapa novo ou alterado não precisa de nada definido à mão. Sem mapa, ou
+com o espaço aberto a chegar à borda do mapa, valem só os limites da própria câmara. Numa chaminé, uma
+passagem vertical entre rocha com até 6 tiles de largura e pelo menos 6 de altura, o ecrã fica no
+eixo dela. A medição usa a mesma `RockMap`, para as duas lerem a rocha da mesma maneira.
+
+A medição (`measure_camera_space.gd`) coloca a personagem em 1467 posições do nível 1, um tile em cada
+três de cada chão a que ela chega, e lê o ecrã depois de a câmara assentar. Conta como enchimento a
+rocha rodeada de rocha nos 8 lados, porque as pedras da orla cobrem cerca de um tile para dentro da
+rocha. As distâncias estão em píxeis de um ecrã de 1920 × 1080.
+
+| Medida | Câmara atual (zonas) | Câmara de zoom fixo |
+|---|---|---|
+| Enchimento do ecrã, média | 34,8 % | 34,9 % |
+| Enchimento do ecrã, 90.º percentil | 54,3 % | 54,0 % |
+| Distância da personagem ao centro, na horizontal (média; 90.º percentil) | 237 px; 632 px | 39 px; 39 px |
+| Distância da personagem ao centro, na vertical (média; 90.º percentil) | 226 px; 369 px | 267 px; 270 px |
+| Zoom | de 1,00 a 2,28 (1,30 em 53 % das posições) | 1,40 em todas |
+| Mudanças de zoom por 100 tiles percorridos | 2,2 | 0 |
+
+Na vertical, a câmara de zoom fixo deixa a personagem abaixo do centro de propósito: 25 % de 1080 px
+são 270 px. Os 39 px na horizontal são a borda da zona morta, à escala do zoom. Com o zoom 1,4, o
+enchimento médio fica 0,1 pontos acima do da câmara atual. Na comparação de zooms, com a personagem
+25 % abaixo do centro, o 1,5 ficava abaixo dele (34,0 %), mas mostra menos à volta da personagem
+(26,7 × 15,0 tiles, contra 28,6 × 16,1 a 1,4).
+
+A câmara de zoom fixo lê o mapa quando começa num nível: na primeira troca para ela e, se estiver
+escolhida, no primeiro frame de cada cópia nova do nível, depois de uma morte ou de um salto de fase.
+No nível 1 (373 × 381 tiles), a troca demora entre 88,5 e 89,7 ms (duas execuções da medição), um
+atraso de cinco ou seis frames, aceitável numa ferramenta de depuração.
+
+Ficaram de parte um zoom fixo com a personagem centrada também na vertical (40,3 % de enchimento a
+1,3), porque a metade de baixo do ecrã fica sob o chão, e um ecrã preso ao chão e ao teto (33,9 % a
+1,4), porque a altura da personagem no ecrã variava de sítio para sítio, como hoje. A câmara por
+defeito decide-se depois do playtest de comparação.
 
 As zonas (`CameraZone`, uma `Area2D` na camada `camera_bounds`) são lidas pela geometria das suas
 formas retangulares, com a transformação completa (uma zona escalada tem o retângulo que o editor

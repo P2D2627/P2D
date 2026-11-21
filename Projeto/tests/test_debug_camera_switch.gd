@@ -72,11 +72,15 @@ func _initialize() -> void:
 	finish(results)
 
 
-## A camera scene with the stand-in brain, for player.
+## A camera scene with the stand-in brain as its only one, for player: the scene's own are taken out, so the cycle
+## is the same whatever brains the scene comes with.
 func _new_camera(player: Player) -> GameCamera:
 	var brain: StandInBrain = StandInBrain.new()
 	brain.name = BRAIN_NAME
 	var camera: GameCamera = CAMERA_SCENE.instantiate() as GameCamera
+	for child: Node in camera.get_children():
+		if child is CameraBrain:
+			child.free()
 	camera.player = player
 	camera.add_child(brain)
 	return camera

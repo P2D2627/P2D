@@ -391,10 +391,11 @@ func _soul_points_section() -> String:
 			soul_points.get_max_sp(), soul_points.get_regen_rate(), status]
 
 
-## Gives the camera the way of framing the man last chosen with F10, as the overlay gets ready.
+## Gives the camera the way of framing the man last chosen with F10, as the overlay gets ready: at once, so a new
+## copy of the level, as after a death, starts already framed that way.
 func _give_the_camera_mode() -> void:
 	if is_instance_valid(camera):
-		camera.use_framing(camera_mode)
+		camera.use_framing(camera_mode, true)
 
 
 ## The way the camera frames the man, on a line of its own; then the camera zone he is in, or none, and how

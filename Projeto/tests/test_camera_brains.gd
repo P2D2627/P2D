@@ -329,9 +329,12 @@ func _check_cycling(first: StandInBrain, second: StandInBrain) -> bool:
 			"Cycling goes %s (expected %s); an unknown name leaves %s" % [names, expected, after_unknown])
 
 
-## A camera with no brains stays on its own way when cycled or given an unknown name.
+## A camera with no brains, the scene's own taken out, stays on its own way when cycled or given an unknown name.
 func _check_no_brains(player: Player) -> bool:
 	var plain: GameCamera = CAMERA_SCENE.instantiate() as GameCamera
+	for child: Node in plain.get_children():
+		if child is CameraBrain:
+			child.free()
 	plain.player = player
 	root.add_child(plain)
 	await physics_frame

@@ -172,7 +172,7 @@ func release() -> void:
 	show_the_way([])
 	if _brain != null:
 		_brain.end()
-		_brain.begin(player, level_tiles, global_position, zoom.x)
+		_begin_brain()
 
 
 func is_directed() -> bool:
@@ -188,20 +188,26 @@ func use_brain(brain: CameraBrain) -> void:
 		_brain.end()
 	_brain = brain
 	if _brain != null:
-		_brain.begin(player, level_tiles, global_position, zoom.x)
+		_begin_brain()
 	else:
 		_resume_own_framing()
 
 
 ## Frames the player the way named framing_name: OWN_FRAMING_NAME, or a CameraBrain child's node name. An
-## unknown name changes nothing.
-func use_framing(framing_name: String) -> void:
+## unknown name changes nothing. at_once, as when a new copy of the level starts with a brain already chosen,
+## the screen starts where the brain frames him instead of gliding there.
+func use_framing(framing_name: String, at_once: bool = false) -> void:
 	if framing_name == OWN_FRAMING_NAME:
 		use_brain(null)
 		return
 	for brain: CameraBrain in _brains:
 		if String(brain.name) == framing_name:
 			use_brain(brain)
+			if at_once and _brain == brain:
+				brain.cut_to_framing()
+				global_position = brain.get_centre()
+				zoom = Vector2.ONE * brain.get_zoom()
+				reset_physics_interpolation()
 			return
 
 
@@ -284,15 +290,24 @@ func _preview(centres: Rect2, level: float) -> Dictionary:
 			"zoom": level, "screen": 2.0 * half_screen}
 
 
-## One step with a brain: the screen goes where the brain says, at its zoom. The zone and the lookout the
-## player is in stay current meanwhile, so the overlay tells the truth and, back to its own way, the camera
-## knows which zone he entered last.
+## Begins the brain from where the screen is, with the camera's own limits, so the brain needs nothing from its
+## parent.
+func _begin_brain() -> void:
+	_brain.camera_limits = _own_limits()
+	_brain.begin(player, level_tiles, global_position, zoom.x)
+
+
+## One step with a brain: the screen goes where the brain says, at its zoom, and a cut is not drawn as a glide.
+## The zone and the lookout the player is in stay current meanwhile, so the overlay tells the truth and, back to
+## its own way, the camera knows which zone he entered last.
 func _follow_brain(delta: float) -> void:
 	_zone = _zone_of(player.global_position)
 	_lookout = _next_lookout(player.global_position)
 	_brain.advance(delta)
 	global_position = _brain.get_centre()
 	zoom = Vector2.ONE * _brain.get_zoom()
+	if _brain.has_cut():
+		reset_physics_interpolation()
 
 
 ## A brain leaving the tree is dropped from the cycle. If it was in use, the camera goes back to its own

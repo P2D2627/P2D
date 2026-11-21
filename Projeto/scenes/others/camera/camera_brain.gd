@@ -11,6 +11,9 @@ extends Node
 ## Keep the player's body inside the camera's Edge Margin: back to its own way, the camera keeps his body on
 ## the screen up and down at once, as after a cutscene, and only glides across.
 
+## The camera's own limits (its limit_left and the rest), which the camera sets before each begin().
+var camera_limits: Rect2 = Rect2()
+
 
 ## Starts framing player from centre at zoom_level, where the screen is now. tiles is the level's rock, or
 ## null.
@@ -33,3 +36,16 @@ extends Node
 ## begin() took hold of.
 func end() -> void:
 	pass
+
+
+## Right after begin(), when a new copy of the level starts with the brain already chosen: frames the player at
+## once, so get_centre() and get_zoom() say where the screen settles instead of where it was. A brain that only
+## glides need not do anything.
+func cut_to_framing() -> void:
+	pass
+
+
+## True after a step in which the screen jumped instead of moving, as when the player is put far away: the camera
+## then resets its physics interpolation, which would otherwise draw the jump.
+func has_cut() -> bool:
+	return false
