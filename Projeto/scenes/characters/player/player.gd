@@ -325,6 +325,13 @@ func get_facing() -> float:
 	return 1.0 if _sprite.flip_h else -1.0
 
 
+## Turns his drawing to direction's side (positive right), as a run that way would; 0 leaves it.
+## For whoever talks to him, so he faces them.
+func face(direction: float) -> void:
+	if direction != 0.0:
+		_sprite.flip_h = direction > 0.0
+
+
 ## The man dies at once, as on spikes, whatever his SP: he stops where he is, with no run and no jump,
 ## and says so with died, once. The level listens and starts over, and reads get_death_cause() to
 ## count the death: cause names what killed him, as spikes or the demon that held him, and source

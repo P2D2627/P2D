@@ -21,6 +21,8 @@ const DEFAULT_MOTION: BrambleMotionStats = preload("res://scenes/objects/traps/b
 const TILE: float = 48.0
 ## What a death on spikes is put down to, in the run's numbers.
 const CAUSE: StringName = &"spikes"
+## The group every strip joins in the game, so who must keep off them can find them, as Asmodeus.
+const GROUP: StringName = &"lethal_spikes"
 ## Added to a strip's seed for its brambles' sway, so the sway's chance never changes their look.
 const SWAY_SEED: int = 7919
 ## The man's body, which he is stirred and dies by.
@@ -113,6 +115,7 @@ func _ready() -> void:
 		set_process(false)
 		return
 	assert(motion_stats != null, "LethalSpikes: assign a bramble motion resource to Motion Stats.")
+	add_to_group(GROUP)
 	body_entered.connect(_on_body_entered)
 	body_exited.connect(_on_body_exited)
 	_set_up_motion()

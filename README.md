@@ -3607,6 +3607,19 @@ Quando é que ela fala decide outro nó do nível 1, o `AsmodeusDirector`, que s
 | Com uma oferta por mortes à espera, ao entrar na zona dela (ou ao renascer lá dentro) | `asmodeus_deaths` |
 | Ao entrar na sala dela, no fim do nível, aceite ou não o atalho | `asmodeus_gift` e depois `stairs` |
 
+A zona de uma morte, do tempo e das ofertas é a zona que a câmara mostra, isto é, a última em que o
+homem entrou. Antes era a zona mais pequena à volta dos pés dele, e as duas regras discordavam onde
+as zonas se sobrepõem: num percurso do nível 1, em 1182 de 11168 frames (11 %). Por isso a Asmodeu
+falava às vezes antes de ele entrar na zona que via, ou só depois de a ter passado. Durante uma cena
+de câmara, que não segue o homem, vale a zona mais pequena.
+
+Nas conversas fora da sala dela, a Asmodeu aparece no chão do homem, virada para ele: à frente dele a
+180 px, ou mais perto, até 90 px, numa plataforma pequena; sem espaço à frente, atrás dele, e ele
+vira-se. Só pisa rocha, nunca plataformas, e nunca fica sobre picos, perigos, um poço ou do outro lado
+de uma parede. Se ele estiver numa plataforma ou onde ela não cabe, ela espera que ele avance. Dos
+4998 pontos de rocha onde o homem pode estar no nível 1, ela não cabe ao lado dele em 210 (4,2 %),
+sobretudo rebordos de um a dois tiles e fundos de poços estreitos.
+
 A oferta por mortes só é verificada enquanto há uma à espera; sem ela, o diretor não faz nada a
 cada frame. Uma conversa só conta como tida quando o homem responde à oferta. Nesse momento, o
 diretor marca-a no `GameState` (`answered_` e o nome do cue), e a oferta por mortes deixa de estar à
