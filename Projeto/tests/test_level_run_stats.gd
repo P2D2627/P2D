@@ -1,7 +1,8 @@
 # Checks that level 1 tells RunStats where the man is and where he dies. Started fresh, it is
 # phase 1 of "level1"; with phase 2's or phase 3's save already reached in GameState, it starts in
 # that phase, and walking into phase 2's save moves him on. A death counts in the phase he is in,
-# inside the smallest camera zone around him, and a death outside every zone counts in a cell.
+# in the camera zone the camera shows, the one he entered last, even where a smaller zone overlaps
+# it, and a death outside every zone counts in a cell.
 # Time adds up in the phase while the level runs, stops while the game is paused, and is not lost
 # when a new copy of the level takes the place of the old one, as after a death. RunStats says once
 # when deaths make a shortcut offer due, keeps it waiting through a save, and starts the offers over
@@ -19,6 +20,12 @@ const SETTLE_FRAMES: int = 3
 const TIME_FRAMES: int = 60
 ## How far the time counted can be from the frames' time: up to a frame either way.
 const TIME_TOLERANCE: float = 1.5 / 60.0
+## Two of level 1's camera zones that overlap: the knot is the smaller.
+const POCKET: StringName = &"ZoneP2PocketB"
+const KNOT: StringName = &"ZoneP2CorridorKnot"
+## A floor in the knot only, and one in the part the knot and the pocket share.
+const KNOT_ONLY: Vector2 = Vector2(14214.0, 9119.0)
+const KNOT_AND_POCKET: Vector2 = Vector2(13830.0, 9119.0)
 
 var _stats: GameRunStats
 var _progress: GameProgress
@@ -33,7 +40,7 @@ func _initialize() -> void:
 	results.append(await _fresh_it_is_phase_1_of_level1())
 	results.append(await _a_reached_save_starts_in_its_phase())
 	results.append(await _walking_into_phase_2s_save_moves_him_on())
-	results.append(await _a_death_counts_in_the_smallest_zone())
+	results.append(await _a_death_counts_in_the_zone_the_camera_shows())
 	results.append(await _outside_every_zone_a_death_counts_in_a_cell())
 	results.append(await _time_counts_in_the_phase_but_not_while_paused())
 	results.append(_run_stats_says_when_an_offer_is_due_and_keeps_it())
@@ -100,18 +107,28 @@ func _walking_into_phase_2s_save_moves_him_on() -> bool:
 	return report(phase == 2, "walking into phase 2's save moves him to phase %d" % phase)
 
 
-func _a_death_counts_in_the_smallest_zone() -> bool:
+## Walking from the corridor knot into the part it shares with pocket B, the camera shows pocket B,
+## the zone he entered last, though the knot is the smaller: the death counts in pocket B, the zone
+## he sees, so the offer it may bring waits where he sees it.
+func _a_death_counts_in_the_zone_the_camera_shows() -> bool:
 	_progress.reset()
 	_stats.reset()
 	var level: Level = await _add_level()
-	var point: Vector2 = level.player.global_position
-	var expected: StringName = _smallest_zone_at(level, point)
+	var camera: GameCamera = level.get_node(^"GameCamera") as GameCamera
+	level.player.global_position = KNOT_ONLY
+	await wait_frames(SETTLE_FRAMES)
+	level.player.global_position = KNOT_AND_POCKET
+	await wait_frames(SETTLE_FRAMES)
+	var shown: StringName = StringName(camera.get_zone_name())
+	var smallest: StringName = _smallest_zone_at(level, level.player.global_position)
+	var set_up: bool = shown == POCKET and smallest == KNOT
 	level.player.die()
-	var passed: bool = (not expected.is_empty() and _stats.deaths_in_phase(1) == 1
-			and _stats.last_zone() == expected and _stats.same_spot_deaths() == 1)
+	var passed: bool = (set_up and _stats.deaths_in_phase(1) == 1 and _stats.last_zone() == shown
+			and _stats.same_spot_deaths() == 1)
 	await _remove(level)
-	return report(passed, "a death counts in phase 1, in the smallest zone (%s, expected %s)"
-			% [_stats.last_zone(), expected])
+	return report(passed, ("a death counts in phase 1, in the zone the camera shows (%s; the camera "
+			+ "shows %s, the smallest zone is %s, expected %s and %s)")
+			% [_stats.last_zone(), shown, smallest, POCKET, KNOT])
 
 
 func _outside_every_zone_a_death_counts_in_a_cell() -> bool:

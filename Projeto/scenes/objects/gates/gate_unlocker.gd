@@ -4,7 +4,8 @@ extends Node2D
 
 ## What opens one or more gates: the man stands by it and presses Use Action (E, Interact). Its origin
 ## is the middle of its base, on the floor. While he is inside its Use Area and it is still unused,
-## its key shows over it, as a character's does. It works once. List the gates it opens in Gates.
+## its key shows over it, as a character's does; in a low room it reaches into the rock above, so it
+## is drawn over the rock (Z Index 10, as the grab's prompt). It works once. List the gates it opens in Gates.
 ## With a Cutscene, it plays it first, and the gates open when the cutscene's camera gets to its first
 ## shot, so the player sees them open; without one, or when the cutscene does not play (one that plays
 ## once in the game and was seen), they open at once. It is drawn as a demon statue on rubble (its

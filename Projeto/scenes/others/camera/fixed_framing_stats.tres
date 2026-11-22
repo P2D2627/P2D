@@ -4,3 +4,9 @@
 
 [resource]
 script = ExtResource("1_stats")
+below_centre = 0.12
+dead_zone_across = 96.0
+follow_sharpness = 6.0
+look_ahead = 0.03
+look_ahead_sharpness = 1.5
+fall_below_centre = -0.3

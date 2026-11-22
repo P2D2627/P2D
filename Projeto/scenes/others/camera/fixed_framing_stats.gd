@@ -4,6 +4,9 @@ extends Resource
 ## that takes in a jump, a capped critically damped follow, a short lead when he runs, a look down when he falls,
 ## the screen kept inside the level's outline and a chimney's axis held. With the zoom fixed, the dead zone is in
 ## px of the world; what is about the screen's shape is in shares of the screen.
+## The defaults below are #282's. The game uses fixed_framing_stats.tres, calmer since #284 against motion
+## sickness: there the dead zone across is wider than the look ahead, so a running man is framed a little
+## behind the screen's middle, with more of the way behind him on screen than ahead.
 
 @export_group("Framing")
 ## The one zoom. At 1.4, with the man at Below Centre, a screen in level 1 shows on average about as much plain

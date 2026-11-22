@@ -1,4 +1,4 @@
-[gd_resource type="Resource" script_class="DemonStats" format=3 uid="uid://wybkq0yejpah"]
+[gd_resource type="Resource" script_class="DemonStats" format=3 uid="uid://bghx0nq1k84jf"]
 
 [ext_resource type="Script" uid="uid://5pjnqw8qfj0x" path="res://scenes/characters/demon/demon_stats.gd" id="1_script"]
 [ext_resource type="Script" uid="uid://bghijfm4lswje" path="res://scenes/characters/demon/demon_attack.gd" id="2_attack"]

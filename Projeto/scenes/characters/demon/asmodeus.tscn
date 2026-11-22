@@ -5,12 +5,6 @@
 [ext_resource type="PackedScene" path="res://scenes/screens/dialogue_balloon.tscn" id="3_balloon"]
 [ext_resource type="Texture2D" path="res://assets/sprites/asmodeus/asmodeus.png" id="4_art"]
 
-[sub_resource type="LabelSettings" id="LabelSettings_name"]
-font_size = 36
-font_color = Color(1, 0.8, 0.88, 1)
-outline_size = 10
-outline_color = Color(0.15, 0.03, 0.08, 1)
-
 [node name="Asmodeus" type="Node2D"]
 script = ExtResource("1_script")
 dialogue_resource = ExtResource("2_lust")
@@ -21,12 +15,3 @@ editor_description = "asmodeus.png: her figure from the CDJ visual novel, cut to
 scale = Vector2(0.5, 0.5)
 texture = ExtResource("4_art")
 offset = Vector2(0, -150)
-
-[node name="NameTag" type="Label" parent="."]
-offset_left = -150.0
-offset_top = -210.0
-offset_right = 150.0
-offset_bottom = -160.0
-text = "Asmodeus"
-label_settings = SubResource("LabelSettings_name")
-horizontal_alignment = 1

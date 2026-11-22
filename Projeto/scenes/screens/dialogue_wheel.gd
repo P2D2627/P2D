@@ -178,14 +178,14 @@ func _fit_text(label: Label, text: String) -> void:
 	label.text = text
 	var font: Font = label.get_theme_font(&"font")
 	var width: float = label.size.x
-	var size: int = max_font_size
-	while size > min_font_size:
+	var font_size: int = max_font_size
+	while font_size > min_font_size:
 		var lines: int = roundi(font.get_multiline_string_size(text, HORIZONTAL_ALIGNMENT_CENTER, width,
-				size, -1, TextServer.BREAK_MANDATORY | TextServer.BREAK_WORD_BOUND).y / font.get_height(size))
+				font_size, -1, TextServer.BREAK_MANDATORY | TextServer.BREAK_WORD_BOUND).y / font.get_height(font_size))
 		if lines <= max_text_lines:
 			break
-		size -= 1
-	label.add_theme_font_size_override(&"font_size", size)
+		font_size -= 1
+	label.add_theme_font_size_override(&"font_size", font_size)
 
 
 ## Whether the drawing part shows lit, as the wheel shows it now.

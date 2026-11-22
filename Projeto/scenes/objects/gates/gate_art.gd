@@ -8,14 +8,21 @@ extends Node2D
 ## slide is the one clock. A door (Slide Way up, Stays In Place) stays where it bars the passage while
 ## its gate's body slides into the rock, since the gate moves it back by as much as it slides, and
 ## plays its opening (it topples out) or its closing over the gate's Slide Time, so the door is gone
-## when the gate says the passage is free; its frame stays. It stays a child drawn in the gate's place
-## in the level, so it draws behind what comes after the gate, as the man, the demons and the rock. A
-## trapdoor (left or right) is the still door laid on its side, as long as the gate is wide, its top on
-## the gate's top, where the man stands, which slides with the body, with no frame; it is thicker than
-## the gate and hangs below it. The door keeps the drawing's shape: what stands above the gate's top
-## is hidden by the rock, which the level draws over the gate.
+## when the gate says the passage is free; its frame stays. Its back post is drawn in the gate's place in
+## the level, behind what comes after the gate, as the man, the demons and the rock. In the game, its door
+## and front pillar move under the level's Gate Fronts node (group gate_fronts), after the man and the
+## dogs and before the rock, and follow the art from there, so the man walks between the back post and
+## the pillar, behind the door as it topples out (#284); with no such node, as in a test's bare world,
+## they stay with the back post. A trapdoor (left or right) is the still door laid on its side, as long as
+## the gate is wide, its top on the gate's top, where the man stands, which slides with the body, with no
+## frame; it is thicker than the gate and hangs below it, and stays under the man. The door keeps the
+## drawing's shape: what stands above the gate's top is hidden by the rock, which the level draws over
+## the gate.
 
 const STILL_CELL: int = 0
+## The group of the node a level puts after its man and dogs and before its rock, for the doors and
+## front pillars.
+const FRONTS_GROUP: StringName = &"gate_fronts"
 
 ## The door's drawing: a horizontal sheet of Door Cells, the still door first, then the opening's
 ## cells and the closing's.
@@ -41,12 +48,25 @@ var _back: Sprite2D
 var _front: Sprite2D
 var _tween: Tween
 var _sideways: bool = false
+## Under the level's Gate Fronts, what holds the door and the front pillar in the art's place; null while
+## they are the art's own children.
+var _front_root: Node2D
 
 
 func _ready() -> void:
 	_back = _make_layer(frame_back, 1)
 	_door = _make_layer(door_sheet, door_cells)
 	_front = _make_layer(frame_front, 1)
+	if not Engine.is_editor_hint():
+		# After the gate builds it, so a trapdoor is known and stays.
+		_move_to_the_fronts.call_deferred()
+
+
+## The holder goes with the art when the art is freed, and only then: an art that leaves the tree and comes
+## back keeps its door and pillar.
+func _notification(what: int) -> void:
+	if what == NOTIFICATION_PREDELETE and is_instance_valid(_front_root):
+		_front_root.queue_free()
 
 
 ## Fits the art to a gate Size px big whose origin is the middle of its bottom edge, standing up as a
@@ -110,6 +130,38 @@ func get_door() -> Sprite2D:
 
 func get_frame_layers() -> Array[Sprite2D]:
 	return [_back, _front]
+
+
+## A standing door's door and front pillar go under the level's Gate Fronts, in a holder that a
+## Remote Transform of the art keeps in the art's place.
+func _move_to_the_fronts() -> void:
+	if _sideways or _front_root != null or not is_inside_tree():
+		return
+	var fronts: Node = _find_fronts()
+	if fronts == null:
+		return
+	_front_root = Node2D.new()
+	_front_root.name = "%sFront" % get_parent().name
+	fronts.add_child(_front_root)
+	for layer: Sprite2D in [_door, _front]:
+		layer.reparent(_front_root, false)
+	var follow := RemoteTransform2D.new()
+	add_child(follow)
+	follow.remote_path = follow.get_path_to(_front_root)
+	# The holder came in at the Gate Fronts' origin: it starts where the art is, with no smear from there.
+	_front_root.reset_physics_interpolation()
+
+
+## The art's own level's Gate Fronts: the first child in the group among the children of the art's
+## ancestors, nearest first, so with two levels in the tree each gate finds its own.
+func _find_fronts() -> Node:
+	var ancestor: Node = get_parent()
+	while ancestor != null:
+		for child: Node in ancestor.get_children():
+			if child.is_in_group(FRONTS_GROUP):
+				return child
+		ancestor = ancestor.get_parent()
+	return null
 
 
 func _make_layer(texture: Texture2D, cells: int) -> Sprite2D:

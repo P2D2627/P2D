@@ -9,6 +9,7 @@ extends Node2D
 ## play in their order among the cutscene's children.
 
 ## The camera got to the shot: what it shows can happen now.
+@warning_ignore("unused_signal")
 signal arrived
 
 ## Seconds the camera takes to get here from the shot before (or from the man, for the first).

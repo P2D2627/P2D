@@ -15,6 +15,7 @@ extends "res://tests/support/base_test.gd"
 const BED_PATH: String = "res://scenes/others/ambience/ambience_bed.tscn"
 const LUST_AMBIENCE_PATH: String = "res://scenes/levels/lust/lust_ambience.tscn"
 const AMBIENCE_BUS: StringName = &"Ambience"
+const BusRoute = preload("res://tests/support/bus_route.gd")
 ## The length of a frame with --fixed-fps 60, as in the command above.
 const FRAME_TIME: float = 1.0 / 60.0
 ## The silent sound the beds play, made in memory: its length, in seconds, and its sample rate.
@@ -245,12 +246,10 @@ func _the_hitstop_does_not_slow_the_bed() -> bool:
 			% (started * FRAME_TIME))
 
 
-## Whether a bus is Ambience or sends to it, so the Ambience option applies to what plays on it.
+## Whether a bus is Ambience or sends to it, directly or through other buses, so the Ambience
+## option applies to what plays on it.
 func _reaches_ambience(bus: StringName) -> bool:
-	if bus == AMBIENCE_BUS:
-		return true
-	var index: int = AudioServer.get_bus_index(bus)
-	return index != -1 and AudioServer.get_bus_send(index) == AMBIENCE_BUS
+	return BusRoute.reaches(bus, AMBIENCE_BUS)
 
 
 func _the_lust_beds_rarely_line_up() -> bool:

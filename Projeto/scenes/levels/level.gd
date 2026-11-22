@@ -10,8 +10,9 @@ extends Node2D
 ## over without what it knew; when the first upgrade costs it in GameState, the one in his hands
 ## goes at once.
 ## It also tells RunStats which phase the man is in, and where he died: the phase is First Phase, or
-## the highest Starts Phase among its save points already reached; the place is the smallest camera
-## zone around him, or, outside every zone, a cell of Death Cell Size. Each frame it adds to the
+## the highest Starts Phase among its save points already reached; the place is the camera zone the
+## level's GameCamera keeps to, the one he entered last and sees
+## (man_zone), or, outside every zone, a cell of Death Cell Size. Each frame it adds to the
 ## time of that phase, and of the zone he is in, so a line can say how long he has been trying to
 ## get past it; paused, the level does not run, so the pause does not count.
 ## Over the last Close Time of the wait, the screen fades to dark, all dark for the last frame, so
@@ -66,6 +67,8 @@ static var _restart_frame: int = -RESTART_FRAMES - 1
 var _restart_timer: Timer
 var _camera_zones: Array[CameraZone] = []
 var _camera_zones_found: bool = false
+var _camera: GameCamera
+var _camera_found: bool = false
 var _run_stats: GameRunStats
 var _iris: DeathIris
 var _iris_plan: DeathIrisPlan
@@ -100,7 +103,7 @@ func _ready() -> void:
 
 
 func _process(delta: float) -> void:
-	_run_stats.add_time(delta, zone_at(player.global_position))
+	_run_stats.add_time(delta, man_zone())
 	_show_the_iris(delta)
 
 
@@ -148,7 +151,20 @@ func get_run_id() -> StringName:
 	return StringName(name)
 
 
-## Where a death at point counts: the smallest camera zone of this level around it, or a cell.
+## The zone the man is in, for his deaths, his time and the offers that wait for him: the camera
+## zone the level's GameCamera keeps to, the one he entered last, so it is the zone he sees. With no
+## camera, outside every zone, or while a cutscene directs the camera (it does not follow him then,
+## so its zone is the one from before), zone_at() of his feet.
+func man_zone() -> StringName:
+	var camera: GameCamera = _get_camera()
+	if camera != null and not camera.is_directed():
+		var zone: CameraZone = camera.get_zone()
+		if zone != null:
+			return StringName(zone.name)
+	return zone_at(player.global_position)
+
+
+## The camera zone at point when no camera says it: the smallest of this level around it, or a cell.
 func zone_at(point: Vector2) -> StringName:
 	var best: CameraZone = null
 	for zone: CameraZone in _get_camera_zones():
@@ -160,6 +176,17 @@ func zone_at(point: Vector2) -> StringName:
 		return StringName(best.name)
 	var cell: Vector2i = Vector2i((point / death_cell_size).floor())
 	return StringName(CELL_FORMAT % [cell.x, cell.y])
+
+
+## This level's GameCamera, looked up once among its children; null if it has none.
+func _get_camera() -> GameCamera:
+	if not _camera_found:
+		_camera_found = true
+		for node: Node in find_children("*", "Camera2D", true, false):
+			if node is GameCamera:
+				_camera = node as GameCamera
+				break
+	return _camera if is_instance_valid(_camera) else null
 
 
 ## This level's camera zones, looked up once: in the game they never change.
@@ -258,7 +285,7 @@ func _on_upgrade_granted(_id: StringName, crucifix: Crucifix) -> void:
 
 
 func _on_player_died() -> void:
-	_run_stats.record_death(zone_at(player.global_position), player.global_position,
+	_run_stats.record_death(man_zone(), player.global_position,
 			player.get_death_cause(), player.get_death_source())
 	# Dying in a jump's fade, the death counts and the fade goes on: the restart is already coming.
 	if not _restart_timer.is_stopped() and _restart_timer.time_left <= _close_time():

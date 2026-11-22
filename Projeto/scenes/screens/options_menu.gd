@@ -46,6 +46,12 @@ const NO_CAP_TEXT: String = "No limit"
 ## What a switch's value says. Both read the same: a dimmer Off would read as disabled.
 const ON_TEXT: String = "On"
 const OFF_TEXT: String = "Off"
+## How a switch shows its word: between arrows, as a choice left or right switches.
+const SWITCH_TEXT: String = "‹ %s ›"
+## Every picture a CheckButton draws its toggle with, all hidden: the On or Off beside it says it.
+const SWITCH_ICONS: Array[StringName] = [&"checked", &"unchecked", &"checked_disabled",
+		&"unchecked_disabled", &"checked_mirrored", &"unchecked_mirrored",
+		&"checked_disabled_mirrored", &"unchecked_disabled_mirrored"]
 const SCREEN_SHAKE_TITLE: String = "Screen shake"
 ## How much one press of the left or right arrow moves the screen shake.
 const SCREEN_SHAKE_STEP: float = 0.1
@@ -109,6 +115,9 @@ var _dragging_vibration: bool = false
 var _titles: Array[Label] = []
 ## Each switch's value text, which says On or Off.
 var _switch_texts: Dictionary[CheckButton, Label] = {}
+## A picture of nothing, for the switches' toggle.
+var _no_icon: ImageTexture = ImageTexture.create_from_image(
+		Image.create_empty(1, 1, false, Image.FORMAT_RGBA8))
 ## What each control does, shown on the description line while it is selected.
 var _descriptions: Dictionary[Control, String] = {}
 ## Each tab and the page it shows, in the tabs' order.
@@ -436,15 +445,30 @@ func _add_switch_row(title_text: String, description: String, switch: CheckButto
 	_say_on_or_off(switch, value_text)
 
 
-## From now on, value_text says whether switch is on, as the player switches it.
+## From now on, value_text says whether switch is on, as the player switches it. The On or Off is
+## the switch's only look: its toggle picture is hidden, and the switch is as wide as a slider, so
+## the words line up with the other rows' values and a click where a slider would be switches it, as
+## A or Enter on the row does. The word sits between arrows, as a choice, and left or right on the
+## row switches it too.
 func _say_on_or_off(switch: CheckButton, value_text: Label) -> void:
+	for icon: StringName in SWITCH_ICONS:
+		switch.add_theme_icon_override(icon, _no_icon)
+	switch.custom_minimum_size.x = SLIDER_WIDTH
 	_switch_texts[switch] = value_text
 	switch.toggled.connect(_show_switch.bind(switch).unbind(1))
+	switch.gui_input.connect(_on_switch_input.bind(switch))
 
 
 func _show_switch(switch: CheckButton) -> void:
 	var value_text: Label = _switch_texts[switch]
-	value_text.text = ON_TEXT if switch.button_pressed else OFF_TEXT
+	value_text.text = SWITCH_TEXT % (ON_TEXT if switch.button_pressed else OFF_TEXT)
+
+
+## Left or right on a switch's row switches it, as on a choice between two words; the focus stays.
+func _on_switch_input(event: InputEvent, switch: CheckButton) -> void:
+	if event.is_action_pressed(&"ui_left") or event.is_action_pressed(&"ui_right"):
+		switch.button_pressed = not switch.button_pressed
+		switch.accept_event()
 
 
 ## A row of the accessibility grid: a title with title_text, then control and value_text; while

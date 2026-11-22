@@ -38,6 +38,9 @@ const HOME_KEPT_FRAMES: int = 2
 @export var stats: CameraStats
 ## The level's rock, for zones with Auto Zoom. Empty: the first colliding tile layer of the level.
 @export var level_tiles: TileMapLayer
+## How it frames the player from the start, as use_framing() takes it: its own way (Zones), or a CameraBrain
+## child's node name, as Fixed. The debug overlay's choice (F10) still goes over it.
+@export var start_framing: String = OWN_FRAMING_NAME
 
 ## The point the camera heads for.
 var _focus: Vector2 = Vector2.ZERO
@@ -126,6 +129,12 @@ func _ready() -> void:
 	global_position = _focus.clamp(centres.position, centres.end)
 	# Without the reset, physics interpolation would draw the jump to the start.
 	reset_physics_interpolation()
+	if start_framing == OWN_FRAMING_NAME:
+		return
+	if _brains.any(func(brain: CameraBrain) -> bool: return String(brain.name) == start_framing):
+		use_framing(start_framing, true)
+	else:
+		push_warning("GameCamera: no framing is named %s, so it frames the player its own way." % start_framing)
 
 
 ## The camera is the smoothed focus plus the lead, both kept inside the range the screen's centre may
@@ -303,6 +312,12 @@ func get_look_ahead() -> float:
 ## How far below the focus the camera looks, in px. For the tests and the debug overlay.
 func get_look_down() -> float:
 	return _lead.y
+
+
+## The zone it keeps to: of those the player is in, the one he entered last; null outside every
+## zone. The level counts his deaths and time in it, so they are where he sees them.
+func get_zone() -> CameraZone:
+	return _zone if _is_live(_zone) else null
 
 
 ## The zone the player is in, or "none". For the debug overlay.

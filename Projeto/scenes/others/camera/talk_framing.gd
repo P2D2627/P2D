@@ -150,6 +150,10 @@ func _physics_process(delta: float) -> void:
 func talk_began(balloon: DialogueBalloon, talker: Node) -> void:
 	if is_instance_valid(_balloon) or not _has_man():
 		return
+	# A talker that shows its own talks, as Asmodeus with Centres Camera, gets nothing from here.
+	if is_instance_valid(talker) and talker.has_method(&"frames_its_own_talks") \
+			and talker.call(&"frames_its_own_talks"):
+		return
 	_balloon = balloon
 	_talker = talker as Node2D
 	_bars_come_in()

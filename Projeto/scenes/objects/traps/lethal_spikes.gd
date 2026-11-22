@@ -21,6 +21,8 @@ const DEFAULT_MOTION: BrambleMotionStats = preload("res://scenes/objects/traps/b
 const TILE: float = 48.0
 ## What a death on spikes is put down to, in the run's numbers.
 const CAUSE: StringName = &"spikes"
+## The group every strip joins in the game, so who must keep off them can find them, as Asmodeus.
+const GROUP: StringName = &"lethal_spikes"
 ## Added to a strip's seed for its brambles' sway, so the sway's chance never changes their look.
 const SWAY_SEED: int = 7919
 ## The man's body, which he is stirred and dies by.
@@ -84,6 +86,10 @@ const MAN_BODY_PATH: NodePath = ^"CollisionShape2D"
 		queue_redraw()
 ## How the brambles move; one resource for every strip.
 @export var motion_stats: BrambleMotionStats = DEFAULT_MOTION
+## The Z Index a strip turned off the floor, onto a wall or a ceiling, takes when it starts: over the
+## rock and the stone rim (1 with the lighting's depth), so its brambles show off the face. An upright
+## strip keeps its own and grows from between the stones (#284).
+@export var turned_z_index: int = 2
 
 ## The brambles as the game draws them, with how each moves; built in _ready(), and empty in the
 ## editor, which draws them anew each time.
@@ -112,7 +118,11 @@ func _ready() -> void:
 	if Engine.is_editor_hint():
 		set_process(false)
 		return
+	# Only in the game: in the editor it would be saved into the level.
+	if is_turned():
+		z_index = turned_z_index
 	assert(motion_stats != null, "LethalSpikes: assign a bramble motion resource to Motion Stats.")
+	add_to_group(GROUP)
 	body_entered.connect(_on_body_entered)
 	body_exited.connect(_on_body_exited)
 	_set_up_motion()
@@ -149,6 +159,11 @@ func _draw() -> void:
 
 ## The brambles as the game draws them, each with its sway, its stir and how far its top is off now.
 ## Empty in the editor and before _ready().
+## Whether the strip is turned off the floor, onto a wall or a ceiling (a full turn is not).
+func is_turned() -> bool:
+	return not is_zero_approx(wrapf(rotation, -PI, PI))
+
+
 func get_drawn_brambles() -> Array[Bramble]:
 	return _brambles
 

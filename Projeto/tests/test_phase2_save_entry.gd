@@ -1,7 +1,7 @@
 # Checks the way into phase 2 of level 1, up the shaft from the corridor below: phase 2's save point is reached
 # however the man comes out of the shaft's mouth, and Asmodeus says phase 2's offer only once he stands. Out of
-# the mouth onto the floor's edge left of it, or standing on the ledge right of it, the save marks its event and
-# she talks; in the mouth, in the air, the save marks its event at once, she does not talk while he is in the
+# the mouth onto the floor's edge left of it, the save marks its event and she talks; on the ledge right of it,
+# with no room for her, the save marks its event and she waits until he stands on that floor; in the mouth, in the air, the save marks its event at once, she does not talk while he is in the
 # air, and talks once he stands. Put at the respawn, by the mouth, he is not in the save (as the cutscene test
 # puts him there).
 # Run from the repository root; the exit code is 0 on pass and 1 on fail:
@@ -27,7 +27,7 @@ func _initialize() -> void:
 	await process_frame
 	var results: Array[bool] = []
 	results.append(await _reached_standing(OVER_THE_LEFT_EDGE, "out of the mouth onto the left edge"))
-	results.append(await _reached_standing(ON_THE_LEDGE, "on the ledge right of the mouth"))
+	results.append(await _reached_on_the_ledge_she_waits_for_room())
 	results.append(await _reached_in_the_air_she_waits_for_the_floor())
 	results.append(await _not_reached_at_the_respawn())
 	finish(results)
@@ -50,6 +50,22 @@ func _reached_standing(feet: Vector2, where: String) -> bool:
 	var talked: bool = await wait_until(_talking.bind(level), TALK_FRAMES)
 	await _remove(level)
 	return report(reached and talked, "Standing %s: phase 2 reached %s, she talks %s" % [where, reached, talked])
+
+
+## The ledge right of the mouth is two tiles under a wall, with the mouth on its other side: no room for her
+## beside him (Asmodeus.can_appear_next_to), so she waits, and talks once he stands on the floor left of it.
+func _reached_on_the_ledge_she_waits_for_room() -> bool:
+	var level: Level = await _new_level()
+	_put(level, ON_THE_LEDGE)
+	await wait_frames(SEE_FRAMES)
+	var reached: bool = _progress().has_event(EVENT)
+	var talked_on_the_ledge: bool = await wait_until(_talking.bind(level), TALK_FRAMES)
+	_put(level, OVER_THE_LEFT_EDGE)
+	var talked_on_the_floor: bool = await wait_until(_talking.bind(level), TALK_FRAMES)
+	await _remove(level)
+	return report(reached and not talked_on_the_ledge and talked_on_the_floor,
+			"On the ledge right of the mouth: phase 2 reached %s, she talks there %s (no room), then on the floor left of it %s"
+			% [reached, talked_on_the_ledge, talked_on_the_floor])
 
 
 func _reached_in_the_air_she_waits_for_the_floor() -> bool:

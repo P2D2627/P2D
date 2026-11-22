@@ -3,6 +3,8 @@ extends Resource
 
 ## How the screen shakes after an impact (ShakeTrauma). How much trauma each impact adds is the
 ## impacts' own, in ImpactStats; this is how a given trauma looks.
+## The defaults below are the first ones. The game uses camera_shake_stats.tres, stronger since #284
+## (48 px at exponent 1.5), as the playtest of 22/11 barely felt these.
 
 ## The farthest the screen moves from where the camera puts it, to each side and up and down, at
 ## full trauma, in px on the screen. Small, so a shake next to a level's edge shows little past it.

@@ -32,8 +32,10 @@ static func spread(grid: PackedByteArray, grid_size: Vector2i, factor: int, cent
 	cost.resize(count)
 	var corner := center - Vector2i(radius, radius)
 	for py: int in size:
+		@warning_ignore("integer_division")
 		var tile_y: int = (corner.y + py) / factor
 		for px: int in size:
+			@warning_ignore("integer_division")
 			var tile_x: int = (corner.x + px) / factor
 			var solid: bool = tile_x < 0 or tile_y < 0 or tile_x >= grid_size.x or tile_y >= grid_size.y \
 					or grid[tile_y * grid_size.x + tile_x] == 1

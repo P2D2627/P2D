@@ -73,6 +73,7 @@ func _phase_2_then_deaths_then_the_shortcut_and_the_ending() -> Array[bool]:
 	_delete_save()
 	var main: Node = await _new_game(main_menu_entries())
 	var level: Level = level_in(main) as Level
+	(level.get_node(^"Asmodeus") as Asmodeus).centres_camera = true
 	var start: Vector2 = level.player.global_position
 	var phase_2_save: SavePoint = level.get_node(^"Phase2Save") as SavePoint
 	var dogs: Node = level.get_node(^"Dogs")
@@ -82,6 +83,7 @@ func _phase_2_then_deaths_then_the_shortcut_and_the_ending() -> Array[bool]:
 	var balloon: DialogueBalloon = await _talk(level, "asmodeus_offer")
 	var talked: bool = balloon != null
 	var dogs_still: bool = not dogs.can_process()
+	var centred: bool = await _camera_is_centred_on_the_two(level)
 	var refused: bool = await _answer(level, balloon, REFUSE)
 	# The end of her offer starts phase 2's camera cutscene, gate B locking, with the dogs moving.
 	var intro: CameraCutscene = level.get_node(^"Cutscenes/Phase2Intro") as CameraCutscene
@@ -91,10 +93,12 @@ func _phase_2_then_deaths_then_the_shortcut_and_the_ending() -> Array[bool]:
 	await physics_frame
 	var moves_again: bool = (level.player.get_speed_multiplier() == 1.0 and dogs.can_process()
 			and level_in(main) == level)
-	results.append(report(talked and dogs_still and refused and shown and dogs_in_it and moves_again,
-			("Phase 2: she talks %s, the dogs still %s; refused, the talk ends %s, the gate's cutscene "
-			+ "plays %s with the dogs moving %s, then he and the dogs move again in the same level %s")
-			% [talked, dogs_still, refused, shown, dogs_in_it, moves_again]))
+	results.append(report(talked and dogs_still and centred and refused and shown and dogs_in_it
+			and moves_again,
+			("Phase 2: she talks %s, the dogs still %s, the camera centred on the two %s; refused, the "
+			+ "talk ends %s, the gate's cutscene plays %s with the dogs moving %s, then he and the dogs "
+			+ "move again in the same level %s")
+			% [talked, dogs_still, centred, refused, shown, dogs_in_it, moves_again]))
 
 	# An offer for his deaths in phase 2's zone, made when he walks in.
 	var respawn: Vector2 = (phase_2_save.get_node(^"Respawn") as Node2D).global_position
@@ -311,6 +315,21 @@ func _two_zones_wait_and_each_is_made_where_it_waits() -> bool:
 			("Two zones: %s and %s both wait %s; in the second she asks about its deaths %s; refused "
 			+ "%s, the first still waits %s; there she asks about its own %s; refused %s, none waits %s")
 			% [first, second, both, at_second, refused, first_waits, at_first, refused_again, none])
+
+
+## Whether, once her glide is over, the level's camera is held by her and its middle is between her
+## and the man, Centre Height above their feet, whatever the zone would show.
+func _camera_is_centred_on_the_two(level: Level) -> bool:
+	var asmodeus: Asmodeus = level.get_node(^"Asmodeus") as Asmodeus
+	var camera: GameCamera = level.get_node(^"GameCamera") as GameCamera
+	await wait_frames(ceili(asmodeus.centre_time * 60.0) + 2)
+	var middle: Vector2 = ((asmodeus.global_position + level.player.global_position) / 2.0
+			- Vector2(0.0, asmodeus.centre_height))
+	var centred: bool = camera.is_directed() and camera.global_position.distance_to(middle) < 1.0
+	if not centred:
+		print("  camera at %s, directed %s; the middle of the two %s" % [camera.global_position,
+				camera.is_directed(), middle])
+	return centred
 
 
 ## Main Menu from the pause, then Continue, as the player would; the new level, on the floor.

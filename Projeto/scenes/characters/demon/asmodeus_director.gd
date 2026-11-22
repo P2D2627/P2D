@@ -7,8 +7,8 @@ extends Node
 ##   the floor first, so a save reached in the air, as coming up a shaft, never has her talk to a man
 ##   falling back down it.
 ## - When RunStats holds offers for his deaths, each waits at the zone it is for, and she talks from
-##   Death Cue as soon as he stands in one: at once if he comes back to life inside it, or as he
-##   walks in, before he tries it again. Several zones can wait at once, as one early on and one he
+##   Death Cue as soon as he stands in one, the zone the camera shows: at once if he comes back to
+##   life inside it, or as he walks in, before he tries it again. Several zones can wait at once, as one early on and one he
 ##   struggles in later; each is made where it waits. While none waits, nothing is checked.
 ## - At the level's Exit, she talks from each of Ending Cues in turn (the gift, then the stairs), and
 ##   only then does the exit lead on, with Done Event marked and Done Arrival as where a Continue
@@ -79,7 +79,8 @@ func _ready() -> void:
 		if not phase_cues.has(phase) or is_answered(phase_cues[phase]):
 			continue
 		if not save_point.is_reached():
-			save_point.reached.connect(_on_phase_reached.bind(phase_cues[phase]))
+			# Said once he stands on the floor, not in the air he may reach it in.
+			save_point.reached.connect(_queue_cue.bind(phase_cues[phase]))
 		elif phase > due_phase:
 			# Reached in the save, and left before the answer: it comes again.
 			due_phase = phase
@@ -92,8 +93,10 @@ func _ready() -> void:
 		exit.body_entered.connect(_on_exit_entered)
 
 
-## Only while a phase's cue is due or an offer for his deaths waits: once he stands on the floor,
-## or in any zone an offer waits at, she talks.
+## Only while a phase's cue is due or an offer for his deaths waits: once he stands on the floor
+## with room for her beside him on rock (Asmodeus.can_appear_next_to), she talks; for an offer, in
+## a zone it waits at, the zone the camera shows (Level.man_zone). On a platform, or with no room,
+## she waits for him to step on.
 func _physics_process(_delta: float) -> void:
 	if _due_cue.is_empty() and not _run_stats.has_death_offer():
 		return
@@ -102,25 +105,25 @@ func _physics_process(_delta: float) -> void:
 	var player: Player = level.player
 	if player.is_dead() or not player.is_on_floor():
 		return
+	var zone: StringName = &""
+	if _due_cue.is_empty():
+		zone = level.man_zone()
+		if not _run_stats.has_death_offer_at(zone):
+			return
+	if not asmodeus.can_appear_next_to(player.global_position):
+		return
 	if not _due_cue.is_empty():
 		var cue: String = _due_cue
 		_due_cue = ""
 		_say(cue)
 	else:
-		var zone: StringName = level.zone_at(player.global_position)
-		if _run_stats.has_death_offer_at(zone):
-			_run_stats.begin_death_offer(zone)
-			_say(death_cue)
+		_run_stats.begin_death_offer(zone)
+		_say(death_cue)
 
 
 ## Whether the offer of cue was answered, in GameState.
 func is_answered(cue: String) -> bool:
 	return _progress.has_event(StringName(ANSWERED_PREFIX + cue))
-
-
-## He reached the start of a phase: its cue is due, and she says it once he stands on the floor.
-func _on_phase_reached(cue: String) -> void:
-	_due_cue = cue
 
 
 ## She talks from cue: from Home with at_home and a Home set, otherwise next to the man.
@@ -130,6 +133,12 @@ func _say(cue: String, at_home: bool = false) -> void:
 	else:
 		asmodeus.appear_at(level.player.global_position)
 	asmodeus.talk(cue)
+
+
+## Cue is said on the first physics frame he stands on the floor; areas report him outside the
+## physics step, where she could neither land nor look for a floor.
+func _queue_cue(cue: String) -> void:
+	_due_cue = cue
 
 
 ## Back at Home, in sight, between talks.

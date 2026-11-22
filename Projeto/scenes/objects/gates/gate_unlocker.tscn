@@ -36,6 +36,7 @@ shape = SubResource("RectangleShape2D_use")
 [node name="UseKey" parent="." instance=ExtResource("2_key_prompt")]
 unique_name_in_owner = true
 visible = false
+z_index = 10
 position = Vector2(0, -290)
 action = &"interact"
 

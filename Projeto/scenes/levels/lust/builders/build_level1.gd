@@ -68,10 +68,16 @@ func _add_level_parts(root: Node2D, player: Player) -> void:
 	# dog's tail at a wall, also a dog raised as it warns, lunges or holds where the lighting puts the rock as high
 	# (#271); the man stays before the dogs, which move after him on each physics frame. The spikes come last before
 	# the rock, so they grow from between the stones as the man and the fires stand there (#284). Then the art, right
-	# after the rock: they walk behind the stones of the rim, and the rest stays in front.
+	# after the rock: they walk behind the stones of the rim, and the rest stays in front. Right after the dogs,
+	# the gates' doors and front pillars (GateArt), so the man walks between a gate's back post and its pillar.
 	var tiles: Node = root.get_node(^"Tiles")
 	root.move_child(player, tiles.get_index())
 	root.move_child(root.get_node(^"Dogs"), player.get_index() + 1)
+	var gate_fronts := Node2D.new()
+	gate_fronts.name = "GateFronts"
+	gate_fronts.add_to_group(GateArt.FRONTS_GROUP, true)
+	root.add_child(gate_fronts)
+	root.move_child(gate_fronts, root.get_node(^"Dogs").get_index() + 1)
 	root.move_child(root.get_node(^"Spikes"), tiles.get_index())
 	root.move_child(art, tiles.get_index() + 1)
 	var tutorial: Node2D = _tutorial(player)

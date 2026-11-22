@@ -15,7 +15,7 @@ extends Node2D
 ## blurred. Only the rock blocks his sight: Velvet does not. The dogs, the spikes and the fires show
 ## only while he sees them, by their SightReveal (#253).
 ## All: the level's fires on the floors past the start and in the background, with halos, sparks and
-## embers (off); dust in the air that only shows where it is lit, blown by the storm's wind in gusts;
+## embers (off); a gate statue's flame, once used, lights the cave as a fainter fire (mode A, #284); dust in the air that only shows where it is lit, blown by the storm's wind in gusts;
 ## the man's and the dogs' dust where they touch the floor or a wall (proto_contact_dust.gd); all the
 ## particles drawn behind the rock; glow. A stone slab (#263) over each run of one-way tiles, whose tile
 ## is then drawn clear, as is the collapsing platforms', which draw their own crumbling slab (#284).
@@ -123,6 +123,10 @@ const FIRE_COLOR := Color(1.0, 0.36, 0.78)
 const FIRE_ENERGY: float = 0.6
 const FIRE_RADIUS: float = 950.0
 const FIRE_LIGHT_HEIGHT: float = 50.0
+## A gate statue's flame, once it burns (#284): a fire's light at this share of a fire's energy and reach,
+## from this height over the statue's base, where the flame burns on it.
+const STATUE_LIGHT_SHARE: float = 0.5
+const STATUE_LIGHT_HEIGHT: float = 170.0
 ## Each fire's sound, heard as the man nears it, and the embers its crackles throw.
 const FIRE_SOUND: PackedScene = preload("res://scenes/others/ambience/fire_sound.tscn")
 ## Where those embers leave from: the middle Width share of the flame, between the shares of its
@@ -306,6 +310,8 @@ var _art: CanvasItem
 var _depth: Node2D
 var _foreground: Node2D
 var _fires: Array[Node2D] = []
+## The gate statues' lights, children of their statues: on while the statue burns, in mode A.
+var _statue_lights: Array[PointLight2D] = []
 var _parallax_fires: Array[Sprite2D] = []
 ## Seconds each frame of each background fire shows, by its index in Parallax Fires.
 var _parallax_frame_times: Array[float] = []
@@ -553,6 +559,7 @@ func _setup() -> void:
 	_set_light_masks()
 	_hide_marks()
 	_add_fires()
+	_add_statue_lights()
 	_add_platform_slabs()
 	if BACKGROUND_FIRES_ON:
 		_add_background_fires()
@@ -722,6 +729,39 @@ func _add_fires() -> void:
 	var densest: Vector2i = _densest_screen(spots, screen)
 	print("ProtoFires: %d fires, placed in %.0f ms; at most %d light one %d x %d screen, from fire %d"
 			% [spots.size(), placed_ms, densest.x, screen.x, screen.y, densest.y])
+
+
+## Each gate statue (GateUnlocker) lights the cave round it once its flame burns, as a fainter fire: the fires'
+## colour, falloff and layers, at Statue Light Share of a fire's energy and reach, from Statue Light Height.
+func _add_statue_lights() -> void:
+	var statues: Node = _level.get_node_or_null(^"GateUnlockers")
+	if statues == null:
+		return
+	var world_mask: int = MASK_WORLD | MASK_PARALLAX | MASK_MAN
+	for child: Node in statues.get_children():
+		var statue := child as GateUnlocker
+		if statue == null:
+			continue
+		for rock: bool in [false, true]:
+			var share: float = STATUE_LIGHT_SHARE * (ProtoFire.ROCK_LIGHT_SHARE if rock else 1.0)
+			var light := PointLight2D.new()
+			light.name = "StatueRockLight" if rock else "StatueLight"
+			light.texture = _falloff
+			light.texture_scale = FIRE_RADIUS * share / (float(_falloff.width) * 0.5)
+			light.color = FIRE_COLOR
+			light.energy = FIRE_ENERGY * share
+			light.range_item_cull_mask = MASK_ROCK if rock else world_mask
+			light.position = Vector2(0.0, -STATUE_LIGHT_HEIGHT)
+			light.enabled = mode == Mode.HYBRID and statue.is_activated()
+			statue.add_child(light)
+			_statue_lights.append(light)
+		statue.activated.connect(_on_statue_lit.bind(statue))
+
+
+func _on_statue_lit(statue: GateUnlocker) -> void:
+	for light: PointLight2D in _statue_lights:
+		if is_instance_valid(light) and light.get_parent() == statue:
+			light.enabled = mode == Mode.HYBRID
 
 
 ## The fire's sound (fire_sound.tscn), at its base: its embers leave from the flame's body and take
@@ -901,6 +941,7 @@ func _densest_screen(spots: Array[Vector2], screen: Vector2) -> Vector2i:
 ## The floor nearest to row Around in column X with Open Above open tiles over it, or No Floor.
 func _floor_near(x: int, around: int) -> int:
 	for k: int in FIRE_SCAN_HEIGHT * 2:
+		@warning_ignore("integer_division")
 		var y: int = around + (k + 1) / 2 * (1 if k % 2 == 1 else -1)
 		if _is_open_floor(Vector2i(x, y)):
 			return y
@@ -1021,6 +1062,7 @@ func _add_propagation() -> void:
 	_grid = built["grid"]
 	_grid_rect = built["rect"]
 	_grid_origin = _tiles.to_global(Vector2(_grid_rect.position * TILE))
+	@warning_ignore("integer_division")
 	var factor: int = TILE / FIRE_CELL
 	var cells: Vector2i = _grid_rect.size * factor
 	var bytes := PackedByteArray()
@@ -1089,6 +1131,7 @@ func _man_aura_cell() -> Vector2i:
 func _update_aura(cell: Vector2i) -> void:
 	var start: int = Time.get_ticks_usec()
 	var radius: int = int(man_radius / float(AURA_CELL))
+	@warning_ignore("integer_division")
 	var light: PackedFloat32Array = LightPropagation.spread(_grid, _grid_rect.size, TILE / AURA_CELL, cell,
 			radius, ROCK_COST, SPREAD_PASSES)
 	var size: int = radius * 2 + 1
@@ -1294,8 +1337,8 @@ func _add_vision() -> void:
 	_polygon_material = ShaderMaterial.new()
 	_polygon_material.shader = POLYGON_SHADER
 	_polygon_material.set_shader_parameter("mask", _vision_viewport.get_texture())
-	for material: ShaderMaterial in [_sdf_material, _polygon_material]:
-		material.set_shader_parameter("outside", VISION_OUTSIDE)
+	for shader_material: ShaderMaterial in [_sdf_material, _polygon_material]:
+		shader_material.set_shader_parameter("outside", VISION_OUTSIDE)
 	_vision_layer = CanvasLayer.new()
 	_vision_layer.layer = 2
 	_vision_cover = ColorRect.new()
@@ -1363,6 +1406,7 @@ func _find_corners() -> void:
 			var bottom_right: bool = _is_grid_solid(x, y)
 			var solid: int = int(top_left) + int(top_right) + int(bottom_left) + int(bottom_right)
 			if solid == 1 or solid == 3 or (solid == 2 and top_left == bottom_right):
+				@warning_ignore("integer_division")
 				var chunk := Vector2i(x / CHUNK_TILES, y / CHUNK_TILES)
 				if not _corner_chunks.has(chunk):
 					_corner_chunks[chunk] = PackedVector2Array()
@@ -1589,6 +1633,9 @@ func _apply() -> void:
 		_man_lights[k].texture_scale = man_radius * MAN_LIGHT_SHARES[k] / (float(_falloff.width) * 0.5)
 	for fire: Node2D in _fires:
 		(fire as ProtoFire).set_lights_enabled(hybrid)
+	for light: PointLight2D in _statue_lights:
+		if is_instance_valid(light):
+			light.enabled = hybrid and (light.get_parent() as GateUnlocker).is_activated()
 	_composite_layer.visible = propagation
 	_composite.set_shader_parameter("ambient", Vector3(dark.r, dark.g, dark.b))
 	_aura_cell = Vector2i(NO_FLOOR, NO_FLOOR)
@@ -1637,8 +1684,8 @@ func _apply() -> void:
 	var softness: float = SOFTNESS_STEPS[softness_step]
 	_sdf_material.set_shader_parameter("eye_radius", SDF_EYE_RADIUS * softness)
 	_polygon_material.set_shader_parameter("mask_blur_px", POLYGON_MASK_BLUR * softness)
-	for material: ShaderMaterial in [_sdf_material, _polygon_material]:
-		material.set_shader_parameter("unseen_blur_px", UNSEEN_BLUR_PX if unseen_blur_on else 0.0)
+	for shader_material: ShaderMaterial in [_sdf_material, _polygon_material]:
+		shader_material.set_shader_parameter("unseen_blur_px", UNSEEN_BLUR_PX if unseen_blur_on else 0.0)
 	if _shade != null:
 		_shade.visible = shade_on
 	_depth.visible = depth_on

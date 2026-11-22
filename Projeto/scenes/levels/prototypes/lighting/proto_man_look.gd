@@ -178,14 +178,14 @@ func _process(delta: float) -> void:
 	var fps: float = float(ProtoContactDust.INK_FPS)
 	if _squash_time >= 0.0:
 		_squash_time += delta
-		var position: float = _squash_time * fps
-		var step: int = floori(position)
+		var step_time: float = _squash_time * fps
+		var step: int = floori(step_time)
 		if step >= SQUASH_STEPS.size() - 1:
 			_squash_time = -1.0
 			_sprite.scale = _base_scale
 		else:
 			var share: float = (SQUASH_STEPS[step] if _ink
-					else lerpf(SQUASH_STEPS[step], SQUASH_STEPS[step + 1], position - float(step)))
+					else lerpf(SQUASH_STEPS[step], SQUASH_STEPS[step + 1], step_time - float(step)))
 			var amount: float = _squash * share
 			_sprite.scale = _base_scale * Vector2(1.0 + amount, 1.0 - amount)
 	if _trail_on:
@@ -310,6 +310,6 @@ func _make_soft_dot(color: Color) -> GradientTexture2D:
 
 
 func _unshaded() -> CanvasItemMaterial:
-	var material := CanvasItemMaterial.new()
-	material.light_mode = CanvasItemMaterial.LIGHT_MODE_UNSHADED
-	return material
+	var unshaded := CanvasItemMaterial.new()
+	unshaded.light_mode = CanvasItemMaterial.LIGHT_MODE_UNSHADED
+	return unshaded

@@ -37,12 +37,73 @@ func _initialize() -> void:
 	results.append(await _connecting_a_pad_switches_and_disconnecting_it_goes_back())
 	results.append(await _the_pad_used_last_is_the_one_whose_going_counts())
 	results.append(_the_project_ignores_pads_while_unfocused())
+	results.append(_a_pad_s_family_comes_from_its_name_or_the_option())
+	results.append(_every_part_of_every_family_has_its_picture())
 	quit(1 if results.has(false) else 0)
 
 
 func _report(passed: bool, what: String) -> bool:
 	print("%s: %s" % ["PASS" if passed else "FAIL", what])
 	return passed
+
+
+## Pads are told apart by their names: "xbox" first, as an Xbox Wireless Controller also has Sony's
+## own name for a DualShock 4 in it; an unknown name is Xbox. With no pad, on Automatic, the family
+## is Xbox; the Gamepad buttons option overrides it. Jump's button, the bottom one, is named Cross on
+## a PlayStation pad, B on a Switch pad, where the letters go the other way, and A on the others.
+func _a_pad_s_family_comes_from_its_name_or_the_option() -> bool:
+	var expected: Dictionary[String, GameLastDevice.PadFamily] = {
+		"PS4 Controller": GameLastDevice.PadFamily.PLAYSTATION,
+		"PS5 Controller": GameLastDevice.PadFamily.PLAYSTATION,
+		"Wireless Controller": GameLastDevice.PadFamily.PLAYSTATION,
+		"Xbox Wireless Controller": GameLastDevice.PadFamily.XBOX,
+		"XInput Controller": GameLastDevice.PadFamily.XBOX,
+		"Nintendo Switch Pro Controller": GameLastDevice.PadFamily.NINTENDO,
+		"Steam Deck": GameLastDevice.PadFamily.STEAM_DECK,
+		"Generic USB Joystick": GameLastDevice.PadFamily.XBOX,
+		"": GameLastDevice.PadFamily.XBOX,
+	}
+	var wrong: Array[String] = []
+	for pad_name: String in expected:
+		var family: GameLastDevice.PadFamily = GameLastDevice.family_of_name(pad_name)
+		if family != expected[pad_name]:
+			wrong.append("%s as %s" % [pad_name, GameLastDevice.PadFamily.find_key(family)])
+	var last: GameLastDevice = _last_device()
+	var settings: GameSettings = root.get_node(^"Settings") as GameSettings
+	var auto: GameLastDevice.PadFamily = last.get_pad_family()
+	settings.set_pad_buttons(GameSettings.PAD_BUTTONS_NINTENDO)
+	var forced: GameLastDevice.PadFamily = last.get_pad_family()
+	settings.set_pad_buttons(GameSettings.PAD_BUTTONS_AUTO)
+	var jump: Array[String] = []
+	for family: GameLastDevice.PadFamily in GameLastDevice.PadFamily.values():
+		jump.append(PromptGlyph.pad_text(&"jump", family))
+	return _report(wrong.is_empty() and auto == GameLastDevice.PadFamily.XBOX
+			and forced == GameLastDevice.PadFamily.NINTENDO and jump == ["A", "Cross", "B", "A"],
+			("Pad names read wrong %s; with no pad on Automatic %s, on Nintendo Switch %s; Jump named %s "
+			+ "on Xbox, PlayStation, Switch and Steam Deck pads (expected [A, Cross, B, A])")
+			% [wrong, GameLastDevice.PadFamily.find_key(auto),
+			GameLastDevice.PadFamily.find_key(forced), jump])
+
+
+## Every button, stick way and trigger PromptGlyph names has its picture in Kenney's pack, on every
+## family, but a PlayStation pad's PS button, which the pack does not draw.
+func _every_part_of_every_family_has_its_picture() -> bool:
+	var parts: Array[String] = []
+	parts.append_array(PromptGlyph.BUTTON_PARTS.values())
+	for ways: Array in PromptGlyph.AXIS_PARTS.values():
+		for way: String in ways:
+			if way not in parts:
+				parts.append(way)
+	var missing: Array[String] = []
+	for family: GameLastDevice.PadFamily in GameLastDevice.PadFamily.values():
+		for part: String in parts:
+			var looks: Array = PromptGlyph._looks_of(part, family)
+			var path: String = (PromptGlyph.ICON_PATH % [PromptGlyph.FAMILY_FOLDERS[family], looks[1]]
+					if not looks.is_empty() and not (looks[1] as String).is_empty() else "")
+			if path.is_empty() or not ResourceLoader.exists(path):
+				missing.append("%s %s" % [GameLastDevice.PadFamily.find_key(family), part])
+	return _report(missing == ["PLAYSTATION guide"],
+			"Parts without a picture %s (expected only [PLAYSTATION guide])" % [missing])
 
 
 func _last_device() -> GameLastDevice:
