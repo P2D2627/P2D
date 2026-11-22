@@ -1,6 +1,10 @@
 [gd_scene format=3]
 
 [ext_resource type="Script" path="res://scenes/objects/gates/gate.gd" id="1_script"]
+[ext_resource type="Script" path="res://scenes/objects/gates/gate_art.gd" id="2_art"]
+[ext_resource type="Texture2D" path="res://assets/sprites/gates/gate_door_sheet.png" id="3_door"]
+[ext_resource type="Texture2D" path="res://assets/sprites/gates/gate_frame_back.png" id="4_back"]
+[ext_resource type="Texture2D" path="res://assets/sprites/gates/gate_frame_front.png" id="5_front"]
 
 [sub_resource type="RectangleShape2D" id="RectangleShape2D_gate"]
 resource_local_to_scene = true
@@ -16,3 +20,10 @@ script = ExtResource("1_script")
 unique_name_in_owner = true
 position = Vector2(0, -96)
 shape = SubResource("RectangleShape2D_gate")
+
+[node name="Art" type="Node2D" parent="."]
+unique_name_in_owner = true
+script = ExtResource("2_art")
+door_sheet = ExtResource("3_door")
+frame_back = ExtResource("4_back")
+frame_front = ExtResource("5_front")

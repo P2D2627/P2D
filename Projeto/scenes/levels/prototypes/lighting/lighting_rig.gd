@@ -17,8 +17,8 @@ extends Node2D
 ## All: the level's fires on the floors past the start and in the background, with halos, sparks and
 ## embers (off); dust in the air that only shows where it is lit, blown by the storm's wind in gusts;
 ## the man's and the dogs' dust where they touch the floor or a wall (proto_contact_dust.gd); all the
-## particles drawn behind the rock; glow. A stone slab (#263) over each run of one-way tiles and each
-## collapsing platform, whose own tile is then drawn clear.
+## particles drawn behind the rock; glow. A stone slab (#263) over each run of one-way tiles, whose tile
+## is then drawn clear, as is the collapsing platforms', which draw their own crumbling slab (#284).
 ## Depth (#261): a copy of the rock, nudged out of each face (proto_depth.gd), is drawn behind the
 ## man, the dogs, the spikes, the fires and the backdrop's near rocks, and the rock itself in front
 ## of them. Copies of some of the backdrop's near rocks, dark and out of focus, frame the screen from
@@ -267,17 +267,19 @@ static var shade_on: bool = true
 static var vision: int = VISION_OFF
 static var unseen_blur_on: bool = false
 static var softness_step: int = 1
-static var ambient: float = 0.3
+static var ambient: float = 0.35
 static var man_radius: float = 900.0
 static var depth_on: bool = true
 ## Off by default: not worth it for now (16/11); the code stays, Ctrl+F12 turns them on.
 static var foreground_on: bool = false
-static var grade_on: bool = true
+## Off by default since 22/11; the code stays, Ctrl+F1 turns it on.
+static var grade_on: bool = false
 static var fire_ramp_on: bool = true
 static var fog_on: bool = true
 static var rim_on: bool = true
 static var scene_light_on: bool = true
-static var outline_on: bool = true
+## Off by default since 22/11; the code stays, Ctrl+F6 turns it on.
+static var outline_on: bool = false
 ## Off by default: the stone rim in front of the floor hides his feet and the shadow with them
 ## (seen in recorded frames, 16/11); it stays for floors without a rim.
 static var shadow_on: bool = false
@@ -795,16 +797,8 @@ func _add_platform_slabs() -> void:
 		var platform := node as CollapsingPlatform
 		if platform == null:
 			continue
-		# Beside its tiles, not under them: they blink, unseen now, while the slab fades out over the
-		# platform's Collapse Time, gone as it goes, and shows again as it comes back.
-		var layer := platform.get_node("%Tiles") as TileMapLayer
-		var slabs := Node2D.new()
-		slabs.position = layer.position
-		platform.add_child(slabs)
-		var column: int = _tiles.local_to_map(_tiles.to_local(layer.global_position)).x
-		_add_slabs(slabs, slab, Vector2.ZERO, platform.width_tiles, column)
-		platform.collapsing.connect(_fade_out.bind(slabs, platform.collapse_time))
-		platform.came_back.connect(func() -> void: slabs.modulate.a = 1.0)
+		# Its own art draws it; lit as the rock is, while its tiles blink unseen.
+		_set_mask_deep(platform.get_node("%Art"), MASK_ROCK)
 		platforms += 1
 	_clear_one_way_tile()
 	print("ProtoSlabs: %d runs of one-way tiles, %d collapsing platforms" % [runs.size(), platforms])
@@ -827,10 +821,6 @@ func _add_slabs(parent: Node2D, slab: Texture2D, corner: Vector2, width_tiles: i
 		sprite.position = corner + Vector2(k * width, -SLAB_TOP_IN_ART * height)
 		sprite.light_mask = MASK_ROCK
 		parent.add_child(sprite)
-
-
-func _fade_out(item: CanvasItem, seconds: float) -> void:
-	item.create_tween().tween_property(item, "modulate:a", 0.0, seconds)
 
 
 ## The one-way tile drawn clear, so only the slab shows: a change to the level's TileSet in memory,

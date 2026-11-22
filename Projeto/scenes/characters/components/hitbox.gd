@@ -28,6 +28,8 @@ signal hold_ended(hurtbox: Hurtbox)
 ## lands on; and whether it pierces a Hurtbox's invulnerability, landing through one started as
 ## pierceable, as the man's after a hit (ADR 0055).
 var damage: float = 0.0
+## Whether it kills what it lands on at once, as the biggest dog's bites do (#284).
+var kills: bool = false
 var knockback_distance: float = 0.0
 var knockback_height: float = 0.0
 var pierces_invulnerability: bool = false

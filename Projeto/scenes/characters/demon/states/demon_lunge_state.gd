@@ -8,10 +8,14 @@ extends DemonState
 
 ## Physics frames the demon has stood on the floor since it landed.
 var _frames: int = 0
+## True for a leap at a man on another floor (Demon.leap, #284): its arc is the demon's jump, so the
+## world's jump gravity pulls it down rather than the lunge's. Off again on every lunge.
+var leaping: bool = false
 
 
 func enter() -> void:
 	_frames = 0
+	leaping = false
 
 
 func physics_update(delta: float) -> void:
@@ -24,6 +28,8 @@ func physics_update(delta: float) -> void:
 
 
 func get_gravity() -> Vector2:
+	if leaping:
+		return Vector2.DOWN * _demon.stats.get_jump_gravity()
 	return Vector2.DOWN * _demon.get_attack().get_lunge_gravity()
 
 

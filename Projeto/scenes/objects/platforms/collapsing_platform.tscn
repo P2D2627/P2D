@@ -2,6 +2,8 @@
 
 [ext_resource type="Script" path="res://scenes/objects/platforms/collapsing_platform.gd" id="1_script"]
 [ext_resource type="TileSet" path="res://scenes/others/tilesets/cave_placeholder_tiles.tres" id="2_tiles"]
+[ext_resource type="Script" path="res://scenes/objects/platforms/collapsing_platform_art.gd" id="3_art"]
+[ext_resource type="Texture2D" path="res://assets/sprites/environment/collapsing_slab_sheet.png" id="4_sheet"]
 
 [sub_resource type="RectangleShape2D" id="RectangleShape2D_rider"]
 resource_local_to_scene = true
@@ -13,6 +15,11 @@ script = ExtResource("1_script")
 [node name="Tiles" type="TileMapLayer" parent="."]
 unique_name_in_owner = true
 tile_set = ExtResource("2_tiles")
+
+[node name="Art" type="Node2D" parent="."]
+unique_name_in_owner = true
+script = ExtResource("3_art")
+sheet = ExtResource("4_sheet")
 
 [node name="RiderSensor" type="Area2D" parent="."]
 unique_name_in_owner = true

@@ -1,7 +1,7 @@
 # Checks the gate and its unlocker. A shut gate stops the man. Far from the unlocker, its key does not show
 # and Interact opens nothing; next to it, the key shows, and the crucifix raised there opens nothing, since the
 # unlocker no longer answers it. Interact next to it opens every gate on its list, once, hides the key and
-# leaves the unlocker where it was and darker. The gate slides up by its own height in Slide Time, says so at
+# leaves the unlocker where it was, its statue lit. The gate slides up by its own height in Slide Time, says so at
 # the start and at the end, and the man then walks through. The size sets each instance alone, and the gate is
 # on the world's layer, so demons stop at it and do not see through it. A trapdoor (Slide Way left or right)
 # slides sideways by its width instead, and keeps its height. A gate put out of the way at once (open_now)
@@ -121,7 +121,8 @@ func _next_to_it_it_opens_every_gate_and_the_man_walks_through(gate: Gate, other
 	gate.unlocked.connect(func() -> void: unlocks[0] += 1)
 	gate.opened.connect(func() -> void: opened_frame[0] = Engine.get_physics_frames())
 	var closed_y: float = gate.position.y
-	var idle: Color = unlocker.idle_color
+	var statue: Sprite2D = unlocker.get_node(^"%Statue") as Sprite2D
+	var unlit_before: bool = statue.frame == GateUnlocker.UNLIT_CELL
 	var at: Vector2 = unlocker.position
 	var stand_in: StandInInput = put_a_stand_in(player)
 	await wait_frames(PRESS_FRAMES)
@@ -131,8 +132,7 @@ func _next_to_it_it_opens_every_gate_and_the_man_walks_through(gate: Gate, other
 	var used: bool = await wait_until(unlocker.is_activated, PRESS_FRAMES)
 	Input.action_release(&"interact")
 	var key_gone: bool = not _key(unlocker).visible
-	var drawing: Polygon2D = unlocker.get_node(^"%Drawing") as Polygon2D
-	var darker: bool = drawing.color.v < idle.v
+	var lit: bool = unlit_before and statue.frame >= GateUnlocker.FIRST_FLAME_CELL
 	await wait_until(func() -> bool: return opened_frame[0] >= 0, RUN_FRAMES)
 	var slide_frames: int = opened_frame[0] - start_frame
 	var expected_frames: int = roundi(gate.slide_time * Engine.physics_ticks_per_second)
@@ -141,11 +141,11 @@ func _next_to_it_it_opens_every_gate_and_the_man_walks_through(gate: Gate, other
 	var through: bool = await wait_until(func() -> bool: return player.position.x > GATE_X + gate.width_tiles * TILE, RUN_FRAMES)
 	await remove_player(player)
 	var ok_slide: bool = absi(slide_frames - expected_frames) <= SLIDE_TOLERANCE_FRAMES + 1
-	return report(key_shows and used and key_gone and darker and activations[0] == 1 and unlocks[0] == 1
+	return report(key_shows and used and key_gone and lit and activations[0] == 1 and unlocks[0] == 1
 			and other_gate.is_unlocked() and is_equal_approx(risen, gate.height_tiles * TILE) and ok_slide and through
 			and unlocker.position == at,
-			"Near: key shows %s, used with Interact %s, key gone %s, darker %s, %d activation(s), %d unlock(s), other gate %s, rose %.1f px, slid in %d frames (%d expected), walked through %s"
-			% [key_shows, used, key_gone, darker, activations[0], unlocks[0], other_gate.is_unlocked(), risen, slide_frames,
+			"Near: key shows %s, used with Interact %s, key gone %s, statue lit %s, %d activation(s), %d unlock(s), other gate %s, rose %.1f px, slid in %d frames (%d expected), walked through %s"
+			% [key_shows, used, key_gone, lit, activations[0], unlocks[0], other_gate.is_unlocked(), risen, slide_frames,
 			expected_frames, through])
 
 

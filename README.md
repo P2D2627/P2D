@@ -375,7 +375,8 @@ Em grupo, cada demónio decide sozinho, mas o conjunto lê-se como uma matilha:
   seu vaivém (Attacks Invulnerable Man, ADR 0055). Sem esse valor, como nos outros demónios,
   nenhum ataca enquanto ela pisca;
 - mordem quem lhes está em cima. A personagem que aterra num cão, mesmo só na ponta das costas,
-  leva logo a mordida dele (10 SP) e um pequeno salto no sítio, 24 px para cima, e leva outra a
+  leva logo a mordida dele (10 SP) e um pequeno salto no sítio, 48 px para cima (24 px até à #284,
+  pouco para se sentir), e leva outra a
   cada 0,4 s enquanto lá ficar, deste cão ou de outro (Back Bite Interval, #271). Nada a empurra
   para fora: tem de sair a andar ou a saltar. Se ficar, o SP baixa e a mordida agarra-a como
   qualquer pancada, e ela cai através do cão até ao chão, onde se afunda, nunca em cima dele. Em
@@ -493,7 +494,8 @@ Para quem não consegue premir depressa, a opção Hold to escape (ecrã Options
 vibration) troca os toques por manter o salto premido: 1,2 s com um demónio, mais 0,9 s com o
 segundo, o que cabe nos 3 s do agarrão. Só conta a partir de um toque dado já durante o agarrão,
 para que um salto que vinha premido de antes não solte a personagem sozinho, e o texto passa de
-"Press Jump!" a "Hold Jump!". Largar o salto esvazia a barra como parar de premir: ao fim de 0,25 s,
+"Press Jump!" a "Hold Jump!". O texto desenha-se por cima da rocha (z 10), embora a
+personagem fique atrás dela, para se ver sempre (#284, `test_grab_prompt_over_rock.gd`). Largar o salto esvazia a barra como parar de premir: ao fim de 0,25 s,
 metade da barra por segundo. Com a opção ligada, os toques deixam de contar; aceitar as duas formas
 faria da opção um atalho para todos, porque cada toque somaria também o tempo premido. A opção vem
 desligada, porque os toques são o agarrão tal como foi desenhado, e guarda-se com as outras. O
@@ -509,11 +511,11 @@ são silvas.
 
 | Elemento | Cena | Comportamento | Medida |
 |---|---|---|---|
-| Portão | `scenes/objects/gates/gate.tscn` | barra uma passagem à personagem, aos demónios e à visão destes; desbloqueado, sobe a sua própria altura, por trás da rocha; com Slide Way em Left ou Right, é um alçapão e desliza para esse lado a sua própria largura; pode também ser posto aberto de imediato e trancado outra vez, deslizando de volta ao seu lugar, para uma cena de câmara o mostrar a fechar | desliza em 0,8 s (48 passos de física), para abrir e para fechar |
-| Desbloqueador | `scenes/objects/gates/gate_unlocker.tscn` | ativa-se uma vez, com a ação de interagir (E, ou X no comando) ao pé dele, e abre os portões da lista Gates; enquanto a personagem está perto e ele ainda não foi usado, mostra por cima a tecla e a palavra "Unlock", como a Velvet mostra "Talk"; o crucifixo já não o abre; com uma cena de câmara (Cutscene), a câmara vai primeiro ao portão e este só abre quando ela lá chega | área de uso de 400 × 192 px, 200 px para cada lado, o alcance que tinha o crucifixo |
+| Portão | `scenes/objects/gates/gate.tscn` | barra uma passagem à personagem, aos demónios e à visão destes; desbloqueado, sobe a sua própria altura, por trás da rocha; com Slide Way em Left ou Right, é um alçapão e desliza para esse lado a sua própria largura; pode também ser posto aberto de imediato e trancado outra vez, deslizando de volta ao seu lugar, para uma cena de câmara o mostrar a fechar; desenha-se como uma porta de blocos de pedra num caixilho, com um poste atrás e um pilar à frente (`GateArt`, #284): ao abrir, a arte fica no seu lugar e a porta tomba durante o deslize, enquanto o corpo sobe por trás da rocha, e desaparece quando o portão dá a passagem por livre; ao fechar, volta a erguer-se; num alçapão, a porta aparece deitada, com o topo onde a personagem pisa, e desliza com ele, sem caixilho; a arte desenha-se atrás da personagem, dos cães e da rocha, como o portão | desliza em 0,8 s (48 passos de física), para abrir e para fechar; a porta tomba em 10 imagens e volta em 9, repartidas por esses 0,8 s; tem a largura do portão (96 px com 2 tiles), à mesma escala nos dois eixos, e o que passa do topo fica escondido pela rocha |
+| Desbloqueador | `scenes/objects/gates/gate_unlocker.tscn` | ativa-se uma vez, com a ação de interagir (E, ou X no comando) ao pé dele, e abre os portões da lista Gates; enquanto a personagem está perto e ele ainda não foi usado, mostra por cima a tecla e a palavra "Unlock", como a Velvet mostra "Talk"; o crucifixo já não o abre; com uma cena de câmara (Cutscene), a câmara vai primeiro ao portão e este só abre quando ela lá chega; desenha-se como uma estátua de demónio, apagada até ser usada e com uma chama acesa depois (#284), para que usado e por usar se distingam pela forma e pela luz, e não só pela cor | área de uso de 400 × 192 px, 200 px para cada lado, o alcance que tinha o crucifixo; a chama tem 9 imagens de 0,11 s (Flame Frame Time); a estátua, a 0,6 da escala do desenho, tem cerca de 215 px de altura com a chama |
 | Anel de proximidade | `scenes/objects/gates/proximity_unlocker.tscn` | ativa-se uma vez, na primeira vez que a personagem entra no círculo, sem crucifixo, e abre os portões da lista Gates | alcance (Reach) de 288 px por omissão |
 | Picos letais | `scenes/objects/traps/lethal_spikes.tscn` | um toque mata a personagem de imediato, com qualquer valor de SP, e as silvas puxam-na para dentro (por baixo da tabela). Com Catches ligado (desligado por defeito, ADR 0067), prendem-na em vez disso: corre a 10 % da velocidade, não salta, afunda e perde 150 SP por segundo, e morre se o SP acabar lá dentro (valores no nó `Snag` do `player.tscn`, `test_snag.gd`); os demónios passam por cima sem efeito; desenham-se como silvas, um arbusto e meio por tile, em média (Brambles Per Tile; com um só, a sebe ficava rala), para formarem uma sebe contínua, com a altura e o espelho escolhidos ao acaso a partir da posição da faixa, que fica sempre igual; sem arte (Art), voltam aos dentes | parte que mata com 24 px de altura e 4 px de folga em cada ponta, para um salto que passe à vista passar mesmo; cada arbusto com 40 px de altura, mais ou menos 10 %, que cobre a parte que mata de ponta a ponta (`test_lethal_spikes_art.gd`) |
-| Plataforma que desaba | `scenes/objects/platforms/collapsing_platform.tscn` | usa o mesmo tile das plataformas de sentido único; pousar nela faz com que pisque e desapareça; saltar através dela, de baixo, não a ativa; volta ao fim de Come Back Time, com 0 fica desaparecida até o nível recomeçar | desaparece em 0,6 s (36 passos) e volta ao fim de 3 s |
+| Plataforma que desaba | `scenes/objects/platforms/collapsing_platform.tscn` | usa o mesmo tile das plataformas de sentido único; pousar nela faz com que estale e desapareça; saltar através dela, de baixo, não a ativa; volta ao fim de Come Back Time, com 0 fica desaparecida até o nível recomeçar; desenha-se como uma laje fina, mais fina do que a das plataformas que aguentam (`CollapsingPlatformArt`, #284), que racha enquanto aguenta e se parte quando desaparece; os tiles continuam a piscar por baixo, invisíveis no nível iluminado | desaparece em 0,6 s (36 passos) e volta ao fim de 3 s; racha em 5 imagens repartidas pelos 0,6 s, parte-se em 2 de 0,11 s e esbate-se em 0,2 s; volta inteira em 0,25 s; acima de 4 tiles leva uma laje por cada 4, a segunda espelhada |
 
 A largura e a altura destes elementos definem-se em tiles, no Inspector. A morte imediata é o método
 `die()` da personagem, que a imobiliza e fecha a sua caixa de dano, enquanto o nível recomeça.
@@ -616,6 +618,31 @@ normal em algo além destas distâncias, da perseguição sem fim, do salto e da
 distâncias deixarem de ser as do cão medidas a partir da cara, a visão incluída; falha também se não
 notar, morder ou perseguir a personagem como descrito, se as costas dele não morderem ou se a atacar
 escondida atrás de uma parede.
+
+Desde a #284, a pedido do grupo depois do playtest, em que se lia como fraco, o cão maior é a ameaça
+final da perseguição, de que a personagem só pode fugir:
+
+- As mordidas dele matam de um golpe, com qualquer valor de SP (Kills, no ataque). É a única
+  exceção à regra de que um demónio agarra em vez de matar (ADR 0021). Avisa 0,35 s antes, em vez
+  de 0,1 s, para que o golpe se possa ler.
+- Persegue a 550 px/s em vez de 510. Com a variação da matilha fica entre 506 e 594 px/s, sempre
+  abaixo dos 600 px/s da personagem, para que a fuga continue possível.
+- O crucifixo não o afeta (Ignores Crucifix): o Repellable dele não fica em nenhuma camada, e por
+  isso o crucifixo nem o empurra nem conta um toque nele.
+- Com a personagem noutra plataforma, até à altura do salto dele (240 px) e a menos de 390 px, salta
+  para ela (Leaps To Other Floors, no ataque de salto), num arco do seu salto que passa pelos pés
+  dela. Mira onde ela está quando começa o aviso, e quem sair dali escapa: nos testes, a
+  personagem parada que começa a correr quando o aviso começa, ou que dá 220 px pela plataforma,
+  já não está onde ele aterra. Se nenhum arco chegar a ela quando o aviso começa, o aviso acaba
+  sem ataque. Prefere o arco mais baixo que não passe da velocidade de perseguição, depois o mais
+  alto; só se nenhum chegar vai mais depressa, até à velocidade do seu salto em frente. Antes
+  ficava a ladrar por baixo dela (o refúgio da #271).
+- A mordida nas costas continua a não matar, para que saltar-lhe por cima continue a ser um caminho
+  (ADR 0073).
+
+O `test_biggest_dog_threat.gd` joga estes casos: a mordida mata (a de um cão normal não), o
+crucifixo não lhe chega, salta para a personagem numa plataforma 192 px acima, e falha quem saiu
+durante o aviso.
 
 ### Linha de vista
 
@@ -2833,6 +2860,10 @@ chegam ao protótipo mesmo com uma fala no ecrã, porque o overlay as recebe ant
 protótipo deixou de escrever texto próprio no ecrã. Num nível sem o protótipo, a página da luz diz
 que não há iluminação para afinar. Teste: `test_lighting_debug_page.gd`, com o protótipo verdadeiro.
 
+Desde a #284, o valor da escuridão (F5/F6) parte de 0,35 (era 0,30), e a gradação de cor (Ctrl+F1)
+e o contorno (Ctrl+F6) partem desligados; o código fica, e as teclas voltam a ligá-los. O
+`test_level1_lit.gd` verifica estes valores por omissão.
+
 A tecla F4 retira à personagem o valor Debug Damage do overlay (10 SP, no Inspector), como um golpe,
 para experimentar a regeneração e os avisos antes de haver demónios. Cada toque conta uma vez,
 mesmo com a tecla premida, não atua com o jogo em pausa e funciona com o texto escondido. O overlay
@@ -4498,7 +4529,14 @@ disponível começam no seu ponto. Se a sincronia está certa confirma-se a joga
   iluminação (#257; os três últimos desde a #263).
 - `bramble.png`, em `Projeto/assets/sprites/traps/`, e `platform_slab.png`, em
   `Projeto/assets/sprites/environment/`: a silva dos picos letais e a laje das plataformas,
-  desenhadas por von Hafe, do grupo, recortadas e reduzidas dos PNG originais (#263).
+  desenhadas por von Hafe, do grupo, recortadas e reduzidas dos PNG originais (#263). A silva foi
+  substituída na #284 pela versão nova, desenhada pelo grupo, recortada e reduzida da mesma forma.
+- `collapsing_slab_sheet.png`, em `Projeto/assets/sprites/environment/`, e `gate_door_sheet.png`,
+  `gate_frame_back.png`, `gate_frame_front.png` e `unlocker_statue_sheet.png`, em
+  `Projeto/assets/sprites/gates/` (#284): a laje que se parte, o portão (porta parada, a abrir e a
+  fechar, poste e pilar) e a estátua do desbloqueador (apagada e acesa), desenhados pelo grupo,
+  convertidos dos GIF e WEBP originais em folhas de frames, todos com o mesmo recorte por objeto,
+  para ficarem alinhados.
 - `velvet_walk_sheet.png`, em `Projeto/assets/sprites/velvet/`: a Velvet a andar, 8 frames,
   desenhada pela Sofia, do grupo, com o fundo branco tornado transparente e reduzida da folha
   original (#263).

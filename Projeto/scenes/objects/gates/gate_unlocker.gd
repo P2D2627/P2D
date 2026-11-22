@@ -7,11 +7,16 @@ extends Node2D
 ## its key shows over it, as a character's does. It works once. List the gates it opens in Gates.
 ## With a Cutscene, it plays it first, and the gates open when the cutscene's camera gets to its first
 ## shot, so the player sees them open; without one, or when the cutscene does not play (one that plays
-## once in the game and was seen), they open at once. For now it is a green block, until its art
-## arrives.
+## once in the game and was seen), they open at once. It is drawn as a demon statue on rubble (its
+## Statue, a sheet whose first cell is unlit): unlit until it is used, then a flame burns on it, the
+## other cells in turn, so used and unused differ in shape and light, not in colour alone.
 
 ## The man used it and its gates started to open, or will when its cutscene's camera gets there.
 signal activated
+
+## The statue's cells: the unlit one, then the flame's.
+const UNLIT_CELL: int = 0
+const FIRST_FLAME_CELL: int = 1
 
 ## The gates it opens.
 @export var gates: Array[Gate] = []
@@ -19,27 +24,22 @@ signal activated
 @export var use_action: StringName = &"interact"
 ## Plays when it is used, to show the gates opening. Empty: they open at once.
 @export var cutscene: CameraCutscene
-## Its colour until it is used.
-@export var idle_color: Color = Color(0.09, 0.69, 0.29):
-	set(value):
-		idle_color = value
-		_show_state()
-## Its colour once used, much darker, so it shows also to whom does not tell the colours apart well.
-@export var used_color: Color = Color(0.05, 0.27, 0.13):
-	set(value):
-		used_color = value
-		_show_state()
+## Seconds each of the flame's cells shows, once it is used.
+@export_range(0.02, 0.5, 0.01, "suffix:s") var flame_frame_time: float = 0.11
 
 var _is_activated: bool = false
 ## True while the man is inside its Use Area.
 var _player_near: bool = false
+## Seconds since it was used, which pick the flame's cell.
+var _flame_time: float = 0.0
 
 @onready var _use_area: Area2D = %UseArea
 @onready var _use_key: KeyPrompt = %UseKey
-@onready var _drawing: Polygon2D = %Drawing
+@onready var _statue: Sprite2D = %Statue
 
 
 func _ready() -> void:
+	set_process(false)
 	_show_state()
 	if Engine.is_editor_hint():
 		set_physics_process(false)
@@ -49,6 +49,11 @@ func _ready() -> void:
 			% [name, use_action])
 	_use_area.body_entered.connect(_on_use_area_body_entered)
 	_use_area.body_exited.connect(_on_use_area_body_exited)
+
+
+func _process(delta: float) -> void:
+	_flame_time += delta
+	_statue.frame = _flame_cell()
 
 
 func _physics_process(_delta: float) -> void:
@@ -72,6 +77,7 @@ func activate() -> void:
 		return
 	_is_activated = true
 	_show_state()
+	set_process(true)
 	activated.emit()
 	if cutscene != null and cutscene.play():
 		cutscene.shot_reached.connect(_unlock_gates.unbind(1), CONNECT_ONE_SHOT)
@@ -100,5 +106,11 @@ func _on_use_area_body_exited(body: Node2D) -> void:
 func _show_state() -> void:
 	if not is_node_ready():
 		return
-	_drawing.color = used_color if _is_activated else idle_color
+	_statue.frame = _flame_cell() if _is_activated else UNLIT_CELL
 	_use_key.visible = _player_near and not _is_activated
+
+
+## The flame's cell for the time since it was used, starting over after the last.
+func _flame_cell() -> int:
+	var flame_cells: int = _statue.hframes - FIRST_FLAME_CELL
+	return FIRST_FLAME_CELL + floori(_flame_time / flame_frame_time) % flame_cells

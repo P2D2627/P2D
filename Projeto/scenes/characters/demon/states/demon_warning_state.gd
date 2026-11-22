@@ -9,18 +9,33 @@ extends DemonState
 ## another demon's attack has just landed on him and its own cannot pierce his blink, or he has
 ## just broken free of a hold, the warning ends and the demon chases on from this same frame. With
 ## the man gone, as on a respawn that would swap only him, the warning ends and the demon stands
-## or walks back, with no attack at where he was.
+## or walks back, with no attack at where he was. Before a leap at a man on another floor (#284), it
+## stands still too, takes its aim at where he stands as the warning starts, and at the end leaps
+## there, so a man who gets away while it warns is missed. With no leap that gets to him as it
+## starts, the warning ends and it chases on from this same frame, with no attack.
 
 ## Physics frames the demon has warned for.
 var _frames: int = 0
 ## How far the lunge goes, in px, aimed as the warning starts.
 var _lunge_distance: float = 0.0
+## The leap's take-off velocity, aimed as the warning starts; zero for a lunge along the floor.
+var _leap: Vector2 = Vector2.ZERO
+## True when the warning started with the man on another floor and no leap that gets to him.
+var _has_no_aim: bool = false
 
 
 func enter() -> void:
 	_frames = 0
+	_leap = Vector2.ZERO
+	_lunge_distance = 0.0
+	_has_no_aim = false
 	var attack: DemonAttack = _demon.get_attack()
-	if not attack.keeps_chasing:
+	if attack.keeps_chasing:
+		return
+	if _demon.is_man_on_another_floor(attack):
+		_leap = _demon.get_leap_velocity(attack)
+		_has_no_aim = _leap == Vector2.ZERO
+	else:
 		_lunge_distance = _demon.lunge_distance_to(attack, _demon.get_gap_to_target())
 
 
@@ -29,7 +44,7 @@ func physics_update(delta: float) -> void:
 		_demon.velocity.x = 0.0
 		_demon.stand_or_return()
 		return
-	if _demon.waits_for_the_man_to_take_hits():
+	if _demon.waits_for_the_man_to_take_hits() or _has_no_aim:
 		_demon.change_state_and_act(Demon.State.CHASE, delta)
 		return
 	var attack: DemonAttack = _demon.get_attack()
@@ -37,10 +52,13 @@ func physics_update(delta: float) -> void:
 		_bite_on_the_run(attack, delta)
 		return
 	_frames += 1
-	if _frames >= attack.get_warning_frames():
-		_demon.velocity = attack.get_lunge_velocity(_lunge_distance) \
-				* Vector2(_demon.get_facing(), 1.0)
-		_demon.change_state(Demon.State.LUNGE)
+	if _frames < attack.get_warning_frames():
+		return
+	if _leap != Vector2.ZERO:
+		_demon.leap(_leap)
+		return
+	_demon.velocity = attack.get_lunge_velocity(_lunge_distance) * Vector2(_demon.get_facing(), 1.0)
+	_demon.change_state(Demon.State.LUNGE)
 
 
 func _bite_on_the_run(attack: DemonAttack, delta: float) -> void:

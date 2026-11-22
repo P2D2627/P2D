@@ -8,19 +8,24 @@ script = ExtResource("2_attack")
 animation = &"bite"
 keeps_chasing = true
 attack_range = 130.0
-warning_time = 0.1
+warning_time = 0.35
 recover_time = 0.3
+kills = true
 
 [sub_resource type="Resource" id="Resource_lunge"]
 script = ExtResource("2_attack")
 attack_range = 390.0
 chance_per_second = 0.9
+leaps_to_other_floors = true
 damage = 20.0
+kills = true
 knockback_distance = 250.0
 knockback_height = 70.0
 
 [resource]
 script = ExtResource("1_script")
+chase_speed = 550.0
+ignores_crucifix = true
 sight_distance = 1130.0
 lose_distance = 1630.0
 give_up_time = 0.5

@@ -8,7 +8,8 @@ extends VBoxContainer
 ## only lowers it. If the time runs out, it says he died and stays, with no bar, so a man who can't
 ## move never looks free until the room starts over. It only shows: it listens to GrabEscape, reads
 ## its progress and never changes the game. It goes as a child of the man's body, not of his
-## drawing, so it stays put and readable while the drawing sinks.
+## drawing, so it stays put and readable while the drawing sinks. Its z_index (10) puts it over the
+## rock, which the man stands behind, so it always shows.
 
 const PRESS_TEXT: String = "Press Jump!"
 const HOLD_TEXT: String = "Hold Jump!"
