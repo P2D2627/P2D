@@ -26,6 +26,9 @@ const EFFECT_NAME: String = "Shelter"
 const BAKE_COMMAND: String = ("godot --headless --path Projeto --script "
 		+ "res://scenes/others/ambience/bake_shelter.gd -- %s %s")
 
+## The fields already checked against their level's tiles in this run, by file.
+static var _checked_fields: Dictionary[String, bool] = {}
+
 ## How enclosed each spot of the level is: its baked ShelterField.
 @export var field: ShelterField
 ## The buses it muffles, by name, such as Wind, which gathers a level's wind. A bus not in the
@@ -102,11 +105,14 @@ func _ready() -> void:
 	if field == null or not field.is_baked():
 		push_warning("AmbienceShelter %s: no Field baked by this version, so nothing is muffled."
 				% name)
-	elif OS.is_debug_build() and not is_field_current():
-		var level: Level = _level()
-		push_warning("AmbienceShelter %s: Field was baked from other tiles than the level's; "
-				% name + "bake it again: " + BAKE_COMMAND % [level.scene_file_path,
-				field.resource_path])
+	elif OS.is_debug_build() and not _checked_fields.has(field.resource_path):
+		# Once a run for each field: the level starts over on every death.
+		_checked_fields[field.resource_path] = true
+		if not is_field_current():
+			var level: Level = _level()
+			push_warning("AmbienceShelter %s: Field was baked from other tiles than the level's; "
+					% name + "bake it again: " + BAKE_COMMAND % [level.scene_file_path,
+					field.resource_path])
 	for bus: StringName in buses:
 		for other: StringName in buses:
 			if other != bus and _feeds(bus, other):

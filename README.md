@@ -4050,10 +4050,10 @@ sem brasas, ouviam-se então como se fossem a rajada, segundos depois. Por isso,
 manter o seu lugar no ecrã, os fundos tocam agora num bus próprio, Beds, e as rajadas que passam
 noutro, Gusts, ambos a enviar para o Wind, que envia para o Ambience (e segue por isso o seu volume
 nas opções). O Wind junta todo o vento (fundos, rajadas e roncos) num só bus, para o misturar de
-uma vez, e é o bus que o abrigo do nível 1 abafa em sítios fechados (ver "Abrigo do vento"). Fica logo a seguir ao Alerts, antes dos buses que lhe enviam, porque o Godot só deixa um
-bus enviar para outro que venha antes dele; os buses seguintes desceram uma posição, sem mudar a
-ordem entre eles, e o compressor do Beds continua a ouvir o Gusts. Um compressor no
-Beds escuta o Gusts (sidechain), com o limiar a −27 dB, a razão de 2 para 1, ataque de 2 ms e
+uma vez, e é o bus que o abrigo do nível 1 abafa em sítios fechados (ver "Abrigo do vento"). Fica
+logo a seguir ao Alerts, antes dos buses que lhe enviam, porque o Godot só deixa um bus enviar para
+outro que venha antes dele; os buses seguintes desceram uma posição, sem mudar a ordem entre eles,
+e o compressor do Beds continua a ouvir o Gusts. Um compressor no Beds escuta o Gusts (sidechain), com o limiar a −27 dB, a razão de 2 para 1, ataque de 2 ms e
 recuperação em 600 ms: enquanto a rajada sopra, os fundos baixam. Medido com um tom constante no
 Beds e cada rajada no Gusts a −6 dB, os fundos baixam 4,5 a 6,2 dB no pico da rajada e recuperam em
 cerca de 1,5 s. A primeira afinação (−30 dB, 3 para 1) baixava-os 7 a 10 dB, o que se ouvia como um
@@ -4134,8 +4134,8 @@ que `stop()` e a pausa os suspendem; que os sons não posicionados tocam do cent
 leitor, nunca dois seguidos, e dizem o seu lado, e que os posicionados atravessam do seu lado para
 o outro; que as duas camadas de vento do nível 1 têm os intervalos, os ficheiros e os buses acima
 (as rajadas no Gusts, os roncos no LowRumble, que envia para o Wind); que o Beds e o Gusts
-enviam para o Wind, e o Wind para o Ambience, um compressor no Beds escuta o Gusts e cada fundo do nível 1 toca no seu
-bus, que envia para o Beds; e que o Alerts envia para o SFX, o compressor do Ambience o escuta, o
+enviam para o Wind, e o Wind para o Ambience, um compressor no Beds escuta o Gusts e cada fundo do
+nível 1 toca no seu bus, que envia para o Beds; e que o Alerts envia para o SFX, o compressor do Ambience o escuta, o
 alerta do demónio e os sons do crucifixo chegam ao Alerts e os da personagem chegam ao SFX sem
 passar pelo Alerts. O `test_ambience_ducking.gd`
 toca, com o áudio a misturar em tempo real e sem saída, cada som do crucifixo, do demónio e da
@@ -4155,14 +4155,13 @@ segundos antes do fim da anterior, e que a potência total durante a transição
 da constante (no teste, 0,0 %); que a primeira passagem começa num ponto ao acaso; que `stop()`
 desliga o fundo em Fade Time e `start()` o traz de volta; que a pausa o suspende; que, com a escala
 de tempo do hitstop, a passagem seguinte chega ao fim de 4,93 s de tempo real, em vez de 5 s; e que
-os dois fundos do nível 1 tocam no Ambience ou num bus que chega a ele (o Bed1 e o Bed2, pelo Beds e pelo Wind), cada um com o
-seu som, e só se realinham ao fim de
-mais de meia hora. Se o ambiente se repete ou respira bem só se ouve a jogar.
+os dois fundos do nível 1 tocam no Ambience ou num bus que chega a ele (o Bed1 e o Bed2, pelo Beds
+e pelo Wind), cada um com o seu som, e só se realinham ao fim de mais de meia hora. Se o ambiente se repete ou respira bem só se ouve a jogar.
 
 #### Abrigo do vento: o vento abafa-se em sítios fechados
 
 Em sítios fechados, o vento ouve-se mais baixo e mais abafado, como do lado de dentro de uma gruta:
-um pouco à entrada de um túnel, mais à medida que a personagem avança, e mais ainda no fundo de uma
+pouco à entrada de um túnel, mais à medida que a personagem avança, e mais ainda no fundo de uma
 chaminé estreita; ao ar livre, ouve-se como foi misturado. A mudança é gradual, nunca um
 interruptor. Quem a faz é o nó `AmbienceShelter` (`scenes/others/ambience/ambience_shelter.gd`), na
 cena do ambiente de cada nível; no nível 1, o nó Shelter de `scenes/levels/lust/lust_ambience.tscn`.
@@ -4176,32 +4175,44 @@ personagem está quase sempre de pé num chão, e um chão não a abriga do vent
 paredes dos dois lados. Pela mesma razão, cada raio para a direita conta com o seu simétrico para a
 esquerda, pelo dobro do mais livre dos dois, para que uma só parede também não a abrigue. As
 plataformas atravessáveis, finas, deixam passar os raios. A partir de uma abertura de 0,65 o sítio
-conta como aberto, e a 0,40 ou menos como fechado por inteiro (Open At e Shut At). Uma chaminé é um
-troço vertical com 6 tiles de largura no máximo e 8 de altura no mínimo; conta por inteiro com
-3 tiles de largura ou menos e a partir de 6 tiles para dentro da sua boca, e aos poucos até lá.
+conta como aberto, e a 0,40 ou menos como fechado (Open At e Shut At). Fora do mapa conta como
+rocha: um nível aberto para o céu acima do seu mapa leria fechado lá em cima.
+
+A abertura, sozinha, fechava um túnel por inteiro a 5 tiles da entrada: perto de um interruptor, a
+correr. Por isso o fecho cresce também com a profundidade: o caminho pelo ar, em tiles, desde o
+tile aberto mais próximo, e só é inteiro 8 tiles para dentro (Closed Ramp). No túnel do mapa de
+teste, ao longo do chão, o fecho é nulo nos primeiros 3 tiles e vale depois 0,02, 0,07, 0,32, 0,50,
+0,68, 0,84 e 0,96, inteiro a 10 tiles (480 px) da entrada. Uma passagem curta entre duas salas fica,
+assim, pouco abafada. Uma chaminé é um troço vertical com 6 tiles de largura no máximo e 8 de altura
+no mínimo; conta por inteiro com 3 tiles de largura ou menos e a partir de 6 tiles para dentro da sua
+boca, e aos poucos até lá. Só uma ponta aberta é boca: no topo de uma chaminé fechada por cima, o
+sítio mais fundo, a chaminé conta por inteiro.
 
 Medido no mapa do nível 1 (371 × 379 tiles de 48 px), nos pontos onde a personagem está, com o fecho
-de 0 (aberto) a 1 (fechado por inteiro):
+de 0 (aberto) a 1 (fechado por inteiro). De todo o ar do nível, 48 % fica aberto, 17 % fechado por
+inteiro e 5 % em chaminés.
 
 | Ponto | Abertos (fecho abaixo de 0,05) | Mediana do fecho | Fechados por inteiro (acima de 0,95) |
 |---|---|---|---|
-| Chão de corredor com 3 tiles de altura ou menos | 11 % | 0,99 | 54 % |
-| Chão de corredor com 4 a 5 tiles de altura | 16 % | 0,69 | 31 % |
-| Chão de sala com 6 a 9 tiles de altura | 55 % | 0,02 | 8 % |
-| Dentro de uma chaminé, no ar | 1 % | 1,00 | 91 % |
-| Chão de caverna com 12 tiles de altura ou mais | 91 % | 0,00 | 0 % |
-| Junto à parede de uma caverna, no ar | 52 % | 0,01 | 24 % |
+| Chão de corredor com 3 tiles de altura ou menos | 16 % | 0,84 | 45 % |
+| Chão de corredor com 4 a 5 tiles de altura | 22 % | 0,69 | 28 % |
+| Chão de sala com 6 a 9 tiles de altura | 61 % | 0,00 | 8 % |
+| Dentro de uma chaminé, no ar | 4 % | 1,00 | 79 % |
+| Chão de caverna com 12 tiles de altura ou mais | 92 % | 0,00 | 0 % |
+| Junto à parede de uma caverna, no ar | 58 % | 0,00 | 12 % |
 
 Os pontos junto à parede que ficam fechados estão perto do teto da caverna, que é um teto de verdade.
 Ficaram de lado: raios em todas as direções, com os quais o chão de uma caverna tinha 0,40 de
 abertura na mediana, contra 0,90, e só 12 % dos chãos do nível ficavam abertos; os raios do
-horizonte para cima sem o simétrico, com os quais, junto à parede de uma caverna, no ar, a mediana
-do fecho era 0,93 e só 6 % dos pontos ficavam abertos, e deslizar pela parede soava a túnel; tomar o
-ponto mais aberto a 3 tiles de distância, que só abria 30 % desses pontos, contra 52 %; raios
-lançados da personagem a cada frame, que oscilam ao passar por pilares e não se podem ver num mapa
-nem verificar com um teste; zonas desenhadas à mão, que ficam erradas sempre que um poço muda de
-tamanho; e calcular o mapa ao abrir o nível, que se repetiria a cada morte, porque cada morte abre
-uma cópia nova do nível.
+horizonte para cima sem o simétrico, com os quais, junto à parede de uma caverna, no ar, a abertura
+mediana era 0,37 (com os limiares de então, 0,60 e 0,32, um fecho de 0,93) e só 6 % dos pontos
+ficavam abertos, e deslizar pela parede soava a túnel; tomar o ponto mais aberto a 3 tiles de
+distância, que só abria 30 % desses pontos, contra 52 % com o simétrico; alongar só o deslizar do
+som, que torna a mudança gradual no tempo, mas não com a profundidade; raios lançados da personagem
+a cada frame, que oscilam ao passar por pilares e não se podem ver num mapa nem verificar com um
+teste; zonas desenhadas à mão, que ficam erradas sempre que um poço muda de tamanho; e calcular o
+mapa ao abrir o nível, que se repetiria a cada morte, porque cada morte abre uma cópia nova do
+nível.
 
 O abrigo nunca mexe no volume dos buses, que é o da mistura e o das opções. Enquanto o nível corre,
 acrescenta um filtro passa-baixo e um amplificador seus ao fim de cada bus da sua lista, depois dos
@@ -4224,24 +4235,30 @@ Depois de mudar os tiles de um nível, recalcula-se o seu mapa, com o editor fec
 godot --headless --path Projeto --script res://scenes/others/ambience/bake_shelter.gd -- res://scenes/levels/lust/level1.tscn res://scenes/levels/lust/level1_shelter.res
 ```
 
-No nível 1, o cálculo demora 246 ms e o ficheiro tem cerca de 44 KB. Um terceiro argumento, o
-caminho de um `.png`, grava uma imagem do mapa: azul onde é aberto, de amarelo a laranja onde fecha,
-roxo nas chaminés. Se o mapa ficar desatualizado, o `test_shelter_field.gd` falha e indica o comando.
+No nível 1, o cálculo demora 301 ms e o ficheiro tem 54 135 bytes. Um terceiro argumento, o caminho
+de um `.png`, grava uma imagem do mapa: azul onde é aberto, de amarelo a laranja onde fecha, roxo
+nas chaminés. O ficheiro é binário: num conflito de merge, não se junta à mão, recalcula-se. Se o
+mapa ficar desatualizado, o `test_shelter_field.gd` falha e mostra este comando; e, numa versão de
+depuração, o abrigo avisa uma vez por partida, ao abrir o nível, com o mesmo comando. Para comparar
+os tiles com os do cálculo, o abrigo põe de lado as células apagadas que a cena ainda guarda vazias
+(16 no nível 1), que o Godot deita fora quando o nível começa a correr.
 
 O `test_shelter_field.gd` verifica, num mapa pequeno feito em memória (uma caverna, uma chaminé de
-3 tiles de largura, um corredor de 3 tiles de altura e um poço de 5 tiles de largura), que o cálculo
-dá os valores da medição aprovada, a menos de 0,006; que a caverna é aberta, o corredor fechado, a
-chaminé chaminé por inteiro a meio e a crescer a partir da boca, e o poço meia chaminé; que nem o
-chão nem uma só parede abrigam; que as plataformas atravessáveis não mudam nada; que dois cálculos
-dão o mesmo; e que o mapa guardado do nível 1 é um cálculo dos seus tiles atuais, com a personagem a
-começar ao ar livre. O `test_ambience_shelter.gd` verifica, num bus criado para o teste que já tem
-um compressor, que o abrigo acrescenta os seus dois efeitos depois do compressor e em nenhum outro
-bus; que ao ar livre ficam desligados; que, no corredor, o volume desce aos poucos (−0,32, −0,61,
-−0,89 dB nos primeiros passos) até −4,0 dB e 2 500 Hz e, na chaminé, até −9,0 dB e 900 Hz; que a
-primeira leitura é imediata; que nenhum bus muda de volume; que uma cópia nova que entra antes de a
-antiga sair, como quando o nível recomeça, guarda os seus efeitos; e que, no nível 1, o abrigo
-abafa o Wind até −4,0 dB quando a personagem está num chão fechado e não deixa efeitos quando o nível
-sai. Se o abafamento soa bem confirma-se a jogar.
+3 tiles de largura, um corredor de 3 tiles de altura, um poço de 5 tiles de largura fechado por
+cima e um túnel lateral de 3 tiles de altura), que o cálculo dá os valores da medição aprovada, a
+menos de 0,006; que a caverna é aberta, o corredor fechado, a chaminé inteira a meio e a crescer a
+partir da boca, e o poço meia chaminé, também no topo; que o fecho cresce aos poucos ao longo do
+túnel, com os valores acima; que nem o chão nem uma só parede abrigam; que as plataformas
+atravessáveis não mudam nada; que dois cálculos dão o mesmo; e que o mapa guardado do nível 1 é um
+cálculo dos seus tiles atuais, com a personagem a começar ao ar livre. O `test_ambience_shelter.gd`
+verifica, num bus criado para o teste que já tem um compressor, que o abrigo acrescenta os seus
+dois efeitos depois do compressor e em nenhum outro bus; que ao ar livre ficam desligados; que, no
+corredor, o volume desce aos poucos (−0,32, −0,61 e −0,89 dB a cada 1/30 s) até −4,0 dB e
+2 500 Hz e, na chaminé, até −9,0 dB e 900 Hz; que a primeira leitura é imediata; que nenhum bus muda
+de volume; que uma cópia nova que entra antes de a antiga sair, como quando o nível recomeça, guarda
+os seus efeitos; e que, no nível 1, o mapa corresponde aos tiles, o abrigo abafa o Wind até −4,0 dB
+quando a personagem está num chão fechado, dá o mapa por desatualizado quando se tira um tile e não
+deixa efeitos quando o nível sai. Se o abafamento soa bem confirma-se a jogar.
 
 #### Trovões e relâmpagos
 

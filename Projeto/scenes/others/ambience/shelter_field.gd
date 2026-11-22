@@ -48,6 +48,13 @@ const WALK_STEPS: Array[Vector2i] = [Vector2i(1, 0), Vector2i(-1, 0), Vector2i(0
 const BORDER: int = 2
 ## The most a byte of the grid holds.
 const BYTE_MAX: int = 255
+## A tile map layer's saved cells: a 2-byte format number, 0, then 12 bytes a cell, its source at
+## byte 4 of them; source 0xFFFF is an empty cell.
+const CELLS_HEADER: int = 2
+const CELLS_FORMAT: int = 0
+const CELL_BYTES: int = 12
+const CELL_SOURCE_AT: int = 4
+const EMPTY_SOURCE: int = 0xFFFF
 
 @export_group("Bake")
 ## The tile map layer to bake, as a path from the level's root.
@@ -103,14 +110,29 @@ static func world_transform(node: Node) -> Transform2D:
 	return xform
 
 
-## The SHA-256 of the tiles' cells, in hex; empty without cells.
+## The SHA-256 of the tiles' cells, in hex; empty without cells. A scene can keep cells erased in the
+## editor as empty ones (source -1) until the layer first updates in the tree, which drops them, so
+## they are left out: the fingerprint is the same before and after (level 1 had 16).
 static func fingerprint(tiles: TileMapLayer) -> String:
 	var cells: PackedByteArray = tiles.tile_map_data
-	if cells.is_empty():
+	if cells.size() <= CELLS_HEADER:
 		return ""
 	var context := HashingContext.new()
 	context.start(HashingContext.HASH_SHA256)
-	context.update(cells)
+	if cells.decode_u16(0) != CELLS_FORMAT:
+		context.update(cells)
+		return context.finish().hex_encode()
+	# Hashed run by run, between the empty cells.
+	var run_from: int = CELLS_HEADER
+	var at: int = CELLS_HEADER
+	while at + CELL_BYTES <= cells.size():
+		if cells.decode_u16(at + CELL_SOURCE_AT) == EMPTY_SOURCE:
+			if at > run_from:
+				context.update(cells.slice(run_from, at))
+			run_from = at + CELL_BYTES
+		at += CELL_BYTES
+	if cells.size() > run_from:
+		context.update(cells.slice(run_from))
 	return context.finish().hex_encode()
 
 

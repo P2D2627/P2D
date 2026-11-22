@@ -6,9 +6,10 @@
 # at once; deep in the chimney, Chimney's. Its first reading is taken at once. It never sets a bus's
 # volume. Leaving the tree, it takes its effects out and leaves the compressor; a new copy that
 # enters before the old one leaves, as when a level starts over, keeps its own and drives them.
-# Level 1's ambience has a shelter on the Wind bus with level 1's field. In the level, it hears from
-# the man: open where he starts, and muffling Wind as closed as Closed once he stands on a fully
-# closed floor; once the level is gone, Wind has no effects left.
+# Level 1's ambience has a shelter on the Wind bus with level 1's field, baked from the level's
+# tiles. In the level, it hears from the man: open where he starts, and muffling Wind as closed as
+# Closed once he stands on a fully closed floor, deep in; with a tile moved, it tells its field is
+# stale; once the level is gone, Wind has no effects left.
 # Run from the repository root; the exit code is 0 on pass and 1 on fail:
 # godot --headless --fixed-fps 60 --path Projeto --script res://tests/test_ambience_shelter.gd
 extends "res://tests/support/base_test.gd"
@@ -167,6 +168,7 @@ func _level1_muffles_its_wind_as_the_man_goes_in() -> bool:
 	var wired: bool = (shelter.buses.size() == 1 and shelter.buses[0] == WIND_BUS
 			and shelter.field != null and shelter.field.resource_path == LEVEL1_FIELD_PATH)
 	var open_at_start: bool = not shelter.is_muffling() and shelter.get_amounts() == Vector2.ZERO
+	var current: bool = shelter.is_field_current()
 	var feet: Vector2 = _fully_closed_floor(shelter)
 	level.player.process_mode = Node.PROCESS_MODE_DISABLED
 	level.player.global_position = feet
@@ -175,14 +177,18 @@ func _level1_muffles_its_wind_as_the_man_goes_in() -> bool:
 	var muffled: bool = (shelter.is_muffling() and on == 2 and absf(shelter.get_volume_db()
 			- shelter.closed_volume_db) < LEVEL_DB_TOLERANCE)
 	var volume: float = shelter.get_volume_db()
+	# A tile taken out of the map's corner, as a teammate moving tiles would: the field is stale.
+	(level.get_node(shelter.field.tiles_path) as TileMapLayer).erase_cell(Vector2i.ZERO)
+	var told_stale: bool = not shelter.is_field_current()
 	level.queue_free()
 	await _physics_frames(2)
 	var left: int = _shelter_effects(wind, false)
-	return _report(wired and open_at_start and muffled and left == 0, "Level 1's shelter muffles "
-			+ "Wind with level 1's field (%s); where the man starts it is open (%s); " % [wired,
-			open_at_start] + "standing on a fully closed floor at %s, Wind's two " % feet
-			+ "effects are on (%d) at %.3f dB; with the level gone, Wind has %d left" % [on, volume,
-			left])
+	return _report(wired and current and open_at_start and muffled and told_stale and left == 0,
+			"Level 1's shelter muffles Wind with level 1's field (%s), baked from its tiles " % wired
+			+ "(%s); where the man starts it is open (%s); standing on a fully " % [current,
+			open_at_start] + "closed floor at %s, Wind's two effects are on (%d) at " % [feet, on]
+			+ "%.3f dB; with a tile moved, it tells its field is stale (%s); with the " % [volume,
+			told_stale] + "level gone, Wind has %d left" % left)
 
 
 ## The feet of the first floor in the shelter's field, from the top-left, where the man's head is
@@ -199,8 +205,8 @@ func _fully_closed_floor(shelter: AmbienceShelter) -> Vector2:
 			var feet: Vector2 = field.origin + Vector2((x + 0.5) * field.tile_size.x,
 					(y + 1) * field.tile_size.y)
 			var head: Vector2 = feet + shelter.listen_offset
-			var closed: float = ShelterField.closed_amount(field.openness_at(head), shelter.open_at,
-					shelter.shut_at)
+			var closed: float = ShelterField.closed_amount(field.openness_at(head),
+					field.closed_depth_at(head), shelter.open_at, shelter.shut_at, shelter.closed_ramp)
 			var chimney: float = field.chimney_amount(field.width_at(head),
 					field.chimney_depth_at(head), shelter.tight_width, shelter.chimney_ramp)
 			if closed >= FULLY_CLOSED and chimney == 0.0:
