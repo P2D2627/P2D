@@ -82,15 +82,15 @@ func _process(delta: float) -> void:
 
 
 ## True when going from last_frame to frame, forwards in a loop of frame_count frames, reaches one
-## of step_frames, also when a slow frame skipped over it. From NOT_WALKING, only when frame is
+## of steps, also when a slow frame skipped over it. From NOT_WALKING, only when frame is
 ## one: starting the walk on a step frame counts as reaching it. Staying on a frame reaches nothing.
 static func reached_step_frame(last_frame: int, frame: int, frame_count: int,
-		step_frames: Array[int]) -> bool:
+		steps: Array[int]) -> bool:
 	if last_frame == NOT_WALKING:
-		return frame in step_frames
+		return frame in steps
 	var passed: int = posmod(frame - last_frame, frame_count)
 	for offset: int in range(1, passed + 1):
-		if posmod(last_frame + offset, frame_count) in step_frames:
+		if posmod(last_frame + offset, frame_count) in steps:
 			return true
 	return false
 

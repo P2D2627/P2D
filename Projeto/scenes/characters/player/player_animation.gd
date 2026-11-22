@@ -111,14 +111,14 @@ func _process(delta: float) -> void:
 ## is a negative velocity.y, so the top of a jump, at 0, already falls. Grabbed comes first, with
 ## escape.
 static func animation_for(state: Player.State, velocity: Vector2, knocked_back: bool,
-		walk_min_speed: float) -> StringName:
+		min_walk_speed: float) -> StringName:
 	if state == Player.State.GRABBED:
 		return ESCAPE
 	if knocked_back:
 		return HURT
 	match state:
 		Player.State.ON_FLOOR:
-			return WALK if absf(velocity.x) >= walk_min_speed else IDLE
+			return WALK if absf(velocity.x) >= min_walk_speed else IDLE
 		Player.State.ON_WALL:
 			return JUMP if velocity.y < 0.0 else WALL_SLIDE
 	return JUMP if velocity.y < 0.0 else FALL
@@ -146,15 +146,15 @@ static func shown_animation(choice: StringName, frames: SpriteFrames) -> StringN
 
 ## The jump's frame for a speed up or down. Taking off, crouched; then by speed, with the top of the
 ## jump only after going up, so a fall off a ledge goes straight to coming down.
-static func air_frame_for(velocity_y: float, taking_off: bool, rose: bool, apex_speed: float,
-		fast_fall_speed: float) -> int:
+static func air_frame_for(velocity_y: float, taking_off: bool, rose: bool, apex_limit: float,
+		fast_fall_limit: float) -> int:
 	if taking_off:
 		return TAKE_OFF_FRAME
-	if velocity_y < -apex_speed:
+	if velocity_y < -apex_limit:
 		return RISE_FRAME
-	if velocity_y < apex_speed and rose:
+	if velocity_y < apex_limit and rose:
 		return APEX_FRAME
-	if velocity_y < fast_fall_speed:
+	if velocity_y < fast_fall_limit:
 		return FALL_FRAME
 	return FAST_FALL_FRAME
 

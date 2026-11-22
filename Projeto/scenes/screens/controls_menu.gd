@@ -2,7 +2,8 @@ class_name ControlsMenu
 extends VBoxContainer
 
 ## The options screen's Controls tab: the profile list, a row for each action with its keys and
-## mouse buttons, and the custom profile's Reset. The fixed profiles only show their bindings. In the
+## mouse buttons, the list that picks how the prompts draw the gamepad's buttons (Automatic, Xbox or
+## PlayStation), and the custom profile's Reset. The fixed profiles only show their bindings. In the
 ## custom one, pressing an action's button waits for the next key or mouse button and remaps the
 ## action to it, and says so with rebound. A modifier (Shift, Ctrl, Alt) binds only as it is let go,
 ## with nothing pressed meanwhile and the game still in focus: held, it may start a shortcut, as Alt
@@ -49,6 +50,9 @@ const BINDING_WIDTH: float = 640.0
 ## The theme's looks for an action's name and its button: the size of the other tabs' rows.
 const ROW_TEXT: StringName = &"OptionsLabel"
 const BINDING: StringName = &"OptionsBinding"
+const CHOICE: StringName = &"OptionsChoice"
+## The name of the row that picks how the prompts draw the gamepad's buttons (GameSettings.PAD_BUTTONS).
+const PAD_BUTTONS_TITLE: String = "Gamepad buttons"
 
 var _binding_buttons: Dictionary[StringName, Button] = {}
 ## The action waiting for a key; empty while none is.
@@ -60,6 +64,8 @@ var _refused_text: String = ""
 var _pushed_axes: Dictionary[Vector2i, bool] = {}
 ## The modifier held down during the wait, which binds as it is let go; KEY_NONE while none is.
 var _held_modifier: Key = KEY_NONE
+## The list that picks how the prompts draw the gamepad's buttons, made in _ready.
+var _pad_buttons_option: OptionButton
 
 @onready var _settings: GameSettings = get_node(SETTINGS_PATH) as GameSettings
 @onready var _profile_option: OptionButton = %ProfileOption
@@ -74,6 +80,7 @@ func _ready() -> void:
 		_profile_option.add_item(InputProfiles.PROFILES[profile])
 	for action: StringName in InputProfiles.ACTIONS:
 		_add_binding_row(action)
+	_add_pad_buttons_row()
 	_profile_option.item_selected.connect(_on_profile_selected)
 	_reset_button.pressed.connect(_on_reset_pressed)
 
@@ -164,11 +171,33 @@ func _add_binding_row(action: StringName) -> void:
 	_binding_buttons[action] = button
 
 
+## The row under the bindings that picks how the prompts draw the gamepad's buttons, its list in the
+## order of GameSettings.PAD_BUTTONS, so an item's index is its place there.
+func _add_pad_buttons_row() -> void:
+	var row: HBoxContainer = HBoxContainer.new()
+	row.name = "PadButtonsRow"
+	var title: Label = Label.new()
+	title.theme_type_variation = ROW_TEXT
+	title.text = PAD_BUTTONS_TITLE
+	title.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	_pad_buttons_option = OptionButton.new()
+	_pad_buttons_option.name = "PadButtonsOption"
+	_pad_buttons_option.theme_type_variation = CHOICE
+	for style: StringName in GameSettings.PAD_BUTTONS:
+		_pad_buttons_option.add_item(GameSettings.PAD_BUTTONS[style])
+	_pad_buttons_option.item_selected.connect(_on_pad_buttons_selected)
+	row.add_child(title)
+	row.add_child(_pad_buttons_option)
+	add_child(row)
+	move_child(row, _bindings.get_index() + 1)
+
+
 ## Sets every control to what Settings holds. The actions' buttons only press in the custom profile,
 ## and so does Reset, which resets that profile.
 func _show_settings() -> void:
 	var profile: StringName = _settings.get_input_profile()
 	_profile_option.select(InputProfiles.PROFILES.keys().find(profile))
+	_pad_buttons_option.select(GameSettings.PAD_BUTTONS.keys().find(_settings.get_pad_buttons()))
 	var custom: bool = profile == InputProfiles.CUSTOM
 	for action: StringName in InputProfiles.ACTIONS:
 		var button: Button = _binding_buttons[action]
@@ -258,6 +287,10 @@ func _key_name(key: InputEventKey) -> String:
 func _on_profile_selected(index: int) -> void:
 	_settings.set_input_profile(InputProfiles.PROFILES.keys()[index])
 	_show_settings()
+
+
+func _on_pad_buttons_selected(index: int) -> void:
+	_settings.set_pad_buttons(GameSettings.PAD_BUTTONS.keys()[index])
 
 
 func _on_reset_pressed() -> void:

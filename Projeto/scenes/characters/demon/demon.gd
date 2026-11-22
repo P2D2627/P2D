@@ -1285,9 +1285,9 @@ func retreat_max_frames() -> int:
 			_varied(_retreat_distance_draw), _varied(_retreat_speed_draw))
 
 
-## The share of a value this demon has for a draw from -1 to 1 within Pack Variation.
-func _varied(draw: float) -> float:
-	return 1.0 + draw * stats.pack_variation
+## The share of a value this demon has for a roll from -1 to 1 within Pack Variation.
+func _varied(roll: float) -> float:
+	return 1.0 + roll * stats.pack_variation
 
 
 ## True while the demon hunts the man: it chases him or warns of an attack, and it saw him on this

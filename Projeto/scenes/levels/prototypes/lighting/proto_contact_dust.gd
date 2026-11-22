@@ -154,8 +154,8 @@ func setup(player: Player, dogs: Array[Demon], speck: Texture2D) -> void:
 ## image held for 1/Ink FPS s. Off, the soft clouds of #257.
 func set_ink(on: bool) -> void:
 	_ink = on
-	for material: ShaderMaterial in [_lit, _glow, _smoke_material]:
-		material.set_shader_parameter(&"ink_style", on)
+	for shader_material: ShaderMaterial in [_lit, _glow, _smoke_material]:
+		shader_material.set_shader_parameter(&"ink_style", on)
 	for puff: Node in find_children("*", "CPUParticles2D", true, false):
 		(puff as CPUParticles2D).fixed_fps = INK_FPS if on else 0
 
@@ -260,19 +260,19 @@ func _roll(roll: Roll, at: Vector2, speed: Vector2) -> void:
 		_burst(roll.sides[k], at + Vector2(side * 8.0, 0.0), Vector2(side, -0.25).normalized(), 12.0, speed)
 
 
-func _make_roll(parent: Node, amount: int, size_px: Vector2, alpha: float, material: Material) -> Roll:
+func _make_roll(parent: Node, amount: int, size_px: Vector2, alpha: float, look: Material) -> Roll:
 	var roll := Roll.new()
 	for k: int in 2:
-		roll.sides.append(_make_puff(parent, amount, size_px, alpha, material))
+		roll.sides.append(_make_puff(parent, amount, size_px, alpha, look))
 	return roll
 
 
 ## A cloud that bursts out, stops hard, drifts up and grows as its edges are eaten away. The random
 ## anim offset only seeds which patch of noise each cloud is cut from (proto_puff.gdshaderinc).
-func _make_puff(parent: Node, amount: int, size_px: Vector2, alpha: float, material: Material) -> CPUParticles2D:
+func _make_puff(parent: Node, amount: int, size_px: Vector2, alpha: float, look: Material) -> CPUParticles2D:
 	var puff := CPUParticles2D.new()
 	puff.texture = _quad
-	puff.material = material
+	puff.material = look
 	puff.emitting = false
 	puff.one_shot = true
 	puff.explosiveness = 0.85
@@ -340,11 +340,11 @@ func _make_noise() -> NoiseTexture2D:
 
 
 func _make_material(shader: Shader, noise: Texture2D, erosion: float) -> ShaderMaterial:
-	var material := ShaderMaterial.new()
-	material.shader = shader
-	material.set_shader_parameter("noise_texture", noise)
-	material.set_shader_parameter("erosion", erosion)
-	return material
+	var shader_material := ShaderMaterial.new()
+	shader_material.shader = shader
+	shader_material.set_shader_parameter("noise_texture", noise)
+	shader_material.set_shader_parameter("erosion", erosion)
+	return shader_material
 
 
 func _make_smoke(parent: Node, dog: Demon) -> CPUParticles2D:

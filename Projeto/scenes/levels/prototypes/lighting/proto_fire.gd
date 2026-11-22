@@ -156,11 +156,11 @@ static func make_ramp_material() -> ShaderMaterial:
 	gradient.colors = RAMP_COLORS
 	var texture := GradientTexture1D.new()
 	texture.gradient = gradient
-	var material := ShaderMaterial.new()
-	material.shader = RAMP_SHADER
-	material.set_shader_parameter(&"ramp", texture)
-	material.set_shader_parameter(&"brightest", RAMP_BRIGHTEST)
-	return material
+	var ramp_material := ShaderMaterial.new()
+	ramp_material.shader = RAMP_SHADER
+	ramp_material.set_shader_parameter(&"ramp", texture)
+	ramp_material.set_shader_parameter(&"brightest", RAMP_BRIGHTEST)
+	return ramp_material
 
 
 ## On: the flame through Ramp, at this fire's own speed. Off: the GIF's colours, all at one speed.

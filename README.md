@@ -3467,11 +3467,23 @@ capturas das quatro zonas do tutorial no nível com luz.
 - Teclado e comando. No teclado, o aviso desenha uma tecla com o nome da tecla do perfil escolhido.
   No comando, mostra o ícone do botão (Kenney Input Prompts, tingido com o bege da interface). Um
   botão sem ícone mostra o nome numa tecla. As letras, as cores e as molduras estão no tema
-  (`themes/ui_theme.tres`, variações `Prompt*`); os ícones e o seu tamanho (56 px) estão no
-  `scenes/levels/prompt_glyph.tscn`. Assim, a arte do grupo pode substituí-los sem mexer no código.
-- Limite: os ícones são sempre os de um comando Xbox. Num comando PlayStation ou Nintendo, os
-  botões estão no mesmo sítio, mas o desenho muda: o X da Xbox, que fala com a Velvet, é o quadrado
-  da PlayStation. Reconhecer a família do comando fica para uma tarefa à parte.
+  (`themes/ui_theme.tres`, variações `Prompt*`); o tamanho do ícone (56 px) está no
+  `scenes/levels/prompt_glyph.tscn`. Os ícones são lidos da pasta de cada família pelo nome do
+  ficheiro (`Projeto/assets/ui/prompts/<família>/Double/`); a arte do grupo pode substituí-los
+  mantendo os nomes, sem mexer no código.
+- Família do comando. Os botões funcionam da mesma forma em qualquer comando: o Godot numera-os
+  pelo sítio, e o botão de baixo tem sempre o índice do A da Xbox, seja a Cruz da PlayStation ou o
+  B da Switch. O que muda é o desenho, e os avisos mostram o do comando em uso, em quatro famílias:
+  Xbox, PlayStation, Nintendo Switch e Steam Deck. O `LastDevice` reconhece a família pelo nome que
+  o Godot dá ao comando (por exemplo "PS4 Controller", "Nintendo Switch Pro Controller" ou "Steam
+  Deck"); um nome desconhecido fica com o desenho da Xbox, que a maioria dos comandos de PC copia.
+  A opção "Gamepad buttons", no separador Controls das opções, fixa a família à mão. É necessária
+  quando o nome do comando não a revela: com o Steam Input ligado, a Steam apresenta um DualShock
+  como se fosse um comando Xbox. O único botão sem ícone no pacote é o PS da PlayStation, que
+  mostra o nome numa tecla.
+- Ícones importados. Do pacote do Kenney só se importam os PNG de 128 px (`Double/`): as pastas
+  `Default/`, `Vector/` e `Fonts/` de cada família têm um ficheiro `.gdignore`, que o Godot respeita
+  ao importar.
 - Troca automática. O autoload `LastDevice` (`scenes/autoload/last_device.gd`) guarda o último
   aparelho usado, porque o Godot 4.7 não tem uma função para isso. Conta apenas o que faria uma
   ação: uma tecla, botão ou gatilho premido, ou um stick inclinado para lá da zona morta dessa ação
@@ -3697,6 +3709,19 @@ Quando é que ela fala decide outro nó do nível 1, o `AsmodeusDirector`, que s
 | Primeira chegada ao início da fase 3 | `asmodeus_second_offer` |
 | Com uma oferta por mortes à espera, ao entrar na zona dela (ou ao renascer lá dentro) | `asmodeus_deaths` |
 | Ao entrar na sala dela, no fim do nível, aceite ou não o atalho | `asmodeus_gift` e depois `stairs` |
+
+A zona de uma morte, do tempo e das ofertas é a zona que a câmara mostra, isto é, a última em que o
+homem entrou. Antes era a zona mais pequena à volta dos pés dele, e as duas regras discordavam onde
+as zonas se sobrepõem: num percurso do nível 1, em 1182 de 11168 frames (11 %). Por isso a Asmodeu
+falava às vezes antes de ele entrar na zona que via, ou só depois de a ter passado. Durante uma cena
+de câmara, que não segue o homem, vale a zona mais pequena.
+
+Nas conversas fora da sala dela, a Asmodeu aparece no chão do homem, virada para ele: à frente dele a
+180 px, ou mais perto, até 90 px, numa plataforma pequena; sem espaço à frente, atrás dele, e ele
+vira-se. Só pisa rocha, nunca plataformas, e nunca fica sobre picos, perigos, um poço ou do outro lado
+de uma parede. Se ele estiver numa plataforma ou onde ela não cabe, ela espera que ele avance. Dos
+4998 pontos de rocha onde o homem pode estar no nível 1, ela não cabe ao lado dele em 210 (4,2 %),
+sobretudo rebordos de um a dois tiles e fundos de poços estreitos.
 
 A oferta por mortes só é verificada enquanto há uma à espera; sem ela, o diretor não faz nada a
 cada frame. Uma conversa só conta como tida quando o homem responde à oferta. Nesse momento, o
@@ -4552,9 +4577,10 @@ disponível começam no seu ponto. Se a sincronia está certa confirma-se a joga
   `Literata-OFL.txt`), copiadas do repositório google/fonts (https://github.com/google/fonts), que
   as publica a partir dos repositórios de origem: https://github.com/googlefonts/atkinson-hyperlegible-next
   e https://github.com/googlefonts/literata
-- Kenney Input Prompts 1.5A, de Kenney (www.kenney.nl). Domínio público (CC0). Ícones dos botões A,
-  X e RT e do stick esquerdo de um comando Xbox, a 128 px, em `Projeto/assets/ui/prompts/` (com a
-  licença em `Kenney-License.txt`). https://kenney.nl/assets/input-prompts
+- Kenney Input Prompts 1.5A, de Kenney (www.kenney.nl). Domínio público (CC0). O pacote inteiro,
+  uma pasta por família de comando, em `Projeto/assets/ui/prompts/` (com a licença em
+  `Kenney-License.txt`); o jogo usa os ícones de 128 px das famílias Xbox, PlayStation, Nintendo
+  Switch e Steam Deck. https://kenney.nl/assets/input-prompts
 
 ## Licença
 

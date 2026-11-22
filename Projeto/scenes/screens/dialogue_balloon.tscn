@@ -76,6 +76,9 @@ portraits = Dictionary[String, Texture2D]({
 "Asmodeus": ExtResource("14_asmodeus"),
 "Velvet": ExtResource("15_velvet")
 })
+pop_out_areas = Dictionary[String, Rect2]({
+"Velvet": Rect2(-60, -115, 210, 230)
+})
 player_portrait = ExtResource("16_player")
 max_text_size = 36
 min_text_size = 28

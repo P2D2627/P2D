@@ -907,6 +907,7 @@ func _densest_screen(spots: Array[Vector2], screen: Vector2) -> Vector2i:
 ## The floor nearest to row Around in column X with Open Above open tiles over it, or No Floor.
 func _floor_near(x: int, around: int) -> int:
 	for k: int in FIRE_SCAN_HEIGHT * 2:
+		@warning_ignore("integer_division")
 		var y: int = around + (k + 1) / 2 * (1 if k % 2 == 1 else -1)
 		if _is_open_floor(Vector2i(x, y)):
 			return y
@@ -1027,6 +1028,7 @@ func _add_propagation() -> void:
 	_grid = built["grid"]
 	_grid_rect = built["rect"]
 	_grid_origin = _tiles.to_global(Vector2(_grid_rect.position * TILE))
+	@warning_ignore("integer_division")
 	var factor: int = TILE / FIRE_CELL
 	var cells: Vector2i = _grid_rect.size * factor
 	var bytes := PackedByteArray()
@@ -1095,6 +1097,7 @@ func _man_aura_cell() -> Vector2i:
 func _update_aura(cell: Vector2i) -> void:
 	var start: int = Time.get_ticks_usec()
 	var radius: int = int(man_radius / float(AURA_CELL))
+	@warning_ignore("integer_division")
 	var light: PackedFloat32Array = LightPropagation.spread(_grid, _grid_rect.size, TILE / AURA_CELL, cell,
 			radius, ROCK_COST, SPREAD_PASSES)
 	var size: int = radius * 2 + 1
@@ -1300,8 +1303,8 @@ func _add_vision() -> void:
 	_polygon_material = ShaderMaterial.new()
 	_polygon_material.shader = POLYGON_SHADER
 	_polygon_material.set_shader_parameter("mask", _vision_viewport.get_texture())
-	for material: ShaderMaterial in [_sdf_material, _polygon_material]:
-		material.set_shader_parameter("outside", VISION_OUTSIDE)
+	for shader_material: ShaderMaterial in [_sdf_material, _polygon_material]:
+		shader_material.set_shader_parameter("outside", VISION_OUTSIDE)
 	_vision_layer = CanvasLayer.new()
 	_vision_layer.layer = 2
 	_vision_cover = ColorRect.new()
@@ -1369,6 +1372,7 @@ func _find_corners() -> void:
 			var bottom_right: bool = _is_grid_solid(x, y)
 			var solid: int = int(top_left) + int(top_right) + int(bottom_left) + int(bottom_right)
 			if solid == 1 or solid == 3 or (solid == 2 and top_left == bottom_right):
+				@warning_ignore("integer_division")
 				var chunk := Vector2i(x / CHUNK_TILES, y / CHUNK_TILES)
 				if not _corner_chunks.has(chunk):
 					_corner_chunks[chunk] = PackedVector2Array()
@@ -1643,8 +1647,8 @@ func _apply() -> void:
 	var softness: float = SOFTNESS_STEPS[softness_step]
 	_sdf_material.set_shader_parameter("eye_radius", SDF_EYE_RADIUS * softness)
 	_polygon_material.set_shader_parameter("mask_blur_px", POLYGON_MASK_BLUR * softness)
-	for material: ShaderMaterial in [_sdf_material, _polygon_material]:
-		material.set_shader_parameter("unseen_blur_px", UNSEEN_BLUR_PX if unseen_blur_on else 0.0)
+	for shader_material: ShaderMaterial in [_sdf_material, _polygon_material]:
+		shader_material.set_shader_parameter("unseen_blur_px", UNSEEN_BLUR_PX if unseen_blur_on else 0.0)
 	if _shade != null:
 		_shade.visible = shade_on
 	_depth.visible = depth_on

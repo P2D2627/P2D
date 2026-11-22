@@ -58,6 +58,11 @@ const STAGE_WIDTH: float = 1920.0
 ## The speakers whose portraits look to the left as drawn; the rest look to the right. Each picture
 ## is mirrored as needed to look towards the text.
 @export var portraits_facing_left: Array[String] = []
+## Where each speaker's portrait breaks out of the vignette and is drawn over its frame, by name, in
+## the vignette's own coordinates as laid out on the right (mirrored with it on the left). A speaker
+## missing here breaks out only above the vignette, as the scene's PopOut does: a head that rises out
+## of it. Velvet, a dog drawn side on, breaks out at her head, so her snout comes out of the frame.
+@export var pop_out_areas: Dictionary[String, Rect2] = {}
 ## The stand-in portrait's colour for the man, whatever name he was given.
 @export var player_portrait_color: Color = Color(0.55, 0.45, 0.3)
 ## Whether the answer he picks is then written in the box as his line, before the lines go on.
@@ -100,6 +105,9 @@ var _skipping: bool = false
 
 ## The x each mirrored part has with the speaker on the right, as laid out in the scene.
 var _right_x: Dictionary[Control, float] = {}
+## The PopOut as laid out in the scene, in the vignette's coordinates: the area a speaker missing from
+## Pop Out Areas breaks out on.
+var _scene_pop_out: Rect2 = Rect2()
 ## How far the arrow that asks for the next line sits from the text's right end; it stays at the end
 ## of the text on either side, away from the vignette.
 var _next_inset: float = 0.0
@@ -135,8 +143,9 @@ func _ready() -> void:
 	_character_label.hide()
 	_dialogue_label.text = ""
 	_portrait_stand_in.hide()
-	for part: Control in [_box, _vignette, _pop_out, _text_area]:
+	for part: Control in [_box, _vignette, _text_area]:
 		_right_x[part] = part.position.x
+	_scene_pop_out = Rect2(_pop_out.position - _vignette.position, _pop_out.size)
 	_next_inset = _text_area.position.x + _text_area.size.x - _next.position.x
 	Engine.get_singleton("DialogueManager").mutated.connect(_on_mutated)
 	_wheel.next_action = next_action
@@ -236,6 +245,16 @@ func show_portrait(speaker: String) -> void:
 	_portrait_stand_in.visible = texture == null and not speaker.is_empty()
 	_portrait_stand_in.color = _stand_in_color(speaker)
 	_portrait_initial.text = speaker.left(1).to_upper()
+	_place_pop_out(pop_out_areas.get(speaker, _scene_pop_out))
+
+
+## Puts the PopOut on area of the vignette, mirrored with it on the left, and keeps the picture in it
+## where the portrait inside the vignette is, so the two line up.
+func _place_pop_out(area: Rect2) -> void:
+	var x: float = (_vignette.size.x - area.end.x) if _on_left else area.position.x
+	_pop_out.position = _vignette.position + Vector2(x, area.position.y)
+	_pop_out.size = area.size
+	_portrait_pop.position = _vignette.position + _portrait.position - _pop_out.position
 
 
 ## Whether speaker is the man: his lines carry the name he typed, or none before he has typed it.
@@ -281,7 +300,7 @@ func _fit_text() -> void:
 	var plain: String = _strip_bbcode(dialogue_line.text)
 	var font: Font = _dialogue_label.get_theme_font(&"normal_font")
 	var width: float = _text_area.size.x
-	var name_height: float = (_character_label.get_content_height() if _character_label.visible else 0.0)
+	var name_height: float = (float(_character_label.get_content_height()) if _character_label.visible else 0.0)
 	var room: float = _text_area.size.y - name_height - _text_area.get_theme_constant(&"separation")
 	var size: int = max_text_size
 	while size > min_text_size and font.get_multiline_string_size(plain, HORIZONTAL_ALIGNMENT_LEFT, width,
