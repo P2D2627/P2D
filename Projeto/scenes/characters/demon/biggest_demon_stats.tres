@@ -1,4 +1,4 @@
-[gd_resource type="Resource" script_class="DemonStats" format=3]
+[gd_resource type="Resource" script_class="DemonStats" format=3 uid="uid://wybkq0yejpah"]
 
 [ext_resource type="Script" uid="uid://5pjnqw8qfj0x" path="res://scenes/characters/demon/demon_stats.gd" id="1_script"]
 [ext_resource type="Script" uid="uid://bghijfm4lswje" path="res://scenes/characters/demon/demon_attack.gd" id="2_attack"]
@@ -8,7 +8,6 @@ script = ExtResource("2_attack")
 animation = &"bite"
 keeps_chasing = true
 attack_range = 130.0
-warning_time = 0.35
 recover_time = 0.3
 kills = true
 
@@ -24,12 +23,11 @@ knockback_height = 70.0
 
 [resource]
 script = ExtResource("1_script")
-chase_speed = 550.0
-ignores_crucifix = true
 sight_distance = 1130.0
 lose_distance = 1630.0
 give_up_time = 0.5
 never_gives_up = true
+follows_trail = true
 alert_time = 0.3
 search_time = 2.5
 out_of_reach_wait = 3.0
@@ -39,13 +37,14 @@ chases_only_on_screen = true
 screen_margin = 160.0
 return_speed = 200.0
 patrol_width = 480.0
+chase_speed = 550.0
 jump_height = 240.0
 max_drop = 1536.0
 drops_down_shafts = true
-follows_trail = true
 attacks = Array[ExtResource("2_attack")]([SubResource("Resource_bite"), SubResource("Resource_lunge")])
 attacks_invulnerable_man = true
 bites_who_lands_on_it = true
+ignores_crucifix = true
 retreat_distance = 160.0
 waits_at_retreat_distance = true
 retreat_pace_width = 60.0

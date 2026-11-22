@@ -10,8 +10,10 @@ extends CanvasLayer
 ## next one with answers, or to the end, without ever answering for him. The skipped lines still do
 ## what they do (an offer presented, an event marked), only unseen. How many lines he skipped goes
 ## to RunStats; it counts for the judgment's numbers, never for the moral record. While it talks,
-## what is in the group Hidden During Dialogue, as the soul bar under the box, hides. It frees
-## itself after the last line.
+## what is in the group Hidden During Dialogue, as the soul bar under the box, hides. What is in the
+## group Talk Watchers, as the camera's TalkFraming, hears talk_began(balloon, talker) as it starts,
+## with the node it was added to, and talk_finished(balloon) as it ends. It frees itself after the last
+## line.
 
 ## He held the key long enough and count lines went by unseen.
 signal lines_skipped(count: int)
@@ -20,6 +22,8 @@ signal lines_skipped(count: int)
 const DEFAULT_PORTRAIT_COLOR: Color = Color(0.35, 0.35, 0.4)
 ## What hides while the balloon talks: whatever the box would cover.
 const HIDDEN_DURING_DIALOGUE: StringName = &"hidden_during_dialogue"
+## What hears when a talk starts and ends, to show it as a scene.
+const TALK_WATCHERS: StringName = &"talk_watchers"
 ## The width the layout is drawn for, which the box mirrors across.
 const STAGE_WIDTH: float = 1920.0
 
@@ -86,6 +90,7 @@ var dialogue_line: DialogueLine:
 				queue_free()
 			else:
 				_hide_others(false)
+				_tell_watchers_finished()
 				hide()
 	get:
 		return dialogue_line
@@ -104,6 +109,8 @@ var _right_x: Dictionary[Control, float] = {}
 ## of the text on either side, away from the vignette.
 var _next_inset: float = 0.0
 var _on_left: bool = false
+## True from telling the Talk Watchers the talk began until telling them it finished.
+var _watched: bool = false
 
 @onready var _balloon: Control = %Balloon
 @onready var _box: TextureRect = %Box
@@ -147,6 +154,7 @@ func _ready() -> void:
 	_wheel.pointed.connect(_answer_feedback.play_move.unbind(1))
 	_wheel.response_selected.connect(_answer_feedback.play_confirm.unbind(1))
 	tree_exiting.connect(_hide_others.bind(false))
+	tree_exiting.connect(_tell_watchers_finished)
 	_mutation_cooldown.timeout.connect(_on_mutation_cooldown_timeout)
 	add_child(_mutation_cooldown)
 	if auto_start:
@@ -190,6 +198,7 @@ func start(with_dialogue_resource: DialogueResource = null, cue: String = "",
 	if not cue.is_empty():
 		start_from_cue = cue
 	_hide_others(true)
+	_tell_watchers_began()
 	dialogue_line = await dialogue_resource.get_next_dialogue_line(start_from_cue, temporary_game_states)
 	show()
 
@@ -254,6 +263,16 @@ func is_on_left() -> bool:
 	return _on_left
 
 
+## Whether the man has the turn: the answers are his to choose, or the line on screen is his.
+func is_mans_turn() -> bool:
+	return is_at_a_choice() or _on_left
+
+
+## Where the answers show on the screen: all the wheel's slots, whether or not any shows now.
+func get_answers_rect() -> Rect2:
+	return _wheel.get_slots_rect()
+
+
 func _stand_in_color(speaker: String) -> Color:
 	if _progress_state != null and speaker == _progress_state.player_name:
 		return player_portrait_color
@@ -275,6 +294,23 @@ func _place_side(on_left: bool) -> void:
 func _hide_others(hidden: bool) -> void:
 	if is_inside_tree():
 		get_tree().call_group(HIDDEN_DURING_DIALOGUE, &"set_visible", not hidden)
+
+
+## Tells the Talk Watchers, once, that a talk began, with the node the balloon was added to, who talks.
+func _tell_watchers_began() -> void:
+	if _watched or not is_inside_tree():
+		return
+	_watched = true
+	get_tree().call_group(TALK_WATCHERS, &"talk_began", self, get_parent())
+
+
+## Tells the Talk Watchers that the talk they heard begin is over: after the last line, or as the balloon
+## leaves the tree, as with its level.
+func _tell_watchers_finished() -> void:
+	if not _watched or not is_inside_tree():
+		return
+	_watched = false
+	get_tree().call_group(TALK_WATCHERS, &"talk_finished", self)
 
 
 ## Whether the line only brings answers, with no speaker and no text: the lines before stay on show.

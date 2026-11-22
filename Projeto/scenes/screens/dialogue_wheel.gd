@@ -128,6 +128,16 @@ func confirm() -> void:
 		response_selected.emit(responses[selected])
 
 
+## The rect all the slots take on the screen, shown or not, so what stays clear of the answers does
+## not depend on how many there are.
+func get_slots_rect() -> Rect2:
+	var rect: Rect2 = Rect2()
+	for index: int in slots.size():
+		var slot: Rect2 = slots[index].get_global_rect()
+		rect = slot if index == 0 else rect.merge(slot)
+	return rect
+
+
 ## Whether aim still points at index with the margin in its favour: answer_towards' rules, with the
 ## deadzone and each line moved back by Aim Release Margin.
 func _still_towards(aim: Vector2, index: int) -> bool:

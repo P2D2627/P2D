@@ -12,6 +12,7 @@
 [ext_resource type="Script" path="res://scenes/others/camera/motion_blur.gd" id="9_blur"]
 [ext_resource type="Script" path="res://scenes/others/camera/fixed_framing.gd" id="10_fixed"]
 [ext_resource type="Resource" path="res://scenes/others/camera/fixed_framing_stats.tres" id="11_fixed_stats"]
+[ext_resource type="Script" path="res://scenes/others/camera/talk_framing.gd" id="12_talk"]
 
 [node name="GameCamera" type="Camera2D"]
 process_physics_priority = 1
@@ -48,3 +49,8 @@ rumble = NodePath("../ControllerRumble")
 [node name="Fixed" type="Node" parent="."]
 script = ExtResource("10_fixed")
 stats = ExtResource("11_fixed_stats")
+
+[node name="TalkFraming" type="Node" parent="." node_paths=PackedStringArray("camera")]
+process_physics_priority = 1
+script = ExtResource("12_talk")
+camera = NodePath("..")

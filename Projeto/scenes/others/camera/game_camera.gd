@@ -11,6 +11,9 @@ extends Camera2D
 ## the camera then goes where the brain says and keeps the rest, cutscenes, shake and motion blur, to itself.
 ## It is a tool script only so zones and lookouts can preview, in the editor, what the screen will show.
 
+## What let the camera be taken (let_be_taken()) lost it: something else directed it.
+signal taken
+
 ## What get_framing_name() says while the camera frames the player its own way, with its zones.
 const OWN_FRAMING_NAME: String = "Zones"
 ## How close to its target the camera must be for a change of zone to be over, in px.
@@ -24,6 +27,10 @@ const LOOKOUT_LET_GO: float = 48.0
 ## does, not moved there, in px: the camera eases to it instead of keeping it on the screen. No run,
 ## wall jump or platform comes near it.
 const PLACED_DISTANCE: float = 200.0
+## For how many physics frames after release() the camera still gives, as its home, where it was on the
+## player before it was directed: a cutscene that starts as a talk ends (play_after_talk) starts one frame
+## later, and comes back to the man as he was framed, not to the talk's shot.
+const HOME_KEPT_FRAMES: int = 2
 
 ## The player the camera follows. Without one, the camera stays where it is.
 @export var player: Player
@@ -70,6 +77,12 @@ var _player_on_screen_across: bool = true
 var _last_player_x: float = 0.0
 ## True while a CameraCutscene moves the camera: it does not follow the player meanwhile.
 var _directed: bool = false
+## True while what directs it lets the next direct() take it (let_be_taken()).
+var _yielding: bool = false
+## Where the camera was on the player when it was last directed, and the physics frame of the last release().
+var _home_centre: Vector2 = Vector2.ZERO
+var _home_zoom: float = 1.0
+var _released_frame: int = -HOME_KEPT_FRAMES - 1
 ## The CameraBrain children, in their order, and the one in use: null while the camera frames the player its own
 ## way.
 var _brains: Array[CameraBrain] = []
@@ -155,9 +168,23 @@ func _physics_process(delta: float) -> void:
 
 
 ## Hands the camera to a cutscene: until release(), it stops following the player, and the cutscene
-## moves and zooms it.
+## moves and zooms it. Taken from what had it with let_be_taken(), that one hears taken.
 func direct() -> void:
+	var from_yielding: bool = _directed and _yielding
+	if not _keeps_home():
+		_home_centre = global_position
+		_home_zoom = zoom.x
 	_directed = true
+	_yielding = false
+	if from_yielding:
+		taken.emit()
+
+
+## While directed, lets the next direct() take the camera, as a cutscene starting while a talk's camera
+## eases back to the man: is_directed() says false meanwhile, so the cutscene may start, and what had the
+## camera hears taken and stops moving it.
+func let_be_taken() -> void:
+	_yielding = _directed
 
 
 ## Gives the camera back to the player. From wherever the cutscene left it, it glides to him as into
@@ -165,6 +192,8 @@ func direct() -> void:
 ## The streak and the way shown end.
 func release() -> void:
 	_directed = false
+	_yielding = false
+	_released_frame = Engine.get_physics_frames()
 	_changing_zone = true
 	_follow_speed = Vector2.ZERO
 	_zoom_speed = 0.0
@@ -175,8 +204,25 @@ func release() -> void:
 		_begin_brain()
 
 
+## True while something moves the camera and keeps it: not while it lets it be taken.
 func is_directed() -> bool:
-	return _directed
+	return _directed and not _yielding
+
+
+## Where a cutscene starting now should come back to: where the camera was on the player before it was
+## last directed, while that one lets it be taken or gave it back less than HOME_KEPT_FRAMES physics
+## frames ago; else where it is.
+func get_home_centre() -> Vector2:
+	return _home_centre if _keeps_home() else global_position
+
+
+## The zoom that goes with get_home_centre().
+func get_home_zoom() -> float:
+	return _home_zoom if _keeps_home() else zoom.x
+
+
+func _keeps_home() -> bool:
+	return _yielding or Engine.get_physics_frames() - _released_frame <= HOME_KEPT_FRAMES
 
 
 ## Frames the player with brain from now on, or the camera's own way with null. Either starts from where the

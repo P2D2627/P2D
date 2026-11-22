@@ -778,6 +778,7 @@ atual, com as zonas.
 | Limite horizontal | com a opção Limit Horizontally desligada (por omissão), a zona limita o ecrã só em cima e em baixo, e na horizontal a câmara segue a personagem como fora das zonas; ligada, limita-o dos quatro lados, para uma sala em que a câmara deve ficar parada | numa zona de 1200 px de largura, com a personagem a 1100 px da borda esquerda, a câmara fica no centro da zona (x 600) com a opção ligada e acompanha a personagem (x 1036) com a opção desligada, com o mesmo enquadramento vertical |
 | Âncora vertical | numa zona mais baixa do que o ecrã, a âncora da zona escolhe onde fica o ecrã: em baixo (1), o fundo do ecrã coincide com o fundo da zona; em cima (0), o topo do ecrã coincide com o topo da zona; ao centro (0,5, o valor por omissão), o excesso divide-se pelos dois lados | numa zona de 400 px de altura, o ecrã mostra 680 px acima da zona com a âncora em baixo e 340 px de cada lado com a âncora ao centro; numa zona mais alta do que o ecrã, a âncora não altera a posição da câmara |
 | Cenas de câmara | uma cena de câmara (`CameraCutscene`) leva a câmara a mostrar, por ordem, os enquadramentos (`CameraShot`) que tem como filhos, cada um com uma Vista (um `ReferenceRect` filho), um tempo de viagem e um tempo de paragem, e volta depois à personagem; começa quando a personagem entra pela primeira vez na sua zona de câmara (Trigger Zone), quando outro elemento a pede, como um desbloqueador, ou quando acaba uma conversa com a deixa escolhida (Talk Cue), como a oferta da Asmodeu; o mundo continua a correr, mas a personagem fica parada, sem crucifixo e sem receber golpes; o que está no caminho da câmara acorda antes de ela lá chegar (ver "Atividade fora do ecrã"); a câmara desloca-se com aceleração e travagem suaves e muda o zoom em proporção constante; um enquadramento com Keep Zoom mantém o zoom que a câmara tinha e só a centra na Vista; entre dois sítios que não cabem no mesmo ecrã, pode afastar-se a meio caminho até os dois caberem (Zoom Out To Travel); com Motion Blur, a imagem arrasta-se na direção da deslocação, tanto mais quanto mais depressa, até Max Blur, num ecrã por cima do nível e por baixo dos menus (`MotionBlur`, na câmara); cada enquadramento avisa quando a câmara lá chega (arrived), para um portão fechar ou abrir à vista; com um evento (Event), só se vê uma vez em todo o jogo, e o jogo grava nesse momento, como com um upgrade aceite, para uma morte não a repetir; sem evento, vê-se sempre que é pedida, como a do desbloqueador B do nível 1, também depois de cada morte; com uma fase de repetição (Replay Phase) e um evento de repetição (Replay Event), uma cena já vista volta a ver-se uma única vez, quando o nível recomeça nessa fase depois da primeira morte nela, passado o tempo de Replay Delay (0,8 s, para o ecrã já ter voltado do negro); as mortes contam-se nas estatísticas da partida (`RunStats`), que uma morte não desfaz, e o evento de repetição grava-se no momento, para a segunda morte não a repetir; é o caso da cena da fase 2 do nível 1, que volta a mostrar o portão B a fechar; o salto termina-a, passado meio segundo | uma viagem de 1 s chegou ao enquadramento em 59 passos de física (60 previstos); entre duas Vistas a 24 000 px uma da outra, com zooms de 1,2 e 0,6 nos extremos, a câmara afastou-se até ao zoom 0,070 a meio; com Keep Zoom, o zoom não mudou (diferença abaixo de 0,0001); com Motion Blur 0,5 e Max Blur 30 px, o arrastamento chegou a 30 px durante a viagem e foi 0 na paragem e no fim; um elemento adormecido junto da Vista acordou dois frames depois do início, antes de a câmara chegar; a cena da fase 2 do nível 1 durou 3,00 s; com o nível recomeçado na fase 2, não se repetiu sem mortes nessa fase, repetiu-se depois da primeira, 47 passos de física após o recomeço (48 previstos), e não se repetiu depois da segunda; a cena do desbloqueador B, de 3 s, viu-se nas três cópias seguidas do nível, sem mudar o zoom (diferença abaixo de 0,001); no fim, a câmara ficou exatamente onde estava antes de começar |
+| Conversas em cena | quando um balão de diálogo começa (#284), entram barras pretas em cima e em baixo, por cima do nível e por baixo do balão (camada 7), com a proporção dos filmes em ecrã largo, 2,39:1 (cada barra com 12,8 % da altura): deslizam com travagem ao entrar (0,8 s) e com aceleração ao sair (0,6 s); a barra de alma esconde-se, como já acontecia; a câmara deixa a personagem e enquadra-a com quem lhe fala (`TalkFraming`, na câmara), num movimento de 1,4 s que começa e acaba devagar, com os pés logo acima da barra de baixo e as cabeças abaixo da roda das respostas, até ao zoom 2,0; o zoom pára onde as cabeças passariam para trás da roda, medido a partir das figuras desenhadas das duas personagens (o retângulo de cada imagem); com as barras de 2,39:1 há 304 px livres entre a roda e a barra de baixo: a conversa com a Velvet fica no zoom 2,0 e a da Asmodeu, mais alta, abaixo dele; a Asmodeu aparece a 300 px da personagem, para as duas figuras se lerem como duas, à direita ou, se aí a figura dela ficar dentro da rocha, como no fundo do poço da fase 2, à esquerda e espelhada para olhar para a personagem (`appear_clear_of`); uma conversa que comece enquanto a câmara volta de outra parte de onde a câmara está e, no fim, volta à posição de antes da primeira, contando com o que a personagem andou entretanto; o plano mantém-se parado 2 s e só depois a câmara se desvia 10 % da largura do ecrã para quem tem a vez (o demónio enquanto fala, a personagem quando aparecem as respostas); durante a conversa a personagem não recebe golpes e nenhum cão começa um ataque; ao fechar o balão, as barras saem e a câmara volta em 1,2 s, com a mesma suavização, à posição e ao zoom que tinha sobre a personagem, contando com o que ela se tenha mexido, e só então é devolvida; uma cena de câmara que comece durante esse regresso toma a câmara no sítio onde está; uma cena de câmara que comece no fim da conversa, como a da fase 2 depois da oferta da Asmodeu, parte do plano da conversa e volta à posição e ao zoom que a câmara tinha sobre a personagem antes da conversa; com Reduce Motion a conversa não muda a câmara, que continua a seguir a personagem como fora dela, e as barras aparecem por fade (0,2 s), com a altura toda; com Show Bars desligado não há barras; até haver ecrã de opções, estes dois valores mudam-se no Inspector do nó `TalkFraming`; numa conversa durante uma cena de câmara, a câmara e a proteção ficam com a cena, e uma proteção que já estava ligada antes da conversa (por exemplo, a personagem agarrada) continua ligada depois | barras de 138,2 px a 1080 px (12,8 % da altura); conversa com a Velvet ao zoom 2,0, com as duas figuras entre a roda e a barra; a câmara não se mexeu (0,000 px) nos primeiros 1,8 s do plano e depois desviou-se 96,0 px do nível para cada lado (192 px do ecrã ao zoom 2,0); no fim, 1,2 s depois de fechar o balão, a câmara estava a 0,002 px da posição de antes e no zoom 1,000 de antes; fundo da roda em y 613,6; com o zoom máximo subido para 4,0, o plano da Asmodeu parou em 1,971, os 304 px livres a dividir pelos 154 px das duas figuras; uma cena de câmara no fim da conversa terminou no zoom 1,249, o de antes da conversa (1,971 durante a conversa), e a 0,002 px da posição de antes; com Reduce Motion, a meio do fade as barras tinham a altura toda e opacidade 0,50, e a câmara nunca saiu da personagem |
 | Miradouros | antes de uma queda, de uma subida ou de um entroncamento, um miradouro (`CameraLookout`) afasta a câmara para mostrar esse troço: enquanto a personagem estiver no retângulo do miradouro, e depois durante o salto ou a queda até aterrar, o ecrã enche a Vista (um `ReferenceRect` filho) e nunca mostra nada fora dela, pelo que a Vista se desenha só sobre esse troço do caminho; tem prioridade sobre as zonas; no chão, deixa de valer quando o corpo fica a mais de um tile (48 px) do retângulo | numa Vista de 2400 × 1350 px, o zoom fica em 0,8 e o ecrã coincide com a Vista; numa Vista de 6000 × 5000 px, o zoom para em 0,7 e o ecrã segue a personagem sem sair dela; ao sair de um rebordo, o miradouro mantém-se durante toda a queda e acaba na aterragem |
 
 As zonas de câmara definem-se na cena de cada nível (ver "Câmara" em "Para quem programa"). Cada
@@ -1496,6 +1497,11 @@ godot --headless --fixed-fps 60 --path Projeto --script res://tests/test_bramble
 godot --headless --fixed-fps 60 --path Projeto --script res://tests/test_death_iris.gd
 godot --headless --fixed-fps 60 --path Projeto --script res://tests/test_gate.gd
 godot --headless --fixed-fps 60 --path Projeto --script res://tests/test_camera_cutscene.gd
+godot --headless --fixed-fps 60 --path Projeto --script res://tests/test_talk_framing.gd
+godot --headless --fixed-fps 60 --path Projeto --script res://tests/test_phase2_save_entry.gd
+godot --headless --fixed-fps 60 --path Projeto --script res://tests/test_fires_seated.gd
+godot --headless --fixed-fps 60 --path Projeto --script res://tests/test_menu_music_fade.gd
+godot --headless --fixed-fps 60 --path Projeto --script res://tests/test_asmodeus_appears_in_the_open.gd
 godot --headless --fixed-fps 60 --path Projeto --script res://tests/test_collapsing_platform.gd
 godot --headless --fixed-fps 60 --path Projeto --script res://tests/test_lust_phase_2.gd
 godot --headless --fixed-fps 60 --path Projeto --script res://tests/test_lust_phase_2_route.gd
@@ -3244,7 +3250,7 @@ outra por acaso:
 | Ordem | O que se desenha | Como |
 |---|---|---|
 | 1 | camadas Far, Middle e Near do fundo | primeiro nó da cena do nível, com Z Index 0 |
-| 2 | plano de jogo: portões, personagem, demónios, tiles e as outras peças, por esta ordem | nós seguintes do nível, com Z Index 0 |
+| 2 | plano de jogo: portões, personagem, demónios, picos, tiles e as outras peças, por esta ordem | nós seguintes do nível, com Z Index 0 (os picos com 1) |
 | 3 | camada Front do fundo | Z Index 10 |
 | 4 | interface e overlay de depuração | `CanvasLayer`, por cima de tudo |
 
@@ -3254,8 +3260,19 @@ antes dos demónios, porque estes se movem depois dela em cada passo de física 
 conta com isso). Um demónio que avisa, investe ou agarra sobe para Z Index 1, para ficar por cima
 da personagem e dos outros demónios. A iluminação do nível 1 põe a rocha também em 1, e com o mesmo
 Z Index vale a ordem dos nós, por isso esse demónio continua por baixo da rocha; sem a iluminação, a
-rocha fica em 0 e ele passa por cima dela. O `test_dogs_behind_rock.gd` verifica a ordem com a
-iluminação, e também que a marca de alerta e os picos continuam por cima da rocha.
+rocha fica em 0 e ele passa por cima dela. Os picos vêm logo antes dos tiles (#284): com a
+iluminação, ficam por baixo da rocha e das pedras da orla e por cima da cópia da rocha que dá
+profundidade, como a personagem e os fogos, e nascem entre as pedras em vez de as taparem. As pedras
+da orla saem 20,4 px da rocha e escondem a metade de baixo dos 40 px dos dentes. Os picos continuam
+em Z Index 1, por cima da personagem, que na morte nas silvas é puxada para dentro delas. O
+`test_dogs_behind_rock.gd` verifica a ordem com a iluminação, que a marca de alerta continua por cima
+da rocha e que os picos ficam por baixo dela.
+
+Os fogos do nível 1 ficam 12 px abaixo do topo da rocha (`FIRE_SINK`, no `lighting_rig.gd`, #284).
+As chamas afinam na base, e a fogueira só chega à largura toda 10,8 px acima do fundo do desenho;
+pousadas no topo da rocha, essa ponta fina via-se por cima das pedras e o fogo parecia flutuar.
+O `test_fires_seated.gd` verifica que cada um dos 87 fogos está sobre rocha, com ar por cima, entre
+10,8 px e 20,4 px abaixo do topo (medido: 12,0 px em todos).
 
 #### Linha de vista: um componente por objeto
 
@@ -3323,6 +3340,15 @@ Pausable: o nível para e o Main continua a receber o Esc. O overlay de depuraç
 mesmo acontece a qualquer nó de um nível com Process Mode Always. Perder o foco da janela também pausa
 (Main › Pause On Focus Loss), opção que convém desligar quando se afinam valores pelo separador
 Remote do editor.
+
+Na pausa, um véu preto a 80 % (`MenuBackdrop` › Background Alpha) cobre o nível, que continua a
+ver-se por baixo (#284; era 60 %). A música dos menus (`MenuMusic`) entra quando a pausa abre e sai
+quando fecha, em 1,5 s de cada vez. O ouvido sente o volume em decibéis e não no ganho: subir o ganho
+em linha reta trazia quase todo o volume nos primeiros instantes e tirava-o de repente no fim. Por
+isso a subida e a descida seguem uma curva cúbica (Fade Curve), lenta ao começar a subir e rápida ao
+começar a descer: fica mais perto de uma variação regular do volume, sem a espera em silêncio de uma
+rampa em decibéis a partir de −80 dB. O `test_menu_music_fade.gd` mediu, a meio de cada fade, 0,125 do ganho (−18 dB),
+contra 0,500 (−6 dB) da linha reta.
 
 O Espaço e o A servem para saltar e para confirmar nos menus, e o B para voltar. Os
 botões do Godot disparam quando a tecla é largada, e o B fecha a pausa também ao ser largado. Isso
@@ -3664,6 +3690,28 @@ O `test_dialogue_skip.gd` verifica que o salto para nas respostas sem escolher n
 das falas saltadas é apresentada, que um toque curto não salta, que uma conversa sem respostas
 termina e que o retrato provisório mostra a inicial.
 
+Conversa em cena (#284). O balão avisa do início e do fim de cada conversa os nós do grupo
+`talk_watchers`, e passa o nó onde foi colocado, que é quem fala. O `TalkFraming` da câmara pertence
+a esse grupo. Assim, qualquer personagem que abra um balão recebe as barras e o enquadramento sem
+ligações na cena do nível. Ligar os sinais de cada personagem no nível obrigaria a repetir a ligação
+em cada personagem e em cada nível, e foi posto de lado. A conversa também não é um modo de câmara
+(`CameraBrain`): os modos entram na troca da tecla F10, e a conversa é um momento passageiro, como as
+cenas de câmara, com o mesmo `direct()` e `release()`. As contas do plano estão numa classe sem nós
+(`TalkShot`), testada sozinha. O espaço livre por baixo da roda mede-se no ecrã, a partir dos lugares
+das respostas: o palco do balão, com a caixa e a roda, está desenhado a 80 % do tamanho, a partir do
+centro de cima, e o fundo da roda fica em y 613,6 num ecrã de 1080 px, e não em y 767, como as
+coordenadas da cena sugerem. Uma cena de câmara pede à câmara a posição a que deve voltar
+(`get_home_centre()`): enquanto volta do plano da conversa e durante dois frames de física depois de
+devolvida, a câmara dá a posição que tinha sobre a personagem antes da conversa, e não o plano da
+conversa. No regresso, a câmara fica livre para ser tomada (`let_be_taken()`): uma cena de câmara que a
+peça nesse momento recebe-a no sítio onde está, e o regresso pára. A proteção contra golpes é um
+só interruptor na hurtbox, partilhado com as cenas de câmara e com o agarrão; a conversa só o desliga
+se foi ela a ligá-lo e se nenhuma cena de câmara tiver a câmara nesse momento. O `test_talk_framing.gd`
+verifica as contas, a conversa com a Velvet (barras, zoom, plano parado, desvio para cada lado,
+proteção e regresso), o fundo da roda e o seu limite com a Asmodeu, o Reduce Motion, as barras
+desligadas, a conversa durante uma cena de câmara, a cena de câmara no fim da conversa e a proteção
+que já estava ligada.
+
 #### Estatísticas da partida: mortes, zonas e tempo
 
 O autoload `RunStats` conta as mortes do homem por fase e por zona de cada nível. Estes números
@@ -3759,7 +3807,16 @@ A oferta por mortes só é verificada enquanto há uma à espera; sem ela, o dir
 cada frame. Uma conversa só conta como tida quando o homem responde à oferta. Nesse momento, o
 diretor marca-a no `GameState` (`answered_` e o nome do cue), e a oferta por mortes deixa de estar à
 espera. Se o jogador sair antes de responder, a conversa do início de uma fase volta assim que ele
-pousa no chão depois do Continue, e a oferta por mortes continua à espera da sua zona. Aceitar o atalho fecha as ofertas por mortes. A saída do nível (`PhaseExit` sem fase
+pousa no chão depois do Continue, e a oferta por mortes continua à espera da sua zona. Aceitar o atalho fecha as ofertas por mortes.
+
+A conversa do início de uma fase começa no ponto de gravação dessa fase (o sinal `reached`) e
+espera que o homem pouse no chão. Até à #284, o `Phase2Save` só tinha uma caixa, à esquerda da boca
+do poço por onde se chega à fase 2. Quem entrava pela boca ou caía direto na saliência não gravava a
+fase 2 nem ouvia a Asmodeu, e uma morte levava-o de volta à fase 1. A caixa nova, `MouthAndLedge`
+(232 × 96 px), cobre a boca e a saliência. Começa 8 px dentro do poço, para não apanhar o homem no
+sítio onde renasce. O `test_phase2_save_entry.gd` verifica quatro entradas: pela beira esquerda, na
+saliência, na boca ainda no ar (a gravação acontece e a conversa espera pelo chão) e o sítio onde
+renasce, que não conta como chegada. A saída do nível (`PhaseExit` sem fase
 seguinte e com Walk In Leads On desligado) só termina o nível depois da última fala de `stairs`;
 nessa altura o diretor marca o nível como feito (`lust_done`), com a tenda como ponto de chegada,
 o Main grava, escurece o ecrã e volta ao menu principal. Enquanto não houver nível 2, o Continue

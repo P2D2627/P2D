@@ -14,7 +14,7 @@ visible = false
 script = ExtResource("1_script")
 
 [node name="MenuBackdrop" parent="." instance=ExtResource("4_backdrop")]
-background_alpha = 0.6
+background_alpha = 0.8
 
 [node name="Center" type="CenterContainer" parent="."]
 layout_mode = 3

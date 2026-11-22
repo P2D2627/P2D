@@ -19,6 +19,8 @@ signal talk_ended(cue: String)
 
 ## Name of her change to the man's movement, and of what keeps his crucifix down, while she talks.
 const SOURCE: StringName = &"asmodeus"
+## Px her figure is taken in all round when checked for rock (see Appear Clear Of).
+const CLEAR_MARGIN: float = 4.0
 
 ## The man she talks to.
 @export var player: Player
@@ -31,8 +33,13 @@ const SOURCE: StringName = &"asmodeus"
 @export var next_action: StringName = &"jump"
 ## Whether she shows only while she talks, as if she came and went.
 @export var visible_while_talking_only: bool = true
-## Where she stands from the man when appear_at() puts her next to him.
-@export var appear_offset: Vector2 = Vector2(180.0, 0.0)
+## Where she stands from the man when appear_at() puts her next to him: 300 px apart, so in the talk's shot
+## the two read as two, not as one figure (#284).
+@export var appear_offset: Vector2 = Vector2(300.0, 0.0)
+## The physics layers she never appears inside: the world's rock. Where Appear Offset puts her figure in
+## them, as at the bottom of phase 2's shaft, she appears as far on his other side, mirrored to face him, if
+## that side is clear; with both sides in rock she keeps Appear Offset's side.
+@export_flags_2d_physics var appear_clear_of: int = 1
 ## What stands still while she talks, as the level's dogs, so none bites the man she holds: each
 ## one is switched off, its children too, and back on after.
 @export var stills: Array[Node] = []
@@ -42,6 +49,8 @@ var _talking_cue: String = ""
 var _modes_before: Dictionary[Node, ProcessMode] = {}
 ## No run and no jump while she talks.
 var _modifier: MovementModifier = MovementModifier.new(0.0, 1.0, true)
+
+@onready var _sprite: Sprite2D = $Sprite as Sprite2D
 
 
 func _ready() -> void:
@@ -63,9 +72,19 @@ func get_talking_cue() -> String:
 	return _talking_cue
 
 
-## Puts her next to point, on the man's side Appear Offset says.
+## Her drawing, for what frames her, as the camera in a talk.
+func get_figure() -> Node2D:
+	return _sprite
+
+
+## Puts her next to point, on the side Appear Offset says, or on the other if hers is in rock (Appear Clear Of).
 func appear_at(point: Vector2) -> void:
+	var mirrored: Vector2 = point + Vector2(-appear_offset.x, appear_offset.y)
 	global_position = point + appear_offset
+	_sprite.flip_h = false
+	if _in_rock(global_position) and not _in_rock(mirrored):
+		global_position = mirrored
+		_sprite.flip_h = true
 
 
 ## She talks from cue. Nothing happens while she is already talking.
@@ -107,6 +126,20 @@ func _on_balloon_tree_exited() -> void:
 	if visible_while_talking_only:
 		hide()
 	talk_ended.emit(cue)
+
+
+## Whether her figure, standing at spot, overlaps what Appear Clear Of names. The figure is taken in by
+## Clear Margin all round, so her feet on the floor do not count as in it.
+func _in_rock(spot: Vector2) -> bool:
+	var figure: Rect2 = TalkFraming.drawn_rect(_sprite).grow(-CLEAR_MARGIN)
+	figure.position += spot - global_position
+	var box := RectangleShape2D.new()
+	box.size = figure.size
+	var query := PhysicsShapeQueryParameters2D.new()
+	query.shape = box
+	query.transform = Transform2D(0.0, figure.get_center())
+	query.collision_mask = appear_clear_of
+	return not get_world_2d().direct_space_state.intersect_shape(query, 1).is_empty()
 
 
 func _still_the_stills() -> void:

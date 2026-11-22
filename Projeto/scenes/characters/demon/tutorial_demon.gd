@@ -145,6 +145,11 @@ func get_state() -> State:
 	return _state
 
 
+## Her drawing, for what frames her, as the camera in a talk.
+func get_figure() -> Node2D:
+	return _sprite
+
+
 func _talk(cue: String) -> void:
 	_change_state(State.TALKING)
 	player.add_movement_modifier(SOURCE, _modifier)

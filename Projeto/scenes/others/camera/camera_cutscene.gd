@@ -184,9 +184,10 @@ func _begin(mark: StringName) -> void:
 	if not mark.is_empty() and _progress != null:
 		_progress.mark_event(mark)
 		event_marked.emit()
-	_home_centre = camera.global_position
-	_home_zoom = camera.zoom.x
-	_last_centre = _home_centre
+	# Home is where the camera was on the man: right after a talk, not the talk's shot it starts from.
+	_home_centre = camera.get_home_centre()
+	_home_zoom = camera.get_home_zoom()
+	_last_centre = camera.global_position
 	_index = 0
 	_holding = false
 	_time = 0.0

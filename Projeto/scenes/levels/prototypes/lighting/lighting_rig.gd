@@ -129,6 +129,10 @@ const FIRE_SOUND: PackedScene = preload("res://scenes/others/ambience/fire_sound
 ## height (x, y) above its base.
 const FIRE_EMBER_WIDTH: float = 0.5
 const FIRE_EMBER_HEIGHT := Vector2(0.5, 0.85)
+## How far below the rock's top each fire stands, in px. The flames thin out at their base (the bonfire's
+## takes 10.8 px to reach its full width) and the rim's stones, drawn in front, stick 20.4 px out of the
+## rock: sunk this far, the stones hide the thin base and the flame burns in them, not on top (#284).
+const FIRE_SINK: float = 12.0
 ## Where fires go, over the whole level: in the middle of each floor at least Min Floor tiles wide,
 ## so on ground he walks and not on a step he jumps to, with Open Above open tiles over it inside the
 ## map (the rock round the cave has open air above its top row); a long floor gets one every
@@ -590,7 +594,7 @@ func _setup() -> void:
 		elif argument.begins_with("--lighting-raise="):
 			_raise_crucifix.call_deferred(argument.get_slice("=", 1).to_int())
 	if near_fire >= 0 and near_fire < _fires.size():
-		_player.global_position = _fires[near_fire].global_position + fire_offset
+		_player.global_position = _fires[near_fire].global_position + fire_offset - Vector2(0.0, FIRE_SINK)
 	var dogs: Array[Demon] = _find_dogs()
 	if near_dog >= 0 and near_dog < dogs.size():
 		_player.global_position = dogs[near_dog].global_position + NEAR_DOG_OFFSET
@@ -754,7 +758,7 @@ func _find_fire_spots() -> Array[Vector2]:
 			chosen.append(cell)
 	var spots: Array[Vector2] = []
 	for cell: Vector2i in chosen:
-		spots.append(_tiles.to_global(_tiles.map_to_local(cell) - Vector2(0.0, TILE * 0.5)))
+		spots.append(_tiles.to_global(_tiles.map_to_local(cell) - Vector2(0.0, TILE * 0.5 - FIRE_SINK)))
 	return spots
 
 

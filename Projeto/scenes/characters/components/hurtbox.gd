@@ -72,6 +72,11 @@ func set_closed(closed: bool) -> void:
 	_closed = closed
 
 
+## True while closed with set_closed(), so what closes it for a while can tell whether something else had.
+func is_closed() -> bool:
+	return _closed
+
+
 ## True while a hit can land: neither invulnerable nor closed. What attacks reads it, so it starts
 ## no attack that could do nothing, and can_be_pierced() if its hits pierce invulnerability.
 func takes_hits() -> bool:

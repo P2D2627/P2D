@@ -2,8 +2,10 @@
 # depth on, as the game shows it: a dog at rest, and one raised as it warns, lunges or holds the man,
 # is drawn below the rock's tiles and the stone rim, so a tail against a wall and a dog that pulls the
 # man down stay behind the rock. What the raise is for still holds: the raised dog is drawn over the
-# man and over a dog at rest (ADR 0053). And what was over the rock stays there: a dog's alert mark
-# and the spikes. The man stays before the dogs in the tree, so he moves first on each physics frame,
+# man and over a dog at rest (ADR 0053). A dog's alert mark stays over the rock. The spikes are drawn
+# below the rock and the rim and over the rock's far copy (ProtoDepth), so they grow from between the
+# stones as the man and the fires stand there (#284), and still over the man, whom they pull into them
+# when they kill him. The man stays before the dogs in the tree, so he moves first on each physics frame,
 # as the bite on a dog's back counts on (DemonBackBite). Drawn over means a higher Z Index, counted up through the parents that pass theirs
 # on, or the same and later in the tree. A dog's art takes its stand-in's Z Index on every frame drawn
 # (DemonPlaceholder), so the stand-in stands for the art here, as the dogs far from the man sleep.
@@ -50,11 +52,15 @@ func _initialize() -> void:
 	results.append(report(dogs.is_greater_than(man),
 			"The man before the dogs in the tree, so he moves first on each physics frame (DemonBackBite): %s"
 			% dogs.is_greater_than(man)))
-	results.append(report(_drawn_over(mark, tiles) and _drawn_over(mark, rim)
-			and spike != null and _drawn_over(spike, tiles),
-			"Over the rock still: a dog's alert mark %s, the spikes %s"
-			% [_drawn_over(mark, tiles) and _drawn_over(mark, rim),
-					spike != null and _drawn_over(spike, tiles)]))
+	results.append(report(_drawn_over(mark, tiles) and _drawn_over(mark, rim),
+			"Over the rock still: a dog's alert mark %s" % (_drawn_over(mark, tiles) and _drawn_over(mark, rim))))
+	var depth: CanvasItem = level.get_node_or_null(^"ProtoDepth") as CanvasItem
+	var spike_between: bool = (spike != null and depth != null and _drawn_over(tiles, spike)
+			and _drawn_over(rim, spike) and _drawn_over(spike, depth))
+	var spike_over_man: bool = spike != null and _drawn_over(spike, man)
+	results.append(report(spike_between and spike_over_man,
+			"The spikes below the rock's tiles and the rim and over its far copy %s; over the man %s"
+			% [spike_between, spike_over_man]))
 	room.queue_free()
 	await process_frame
 	var passed: bool = not results.has(false)

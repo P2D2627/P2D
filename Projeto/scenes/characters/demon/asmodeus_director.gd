@@ -3,7 +3,9 @@ extends Node
 
 ## When Asmodeus talks in a level, and from which cue; what she says is all in the .dialogue file.
 ## - The first time the man reaches a save point whose Starts Phase is in Phase Cues, she talks from
-##   that phase's cue: Lust's shortcut, at the start of phases 2 and 3.
+##   that phase's cue: Lust's shortcut, at the start of phases 2 and 3. She waits for him to stand on
+##   the floor first, so a save reached in the air, as coming up a shaft, never has her talk to a man
+##   falling back down it.
 ## - When RunStats holds offers for his deaths, each waits at the zone it is for, and she talks from
 ##   Death Cue as soon as he stands in one: at once if he comes back to life inside it, or as he
 ##   walks in, before he tries it again. Several zones can wait at once, as one early on and one he
@@ -77,7 +79,7 @@ func _ready() -> void:
 		if not phase_cues.has(phase) or is_answered(phase_cues[phase]):
 			continue
 		if not save_point.is_reached():
-			save_point.reached.connect(_say.bind(phase_cues[phase]))
+			save_point.reached.connect(_on_phase_reached.bind(phase_cues[phase]))
 		elif phase > due_phase:
 			# Reached in the save, and left before the answer: it comes again.
 			due_phase = phase
@@ -114,6 +116,11 @@ func _physics_process(_delta: float) -> void:
 ## Whether the offer of cue was answered, in GameState.
 func is_answered(cue: String) -> bool:
 	return _progress.has_event(StringName(ANSWERED_PREFIX + cue))
+
+
+## He reached the start of a phase: its cue is due, and she says it once he stands on the floor.
+func _on_phase_reached(cue: String) -> void:
+	_due_cue = cue
 
 
 ## She talks from cue: from Home with at_home and a Home set, otherwise next to the man.
