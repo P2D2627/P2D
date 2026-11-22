@@ -7,8 +7,12 @@ extends Camera2D
 ## down in long falls, and keeps to the camera zone the player is in. Values are in Stats; each zone
 ## sets its own limits and zoom. A lookout goes before the zone: it pulls back to show its View until
 ## the player lands. Runs in the physics step, after the player.
+## A CameraBrain child frames the player another way instead, while it is in use (use_brain(), cycle_framing()):
+## the camera then goes where the brain says and keeps the rest, cutscenes, shake and motion blur, to itself.
 ## It is a tool script only so zones and lookouts can preview, in the editor, what the screen will show.
 
+## What get_framing_name() says while the camera frames the player its own way, with its zones.
+const OWN_FRAMING_NAME: String = "Zones"
 ## How close to its target the camera must be for a change of zone to be over, in px.
 const ZONE_CHANGE_DONE: float = 0.5
 ## Below this speed the player counts as standing still, in px/s.
@@ -66,6 +70,10 @@ var _player_on_screen_across: bool = true
 var _last_player_x: float = 0.0
 ## True while a CameraCutscene moves the camera: it does not follow the player meanwhile.
 var _directed: bool = false
+## The CameraBrain children, in their order, and the one in use: null while the camera frames the player its own
+## way.
+var _brains: Array[CameraBrain] = []
+var _brain: CameraBrain = null
 
 ## Optional children: what keeps the world near the screen awake, and the streak of a fast move.
 @onready var _activity: ActivityTracker = get_node_or_null(^"%ActivityTracker") as ActivityTracker
@@ -84,6 +92,10 @@ func _ready() -> void:
 	if _activity != null:
 		_activity.focus = player
 	_gather_zones()
+	for child: Node in get_children():
+		if child is CameraBrain:
+			_brains.append(child as CameraBrain)
+			child.tree_exiting.connect(_on_brain_leaving.bind(child))
 	if not is_instance_valid(level_tiles):
 		level_tiles = _find_level_tiles()
 	_focus = player.global_position
@@ -110,6 +122,9 @@ func _physics_process(delta: float) -> void:
 		set_physics_process(false)
 		return
 	if _directed:
+		return
+	if _brain != null:
+		_follow_brain(delta)
 		return
 	var followed: Vector2 = global_position - _lead
 	var placed: bool = absf(player.global_position.x - _last_player_x) > PLACED_DISTANCE
@@ -146,7 +161,8 @@ func direct() -> void:
 
 
 ## Gives the camera back to the player. From wherever the cutscene left it, it glides to him as into
-## a new zone, no faster than Zone Change Speed. The streak and the way shown end.
+## a new zone, no faster than Zone Change Speed, or the brain in use ends and begins again from there.
+## The streak and the way shown end.
 func release() -> void:
 	_directed = false
 	_changing_zone = true
@@ -154,10 +170,56 @@ func release() -> void:
 	_zoom_speed = 0.0
 	set_motion_blur(Vector2.ZERO)
 	show_the_way([])
+	if _brain != null:
+		_brain.end()
+		_begin_brain()
 
 
 func is_directed() -> bool:
 	return _directed
+
+
+## Frames the player with brain from now on, or the camera's own way with null. Either starts from where the
+## screen is, so the switch glides instead of jumping.
+func use_brain(brain: CameraBrain) -> void:
+	if brain == _brain or not is_instance_valid(player):
+		return
+	if _brain != null:
+		_brain.end()
+	_brain = brain
+	if _brain != null:
+		_begin_brain()
+	else:
+		_resume_own_framing()
+
+
+## Frames the player the way named framing_name: OWN_FRAMING_NAME, or a CameraBrain child's node name. An
+## unknown name changes nothing. at_once, as when a new copy of the level starts with a brain already chosen,
+## the screen starts where the brain frames him instead of gliding there.
+func use_framing(framing_name: String, at_once: bool = false) -> void:
+	if framing_name == OWN_FRAMING_NAME:
+		use_brain(null)
+		return
+	for brain: CameraBrain in _brains:
+		if String(brain.name) == framing_name:
+			use_brain(brain)
+			if at_once and _brain == brain:
+				brain.cut_to_framing()
+				global_position = brain.get_centre()
+				zoom = Vector2.ONE * brain.get_zoom()
+				reset_physics_interpolation()
+			return
+
+
+## Goes to the next way of framing the player: its own, then each CameraBrain child in order, then its own.
+func cycle_framing() -> void:
+	var next: int = _brains.find(_brain) + 1
+	use_brain(_brains[next] if next < _brains.size() else null)
+
+
+## The name of the way the camera frames the player now: the brain's node name, or OWN_FRAMING_NAME.
+func get_framing_name() -> String:
+	return String(_brain.name) if _brain != null else OWN_FRAMING_NAME
 
 
 ## Streaks the screen along streak, in px of the screen, through its MotionBlur child, if it has one.
@@ -232,6 +294,53 @@ func _preview(centres: Rect2, level: float) -> Dictionary:
 	var half_screen: Vector2 = _screen_size() / (2.0 * level)
 	return {"view": Rect2(centres.position - half_screen, centres.size + 2.0 * half_screen),
 			"zoom": level, "screen": 2.0 * half_screen}
+
+
+## Begins the brain from where the screen is, with the camera's own limits, so the brain needs nothing from its
+## parent.
+func _begin_brain() -> void:
+	_brain.camera_limits = _own_limits()
+	_brain.begin(player, level_tiles, global_position, zoom.x)
+
+
+## One step with a brain: the screen goes where the brain says, at its zoom, and a cut is not drawn as a glide.
+## The zone and the lookout the player is in stay current meanwhile, so the overlay tells the truth and, back to
+## its own way, the camera knows which zone he entered last.
+func _follow_brain(delta: float) -> void:
+	_zone = _zone_of(player.global_position)
+	_lookout = _next_lookout(player.global_position)
+	_brain.advance(delta)
+	global_position = _brain.get_centre()
+	zoom = Vector2.ONE * _brain.get_zoom()
+	if _brain.has_cut():
+		reset_physics_interpolation()
+
+
+## A brain leaving the tree is dropped from the cycle. If it was in use, the camera goes back to its own
+## way, unless the camera is leaving too, as when its level is freed.
+func _on_brain_leaving(brain: CameraBrain) -> void:
+	_brains.erase(brain)
+	if brain != _brain:
+		return
+	if _is_leaving(self) or not is_instance_valid(player):
+		_brain = null
+		return
+	use_brain(null)
+
+
+## Back to its own way after a brain: from wherever the brain left the screen, the camera glides to the man as
+## into a new zone, as after a cutscene. What it knew of him from before the brain (the lead, how long he stood
+## still, where he was across and whether he was on the screen) is set afresh from now.
+func _resume_own_framing() -> void:
+	_changing_zone = true
+	_follow_speed = Vector2.ZERO
+	_zoom_speed = 0.0
+	_lead = Vector2.ZERO
+	_lead_speed = Vector2.ZERO
+	_idle_time = 0.0
+	_last_player_x = player.global_position.x
+	_player_on_screen_across = (absf(player.global_position.x - global_position.x)
+			<= get_viewport_rect().size.x / (2.0 * zoom.x))
 
 
 ## While sliding into a new zone, holds the whole step of the screen to Zone Change Speed by keeping

@@ -16,9 +16,11 @@ extends CanvasLayer
 ## cheats on and off (#273), also with the text hidden and while paused, and a label of their own
 ## shows while either is on; on the lighting page the rig gets F1 and F2 first, as its other keys.
 ## They stay on in the next copy of the level, as after a death or a jump to a phase, until pressed
-## again. Outside debug builds it frees itself, so a release export never shows it and nothing
-## happens through it, the lighting keys and the cheats included. Its scene sets the process mode to
-## Always, so it keeps working while the game is paused.
+## again. Debug Camera Next (F10) switches the camera to its next way of framing the man (#282), also
+## with the text hidden, and the way chosen stays in the next copy of the level, as the cheats; on the
+## lighting page the rig gets F10 first. Outside debug builds it frees itself, so a release export
+## never shows it and nothing happens through it, the lighting keys, the cheats and F10 included. Its
+## scene sets the process mode to Always, so it keeps working while the game is paused.
 
 ## The pages, in the order Toggle Debug Overlay goes through them.
 enum Page { HIDDEN, NUMBERS, LIGHTING }
@@ -27,6 +29,7 @@ const TOGGLE_ACTION: StringName = &"toggle_debug_overlay"
 const DAMAGE_ACTION: StringName = &"debug_damage"
 const GOD_MODE_ACTION: StringName = &"debug_god_mode"
 const NOCLIP_ACTION: StringName = &"debug_noclip"
+const CAMERA_NEXT_ACTION: StringName = &"debug_camera_next"
 ## What the cheats' label says for each, and between the two when both are on.
 const GOD_MODE_TEXT: String = "GOD MODE"
 const NOCLIP_TEXT: String = "NOCLIP"
@@ -68,6 +71,10 @@ static var _chosen_in: String = ""
 ## overlay gives them to its man as it gets ready. Only F1 and F2 change them, and the tests.
 static var god_mode: bool = false
 static var noclip: bool = false
+## The way of framing the man last chosen with F10 in this session, by name, or empty before the first
+## press. Static for the same reason: each overlay gives it to its level's camera as it gets ready. Only
+## F10 changes it, and the tests.
+static var camera_mode: String = ""
 
 ## On, the overlay starts on the numbers page; off, hidden.
 @export var start_visible: bool = true
@@ -125,12 +132,16 @@ func _ready() -> void:
 		player.jumped.connect(_on_jumped)
 		player.wall_jumped.connect(_on_wall_jumped)
 	_give_the_cheats()
+	if not camera_mode.is_empty() and is_instance_valid(camera):
+		# Deferred: the camera takes in its brains in its own _ready, which may come after this one.
+		_give_the_camera_mode.call_deferred()
 
 
 ## On the lighting page, the lighting rig gets each key first, F3 alone excepted. Shortcut input
 ## runs before any unhandled input, so neither a line on screen nor the debug actions on the same F
-## keys (F4, F7 to F9, which also take their key with Ctrl held) take them: the rig keeps the keys
-## it had when it read them itself, before the overlay had pages. A key it does not use goes on.
+## keys (F4, F7 to F10, which also take their key with Ctrl held) take them: the rig keeps the keys
+## it had when it read them itself, before the overlay had pages. A key it does not use goes on. On
+## the other pages, Ctrl+F10 switches the camera, as F10.
 func _shortcut_input(event: InputEvent) -> void:
 	if (_page == Page.LIGHTING and not event.is_action(TOGGLE_ACTION, true)
 			and _lighting_takes(event)):
@@ -153,6 +164,10 @@ func _unhandled_input(event: InputEvent) -> void:
 	elif _is_pressed(event, NOCLIP_ACTION):
 		noclip = not noclip
 		_give_the_cheats()
+		get_viewport().set_input_as_handled()
+	elif _is_pressed(event, CAMERA_NEXT_ACTION) and is_instance_valid(camera):
+		camera.cycle_framing()
+		camera_mode = camera.get_framing_name()
 		get_viewport().set_input_as_handled()
 	elif _is_pressed(event, ACCEPT_OFFER_ACTION):
 		_answer_offer(true)
@@ -376,10 +391,19 @@ func _soul_points_section() -> String:
 			soul_points.get_max_sp(), soul_points.get_regen_rate(), status]
 
 
-## The camera zone the player is in, or none, and how far the camera leads ahead and down, in px.
+## Gives the camera the way of framing the man last chosen with F10, as the overlay gets ready: at once, so a new
+## copy of the level, as after a death, starts already framed that way.
+func _give_the_camera_mode() -> void:
+	if is_instance_valid(camera):
+		camera.use_framing(camera_mode, true)
+
+
+## The way the camera frames the man, on a line of its own; then the camera zone he is in, or none, and how
+## far the camera's own way leads ahead and down, in px, which stay as they were while a brain frames him.
 func _camera_section() -> String:
-	return "camera zone %s   look ahead %+.0f px   look down %+.0f px" % [
-			camera.get_zone_name(), camera.get_look_ahead(), camera.get_look_down()]
+	return "camera mode %s   (F10: next)\ncamera zone %s   look ahead %+.0f px   look down %+.0f px" % [
+			camera.get_framing_name(), camera.get_zone_name(), camera.get_look_ahead(),
+			camera.get_look_down()]
 
 
 ## The last jump and its peak, in px above where it took off. The peak grows while the jump rises

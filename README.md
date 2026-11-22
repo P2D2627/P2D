@@ -78,7 +78,7 @@ quando se usa o outro aparelho, quando se liga um comando e quando se desliga o 
 | Interagir | E | Ctrl | X / Square |
 
 O terceiro perfil, Custom, começa igual ao predefinido, e cada ação pode receber outra tecla ou
-botão do rato. O Esc, as teclas de depuração (F1 a F4, F7, F8 e F9) e a tecla Windows, que ao ser
+botão do rato. O Esc, as teclas de depuração (F1 a F4 e F7 a F10) e a tecla Windows, que ao ser
 largada abre o menu Iniciar e tira o foco ao jogo, estão reservados; o 1, o 2 e o
 3, que na página dos números do texto de depuração recomeçam numa fase, não estão. As teclas W,
 E, A, S e D do perfil das setas ficam livres para os upgrades.
@@ -723,6 +723,10 @@ Margin), e afinam-se no Inspector, também durante o jogo, no separador Remote.
 A câmara segue a personagem com técnicas descritas por Keren (2015), escolhidas para as situações
 deste jogo: a corrida, as chaminés, as subidas e as quedas. As medidas foram obtidas nos testes, a
 60 passos de física por segundo, num ecrã de 1920×1080.
+
+Para comparar em playtest, a câmara tem também uma forma de zoom fixo, que se escolhe com a tecla F10
+nos builds de depuração (ver "Câmara" em "Para quem programa"). A tabela seguinte descreve a forma
+atual, com as zonas.
 
 | Técnica | Comportamento | Medida |
 |---|---|---|
@@ -1610,6 +1614,15 @@ números estão em "Câmara".
 godot --headless --fixed-fps 60 --path Projeto --script res://tests/measures/measure_camera_shake.gd
 ```
 
+O `measure_camera_space.gd` também não verifica resultados: no nível 1, mede quanto do ecrã cada forma
+de enquadrar da câmara enche com rocha lisa e a que distância do centro deixa a personagem, e quanto
+demora a primeira troca para cada forma. Compara ainda um ecrã de zoom fixo com vários zooms e
+posições da personagem. Demora cerca de 4 minutos. Os números estão em "Câmara".
+
+```
+godot --headless --fixed-fps 60 --path Projeto --script res://tests/measures/measure_camera_space.gd
+```
+
 O `measure_controller_rumble.gd` também não verifica resultados: mede quanto custa o nó que faz
 vibrar o comando num frame desenhado com três impulsos a descer e duas vibrações contínuas a pulsar,
 o pior caso, em que pede ao comando em todos os frames; num evento de input; e num impulso iniciado e
@@ -1829,6 +1842,7 @@ teclado, e não pela letra impressa, pelo que o WASD se mantém num teclado AZER
 | `debug_damage` | F4 | — |
 | `debug_accept_offer` / `debug_refuse_offer` | F7 / F8 | — |
 | `debug_reset_run` | F9 | — |
+| `debug_camera_next` | F10 | — |
 | `debug_phase_1` / `debug_phase_2` / `debug_phase_3` | 1 / 2 / 3 (só na página dos números do overlay) | — |
 | `ui_accept` | Enter, Espaço | A / Cross |
 | `ui_cancel` | Escape | B / Circle |
@@ -2834,6 +2848,13 @@ crucifixo. O overlay mostra a oferta em causa, se já foi aceite, as recusas, o 
 homem ainda tem o crucifixo. As três teclas estão reservadas nos perfis de controlos, pelas mesmas
 razões do F4.
 
+A tecla F10 troca a câmara para a forma seguinte de enquadrar o homem (#282): a da própria câmara, com
+as zonas, e depois cada modo que a cena da câmara tiver (ver «Câmara»; hoje, a câmara de zoom fixo,
+`Fixed`). Funciona também com o texto escondido, e a forma escolhida mantém-se na cópia seguinte do
+nível, como depois de uma morte: a câmara nova começa já enquadrada por ela, sem deslizar. Na página dos números, uma linha própria indica a forma em uso. Na página da
+iluminação, a F10 pertence ao rig, como as restantes teclas F. Está reservada nos perfis de controlos,
+pelas mesmas razões do F4, e o balão das falas deixa-a passar, como às outras teclas de depuração.
+
 As teclas F1 e F2 ligam e desligam duas ajudas de depuração, para atravessar e experimentar os
 níveis sem morrer. Com o god mode (F1), os golpes dos demónios acontecem como no jogo (o piscar, o
 tremor, o empurrão e o agarrão), mas não retiram SP; nada mata a personagem, e um agarrão que
@@ -2926,6 +2947,76 @@ usa uma suavização exponencial, com o peso `1 - exp(-k·Δt)`, e as deslocaç�
 solução exata de uma mola criticamente amortecida, que regressa à posição de equilíbrio o mais
 depressa possível sem oscilar. Em ambos os casos, o resultado não depende da duração do passo de
 física. A personagem emite o sinal `landed`, que a câmara usa para reenquadrar ao aterrar.
+
+A câmara pode enquadrar a personagem de outras formas, para as comparar em playtest (#282). Segue o
+padrão Strategy: cada forma alternativa é um nó filho da câmara do tipo `CameraBrain`
+(`camera_brain.gd`, uma classe abstrata), que em cada passo de física indica apenas o centro do ecrã e o
+zoom. A câmara conserva tudo o resto: as cenas cinemáticas, o tremor, a vibração, o motion blur e o que
+se mantém ativo junto ao ecrã. Sem nenhum `CameraBrain` em uso, a câmara executa o código anterior sem
+qualquer alteração, o que os testes da câmara já existentes confirmam sem terem sido modificados. Na
+troca não há saltos: a forma nova parte da posição e do zoom do ecrã, e o regresso à forma da própria
+câmara desliza como no fim de uma cena cinemática, no máximo a 2000 px/s na horizontal. Ficaram de
+parte duas alternativas: uma `Camera2D` por forma de enquadramento, que duplicaria o tremor, a
+vibração e o feedback (ou os mudaria de nó a cada troca), e a passagem do código atual para um
+`CameraBrain`, que alteraria código já validado antes de se saber se a câmara atual se mantém.
+
+A cena da câmara traz uma forma alternativa, a câmara de zoom fixo (nó `Fixed`, script
+`FixedFraming`, valores em `FixedFramingStats`). Responde às queixas do playtest de 20/11: rocha a
+mais no ecrã, um zoom que muda em fronteiras que o jogador não vê e a personagem fora do centro. O
+zoom é sempre 1,4. Na horizontal, a personagem fica centrada; na vertical, fica 25 % da altura do ecrã
+abaixo do centro, porque por baixo do chão só há rocha. O ecrã segue um ponto de foco, que só se
+desloca quando a personagem sai de uma zona morta à volta dele: 28 px para cada lado e, no ar, um
+salto completo para cima, pelo que um salto não move o ecrã. No chão, o foco acompanha logo a altura
+da personagem. O ecrã aproxima-se do foco com uma mola criticamente amortecida, no máximo a
+2000 px/s. Enquanto a personagem arrasta o foco, o ecrã aponta à frente dele a distância a que a mola
+fica para trás (2v/ω), pelo que, a uma velocidade constante, o ecrã não fica para trás nem passa à
+frente. A correr, o ecrã mostra mais 5 % da sua largura à frente da personagem; ao fim de 0,35 s de
+queda, mais do que dura a descida de um salto completo, mostra mais por baixo dela. Deslizar por uma
+parede não conta como queda, para a subida de uma chaminé não fazer o ecrã subir e descer. Com o
+corpo no ecrã, mantém-no a pelo menos 10 % do ecrã das bordas. Uma personagem colocada a mais de
+200 px num só passo, e não deslocada, é enquadrada nesse mesmo passo. Depois de uma morte ou de um
+salto de fase, o nível recomeça numa cópia nova, cuja câmara começa já enquadrada.
+
+Os limites do ecrã vêm do mapa e não de zonas desenhadas. A classe `RockMap`
+(`scenes/levels/rock_map.gd`) lê os tiles do nível uma vez: um tile com colisão que não seja de
+sentido único é rocha, incluindo as rampas, também quando estão viradas ou rodadas no editor. A
+partir da posição da personagem, encontra o espaço aberto ligado a ela, por preenchimento (flood
+fill). O ecrã fica dentro da caixa desse espaço, alargada 2 tiles, e dentro dos limites da própria
+câmara definidos no nível, que a câmara lhe passa; junto à borda, estes limites prevalecem sobre a
+margem de 10 %. Assim, um mapa novo ou alterado não precisa de nada definido à mão. Sem mapa, ou
+com o espaço aberto a chegar à borda do mapa, valem só os limites da própria câmara. Numa chaminé, uma
+passagem vertical entre rocha com até 6 tiles de largura e pelo menos 6 de altura, o ecrã fica no
+eixo dela. A medição usa a mesma `RockMap`, para as duas lerem a rocha da mesma maneira.
+
+A medição (`measure_camera_space.gd`) coloca a personagem em 1467 posições do nível 1, um tile em cada
+três de cada chão a que ela chega, e lê o ecrã depois de a câmara assentar. Conta como enchimento a
+rocha rodeada de rocha nos 8 lados, porque as pedras da orla cobrem cerca de um tile para dentro da
+rocha. As distâncias estão em píxeis de um ecrã de 1920 × 1080.
+
+| Medida | Câmara atual (zonas) | Câmara de zoom fixo |
+|---|---|---|
+| Enchimento do ecrã, média | 34,8 % | 34,9 % |
+| Enchimento do ecrã, 90.º percentil | 54,3 % | 54,0 % |
+| Distância da personagem ao centro, na horizontal (média; 90.º percentil) | 237 px; 632 px | 39 px; 39 px |
+| Distância da personagem ao centro, na vertical (média; 90.º percentil) | 226 px; 369 px | 267 px; 270 px |
+| Zoom | de 1,00 a 2,28 (1,30 em 53 % das posições) | 1,40 em todas |
+| Mudanças de zoom por 100 tiles percorridos | 2,2 | 0 |
+
+Na vertical, a câmara de zoom fixo deixa a personagem abaixo do centro de propósito: 25 % de 1080 px
+são 270 px. Os 39 px na horizontal são a borda da zona morta, à escala do zoom. Com o zoom 1,4, o
+enchimento médio fica 0,1 pontos acima do da câmara atual. Na comparação de zooms, com a personagem
+25 % abaixo do centro, o 1,5 ficava abaixo dele (34,0 %), mas mostra menos à volta da personagem
+(26,7 × 15,0 tiles, contra 28,6 × 16,1 a 1,4).
+
+A câmara de zoom fixo lê o mapa quando começa num nível: na primeira troca para ela e, se estiver
+escolhida, no primeiro frame de cada cópia nova do nível, depois de uma morte ou de um salto de fase.
+No nível 1 (373 × 381 tiles), a troca demora entre 88,5 e 89,7 ms (duas execuções da medição), um
+atraso de cinco ou seis frames, aceitável numa ferramenta de depuração.
+
+Ficaram de parte um zoom fixo com a personagem centrada também na vertical (40,3 % de enchimento a
+1,3), porque a metade de baixo do ecrã fica sob o chão, e um ecrã preso ao chão e ao teto (33,9 % a
+1,4), porque a altura da personagem no ecrã variava de sítio para sítio, como hoje. A câmara por
+defeito decide-se depois do playtest de comparação.
 
 As zonas (`CameraZone`, uma `Area2D` na camada `camera_bounds`) são lidas pela geometria das suas
 formas retangulares, com a transformação completa (uma zona escalada tem o retângulo que o editor

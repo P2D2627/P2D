@@ -10,6 +10,8 @@
 [ext_resource type="Script" path="res://scenes/others/feedback/controller_rumble.gd" id="7_rumble"]
 [ext_resource type="Resource" path="res://scenes/others/feedback/rumble_stats.tres" id="8_rumble_stats"]
 [ext_resource type="Script" path="res://scenes/others/camera/motion_blur.gd" id="9_blur"]
+[ext_resource type="Script" path="res://scenes/others/camera/fixed_framing.gd" id="10_fixed"]
+[ext_resource type="Resource" path="res://scenes/others/camera/fixed_framing_stats.tres" id="11_fixed_stats"]
 
 [node name="GameCamera" type="Camera2D"]
 process_physics_priority = 1
@@ -42,3 +44,7 @@ rumble_stats = ExtResource("8_rumble_stats")
 camera = NodePath("..")
 shake = NodePath("../CameraShake")
 rumble = NodePath("../ControllerRumble")
+
+[node name="Fixed" type="Node" parent="."]
+script = ExtResource("10_fixed")
+stats = ExtResource("11_fixed_stats")

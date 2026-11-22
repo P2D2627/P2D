@@ -36,10 +36,10 @@ const ACTIONS: Dictionary[StringName, String] = {
 }
 ## Keys that can never be remapped to an action: Esc pauses and goes back in the menus, F1 and F2
 ## turn the debug cheats on and off (god mode and noclip), F3 shows the debug overlay, F4 is its
-## debug damage and F7, F8 and F9 accept or refuse an offer and start the run state over. The Windows
-## key (Meta) opens the Start menu as it is let go, taking the focus.
+## debug damage, F7, F8 and F9 accept or refuse an offer and start the run state over, and F10 switches
+## the camera. The Windows key (Meta) opens the Start menu as it is let go, taking the focus.
 const RESERVED_KEYS: Array[Key] = [KEY_ESCAPE, KEY_F1, KEY_F2, KEY_F3, KEY_F4, KEY_F7, KEY_F8,
-		KEY_F9, KEY_META]
+		KEY_F9, KEY_F10, KEY_META]
 ## The mouse buttons that can be remapped to an action, with the name a binding keeps; the controls
 ## screen shows "<Name> mouse button". The wheel's steps are not buttons a player holds.
 const MOUSE_BUTTONS: Dictionary[MouseButton, String] = {
