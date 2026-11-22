@@ -4125,6 +4125,17 @@ aterragens e o deslizar na parede) ficam no SFX e só passam esse limiar de rasp
 ambiente respira com eles, sem oscilar a cada passo; como o Alerts envia para o SFX, os alertas
 passam pelos dois compressores.
 
+Cada som tem ainda um bus próprio, a 0 dB e sem efeitos, por baixo da sua categoria, só para se
+misturar no painel Audio do editor: SFX › Player (PlayerJump, PlayerLand, PlayerWallSlide,
+PlayerFootsteps), SFX › Demon (DemonLatch, DemonJump, DemonAttack, DemonCrucifixHit), Alerts
+(DemonAlert, CrucifixCue, CrucifixHold, PlayerLowSP), Beds (Bed1, Bed2) e Ambience (LowRumble, Fire).
+São 18 buses, que não mudam a mistura nem as opções: cada um segue o volume, os compressores e as
+opções da categoria para onde envia. O Godot mistura os buses do último para o primeiro, e um
+compressor só ouve o que lhe chega antes de ele próprio ser misturado; por isso os buses novos
+ficam no fim da lista, depois de todos os compressores que escutam as suas categorias, e os buses
+antigos mantêm a sua posição. A alternativa, um bus por grupo (Player, Demon), dava menos buses,
+mas os sons de cada grupo continuavam a partilhar o mesmo volume.
+
 Com o limiar antigo de −20 dB, os sons do crucifixo (no bus, entre −32 e −24 dB) não chegavam a
 baixar o ambiente, e ouviam-se mal; e os do demónio, que passavam pelos dois compressores, sem
 limite, baixavam-no 33 a 36 dB. Medido pelo `test_ambience_ducking.gd`, com um tom constante no
@@ -4140,16 +4151,19 @@ mantém o seu lugar no ecrã quando a câmara se move 800 px; que tocam no bus A
 que `stop()` e a pausa os suspendem; que os sons não posicionados tocam do centro do ecrã, no seu
 leitor, nunca dois seguidos, e dizem o seu lado, e que os posicionados atravessam do seu lado para
 o outro; que as duas camadas de vento do nível 1 têm os intervalos, os ficheiros e os buses acima
-(as rajadas no Gusts, os roncos no Ambience); que o Beds e o Gusts enviam para o Ambience, um
-compressor no Beds escuta o Gusts e os fundos do nível 1 tocam no Beds; e que o
-Alerts envia para o SFX, o compressor do Ambience o
-escuta, o demónio e o crucifixo estão no Alerts e a personagem no SFX. O `test_ambience_ducking.gd`
+(as rajadas no Gusts, os roncos no LowRumble, que envia para o Ambience); que o Beds e o Gusts
+enviam para o Ambience, um compressor no Beds escuta o Gusts e cada fundo do nível 1 toca no seu
+bus, que envia para o Beds; e que o Alerts envia para o SFX, o compressor do Ambience o escuta, o
+alerta do demónio e os sons do crucifixo chegam ao Alerts e os da personagem chegam ao SFX sem
+passar pelo Alerts. O `test_ambience_ducking.gd`
 toca, com o áudio a misturar em tempo real e sem saída, cada som do crucifixo, do demónio e da
 personagem, lidos das cenas, e verifica que cada alerta baixa o ambiente entre 5 e 18 dB e cada som
 da personagem 3 dB no máximo; demora cerca de 100 s. Se os alertas se ouvem bem por cima do
 ambiente confirma-se a jogar. O `test_settings.gd` confirma a lista de buses: os cinco com
 opção de volume, todos a enviar para o Master, o Alerts, a enviar para o SFX, o Beds, o Gusts e o
-Thunder, a enviar para o Ambience, e os três buses dos trovões, a enviar para o Thunder.
+Thunder, a enviar para o Ambience, os três buses dos trovões, a enviar para o Thunder, e os 18
+buses de cada som, cada um a enviar para a sua categoria; e verifica que estes últimos estão a
+0 dB, sem efeitos, chegam ao Master e ficam depois dos compressores que os escutam.
 
 O `test_ambience_bed.gd` verifica, também com um som silencioso, que um fundo toca nos seus dois
 leitores, no bus Ambience; que entra a partir do silêncio, nunca passa de Loud dB e depois varia
@@ -4158,7 +4172,7 @@ segundos antes do fim da anterior, e que a potência total durante a transição
 da constante (no teste, 0,0 %); que a primeira passagem começa num ponto ao acaso; que `stop()`
 desliga o fundo em Fade Time e `start()` o traz de volta; que a pausa o suspende; que, com a escala
 de tempo do hitstop, a passagem seguinte chega ao fim de 4,93 s de tempo real, em vez de 5 s; e que
-os dois fundos do nível 1 tocam no Ambience ou num bus que envia para ele (o Beds), cada um com o
+os dois fundos do nível 1 tocam no Ambience ou num bus que chega a ele (o Bed1 e o Bed2, pelo Beds), cada um com o
 seu som, e só se realinham ao fim de
 mais de meia hora. Se o ambiente se repete ou respira bem só se ouve a jogar.
 
@@ -4340,7 +4354,7 @@ protótipo, as lascas quentes têm um halo rosado ténue, e as frias apagam-se s
 O fogo é a cena `scenes/others/ambience/fire_sound.tscn`, que junta o emissor e as brasas com os
 ficheiros em `assets/audio/textures/fire/`: o ciclo `fire_base_layer.ogg` (15,5 s) e quatro estalos
 em `crackles/`, de 0,9 a 2,9 s. O protótipo de iluminação põe um em cada fogueira, com as brasas a
-sair da metade central da chama, entre 50 e 85 % da sua altura. Os sons tocam no bus Ambience:
+sair da metade central da chama, entre 50 e 85 % da sua altura. Os sons tocam no bus Fire, que envia para o Ambience:
 seguem o volume do ambiente nas opções e baixam com os alertas.
 
 O `test_sound_emitter.gd` verifica que, fora de um nível, o emissor ouve a partir do centro do ecrã;

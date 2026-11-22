@@ -10,7 +10,7 @@
 # against right. Its loudness follows Default Falloff, or a Falloff of its own, from an Ear of its
 # own. Disabled, it stops; told only (Plays On Its Own off), it plays no one-shot by itself and,
 # with no loop, sleeps between them; the pause holds its one-shots. The fire's sound has the fire's files, on
-# the Ambience bus, with the times asked for; in the lighting prototype, every fire has its sound,
+# its own bus, Fire, into Ambience, with the times asked for; in the lighting prototype, every fire has its sound,
 # whose embers leave from its flame and hide with it, and the fires hear from the man: with the
 # camera still, they are much quieter halfway between two than beside one.
 # Run from the repository root; the exit code is 0 on pass and 1 on fail:
@@ -24,6 +24,8 @@ const CRACKLE_FILES: Array[String] = ["fire_crackle_1.wav", "fire_crackle_2.wav"
 		"fire_crackle_3.wav", "fire_crackle_4.wav"]
 const LIGHTING_LEVEL_PATH: String = "res://scenes/levels/prototypes/lighting/lighting_level1.tscn"
 const AMBIENCE_BUS: StringName = &"Ambience"
+const FIRE_BUS: StringName = &"Fire"
+const BusRoute = preload("res://tests/support/bus_route.gd")
 ## The fire's times, as asked: a crackle about every 4 s, with some deviation, up to 10% of the
 ## stereo field to either side, its pitch a little varied.
 const FIRE_INTERVAL: float = 4.0
@@ -528,12 +530,13 @@ func _the_fire_sound_has_the_fire_files() -> bool:
 			and sound.interval == FIRE_INTERVAL
 			and sound.deviation >= FIRE_DEVIATION.x and sound.deviation <= FIRE_DEVIATION.y
 			and sound.pan_spread == FIRE_PAN_SPREAD
-			and sound.loop_player.bus == AMBIENCE_BUS and sound.one_shot_player.bus == AMBIENCE_BUS
+			and sound.loop_player.bus == FIRE_BUS and sound.one_shot_player.bus == FIRE_BUS
+			and BusRoute.reaches(FIRE_BUS, AMBIENCE_BUS)
 			and embers != null and embers.emitter == sound)
 	sound.free()
 	return _report(passed, "the fire's sound loops the base layer and plays the four crackles "
 			+ "(%s), without repeats, a little varied in pitch, about every 4 s, up to 10%% to " % [files]
-			+ "either side, on the Ambience bus, and its embers listen to it")
+			+ "either side, on Fire into Ambience, and its embers listen to it")
 
 
 func _every_prototype_fire_has_its_sound() -> bool:

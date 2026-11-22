@@ -4,11 +4,12 @@
 # plays none on the landing. Double Layer picks the set, the six _d files or the six single ones,
 # each step one of them at random, all six heard; each step's pitch stays within Pitch Variation, 4%,
 # either way, and the node's own pitch stays at 1. Step Frames changed while running are heard at
-# once. The steps go to the SFX bus, and the node stops playing once the last step's file is over.
+# once. The steps go to their own bus, PlayerFootsteps, which reaches SFX, and the node stops playing once the last step's file is over.
 # Run from the repository root; the exit code is 0 on pass and 1 on fail:
 # godot --headless --fixed-fps 60 --path Projeto --script res://tests/test_footsteps.gd
 extends "res://tests/support/player_test.gd"
 
+const BusRoute = preload("res://tests/support/bus_route.gd")
 const FLOOR_LEFT: float = -2000.0
 const FLOOR_RIGHT: float = 6000.0
 ## Where a run starts: near the floor's left end, so a long run stays on it.
@@ -197,12 +198,12 @@ func _double_layer_picks_the_set_and_every_file_is_heard() -> bool:
 		footsteps.play_step()
 	var double_ok: bool = _all_from(heard, footsteps.double_sounds)
 	var double_used: int = _used(heard, footsteps.double_sounds)
-	var on_sfx: bool = footsteps.bus == &"SFX"
+	var on_sfx: bool = footsteps.bus == &"PlayerFootsteps" and BusRoute.reaches(footsteps.bus, &"SFX")
 	await remove_player(player)
 	return report(files_ok and off_by_default and single_ok and double_ok
 			and single_used == SET_SIZE and double_used == SET_SIZE and on_sfx
 			and first_voice != AudioStreamPlaybackPolyphonic.INVALID_ID,
-			"Sets of %d (single, then _d) %s, Double Layer off by default %s; off: all single %s, %d used; on: all _d %s, %d used; on SFX %s; first step played %s"
+			"Sets of %d (single, then _d) %s, Double Layer off by default %s; off: all single %s, %d used; on: all _d %s, %d used; on PlayerFootsteps into SFX %s; first step played %s"
 			% [SET_SIZE, files_ok, off_by_default, single_ok, single_used, double_ok, double_used,
 			on_sfx, first_voice != AudioStreamPlaybackPolyphonic.INVALID_ID])
 

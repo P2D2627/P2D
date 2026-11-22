@@ -35,6 +35,12 @@ loop_volume_db = 4.0
 one_shot_volume_db = 4.0
 loop_end = 10.735
 
+[node name="LoopPlayer" parent="." index="0"]
+bus = &"Fire"
+
+[node name="OneShotPlayer" parent="." index="1"]
+bus = &"Fire"
+
 [node name="RisingEmbers" parent="." index="2" unique_id=1322437766 node_paths=PackedStringArray("emitter") instance=ExtResource("2_embers")]
 unique_name_in_owner = true
 emitter = NodePath("..")
