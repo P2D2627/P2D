@@ -311,23 +311,23 @@ low_sp = NodePath("LowSP")
 
 [node name="WallSlide" type="AudioStreamPlayer2D" parent="PlayerSounds" unique_id=728238785]
 stream = ExtResource("5_wall_slide")
-bus = &"SFX"
+bus = &"PlayerWallSlide"
 
 [node name="Jump" type="AudioStreamPlayer2D" parent="PlayerSounds" unique_id=306893796]
 stream = ExtResource("9_jump")
-bus = &"SFX"
+bus = &"PlayerJump"
 
 [node name="Land" type="AudioStreamPlayer2D" parent="PlayerSounds" unique_id=1911883037]
-bus = &"SFX"
+bus = &"PlayerLand"
 
 [node name="LowSP" type="AudioStreamPlayer" parent="PlayerSounds" unique_id=1846389967]
 stream = ExtResource("24_low_sp")
-bus = &"Alerts"
+bus = &"PlayerLowSP"
 
 [node name="Footsteps" type="AudioStreamPlayer" parent="." unique_id=775820297 node_paths=PackedStringArray("sprite")]
 editor_description = "The steps play on the walk's Step Frames (3 and 9: the widest strides). Double Layer switches to the _d files, with the heel. Volume dB: -17 puts the new files (their hit at about -20 dBFS) where the old steps sat in level 1, since this player has no distance or panning to lower them."
 volume_db = -12.004
-bus = &"SFX"
+bus = &"PlayerFootsteps"
 script = ExtResource("25_footsteps")
 sprite = NodePath("../Sprite")
 double_layer = true

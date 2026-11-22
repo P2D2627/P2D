@@ -1,6 +1,7 @@
 # Test of the demon's sounds (ADR 0040). The demon scene has them, linked to the demon: the dog's own
-# five, each a SoundEmitter that plays only when told, with its files (the alert on the Alerts bus,
-# the others on SFX), and the placeholder beeps on a cue on the Alerts bus, off, with the alert,
+# five, each a SoundEmitter that plays only when told, with its files, each on a bus of its own (the
+# alert's into Alerts, the others' into SFX and not Alerts), and the placeholder beeps on a cue on
+# the alert's bus, off, with the alert,
 # search, take-off and landing beeps still in their slots and no bark. By default no beep plays.
 # The alert plays the dog's alert at the demon's voice moved by at most Pitch Variation; a take-off
 # and a lunge play the jump, without cutting the alert off; a landed attack plays the attack, and
@@ -29,6 +30,15 @@ const DOG_FILES: Dictionary[StringName, Array] = {
 	&"crucifix_hit": ["demon_dog_cruci_hit_1.wav", "demon_dog_cruci_hit_2.wav"],
 }
 ## Demons made to compare their voices.
+## The bus of each of the dog's own sounds; the alert's sends to Alerts, the others' to SFX.
+const DOG_BUSES: Dictionary[StringName, StringName] = {
+	&"alert": &"DemonAlert",
+	&"latch": &"DemonLatch",
+	&"jump": &"DemonJump",
+	&"attack": &"DemonAttack",
+	&"crucifix_hit": &"DemonCrucifixHit",
+}
+const BusRoute = preload("res://tests/support/bus_route.gd")
 const VOICE_DEMONS: int = 10
 ## Demons barking, more than Max Barks Per Step, and demons alerted on the same step, no more than
 ## Max Notice Sounds Per Step.
@@ -71,13 +81,14 @@ func _initialize() -> void:
 
 
 ## The demon scene's sounds are linked to it; the dog's own five play only when told, asleep, with
-## their files, the alert on Alerts and the others on SFX; the beeps are off, on a cue on Alerts,
+## their files, each on its own bus, the alert's into Alerts and the others' into SFX; the beeps are
+## off, on a cue on the alert's bus,
 ## with the alert, search, take-off and landing beeps in and no bark.
 func _the_demon_scene_has_its_sounds() -> bool:
 	var demon: Demon = await _make_demon()
 	var sounds: DemonSounds = _sounds_of(demon)
 	var linked: bool = sounds != null and sounds.demon == demon and sounds.cue != null \
-			and sounds.cue.bus == &"Alerts"
+			and sounds.cue.bus == DOG_BUSES[&"alert"] and BusRoute.reaches(sounds.cue.bus, &"Alerts")
 	var problems: Array[String] = []
 	for slot: StringName in DOG_FILES:
 		var emitter: SoundEmitter = sounds.get(slot) as SoundEmitter if linked else null
@@ -88,8 +99,9 @@ func _the_demon_scene_has_its_sounds() -> bool:
 		files.sort()
 		if files != DOG_FILES[slot]:
 			problems.append("%s has %s" % [slot, files])
-		var bus: StringName = &"Alerts" if slot == &"alert" else &"SFX"
-		if emitter.one_shot_player.bus != bus:
+		var bus: StringName = emitter.one_shot_player.bus
+		var alerts: bool = BusRoute.reaches(bus, &"Alerts")
+		if bus != DOG_BUSES[slot] or alerts != (slot == &"alert") or not BusRoute.reaches(bus, &"SFX"):
 			problems.append("%s on %s" % [slot, emitter.one_shot_player.bus])
 		if emitter.plays_on_its_own or emitter.is_physics_processing() or emitter.loop != null:
 			problems.append("%s plays by itself or is awake" % slot)
@@ -99,7 +111,7 @@ func _the_demon_scene_has_its_sounds() -> bool:
 			and sounds.bark_sound == null
 	await _clear(demon)
 	return report(linked and problems.is_empty() and beeps,
-			"Demon scene's sounds: linked on Alerts %s, the dog's own in place (problems: %s), "
+			"Demon scene's sounds: linked, cue into Alerts %s, the dog's own in place (problems: %s), "
 			% [linked, "; ".join(problems)] + "beeps off and kept in their slots %s" % beeps)
 
 

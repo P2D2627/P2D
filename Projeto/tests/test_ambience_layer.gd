@@ -9,12 +9,12 @@
 # Travel says; a placed sound travels from its side of the screen towards the other. A layer with
 # only unpanned sounds plays all of them unpanned. A placed sound keeps its place on the screen
 # while it plays, as the camera moves on. In level 1, the passing gusts and the low rumbles are two
-# layers, with their gaps, their sounds and their buses, and a gust turns the beds down: the beds
-# play on Beds, the gusts on Gusts, both into Ambience, and a compressor on Beds listens to Gusts.
-# The sounds the player needs to hear to stay alive, the demon's and the crucifix's, play on the
-# Alerts bus, which sends to SFX, and a compressor on the Ambience bus listens to Alerts, so they
-# turn the ambience down while they play. The player's own sounds, steps among them, stay on SFX,
-# so that compressor ignores them and the ambience does not dip on every step; how far each sound
+# layers, with their gaps, their sounds and their buses, and a gust turns the beds down: each bed
+# plays on a bus of its own into Beds, the gusts on Gusts, both into Ambience, and a compressor on
+# Beds listens to Gusts. The sounds the player needs to hear to stay alive, the demon's alert and
+# the crucifix's, play on buses of their own into Alerts, which sends to SFX, and a compressor on
+# the Ambience bus listens to Alerts, so they turn the ambience down while they play. The player's
+# own sounds, steps among them, reach SFX but not Alerts, so that compressor ignores them and the ambience does not dip on every step; how far each sound
 # turns it down is test_ambience_ducking.gd's.
 # Run from the repository root; the exit code is 0 on pass and 1 on fail:
 # godot --headless --fixed-fps 60 --path Projeto --script res://tests/test_ambience_layer.gd
@@ -24,11 +24,11 @@ const LAYER_PATH: String = "res://scenes/others/ambience/ambience_layer.tscn"
 const AMBIENCE_BUS: StringName = &"Ambience"
 const ALERTS_BUS: StringName = &"Alerts"
 const SFX_BUS: StringName = &"SFX"
-## The scenes whose every sound player is on Alerts: what the player must hear to stay alive.
-const ALERT_SCENES: Array[String] = [
-	"res://scenes/characters/demon/demon.tscn",
-	"res://scenes/characters/crucifix/crucifix.tscn",
-]
+## By scene, the sound players whose bus reaches Alerts: what the player must hear to stay alive.
+const ALERT_PLAYERS: Dictionary[String, Array] = {
+	"res://scenes/characters/demon/demon.tscn": [^"DemonSounds/Cue", ^"DemonSounds/Alert/OneShotPlayer"],
+	"res://scenes/characters/crucifix/crucifix.tscn": [^"CrucifixSounds/Cue", ^"CrucifixSounds/Hold"],
+}
 ## The player's own sounds, under PlayerSounds, stay on SFX: they play all the time. The player
 ## scene also holds the crucifix, whose sounds are on Alerts.
 const PLAYER_SCENE_PATH: String = "res://scenes/characters/player/player.tscn"
@@ -84,7 +84,11 @@ const RUMBLE_FILES: Array[String] = ["one_shot_wind_3_low.wav", "one_shot_wind_4
 ## Gusts, so a gust turns the beds down while it blows.
 const BEDS_BUS: StringName = &"Beds"
 const GUSTS_BUS: StringName = &"Gusts"
-const LEVEL1_BEDS: Array[NodePath] = [^"Bed1", ^"Bed2"]
+## Level 1's beds, each with the bus of its own it plays on, into Beds.
+const LEVEL1_BEDS: Dictionary[NodePath, StringName] = {^"Bed1": &"Bed1", ^"Bed2": &"Bed2"}
+## The low rumbles' bus of their own, into Ambience.
+const RUMBLE_BUS: StringName = &"LowRumble"
+const BusRoute = preload("res://tests/support/bus_route.gd")
 ## A sound long enough to play on while the camera moves, in s; how far the camera moves, in px,
 ## and how near its place on the screen the sound must stay, in px.
 const FOLLOWED_SOUND_LENGTH: float = 3.0
@@ -346,7 +350,7 @@ func _level1_has_the_wind_layers() -> bool:
 		problems.append_array(_layer_problems(passing, PASSING_GAPS, PASSING_FILES,
 				BAKED_PAN_FILES, AmbienceLayer.Travel.LEFT_TO_RIGHT, GUSTS_BUS))
 		problems.append_array(_layer_problems(rumble, RUMBLE_GAPS, [], RUMBLE_FILES,
-				AmbienceLayer.Travel.NONE, AMBIENCE_BUS))
+				AmbienceLayer.Travel.NONE, RUMBLE_BUS))
 	ambience.queue_free()
 	return _report(problems.is_empty(), "level 1 has the passing gusts every %.0f to %.0f s and "
 			% [PASSING_GAPS.x, PASSING_GAPS.y] + "the low rumbles every %.0f to %.0f s, with "
@@ -375,6 +379,8 @@ func _layer_problems(layer: AmbienceLayer, gaps: Vector2, placed: Array[String],
 		problems.append("%s has no players" % layer.name)
 	elif _players_bus(layer.bus, [layer.player.bus, layer.unpanned_player.bus]) != bus:
 		problems.append("%s plays off the %s bus" % [layer.name, bus])
+	if not BusRoute.reaches(bus, AMBIENCE_BUS):
+		problems.append("the %s bus does not reach Ambience" % bus)
 	return problems
 
 
@@ -389,8 +395,8 @@ func _players_bus(bus: StringName, theirs: Array[StringName]) -> StringName:
 
 
 ## Level 1's gusts turn its beds down: Beds and Gusts send to Ambience, so the Ambience option
-## applies to both, a compressor on Beds listens to Gusts, and the beds play on Beds (the passing
-## gusts on Gusts: _level1_has_the_wind_layers).
+## applies to both, a compressor on Beds listens to Gusts, and each bed plays on its own bus into
+## Beds (the passing gusts on Gusts: _level1_has_the_wind_layers).
 func _gusts_turn_the_beds_down() -> bool:
 	var problems: Array[String] = []
 	for bus: StringName in [BEDS_BUS, GUSTS_BUS]:
@@ -409,11 +415,13 @@ func _gusts_turn_the_beds_down() -> bool:
 	var ambience: Node = (load(LEVEL1_AMBIENCE_PATH) as PackedScene).instantiate()
 	for path: NodePath in LEVEL1_BEDS:
 		var bed := ambience.get_node_or_null(path) as AmbienceBed
-		if bed == null or _players_bus(bed.bus, [bed.first_player.bus, bed.second_player.bus]) != BEDS_BUS:
-			problems.append("%s plays off Beds" % path)
+		var on: StringName = &"" if bed == null else _players_bus(bed.bus,
+				[bed.first_player.bus, bed.second_player.bus])
+		if on != LEVEL1_BEDS[path] or not BusRoute.reaches(on, BEDS_BUS):
+			problems.append("%s plays on %s, not on %s into Beds" % [path, on, LEVEL1_BEDS[path]])
 	ambience.free()
 	return _report(problems.is_empty(), "the gusts turn level 1's beds down: Beds and Gusts send to "
-			+ "Ambience, a compressor on Beds listens to Gusts, and the beds play on Beds (problems: "
+			+ "Ambience, a compressor on Beds listens to Gusts, and each bed plays on its own bus into Beds (problems: "
 			+ "%s)" % "; ".join(problems))
 
 
@@ -455,19 +463,37 @@ func _alerts_turn_the_ambience_down_and_the_players_sounds_do_not() -> bool:
 			listens = listens or (compressor != null and compressor.sidechain == ALERTS_BUS
 					and AudioServer.is_bus_effect_enabled(ambience, index))
 	var elsewhere: Array[String] = []
-	for path: String in ALERT_SCENES:
-		elsewhere.append_array(_players_not_on(path, ALERTS_BUS))
-	elsewhere.append_array(_players_not_on(PLAYER_SCENE_PATH, SFX_BUS, PLAYER_SOUNDS))
+	for path: String in ALERT_PLAYERS:
+		elsewhere.append_array(_named_players_off(path, ALERT_PLAYERS[path], ALERTS_BUS))
+	elsewhere.append_array(_players_off(PLAYER_SCENE_PATH, SFX_BUS, ALERTS_BUS, PLAYER_SOUNDS))
 	return _report(into_sfx and listens and elsewhere.is_empty(),
 			"Alerts sends to SFX (%s) and a compressor on Ambience listens to it (%s); "
 			% [into_sfx, listens]
-			+ "the demon and the crucifix are on Alerts and the player on SFX (off: %s)"
+			+ "the demon's alert and the crucifix reach Alerts and the player SFX, not Alerts (off: %s)"
 			% ", ".join(elsewhere))
 
 
-## The sound players under the node at under, in the scene at path, that are not on bus, as
-## "scene/node: bus". With no under, the whole scene.
-func _players_not_on(path: String, bus: StringName, under: NodePath = ^".") -> Array[String]:
+## The players at paths, in the scene at path, whose bus does not reach reach, as "scene/node: bus".
+func _named_players_off(path: String, paths: Array, reach: StringName) -> Array[String]:
+	var scene: PackedScene = load(path) as PackedScene
+	if scene == null:
+		return ["%s does not load" % path]
+	var instance: Node = scene.instantiate()
+	var off: Array[String] = []
+	for player_path: NodePath in paths:
+		var player := instance.get_node_or_null(player_path) as AudioStreamPlayer2D
+		if player == null:
+			off.append("%s has no sound player %s" % [path.get_file(), player_path])
+		elif not BusRoute.reaches(player.bus, reach):
+			off.append("%s/%s: %s" % [path.get_file(), player_path, player.bus])
+	instance.free()
+	return off
+
+
+## The sound players under the node at under, in the scene at path, whose bus does not reach
+## reach, or reaches avoid, as "scene/node: bus". With no under, the whole scene.
+func _players_off(path: String, reach: StringName, avoid: StringName,
+		under: NodePath = ^".") -> Array[String]:
 	var scene: PackedScene = load(path) as PackedScene
 	if scene == null:
 		return ["%s does not load" % path]
@@ -483,7 +509,7 @@ func _players_not_on(path: String, bus: StringName, under: NodePath = ^".") -> A
 	var off: Array[String] = []
 	for player: Node in players:
 		var on: StringName = (player as AudioStreamPlayer2D).bus
-		if on != bus:
+		if not BusRoute.reaches(on, reach) or BusRoute.reaches(on, avoid):
 			off.append("%s/%s: %s" % [path.get_file(), instance.get_path_to(player), on])
 	instance.queue_free()
 	return off
