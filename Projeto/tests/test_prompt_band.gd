@@ -1,6 +1,7 @@
 # Checks the tutorial's prompts at the bottom of the screen. A PromptGlyph shows an action's key, or
 # its pad button once the pad is the device used last, and goes back to the key with a key press.
-# Every pad binding the prompts show has its picture; one with none keeps its name in a key. A
+# Every pad binding the prompts show has its picture, on every family of pad; a part with none keeps
+# its name in a key. A
 # KeyPrompt in the world follows the device used last too, also with a pad still connected. The
 # PromptBand sits at the bottom centre, Bottom Gap above the edge, and its caption reads at 4.5:1 or
 # better even over a white screen. With a band, the TutorialHints draw their hints there and not in
@@ -90,27 +91,38 @@ func _a_glyph_shows_the_key_then_the_pad_button() -> bool:
 			% [key, pad, shows_pad, key_again, key_framed, expected_key, expected_key])
 
 
-## With the pad used last, each pad binding the prompts show has its picture, and a binding with none,
-## as the pause's Menu, keeps its name in a key; on the keyboard no glyph shows a picture.
+## With the pad used last, each pad binding the prompts show and the pause's has its picture, on
+## every family of pad. A part with no picture, as a PlayStation pad's PS button, keeps its name in a
+## key; on the keyboard no glyph shows a picture.
 func _the_prompted_pad_bindings_show_their_picture() -> bool:
 	await _press(_pad_button(JOY_BUTTON_A))
+	var settings: GameSettings = root.get_node(^"Settings") as GameSettings
 	var missing: Array[String] = []
-	for action: StringName in PROMPTED_ACTIONS:
-		var glyph: PromptGlyph = await _new_glyph(action)
-		if not glyph.shows_icon():
-			missing.append("%s (%s)" % [action, glyph.get_text()])
-		glyph.queue_free()
-	var pause: PromptGlyph = await _new_glyph(&"pause")
-	var pause_shown: String = "%s, picture %s" % [pause.get_text(), pause.shows_icon()]
-	pause.queue_free()
+	for style: StringName in [GameSettings.PAD_BUTTONS_XBOX, GameSettings.PAD_BUTTONS_PLAYSTATION,
+			GameSettings.PAD_BUTTONS_NINTENDO, GameSettings.PAD_BUTTONS_STEAM_DECK]:
+		settings.set_pad_buttons(style)
+		for action: StringName in PROMPTED_ACTIONS + ([&"pause"] as Array[StringName]):
+			var glyph: PromptGlyph = await _new_glyph(action)
+			if not glyph.shows_icon():
+				missing.append("%s %s (%s)" % [style, action, glyph.get_text()])
+			glyph.queue_free()
+	InputMap.add_action(&"test_guide")
+	InputMap.action_add_event(&"test_guide", _pad_button(JOY_BUTTON_GUIDE))
+	settings.set_pad_buttons(GameSettings.PAD_BUTTONS_PLAYSTATION)
+	var guide: PromptGlyph = await _new_glyph(&"test_guide")
+	var guide_shown: String = "%s, picture %s" % [guide.get_text(), guide.shows_icon()]
+	guide.queue_free()
+	InputMap.erase_action(&"test_guide")
+	settings.set_pad_buttons(GameSettings.PAD_BUTTONS_AUTO)
 	await _press(_key(KEY_SPACE))
 	var jump: PromptGlyph = await _new_glyph(&"jump")
 	var key_picture: bool = jump.shows_icon()
 	jump.queue_free()
 	await process_frame
-	return _report(missing.is_empty() and pause_shown == "Menu, picture false" and not key_picture,
-			"Pad bindings without a picture %s; pause %s; jump on the keyboard with a picture %s"
-			% [missing, pause_shown, key_picture])
+	return _report(missing.is_empty() and guide_shown == "PS, picture false" and not key_picture,
+			("Pad bindings without a picture %s; a PlayStation pad's PS button %s (expected PS, "
+			+ "picture false); jump on the keyboard with a picture %s")
+			% [missing, guide_shown, key_picture])
 
 
 ## With a pad connected, a key press brings the keys back: the prompts follow the device used last.

@@ -46,6 +46,7 @@ func _initialize() -> void:
 	results.append(await _a_broken_file_gives_the_defaults())
 	results.append(await _wrong_values_in_the_file_are_put_right())
 	results.append(await _the_switches_are_saved_read_back_and_put_right())
+	results.append(await _the_gamepad_buttons_are_saved_read_back_and_put_right())
 	results.append(await _reset_brings_back_the_defaults_and_saves_them())
 	results.append(await _in_the_tests_the_players_file_is_neither_read_nor_written())
 	_delete_test_file()
@@ -225,6 +226,34 @@ func _the_switches_are_saved_read_back_and_put_right() -> bool:
 			("Show Hidden and Hold To Escape turned on, read back by a new settings node: %s "
 			+ "(expected [true, true]); \"yes\" and 1 in the file read as %s (expected [false, false])")
 			% [read_back, put_right])
+
+
+## Gamepad buttons starts on Automatic, PlayStation is read back by a new settings node, and an id
+## that is not one, in the file or handed to the setter, gives or keeps a valid one.
+func _the_gamepad_buttons_are_saved_read_back_and_put_right() -> bool:
+	_delete_test_file()
+	var settings: GameSettings = await _new_settings()
+	var first: StringName = settings.get_pad_buttons()
+	settings.set_pad_buttons(GameSettings.PAD_BUTTONS_PLAYSTATION)
+	settings.queue_free()
+	var again: GameSettings = await _new_settings()
+	var read_back: StringName = again.get_pad_buttons()
+	again.queue_free()
+	var file: ConfigFile = ConfigFile.new()
+	file.set_value("input", "pad_buttons", "gamecube")
+	file.save(TEST_PATH)
+	var wrong: GameSettings = await _new_settings()
+	var put_right: StringName = wrong.get_pad_buttons()
+	wrong.set_pad_buttons(GameSettings.PAD_BUTTONS_XBOX)
+	wrong.set_pad_buttons(&"gamecube")
+	var kept: StringName = wrong.get_pad_buttons()
+	wrong.queue_free()
+	return report(first == GameSettings.PAD_BUTTONS_AUTO
+			and read_back == GameSettings.PAD_BUTTONS_PLAYSTATION
+			and put_right == GameSettings.PAD_BUTTONS_AUTO and kept == GameSettings.PAD_BUTTONS_XBOX,
+			("Gamepad buttons starts on %s (expected auto), PlayStation read back as %s, \"gamecube\" "
+			+ "in the file reads as %s (expected auto), and handed to the setter keeps %s (expected xbox)")
+			% [first, read_back, put_right, kept])
 
 
 func _reset_brings_back_the_defaults_and_saves_them() -> bool:

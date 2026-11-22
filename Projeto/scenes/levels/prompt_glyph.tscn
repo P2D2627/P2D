@@ -2,11 +2,6 @@
 
 [ext_resource type="Script" path="res://scenes/levels/prompt_glyph.gd" id="1_script"]
 [ext_resource type="Theme" path="res://themes/ui_theme.tres" id="2_theme"]
-[ext_resource type="Texture2D" path="res://assets/ui/prompts/xbox_button_a.png" id="3_a"]
-[ext_resource type="Texture2D" path="res://assets/ui/prompts/xbox_button_x.png" id="4_x"]
-[ext_resource type="Texture2D" path="res://assets/ui/prompts/xbox_rt.png" id="5_rt"]
-[ext_resource type="Texture2D" path="res://assets/ui/prompts/xbox_stick_l_left.png" id="6_ls_left"]
-[ext_resource type="Texture2D" path="res://assets/ui/prompts/xbox_stick_l_right.png" id="7_ls_right"]
 
 [node name="PromptGlyph" type="PanelContainer"]
 custom_minimum_size = Vector2(56, 56)
@@ -14,13 +9,6 @@ mouse_filter = 2
 theme = ExtResource("2_theme")
 theme_type_variation = &"PromptKey"
 script = ExtResource("1_script")
-pad_icons = Dictionary[String, Texture2D]({
-"A": ExtResource("3_a"),
-"LS ←": ExtResource("6_ls_left"),
-"LS →": ExtResource("7_ls_right"),
-"RT": ExtResource("5_rt"),
-"X": ExtResource("4_x")
-})
 
 [node name="Label" type="Label" parent="."]
 unique_name_in_owner = true

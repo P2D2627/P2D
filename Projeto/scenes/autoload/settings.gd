@@ -5,7 +5,8 @@ extends Node
 ## strong the screen shake and the controller's vibration are, whether the controller also vibrates
 ## while a state lasts, whether holding Jump breaks the man free of a grab, and the controls, a
 ## profile from
-## InputProfiles and the bindings of the custom one. Each option applies as soon as it changes and is
+## InputProfiles and the bindings of the custom one, and how the prompts draw the gamepad's
+## buttons. Each option applies as soon as it changes and is
 ## saved at once to a file, read again when the game starts.
 ## The project loads this script as the autoload Settings, before any scene, so the options apply
 ## even to a level run on its own with F6. The menus read and change the options here, and never
@@ -44,6 +45,22 @@ const DEFAULT_HOLD_TO_ESCAPE: bool = false
 ## Whether the demons and the spikes are drawn even where the man does not see them (SightReveal).
 ## Off, since not seeing them is the game as designed; on, for those who cannot play it that way.
 const DEFAULT_SHOW_HIDDEN: bool = false
+## How the prompts draw a gamepad's buttons: AUTO from the pad's own name (LastDevice), or always as
+## one family, for a pad whose name says nothing, as one Steam Input passes on as an Xbox pad. By id,
+## in the order the controls screen lists them, with the name it shows.
+const PAD_BUTTONS_AUTO: StringName = &"auto"
+const PAD_BUTTONS_XBOX: StringName = &"xbox"
+const PAD_BUTTONS_PLAYSTATION: StringName = &"playstation"
+const PAD_BUTTONS_NINTENDO: StringName = &"nintendo"
+const PAD_BUTTONS_STEAM_DECK: StringName = &"steam_deck"
+const PAD_BUTTONS: Dictionary[StringName, String] = {
+	PAD_BUTTONS_AUTO: "Automatic",
+	PAD_BUTTONS_XBOX: "Xbox",
+	PAD_BUTTONS_PLAYSTATION: "PlayStation",
+	PAD_BUTTONS_NINTENDO: "Nintendo Switch",
+	PAD_BUTTONS_STEAM_DECK: "Steam Deck",
+}
+const DEFAULT_PAD_BUTTONS: StringName = PAD_BUTTONS_AUTO
 
 ## True only in the tests, set by tests/support/base_test.gd before the autoload is ready: then a
 ## settings node on the player's file keeps its options in memory, from the defaults, and neither
@@ -69,6 +86,8 @@ var _hold_to_escape: bool = DEFAULT_HOLD_TO_ESCAPE
 var _show_hidden: bool = DEFAULT_SHOW_HIDDEN
 ## The id of the controls profile that is on, one of InputProfiles.PROFILES.
 var _input_profile: StringName = InputProfiles.DEFAULT_PROFILE
+## How the prompts draw a gamepad's buttons, one of PAD_BUTTONS.
+var _pad_buttons: StringName = DEFAULT_PAD_BUTTONS
 ## The custom profile's bindings, by action; every action in InputProfiles.ACTIONS has at least one.
 var _custom_bindings: Dictionary[StringName, PackedStringArray] = {}
 
@@ -185,6 +204,20 @@ func set_input_profile(profile: StringName) -> void:
 	save_to_file()
 
 
+func get_pad_buttons() -> StringName:
+	return _pad_buttons
+
+
+## Nothing to apply: the prompts ask LastDevice each time they read their button, and read it again
+## as the game comes back from the pause.
+func set_pad_buttons(style: StringName) -> void:
+	if style not in PAD_BUTTONS:
+		push_error("Settings: %s is not a way to draw the gamepad's buttons." % style)
+		return
+	_pad_buttons = style
+	save_to_file()
+
+
 ## The bindings of action in the profile that is on.
 func get_bindings(action: StringName) -> PackedStringArray:
 	if _input_profile == InputProfiles.CUSTOM:
@@ -257,6 +290,7 @@ func save_to_file() -> void:
 	file.set_value("accessibility", "hold_to_escape", _hold_to_escape)
 	file.set_value("accessibility", "show_hidden", _show_hidden)
 	file.set_value("input", "profile", String(_input_profile))
+	file.set_value("input", "pad_buttons", String(_pad_buttons))
 	for action: StringName in InputProfiles.ACTIONS:
 		file.set_value("input_custom", action, _custom_bindings[action])
 	var error: Error = file.save(path)
@@ -293,6 +327,9 @@ func _take_input_from(file: ConfigFile) -> void:
 	var saved: Variant = file.get_value("input", "profile", "")
 	var profile: StringName = StringName(saved) if saved is String or saved is StringName else &""
 	_input_profile = profile if profile in InputProfiles.PROFILES else InputProfiles.DEFAULT_PROFILE
+	var style: Variant = file.get_value("input", "pad_buttons", "")
+	var pad_buttons: StringName = StringName(style) if style is String or style is StringName else &""
+	_pad_buttons = pad_buttons if pad_buttons in PAD_BUTTONS else DEFAULT_PAD_BUTTONS
 	var defaults: Dictionary[StringName, PackedStringArray] = \
 			InputProfiles.preset(InputProfiles.DEFAULT_PROFILE)
 	_custom_bindings = {}
