@@ -103,10 +103,10 @@ func is_placeholder_shown() -> bool:
 func _lay_out() -> void:
 	if not is_node_ready():
 		return
-	var scale: float = width / ART_USED.size.x
+	var fit: float = width / ART_USED.size.x
 	_art.size = ART_SIZE
-	_art.scale = Vector2.ONE * scale
-	_art.position = margin - ART_USED.position * scale
+	_art.scale = Vector2.ONE * fit
+	_art.position = margin - ART_USED.position * fit
 
 
 func _step_aura(delta: float) -> void:

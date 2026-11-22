@@ -418,6 +418,7 @@ func _run_section() -> String:
 		offer = "waits at %s" % ", ".join(zones)
 	var last_zone: StringName = _run_stats.last_zone()
 	var seconds: int = floori(_run_stats.phase_seconds())
+	@warning_ignore("integer_division")
 	return ("run phase %d   deaths %d phase, %d level, %d run   last death %s   time %d:%02d   "
 			+ "death offer %.1f / %.1f %s") % [_run_stats.get_phase(), _run_stats.deaths_in_phase(),
 			_run_stats.deaths_in_level(), _run_stats.total_deaths(),

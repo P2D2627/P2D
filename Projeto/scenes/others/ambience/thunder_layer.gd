@@ -118,7 +118,7 @@ func strike_now(side: int = 0) -> void:
 		_play_thunder()
 	var choices: Array[ThunderStrike] = playable
 	if avoid_repeats and playable.size() > 1:
-		choices = playable.filter(func(strike: ThunderStrike) -> bool: return strike != _last)
+		choices = playable.filter(func(option: ThunderStrike) -> bool: return option != _last)
 	var strike: ThunderStrike = choices.pick_random()
 	_last = strike
 	var way: int = signi(side)

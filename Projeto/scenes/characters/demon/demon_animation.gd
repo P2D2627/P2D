@@ -63,14 +63,14 @@ func _process(_delta: float) -> void:
 
 
 ## The pose for a state, being on the floor or not, and a speed across, + or -. Every state not
-## standing nor leaping moves: it walks from min_speed and runs from walk_max_speed.
+## standing nor leaping moves: it walks from min_speed and runs from run_from.
 static func pose_for(state: Demon.State, on_floor: bool, speed: float, min_speed: float,
-		walk_max_speed: float) -> Pose:
+		run_from: float) -> Pose:
 	if not on_floor or state in LEAPING_STATES:
 		return Pose.LEAP
 	if state in STANDING_STATES:
 		return Pose.IDLE
-	if absf(speed) >= walk_max_speed:
+	if absf(speed) >= run_from:
 		return Pose.RUN
 	return Pose.WALK if absf(speed) >= min_speed else Pose.IDLE
 

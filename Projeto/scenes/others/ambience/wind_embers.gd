@@ -367,7 +367,7 @@ func _curl(at: Vector2) -> Vector2:
 ## Puts the canvas where In Backdrop says: last in Backdrop, so drawn after what it holds, or back on
 ## the layer. Either way it draws in the world's coordinates.
 func _place_canvas() -> void:
-	var into: Node = backdrop if in_backdrop and is_instance_valid(backdrop) else self
+	var into: Node = (backdrop as Node) if in_backdrop and is_instance_valid(backdrop) else (self as Node)
 	if _canvas.get_parent() != into:
 		_canvas.get_parent().remove_child(_canvas)
 		into.add_child(_canvas)

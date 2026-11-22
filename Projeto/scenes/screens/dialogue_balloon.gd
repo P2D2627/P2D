@@ -281,7 +281,7 @@ func _fit_text() -> void:
 	var plain: String = _strip_bbcode(dialogue_line.text)
 	var font: Font = _dialogue_label.get_theme_font(&"normal_font")
 	var width: float = _text_area.size.x
-	var name_height: float = (_character_label.get_content_height() if _character_label.visible else 0.0)
+	var name_height: float = (float(_character_label.get_content_height()) if _character_label.visible else 0.0)
 	var room: float = _text_area.size.y - name_height - _text_area.get_theme_constant(&"separation")
 	var size: int = max_text_size
 	while size > min_text_size and font.get_multiline_string_size(plain, HORIZONTAL_ALIGNMENT_LEFT, width,

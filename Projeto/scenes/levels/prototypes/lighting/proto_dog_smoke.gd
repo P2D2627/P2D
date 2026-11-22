@@ -134,7 +134,7 @@ func setup(dogs: Array[Demon], player: Node2D) -> void:
 	_dogs = dogs
 	for dog: Demon in dogs:
 		var shape := dog.get_node_or_null(SHAPE_PATH) as CollisionShape2D
-		var body: Node2D = shape if shape != null else dog
+		var body: Node2D = (shape as Node2D) if shape != null else (dog as Node2D)
 		var half: Vector2 = NORMAL_HALF_SIZE
 		if shape != null and shape.shape is RectangleShape2D:
 			half = (shape.shape as RectangleShape2D).size * 0.5 * shape.global_scale.abs()
