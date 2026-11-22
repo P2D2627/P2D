@@ -60,8 +60,8 @@ available_sound = ExtResource("8_available")
 unavailable_sound = ExtResource("9_unavailable")
 
 [node name="Cue" type="AudioStreamPlayer2D" parent="CrucifixSounds"]
-bus = &"Alerts"
+bus = &"CrucifixCue"
 
 [node name="Hold" type="AudioStreamPlayer2D" parent="CrucifixSounds"]
 stream = ExtResource("5_hold")
-bus = &"Alerts"
+bus = &"CrucifixHold"

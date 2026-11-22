@@ -1,5 +1,5 @@
 # Checks the low SP warning in PlayerSounds. A full man hears nothing. When the SP falls to Low
-# Threshold the warning plays from its start, on the Alerts bus, and when its file ends it starts
+# Threshold the warning plays from its start, on its own bus, PlayerLowSP, into Alerts, and when its file ends it starts
 # again while the SP is still low. Healed above Low Threshold, it fades out in Low SP Fade Out and
 # stops, with its volume back as set for the next time; falling low again during the fade starts
 # it again at once. When the SP runs out it stops at once, without the fade.
@@ -8,6 +8,7 @@
 extends "res://tests/support/player_test.gd"
 
 ## Where the man stands, on a floor far from anything.
+const BusRoute = preload("res://tests/support/bus_route.gd")
 const START: Vector2 = Vector2(0.0, -2.0)
 ## A hit that leaves the man at or below the stats file's Low Threshold from full SP.
 const LOW_HIT_SHARE: float = 0.9
@@ -61,8 +62,8 @@ func _low_plays_on_alerts_and_starts_again_at_the_end() -> bool:
 	var again: bool = sounds.low_sp.playing
 	var position: float = sounds.low_sp.get_playback_position()
 	remove_player(player)
-	return report(started and bus == &"Alerts" and again and position < RESTART_POSITION,
-			("Low SP: started %s on bus %s (expected true on Alerts); after its end, playing %s "
+	return report(started and bus == &"PlayerLowSP" and BusRoute.reaches(bus, &"Alerts") and again and position < RESTART_POSITION,
+			("Low SP: started %s on bus %s (expected true on PlayerLowSP, into Alerts); after its end, playing %s "
 			+ "at %.2f s (expected true, under %.1f s)") % [started, bus, again, position,
 			RESTART_POSITION])
 

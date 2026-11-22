@@ -1,6 +1,8 @@
 # Checks the player's options. The project has the five audio buses with a volume option, each
-# sending to Master, then Alerts, which sends to SFX and so follows its option, and
-# the options as the autoload Settings. With no file, every option is its default, and applied. A
+# sending to Master, then Alerts, which sends to SFX and so follows its option, the others under
+# them, and the options as the autoload Settings. The buses of a single sound or source, there to
+# mix it on its own, leave the mix as it is: at 0 dB, with no effects, and after every bus whose
+# compressor listens to a bus they send to, so the compressor still hears them. With no file, every option is its default, and applied. A
 # change applies at once: the bus volume and the frame rate cap. A volume option scales the bus's
 # mix, its volume in the bus layout: 100% leaves the bus there and 50% puts it 6 dB under, also for
 # a second settings node after the autoload has set the buses. Full screen and V-Sync do nothing
@@ -28,7 +30,20 @@ const VOLUME_TOLERANCE: float = 0.0001
 ## Thunder gathers the three thunder layers' buses and follows Ambience too.
 const SUB_BUSES: Dictionary[StringName, StringName] = {&"Alerts": &"SFX", &"Beds": &"Ambience",
 		&"Gusts": &"Ambience", &"Thunder": &"Ambience", &"ThunderBacklayer": &"Thunder",
-		&"ThunderBackground": &"Thunder", &"ThunderMain": &"Thunder"}
+		&"ThunderBackground": &"Thunder", &"ThunderMain": &"Thunder",
+		&"Player": &"SFX", &"Demon": &"SFX", &"PlayerJump": &"Player", &"PlayerLand": &"Player",
+		&"PlayerWallSlide": &"Player", &"PlayerFootsteps": &"Player", &"DemonLatch": &"Demon",
+		&"DemonJump": &"Demon", &"DemonAttack": &"Demon", &"DemonCrucifixHit": &"Demon",
+		&"DemonAlert": &"Alerts", &"CrucifixCue": &"Alerts", &"CrucifixHold": &"Alerts",
+		&"PlayerLowSP": &"Alerts", &"Bed1": &"Beds", &"Bed2": &"Beds", &"LowRumble": &"Ambience",
+		&"Fire": &"Ambience"}
+## The buses of a single sound or source (the groups Player and Demon among them): only for
+## mixing, so each must leave the mix as it is.
+const MIX_ONLY_BUSES: Array[StringName] = [&"Player", &"Demon", &"PlayerJump", &"PlayerLand",
+		&"PlayerWallSlide", &"PlayerFootsteps", &"DemonLatch", &"DemonJump", &"DemonAttack",
+		&"DemonCrucifixHit", &"DemonAlert", &"CrucifixCue", &"CrucifixHold", &"PlayerLowSP",
+		&"Bed1", &"Bed2", &"LowRumble", &"Fire"]
+const BusRoute = preload("res://tests/support/bus_route.gd")
 const BUS_LAYOUT_PATH: String = "res://default_bus_layout.tres"
 ## A volume option at half, 6.02 dB under the mix, and how far a bus's dB may be from the expected.
 const HALF_VOLUME: float = 0.5
@@ -39,6 +54,7 @@ func _initialize() -> void:
 	await process_frame
 	var results: Array[bool] = []
 	results.append(_the_project_has_the_buses_and_the_settings_autoload())
+	results.append(_the_mix_only_buses_leave_the_mix_as_it_is())
 	results.append(await _with_no_file_every_option_is_its_default_and_applied())
 	results.append(await _a_change_applies_at_once())
 	results.append(await _a_volume_option_scales_the_bus_layouts_mix())
@@ -69,6 +85,37 @@ func _the_project_has_the_buses_and_the_settings_autoload() -> bool:
 			"The buses %s, the option buses sending to Master and the others to theirs %s; "
 			% [names, sends_right]
 			+ "the Settings autoload in the tree %s" % is_settings)
+
+
+## Godot mixes the buses from the last to the first, so a compressor's sidechain hears a bus sent
+## into the bus it listens to only when the sending bus comes after the compressor's bus.
+func _the_mix_only_buses_leave_the_mix_as_it_is() -> bool:
+	var layout: AudioBusLayout = load(BUS_LAYOUT_PATH) as AudioBusLayout
+	var off: Array[String] = []
+	for bus: StringName in MIX_ONLY_BUSES:
+		var index: int = AudioServer.get_bus_index(bus)
+		if index == -1:
+			off.append("%s missing" % bus)
+			continue
+		var stored: Variant = layout.get("bus/%d/volume_db" % index)
+		if stored is float and not is_zero_approx(stored):
+			off.append("%s at %.2f dB in the layout" % [bus, stored])
+		if AudioServer.get_bus_effect_count(index) > 0:
+			off.append("%s has effects" % bus)
+		if AudioServer.is_bus_mute(index) or AudioServer.is_bus_solo(index) 				or AudioServer.is_bus_bypassing_effects(index):
+			off.append("%s muted, solo or bypassed" % bus)
+		var route: Array[StringName] = BusRoute.route(bus)
+		if route.is_empty() or route[-1] != &"Master":
+			off.append("%s does not reach Master (%s)" % [bus, route])
+		for listener: int in AudioServer.bus_count:
+			for effect: int in AudioServer.get_bus_effect_count(listener):
+				var compressor := AudioServer.get_bus_effect(listener, effect) as AudioEffectCompressor
+				if compressor != null and compressor.sidechain in route and index <= listener:
+					off.append("%s comes before %s, whose compressor listens to %s"
+							% [bus, AudioServer.get_bus_name(listener), compressor.sidechain])
+	return report(off.is_empty(), "The %d mix-only buses are at 0 dB, with no effects, reach "
+			% MIX_ONLY_BUSES.size() + "Master and come after the compressors that listen to them "
+			+ "(off: %s)" % "; ".join(off))
 
 
 func _with_no_file_every_option_is_its_default_and_applied() -> bool:
