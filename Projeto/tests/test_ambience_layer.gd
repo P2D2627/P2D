@@ -10,7 +10,7 @@
 # only unpanned sounds plays all of them unpanned. A placed sound keeps its place on the screen
 # while it plays, as the camera moves on. In level 1, the passing gusts and the low rumbles are two
 # layers, with their gaps, their sounds and their buses, and a gust turns the beds down: each bed
-# plays on a bus of its own into Beds, the gusts on Gusts, both into Ambience, and a compressor on
+# plays on a bus of its own into Beds, the gusts on Gusts, both into Wind and so Ambience, and a compressor on
 # Beds listens to Gusts. The sounds the player needs to hear to stay alive, the demon's alert and
 # the crucifix's, play on buses of their own into Alerts, which sends to SFX, and a compressor on
 # the Ambience bus listens to Alerts, so they turn the ambience down while they play. The player's
@@ -80,13 +80,15 @@ const RUMBLE_GAPS: Vector2 = Vector2(11.0, 19.0)
 const PASSING_FILES: Array[String] = ["one_shot_wind_2.wav", "one_shot_wind_5.wav"]
 const BAKED_PAN_FILES: Array[String] = ["one_shot_wind_1_bakedpan.wav"]
 const RUMBLE_FILES: Array[String] = ["one_shot_wind_3_low.wav", "one_shot_wind_4_low.wav"]
-## The beds' bus and the passing gusts': both send to Ambience, and a compressor on Beds listens to
-## Gusts, so a gust turns the beds down while it blows.
+## The beds' bus and the passing gusts': both send to Wind, which sends to Ambience, and a
+## compressor on Beds listens to Gusts, so a gust turns the beds down while it blows. Wind gathers
+## the wind, which a level's shelter muffles after it, in closed places.
+const WIND_BUS: StringName = &"Wind"
 const BEDS_BUS: StringName = &"Beds"
 const GUSTS_BUS: StringName = &"Gusts"
 ## Level 1's beds, each with the bus of its own it plays on, into Beds.
 const LEVEL1_BEDS: Dictionary[NodePath, StringName] = {^"Bed1": &"Bed1", ^"Bed2": &"Bed2"}
-## The low rumbles' bus of their own, into Ambience.
+## The low rumbles' bus of their own, into Wind.
 const RUMBLE_BUS: StringName = &"LowRumble"
 const BusRoute = preload("res://tests/support/bus_route.gd")
 ## A sound long enough to play on while the camera moves, in s; how far the camera moves, in px,
@@ -394,15 +396,17 @@ func _players_bus(bus: StringName, theirs: Array[StringName]) -> StringName:
 	return theirs[0]
 
 
-## Level 1's gusts turn its beds down: Beds and Gusts send to Ambience, so the Ambience option
-## applies to both, a compressor on Beds listens to Gusts, and each bed plays on its own bus into
-## Beds (the passing gusts on Gusts: _level1_has_the_wind_layers).
+## Level 1's gusts turn its beds down: Beds and Gusts send to Wind, and Wind to Ambience, so the
+## Ambience option applies to both, a compressor on Beds listens to Gusts, and each bed plays on its
+## own bus into Beds (the passing gusts on Gusts: _level1_has_the_wind_layers).
 func _gusts_turn_the_beds_down() -> bool:
 	var problems: Array[String] = []
-	for bus: StringName in [BEDS_BUS, GUSTS_BUS]:
+	var sends: Dictionary[StringName, StringName] = {BEDS_BUS: WIND_BUS, GUSTS_BUS: WIND_BUS,
+			WIND_BUS: AMBIENCE_BUS}
+	for bus: StringName in sends:
 		var index: int = AudioServer.get_bus_index(bus)
-		if index == -1 or AudioServer.get_bus_send(index) != AMBIENCE_BUS:
-			problems.append("%s does not send to Ambience" % bus)
+		if index == -1 or AudioServer.get_bus_send(index) != sends[bus]:
+			problems.append("%s does not send to %s" % [bus, sends[bus]])
 	var beds: int = AudioServer.get_bus_index(BEDS_BUS)
 	var listens: bool = false
 	if beds != -1:
@@ -421,7 +425,7 @@ func _gusts_turn_the_beds_down() -> bool:
 			problems.append("%s plays on %s, not on %s into Beds" % [path, on, LEVEL1_BEDS[path]])
 	ambience.free()
 	return _report(problems.is_empty(), "the gusts turn level 1's beds down: Beds and Gusts send to "
-			+ "Ambience, a compressor on Beds listens to Gusts, and each bed plays on its own bus into Beds (problems: "
+			+ "Wind, Wind to Ambience, a compressor on Beds listens to Gusts, and each bed plays on its own bus into Beds (problems: "
 			+ "%s)" % "; ".join(problems))
 
 

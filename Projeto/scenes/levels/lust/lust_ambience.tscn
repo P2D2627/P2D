@@ -19,6 +19,8 @@
 [ext_resource type="Resource" path="res://scenes/others/ambience/strikes/thunder_1.tres" id="17_strike_1"]
 [ext_resource type="Resource" path="res://scenes/others/ambience/strikes/thunder_2.tres" id="18_strike_2"]
 [ext_resource type="PackedScene" path="res://scenes/others/ambience/lightning_flash.tscn" id="19_flash"]
+[ext_resource type="Script" path="res://scenes/others/ambience/ambience_shelter.gd" id="20_shelter"]
+[ext_resource type="Resource" path="res://scenes/levels/lust/level1_shelter.res" id="21_shelter_field"]
 
 [sub_resource type="AudioStreamRandomizer" id="AudioStreamRandomizer_passing"]
 random_pitch = 1.06
@@ -119,3 +121,8 @@ bus = &"ThunderMain"
 
 [node name="LightningFlash" parent="." node_paths=PackedStringArray("thunder_layer") instance=ExtResource("19_flash")]
 thunder_layer = NodePath("../ThunderMain")
+
+[node name="Shelter" type="Node" parent="."]
+script = ExtResource("20_shelter")
+field = ExtResource("21_shelter_field")
+buses = Array[StringName]([&"Wind"])

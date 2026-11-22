@@ -25,17 +25,18 @@ const TEST_PATH: String = "user://test_settings.cfg"
 ## How far a bus volume read back from the AudioServer may be from the one set: it goes through dB.
 const VOLUME_TOLERANCE: float = 0.0001
 ## The buses after the ones with a volume option, each with the bus it sends to and whose option it
-## follows: Alerts holds the sounds that turn the ambience down, and follows SFX; Beds holds the
-## ambience's beds and Gusts its passing gusts, which turn the beds down, and both follow Ambience;
+## follows: Alerts holds the sounds that turn the ambience down, and follows SFX; Wind gathers the
+## wind, which a level's shelter muffles in closed places, and follows Ambience; Beds holds the
+## ambience's beds and Gusts its passing gusts, which turn the beds down, and both go into Wind;
 ## Thunder gathers the three thunder layers' buses and follows Ambience too.
-const SUB_BUSES: Dictionary[StringName, StringName] = {&"Alerts": &"SFX", &"Beds": &"Ambience",
-		&"Gusts": &"Ambience", &"Thunder": &"Ambience", &"ThunderBacklayer": &"Thunder",
+const SUB_BUSES: Dictionary[StringName, StringName] = {&"Alerts": &"SFX", &"Wind": &"Ambience",
+		&"Beds": &"Wind", &"Gusts": &"Wind", &"Thunder": &"Ambience", &"ThunderBacklayer": &"Thunder",
 		&"ThunderBackground": &"Thunder", &"ThunderMain": &"Thunder",
 		&"Player": &"SFX", &"Demon": &"SFX", &"PlayerJump": &"Player", &"PlayerLand": &"Player",
 		&"PlayerWallSlide": &"Player", &"PlayerFootsteps": &"Player", &"DemonLatch": &"Demon",
 		&"DemonJump": &"Demon", &"DemonAttack": &"Demon", &"DemonCrucifixHit": &"Demon",
 		&"DemonAlert": &"Alerts", &"CrucifixCue": &"Alerts", &"CrucifixHold": &"Alerts",
-		&"PlayerLowSP": &"Alerts", &"Bed1": &"Beds", &"Bed2": &"Beds", &"LowRumble": &"Ambience",
+		&"PlayerLowSP": &"Alerts", &"Bed1": &"Beds", &"Bed2": &"Beds", &"LowRumble": &"Wind",
 		&"Fire": &"Ambience"}
 ## The buses of a single sound or source (the groups Player and Demon among them): only for
 ## mixing, so each must leave the mix as it is.
