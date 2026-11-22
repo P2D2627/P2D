@@ -14,7 +14,7 @@ visible = false
 script = ExtResource("1_script")
 
 [node name="MenuBackdrop" parent="." instance=ExtResource("4_backdrop")]
-background_alpha = 0.6
+background_alpha = 0.9
 
 [node name="Center" type="CenterContainer" parent="."]
 layout_mode = 3
@@ -33,7 +33,7 @@ layout_mode = 2
 [node name="Heading" type="Label" parent="Center/Panel"]
 visible = false
 layout_mode = 2
-text = "Paused"
+text = "PAUSED"
 horizontal_alignment = 1
 
 [node name="ResumeButton" type="Button" parent="Center/Panel"]

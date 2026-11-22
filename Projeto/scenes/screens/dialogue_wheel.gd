@@ -17,6 +17,9 @@ extends Control
 
 ## He confirmed the answer response.
 signal response_selected(response: DialogueResponse)
+## He pointed at another answer, by its index; the stick back in the middle, pointing at nothing,
+## says nothing. The balloon answers it with the menus' click and pulse (#284).
+signal pointed(index: int)
 
 ## How many answers the wheel has room for; more are left out, with a warning.
 const SLOTS: int = 4
@@ -35,6 +38,10 @@ const COLUMNS: int = 2
 ## How much of the stick's push must go along an axis for that axis to count, as a part of its
 ## length: under this, pushing left with a little down is still just left.
 @export_range(0.1, 0.7, 0.01) var aim_axis_share: float = 0.38
+## How much further back the stick must come before the answer pointed at lets go, as a part of its
+## length: past the deadzone's edge or the line between two answers. Without it, a stick resting on
+## a line flips the answer each frame, and the highlight, the click and the pulse with it (#284).
+@export_range(0.0, 0.3, 0.01) var aim_release_margin: float = 0.12
 @export_group("Text")
 ## The answer's text size, as large as fits on its platform in Max Text Lines lines.
 @export_range(12, 48, 1, "suffix:px") var max_font_size: int = 26
@@ -86,12 +93,17 @@ func _input(event: InputEvent) -> void:
 
 
 ## Points where aim goes, a direction like the stick's, as it is now: in the middle, or towards no
-## answer, nothing is pointed at.
+## answer, nothing is pointed at. The answer pointed at holds while aim is still within its Aim
+## Release Margin.
 func point(aim: Vector2) -> void:
 	var index: int = answer_towards(aim)
+	if index != selected and selected >= 0 and _still_towards(aim, selected):
+		return
 	if index != selected:
 		selected = index
 		_refresh()
+		if index >= 0:
+			pointed.emit(index)
 
 
 ## The answer aim points at, or -1. Up alone, or towards an empty place, points at none.
@@ -114,6 +126,35 @@ func answer_towards(aim: Vector2) -> int:
 func confirm() -> void:
 	if selected >= 0 and selected < _count:
 		response_selected.emit(responses[selected])
+
+
+## The rect all the slots take on the screen, shown or not, so what stays clear of the answers does
+## not depend on how many there are.
+func get_slots_rect() -> Rect2:
+	var rect: Rect2 = Rect2()
+	for index: int in slots.size():
+		var slot: Rect2 = slots[index].get_global_rect()
+		rect = slot if index == 0 else rect.merge(slot)
+	return rect
+
+
+## Whether aim still points at index with the margin in its favour: answer_towards' rules, with the
+## deadzone and each line moved back by Aim Release Margin.
+func _still_towards(aim: Vector2, index: int) -> bool:
+	var length: float = aim.length()
+	if length < aim_deadzone - aim_release_margin:
+		return false
+	var share: float = length * aim_axis_share
+	var slack: float = length * aim_release_margin
+	var row_held: bool = aim.y > share - slack if index >= COLUMNS else aim.y <= share + slack
+	var column_held: bool
+	if index == COLUMNS and _count == COLUMNS + 1:
+		column_held = aim.x <= share + slack
+	elif index % COLUMNS == 0:
+		column_held = aim.x < -share + slack
+	else:
+		column_held = aim.x > share - slack
+	return row_held and column_held
 
 
 func _build() -> void:

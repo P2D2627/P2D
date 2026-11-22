@@ -20,7 +20,7 @@ const DEFAULT_PROFILE: StringName = WASD
 ## The profiles, by id, in the order the controls screen lists them, with the name it shows.
 const PROFILES: Dictionary[StringName, String] = {
 	WASD: "WASD",
-	ARROWS_AND_QWEASD: "Arrows and QWEASD",
+	ARROWS_AND_QWEASD: "Arrows",
 	CUSTOM: "Custom",
 }
 ## The actions the profiles set, in the order the controls screen shows them, with the name it

@@ -2,6 +2,7 @@
 
 [ext_resource type="Script" path="res://scenes/screens/options_menu.gd" id="1_script"]
 [ext_resource type="PackedScene" path="res://scenes/screens/controls_menu.tscn" id="2_controls_menu"]
+[ext_resource type="PackedScene" path="res://scenes/levels/prompt_glyph.tscn" id="3_glyph"]
 
 [node name="OptionsMenu" type="VBoxContainer" groups=["menu_no_crosses"]]
 visible = false
@@ -10,7 +11,7 @@ script = ExtResource("1_script")
 
 [node name="Heading" type="Label" parent="."]
 layout_mode = 2
-text = "Settings"
+text = "SETTINGS"
 horizontal_alignment = 1
 
 [node name="Tabs" type="HBoxContainer" parent="."]
@@ -147,13 +148,17 @@ layout_mode = 2
 theme_type_variation = &"OptionsPrompt"
 text = "RESET TO DEFAULTS"
 
-[node name="BackButton" type="Button" parent="Prompts"]
+[node name="BackRow" type="HBoxContainer" parent="Prompts"]
+layout_mode = 2
+theme_type_variation = &"PromptRow"
+
+[node name="BackGlyph" parent="Prompts/BackRow" instance=ExtResource("3_glyph")]
+layout_mode = 2
+size_flags_vertical = 4
+action = &"ui_cancel"
+
+[node name="BackButton" type="Button" parent="Prompts/BackRow"]
 unique_name_in_owner = true
 layout_mode = 2
 theme_type_variation = &"OptionsPrompt"
 text = "BACK"
-
-[node name="BackKeys" type="Label" parent="Prompts"]
-layout_mode = 2
-theme_type_variation = &"OptionsDescription"
-text = "Esc / B"

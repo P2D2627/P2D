@@ -15,10 +15,10 @@ extends Node2D
 ## blurred. Only the rock blocks his sight: Velvet does not. The dogs, the spikes and the fires show
 ## only while he sees them, by their SightReveal (#253).
 ## All: the level's fires on the floors past the start and in the background, with halos, sparks and
-## embers (off); dust in the air that only shows where it is lit, blown by the storm's wind in gusts;
+## embers (off); a gate statue's flame, once used, lights the cave as a fainter fire (mode A, #284); dust in the air that only shows where it is lit, blown by the storm's wind in gusts;
 ## the man's and the dogs' dust where they touch the floor or a wall (proto_contact_dust.gd); all the
-## particles drawn behind the rock; glow. A stone slab (#263) over each run of one-way tiles and each
-## collapsing platform, whose own tile is then drawn clear.
+## particles drawn behind the rock; glow. A stone slab (#263) over each run of one-way tiles, whose tile
+## is then drawn clear, as is the collapsing platforms', which draw their own crumbling slab (#284).
 ## Depth (#261): a copy of the rock, nudged out of each face (proto_depth.gd), is drawn behind the
 ## man, the dogs, the spikes, the fires and the backdrop's near rocks, and the rock itself in front
 ## of them. Copies of some of the backdrop's near rocks, dark and out of focus, frame the screen from
@@ -123,12 +123,20 @@ const FIRE_COLOR := Color(1.0, 0.36, 0.78)
 const FIRE_ENERGY: float = 0.6
 const FIRE_RADIUS: float = 950.0
 const FIRE_LIGHT_HEIGHT: float = 50.0
+## A gate statue's flame, once it burns (#284): a fire's light at this share of a fire's energy and reach,
+## from this height over the statue's base, where the flame burns on it.
+const STATUE_LIGHT_SHARE: float = 0.5
+const STATUE_LIGHT_HEIGHT: float = 170.0
 ## Each fire's sound, heard as the man nears it, and the embers its crackles throw.
 const FIRE_SOUND: PackedScene = preload("res://scenes/others/ambience/fire_sound.tscn")
 ## Where those embers leave from: the middle Width share of the flame, between the shares of its
 ## height (x, y) above its base.
 const FIRE_EMBER_WIDTH: float = 0.5
 const FIRE_EMBER_HEIGHT := Vector2(0.5, 0.85)
+## How far below the rock's top each fire stands, in px. The flames thin out at their base (the bonfire's
+## takes 10.8 px to reach its full width) and the rim's stones, drawn in front, stick 20.4 px out of the
+## rock: sunk this far, the stones hide the thin base and the flame burns in them, not on top (#284).
+const FIRE_SINK: float = 12.0
 ## Where fires go, over the whole level: in the middle of each floor at least Min Floor tiles wide,
 ## so on ground he walks and not on a step he jumps to, with Open Above open tiles over it inside the
 ## map (the rock round the cave has open air above its top row); a long floor gets one every
@@ -267,17 +275,19 @@ static var shade_on: bool = true
 static var vision: int = VISION_OFF
 static var unseen_blur_on: bool = false
 static var softness_step: int = 1
-static var ambient: float = 0.3
+static var ambient: float = 0.35
 static var man_radius: float = 900.0
 static var depth_on: bool = true
 ## Off by default: not worth it for now (16/11); the code stays, Ctrl+F12 turns them on.
 static var foreground_on: bool = false
-static var grade_on: bool = true
+## Off by default since 22/11; the code stays, Ctrl+F1 turns it on.
+static var grade_on: bool = false
 static var fire_ramp_on: bool = true
 static var fog_on: bool = true
 static var rim_on: bool = true
 static var scene_light_on: bool = true
-static var outline_on: bool = true
+## Off by default since 22/11; the code stays, Ctrl+F6 turns it on.
+static var outline_on: bool = false
 ## Off by default: the stone rim in front of the floor hides his feet and the shadow with them
 ## (seen in recorded frames, 16/11); it stays for floors without a rim.
 static var shadow_on: bool = false
@@ -300,6 +310,8 @@ var _art: CanvasItem
 var _depth: Node2D
 var _foreground: Node2D
 var _fires: Array[Node2D] = []
+## The gate statues' lights, children of their statues: on while the statue burns, in mode A.
+var _statue_lights: Array[PointLight2D] = []
 var _parallax_fires: Array[Sprite2D] = []
 ## Seconds each frame of each background fire shows, by its index in Parallax Fires.
 var _parallax_frame_times: Array[float] = []
@@ -547,6 +559,7 @@ func _setup() -> void:
 	_set_light_masks()
 	_hide_marks()
 	_add_fires()
+	_add_statue_lights()
 	_add_platform_slabs()
 	if BACKGROUND_FIRES_ON:
 		_add_background_fires()
@@ -588,7 +601,7 @@ func _setup() -> void:
 		elif argument.begins_with("--lighting-raise="):
 			_raise_crucifix.call_deferred(argument.get_slice("=", 1).to_int())
 	if near_fire >= 0 and near_fire < _fires.size():
-		_player.global_position = _fires[near_fire].global_position + fire_offset
+		_player.global_position = _fires[near_fire].global_position + fire_offset - Vector2(0.0, FIRE_SINK)
 	var dogs: Array[Demon] = _find_dogs()
 	if near_dog >= 0 and near_dog < dogs.size():
 		_player.global_position = dogs[near_dog].global_position + NEAR_DOG_OFFSET
@@ -718,6 +731,39 @@ func _add_fires() -> void:
 			% [spots.size(), placed_ms, densest.x, screen.x, screen.y, densest.y])
 
 
+## Each gate statue (GateUnlocker) lights the cave round it once its flame burns, as a fainter fire: the fires'
+## colour, falloff and layers, at Statue Light Share of a fire's energy and reach, from Statue Light Height.
+func _add_statue_lights() -> void:
+	var statues: Node = _level.get_node_or_null(^"GateUnlockers")
+	if statues == null:
+		return
+	var world_mask: int = MASK_WORLD | MASK_PARALLAX | MASK_MAN
+	for child: Node in statues.get_children():
+		var statue := child as GateUnlocker
+		if statue == null:
+			continue
+		for rock: bool in [false, true]:
+			var share: float = STATUE_LIGHT_SHARE * (ProtoFire.ROCK_LIGHT_SHARE if rock else 1.0)
+			var light := PointLight2D.new()
+			light.name = "StatueRockLight" if rock else "StatueLight"
+			light.texture = _falloff
+			light.texture_scale = FIRE_RADIUS * share / (float(_falloff.width) * 0.5)
+			light.color = FIRE_COLOR
+			light.energy = FIRE_ENERGY * share
+			light.range_item_cull_mask = MASK_ROCK if rock else world_mask
+			light.position = Vector2(0.0, -STATUE_LIGHT_HEIGHT)
+			light.enabled = mode == Mode.HYBRID and statue.is_activated()
+			statue.add_child(light)
+			_statue_lights.append(light)
+		statue.activated.connect(_on_statue_lit.bind(statue))
+
+
+func _on_statue_lit(statue: GateUnlocker) -> void:
+	for light: PointLight2D in _statue_lights:
+		if is_instance_valid(light) and light.get_parent() == statue:
+			light.enabled = mode == Mode.HYBRID
+
+
 ## The fire's sound (fire_sound.tscn), at its base: its embers leave from the flame's body and take
 ## the fire's opacity, so a fire the man cannot see throws none that show, though he hears it.
 func _add_fire_sound(fire: ProtoFire) -> void:
@@ -752,7 +798,7 @@ func _find_fire_spots() -> Array[Vector2]:
 			chosen.append(cell)
 	var spots: Array[Vector2] = []
 	for cell: Vector2i in chosen:
-		spots.append(_tiles.to_global(_tiles.map_to_local(cell) - Vector2(0.0, TILE * 0.5)))
+		spots.append(_tiles.to_global(_tiles.map_to_local(cell) - Vector2(0.0, TILE * 0.5 - FIRE_SINK)))
 	return spots
 
 
@@ -795,16 +841,8 @@ func _add_platform_slabs() -> void:
 		var platform := node as CollapsingPlatform
 		if platform == null:
 			continue
-		# Beside its tiles, not under them: they blink, unseen now, while the slab fades out over the
-		# platform's Collapse Time, gone as it goes, and shows again as it comes back.
-		var layer := platform.get_node("%Tiles") as TileMapLayer
-		var slabs := Node2D.new()
-		slabs.position = layer.position
-		platform.add_child(slabs)
-		var column: int = _tiles.local_to_map(_tiles.to_local(layer.global_position)).x
-		_add_slabs(slabs, slab, Vector2.ZERO, platform.width_tiles, column)
-		platform.collapsing.connect(_fade_out.bind(slabs, platform.collapse_time))
-		platform.came_back.connect(func() -> void: slabs.modulate.a = 1.0)
+		# Its own art draws it; lit as the rock is, while its tiles blink unseen.
+		_set_mask_deep(platform.get_node("%Art"), MASK_ROCK)
 		platforms += 1
 	_clear_one_way_tile()
 	print("ProtoSlabs: %d runs of one-way tiles, %d collapsing platforms" % [runs.size(), platforms])
@@ -827,10 +865,6 @@ func _add_slabs(parent: Node2D, slab: Texture2D, corner: Vector2, width_tiles: i
 		sprite.position = corner + Vector2(k * width, -SLAB_TOP_IN_ART * height)
 		sprite.light_mask = MASK_ROCK
 		parent.add_child(sprite)
-
-
-func _fade_out(item: CanvasItem, seconds: float) -> void:
-	item.create_tween().tween_property(item, "modulate:a", 0.0, seconds)
 
 
 ## The one-way tile drawn clear, so only the slab shows: a change to the level's TileSet in memory,
@@ -1599,6 +1633,9 @@ func _apply() -> void:
 		_man_lights[k].texture_scale = man_radius * MAN_LIGHT_SHARES[k] / (float(_falloff.width) * 0.5)
 	for fire: Node2D in _fires:
 		(fire as ProtoFire).set_lights_enabled(hybrid)
+	for light: PointLight2D in _statue_lights:
+		if is_instance_valid(light):
+			light.enabled = hybrid and (light.get_parent() as GateUnlocker).is_activated()
 	_composite_layer.visible = propagation
 	_composite.set_shader_parameter("ambient", Vector3(dark.r, dark.g, dark.b))
 	_aura_cell = Vector2i(NO_FLOOR, NO_FLOOR)

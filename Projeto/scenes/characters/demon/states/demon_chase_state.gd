@@ -11,6 +11,8 @@ extends DemonState
 ## Distance, it keeps that far from him until it can attack again, and then runs at him (ADR 0051).
 ## With Retreat Pace Width, it paces there, as when it waits for him to take hits (ADR 0052).
 ## With Follows Trail, while he is out of its sight or reach, it goes by his trail instead (#271).
+## With an attack that Leaps To Other Floors, a man on another floor that a leap gets to is attacked
+## first, before the trail and the stop out of his reach (#284); its attack is asked for once a frame.
 
 
 ## Leaving the chase ends a bite under way, and the backing off after it.
@@ -19,9 +21,14 @@ func exit() -> void:
 
 
 func physics_update(delta: float) -> void:
-	if not _demon.keeps_after_target() or _demon.goes_by_trail(delta):
+	if not _demon.keeps_after_target():
 		return
 	var gap: float = _demon.get_gap_to_target()
+	var may_leap: bool = _demon.may_leap_at_the_man()
+	if may_leap and _warns(_demon.attack_to_start(gap, delta), gap):
+		return
+	if _demon.goes_by_trail(delta):
+		return
 	if _demon.is_man_out_of_reach():
 		_demon.turn_to(gap)
 		if not _demon.follows_off_its_floor(gap, delta):
@@ -32,10 +39,19 @@ func physics_update(delta: float) -> void:
 		_demon.back_off_or_chase(delta)
 		return
 	_demon.turn_to(gap)
-	var attack: DemonAttack = _demon.attack_to_start(gap, delta)
-	if attack != null:
-		_demon.warn_of(attack)
-		if not attack.keeps_chasing:
-			_demon.velocity.x = 0.0
-			return
+	if not may_leap and _warns(_demon.attack_to_start(gap, delta), gap):
+		return
 	_demon.go_after_or_pace(gap, delta)
+
+
+## Warns of attack, if any, turned to the man gap px away; true when that stops the chase this frame,
+## as before a lunge or a leap, and false for a bite on the run, which chases on.
+func _warns(attack: DemonAttack, gap: float) -> bool:
+	if attack == null:
+		return false
+	_demon.turn_to(gap)
+	_demon.warn_of(attack)
+	if attack.keeps_chasing:
+		return false
+	_demon.velocity.x = 0.0
+	return true

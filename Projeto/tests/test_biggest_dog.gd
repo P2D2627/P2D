@@ -5,7 +5,8 @@
 # with the distances to the man measured from its face, and it goes after him as he goes (#271): it notices him
 # as far beyond its face as the regular dog, comes and bites him, bites him on its back, never gives up on him,
 # jumps up a step as high as he jumps and no higher, leaps down after him, and attacks him only while it sees
-# him.
+# him. Its own since #284: a faster chase, still slower than the man, bites that kill after a longer warning,
+# a lunge that leaps to other floors, and no crucifix (test_biggest_dog_threat.gd plays them).
 # Run from the repository root; the exit code is 0 on pass and 1 on fail:
 # godot --headless --fixed-fps 60 --path Projeto --script res://tests/test_biggest_dog.gd
 extends "res://tests/support/player_test.gd"
@@ -43,6 +44,10 @@ const BITE_FROM_BEYOND_FACE: float = 300.0
 const FROM_THE_FACE: Array[String] = ["lose_distance", "retreat_distance"]
 const ATTACK_FROM_THE_FACE: Array[String] = ["attack_range"]
 const STAT_STEP: float = 10.0
+## The attack fields the biggest dog has its own of (#284), and the least warning before a bite that
+## kills, so the man can read it.
+const KILLING_ATTACK_FIELDS: Array[String] = ["warning_time", "kills", "leaps_to_other_floors"]
+const KILLING_WARNING_TIME: float = 0.35
 ## How high above the biggest dog's back the man is dropped, in px, and the frames its back has to
 ## bite him.
 const BACK_DROP_HEIGHT: float = 24.0
@@ -214,9 +219,17 @@ func _its_stats_are_the_dog_s_measured_from_its_face() -> bool:
 	if own_file:
 		var further: float = _half_width_of(big) - _half_width_of(dog)
 		var skip: Array[String] = ["attacks", "sight_distance", "sight_behind_share", "pack_variation",
-				"never_gives_up", "jump_height", "max_drop", "follows_trail", "drops_down_shafts"]
+				"never_gives_up", "jump_height", "max_drop", "follows_trail", "drops_down_shafts",
+				"chase_speed", "ignores_crucifix"]
 		skip.append_array(FROM_THE_FACE)
 		wrong = _different_fields(dog.stats, big.stats, skip)
+		# Its own since #284: a faster chase, still slower than the man at the fastest of its draws,
+		# and no crucifix.
+		if big.stats.chase_speed <= dog.stats.chase_speed \
+				or big.stats.chase_speed * (1.0 + big.stats.pack_variation) >= _man_top_speed():
+			wrong.append("chase_speed")
+		if not big.stats.ignores_crucifix:
+			wrong.append("ignores_crucifix")
 		for flag: String in ["never_gives_up", "follows_trail", "drops_down_shafts"]:
 			if big.stats.get(flag) != true:
 				wrong.append(flag)
@@ -431,6 +444,14 @@ func _longest_attack_range(dog: Demon) -> float:
 	return longest
 
 
+## The man's top run speed, in px/s, from his scene's stats.
+func _man_top_speed() -> float:
+	var man: Player = PLAYER_SCENE.instantiate() as Player
+	var speed: float = man.stats.max_run_speed
+	man.free()
+	return speed
+
+
 ## The height of the man's full jump, in px, from his scene's stats.
 func _man_jump_height() -> float:
 	var man: Player = PLAYER_SCENE.instantiate() as Player
@@ -477,9 +498,18 @@ func _different_attacks(small: Array[DemonAttack], large: Array[DemonAttack], fu
 	if small.size() != large.size():
 		return ["attacks: %d, not %d" % [large.size(), small.size()]]
 	var wrong: Array[String] = []
+	var skip: Array[String] = []
+	skip.append_array(ATTACK_FROM_THE_FACE)
+	skip.append_array(KILLING_ATTACK_FIELDS)
 	for i: int in small.size():
-		for field: String in _different_fields(small[i], large[i], ATTACK_FROM_THE_FACE):
+		for field: String in _different_fields(small[i], large[i], skip):
 			wrong.append("%s %s" % [small[i].animation, field])
+		# Its own since #284: every bite kills, after a warning long enough to read, and its lunge
+		# leaps to other floors.
+		if not large[i].kills or large[i].warning_time < KILLING_WARNING_TIME:
+			wrong.append("%s kills after %.2f s" % [large[i].animation, large[i].warning_time])
+		if not large[i].keeps_chasing and not large[i].leaps_to_other_floors:
+			wrong.append("%s leaps_to_other_floors" % large[i].animation)
 		for field: String in ATTACK_FROM_THE_FACE:
 			if absf(large[i].get(field) - small[i].get(field) - further) > STAT_STEP:
 				wrong.append("%s %s" % [small[i].animation, field])

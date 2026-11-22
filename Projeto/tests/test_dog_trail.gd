@@ -12,7 +12,10 @@
 # back beside it, in its sight and within its reach, it lets go of his trail, so once he hides on its floor it
 # never goes back up the way he went. In level 1, with the man going the way back round from its hall (the
 # steps, the column, gate 3, the corridor, the well and the chimney) and on past its post, it goes the same way
-# after him and comes down the chimney into the hall again.
+# after him and comes down the chimney into the hall again. The cases built here give the dog a copy of its
+# attacks with Leaps To Other Floors off, so they check the trail and the refuge, which still hold where no leap
+# gets to him; with its own attacks (#284, ADR 0076), the man on that narrow platform to its side is leapt at
+# and killed, from several seeds.
 # Run from the repository root; the exit code is 0 on pass and 1 on fail:
 # godot --headless --fixed-fps 60 --path Projeto --script res://tests/test_dog_trail.gd
 extends "res://tests/support/player_test.gd"
@@ -81,6 +84,8 @@ const WAYPOINT_FRAMES: int = 20
 const LOOP_FRAMES: int = 6000
 ## The seed every case starts from, so the dogs' draws repeat.
 const SEED: int = 27
+## The seeds the leap at the man on the narrow platform is tried from.
+const LEAP_SEEDS: Array[int] = [1, 2, 3, 5, 7]
 ## A block the dog stands on, LEDGE_TOP px over the floor, and where the man stands below it, west of it,
 ## where the dog's drop off its west end lands with nobody there (x -27, measured on 2026-11-20).
 const LEDGE_LEFT: float = 300.0
@@ -163,6 +168,7 @@ func _initialize() -> void:
 	results.append(await _with_the_man_standing_right_above_it_it_barks_below())
 	for top: float in SIDE_REFUGE_TOPS:
 		results.append(await _with_the_man_on_a_narrow_platform_to_its_side_it_barks_below(top))
+	results.append(await _with_its_leap_the_man_on_a_narrow_platform_to_its_side_dies())
 	results.append(await _with_the_man_on_a_wide_platform_it_jumps_up_beside_him())
 	results.append(await _with_the_man_near_the_edge_on_its_side_it_barks_below())
 	results.append(await _once_he_moves_on_from_over_it_it_jumps_at_once())
@@ -181,6 +187,7 @@ func _it_drops_onto_the_floor_where_the_man_stands() -> bool:
 	var big: Demon = BIGGEST_SCENE.instantiate() as Demon
 	big.stats = big.stats.duplicate() as DemonStats
 	big.stats.pack_variation = 0.0
+	big.stats.attacks = _copy_of_attacks(big.stats, false)
 	big.position = Vector2(DOG_X, LEDGE_TOP - 2.0)
 	big.faces_left = true
 	root.add_child(big)
@@ -335,6 +342,31 @@ func _with_the_man_on_a_narrow_platform_to_its_side_it_barks_below(top: float) -
 	return report(there and still_there and jumps[0] == 0 and barks[0] > 0, ("Biggest dog: the man on a platform "
 			+ "%.0f px wide, %.0f px up, to its side %s, still there %s; it jumped %d time(s) (0) and barked %s")
 			% [NARROW_RIGHT - NARROW_LEFT, -top, there, still_there, jumps[0], barks[0] > 0])
+
+
+## With its own attacks, which Leap To Other Floors, the dog leaps at the man on the narrow platform to its side,
+## NARROW_TOP px up, and kills him: no refuge for him there (#284). From each of LEAP_SEEDS, with god mode only
+## until he stands there.
+func _with_its_leap_the_man_on_a_narrow_platform_to_its_side_dies() -> bool:
+	var outcomes: Array[String] = []
+	var passed: bool = true
+	for leap_seed: int in LEAP_SEEDS:
+		var ground: StaticBody2D = make_platform(-FLOOR_HALF_LENGTH, FLOOR_HALF_LENGTH)
+		var narrow: StaticBody2D = _make_one_way(NARROW_LEFT, NARROW_RIGHT, NARROW_TOP)
+		var big: Demon = await _spawn_biggest(true, true, leap_seed)
+		var player: Player = await _noticed_man(big)
+		var there: bool = await _land(player, Vector2((NARROW_LEFT + NARROW_RIGHT) / 2.0, NARROW_TOP))
+		player.god_mode = false
+		var died: bool = await wait_until(player.is_dead, FOLLOW_FRAMES)
+		var cause: StringName = player.get_death_cause()
+		passed = passed and there and died and cause == &"biggest_demon"
+		outcomes.append("seed %d: there %s, died %s (%s)" % [leap_seed, there, died, cause])
+		big.queue_free()
+		ground.queue_free()
+		narrow.queue_free()
+		await remove_player(player)
+	return report(passed, "Biggest dog with its leap, the man on a platform %.0f px wide, %.0f px up, to its side: %s"
+			% [NARROW_RIGHT - NARROW_LEFT, -NARROW_TOP, "; ".join(outcomes)])
 
 
 ## The man stands on a wide platform where he landed. The dog jumps up beside him, on its own side of him:
@@ -555,19 +587,31 @@ func _in_level_1_it_goes_the_way_back_round_after_him() -> bool:
 			% [noticed, landed_all, in_corridor[0], back, LOOP_FRAMES, dog_at.x, dog_at.y])
 
 
-## The biggest dog at DOG_X on the floor, facing left, with its own copy of Stats, Follows Trail as given and
-## no Pack Variation, from SEED, so a case repeats.
-func _spawn_biggest(follows_trail: bool) -> Demon:
-	seed(SEED)
+## The biggest dog at DOG_X on the floor, facing left, with its own copy of Stats, Follows Trail as given, no
+## Pack Variation and its own copy of its attacks, which Leap To Other Floors only with leaps, from a_seed, so a
+## case repeats.
+func _spawn_biggest(follows_trail: bool, leaps: bool = false, a_seed: int = SEED) -> Demon:
+	seed(a_seed)
 	var big: Demon = BIGGEST_SCENE.instantiate() as Demon
 	big.stats = big.stats.duplicate() as DemonStats
 	big.stats.follows_trail = follows_trail
 	big.stats.pack_variation = 0.0
+	big.stats.attacks = _copy_of_attacks(big.stats, leaps)
 	big.position = Vector2(DOG_X, -2.0)
 	big.faces_left = true
 	root.add_child(big)
 	await wait_until(big.is_on_floor)
 	return big
+
+
+## A copy of each of the attacks in stats, those that Leap To Other Floors keeping it only with leaps.
+func _copy_of_attacks(stats: DemonStats, leaps: bool) -> Array[DemonAttack]:
+	var attacks: Array[DemonAttack] = []
+	for attack: DemonAttack in stats.attacks:
+		var copy: DemonAttack = attack.duplicate() as DemonAttack
+		copy.leaps_to_other_floors = leaps and attack.leaps_to_other_floors
+		attacks.append(copy)
+	return attacks
 
 
 ## The man on the floor at MAN_NOTICED_X, once the dog has noticed him, out of harm's way with god mode.

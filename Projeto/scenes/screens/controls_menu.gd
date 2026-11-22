@@ -27,20 +27,20 @@ signal input_refused
 ## screen does: a script that names an autoload only compiles once the autoload exists.
 const SETTINGS_PATH: NodePath = ^"/root/Settings"
 ## What an action's button shows while it waits for a key.
-const WAITING_TEXT: String = "Press a key or mouse button (Esc or B cancels)"
+const WAITING_TEXT: String = "Press a key or mouse button (Esc or B cancels)."
 ## What the button shows after a key it cannot take, with the key's name, as short as the waiting
 ## text, so it fits the button.
-const REFUSED_TEXT: String = "%s can't be used: press another key"
+const REFUSED_TEXT: String = "Can't use %s. Try another key."
 ## The name shown for a refused key that has none.
-const UNNAMED_KEY: String = "That key"
+const UNNAMED_KEY: String = "that key"
 ## What the button shows after the gamepad, a button other than B or a push of an axis, with the way
 ## out, short enough to fit the button.
-const GAMEPAD_REFUSED_TEXT: String = "Gamepad stays fixed: press a key (B cancels)"
+const GAMEPAD_REFUSED_TEXT: String = "The controller can't be remapped (B cancels)."
 ## The keys that only bind as they are let go, with nothing pressed meanwhile. The Windows key is not
 ## one: it is reserved (InputProfiles.RESERVED_KEYS), so it is refused as it goes down.
 const MODIFIERS: Array[Key] = [KEY_SHIFT, KEY_CTRL, KEY_ALT]
 ## What the button shows while a modifier is held, with its name: it binds once let go.
-const HELD_TEXT: String = "%s: let go to use it"
+const HELD_TEXT: String = "Let go of %s to use it."
 ## How far back an axis must come, as a share of its way, before its next push is refused. A push is
 ## refused past the half, where Godot counts the axis as pressed; coming back only to just under it,
 ## as the noise of a slow push does, is still the same push.

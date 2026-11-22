@@ -5,7 +5,8 @@ extends Node
 ## Threshold, the hit takes its damage, throws him back and leaves him invulnerable for a moment,
 ## though not to the hits that pierce it, as a level-1 pack's (ADR 0055). With SP low, or when the
 ## hit would take his SP to 0, it takes nothing and says so with grab_hit instead: a demon never
-## kills with a hit, it grabs. While the man is held, every hit grabs, whatever his SP, so none
+## kills with a hit, it grabs, save a hit that Kills, the biggest dog's (#284), which kills him at
+## once, whatever his SP. While the man is held, every other hit grabs, whatever his SP, so none
 ## takes SP or throws him then. With the debug cheats (#273), a hit in god mode does all of this but
 ## take SP (Player.lose_sp()), and in noclip no hit does anything.
 
@@ -30,6 +31,9 @@ func _ready() -> void:
 
 func _on_hurtbox_hit_received(hitbox: Hitbox) -> void:
 	if player.noclip:
+		return
+	if hitbox.kills:
+		player.die(hitbox.get_cause())
 		return
 	var soul_points: SoulPoints = player.soul_points
 	if _held or soul_points.is_low() or hitbox.damage >= soul_points.get_sp():

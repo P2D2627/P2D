@@ -84,8 +84,8 @@ const BUS_DESCRIPTIONS: Dictionary[StringName, String] = {
 const FULLSCREEN_DESCRIPTION: String = "Plays on the whole screen; off, in a window."
 const VSYNC_DESCRIPTION: String = "Draws each frame in step with the screen, so the picture never tears."
 const FPS_CAP_DESCRIPTION: String = "The most frames drawn each second. The game keeps its pace."
-const SCREEN_SHAKE_DESCRIPTION: String = "How strong the screen shake is. 0 % turns it off."
-const VIBRATION_DESCRIPTION: String = "How strong the controller's vibration is. 0 % turns it off."
+const SCREEN_SHAKE_DESCRIPTION: String = "How strong the screen shake is. 0% turns it off."
+const VIBRATION_DESCRIPTION: String = "How strong the controller's vibration is. 0% turns it off."
 const CONSTANT_VIBRATION_DESCRIPTION: String = ("The controller also vibrates while a state lasts, "
 		+ "such as a grab or the crucifix held up.")
 const HOLD_TO_ESCAPE_DESCRIPTION: String = ("Hold Jump to break free of a grab, instead of pressing "
@@ -542,9 +542,9 @@ func _show_vibration() -> void:
 	_vibration_text.text = _percent_text(_settings.get_vibration())
 
 
-## A value from 0 to 1 as a whole percentage, such as "30 %".
+## A value from 0 to 1 as a whole percentage, such as "30%".
 func _percent_text(value: float) -> String:
-	return "%d %%" % roundi(value * 100.0)
+	return "%d%%" % roundi(value * 100.0)
 
 
 func _on_volume_changed(volume: float, bus: StringName) -> void:

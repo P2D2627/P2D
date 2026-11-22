@@ -6,7 +6,9 @@ extends Node2D
 ## until the man lands on it: it blinks for Collapse Time and then is gone, and he falls through. Jumping
 ## up through it does nothing, since only standing on it counts. With Come Back Time above 0 it comes
 ## back after that long, so a fall never leaves him with no way up. Its origin is the top left corner of
-## its first tile, so it sits on the tile grid when its position is on the grid.
+## its first tile, so it sits on the tile grid when its position is on the grid. Its Art child
+## (CollapsingPlatformArt) draws it as a thin slab that cracks over Collapse Time and breaks apart as it
+## goes.
 
 ## The man landed on it: it starts to blink.
 signal collapsing
@@ -43,6 +45,7 @@ var _time_left: float = 0.0
 @onready var _tiles: TileMapLayer = %Tiles
 @onready var _sensor: Area2D = %RiderSensor
 @onready var _sensor_shape: CollisionShape2D = %RiderShape
+@onready var _art: CollapsingPlatformArt = %Art
 
 
 func _ready() -> void:
@@ -83,9 +86,11 @@ func _physics_blinking(delta: float) -> void:
 		_tiles.visible = true
 		_phase = Phase.GONE
 		_time_left = come_back_time
+		_art.break_apart()
 		collapsed.emit()
 		return
 	_tiles.visible = fmod(collapse_time - _time_left, 2.0 * blink_interval) < blink_interval
+	_art.show_crack(1.0 - _time_left / collapse_time)
 
 
 ## Counts down to coming back; with Come Back Time at 0, it stays gone.
@@ -97,16 +102,18 @@ func _physics_gone(delta: float) -> void:
 	if _time_left <= 0.0:
 		_tiles.enabled = true
 		_phase = Phase.STILL
+		_art.restore()
 		came_back.emit()
 
 
-## Lays the tiles and fits the sensor to them, just above their top edge.
+## Lays the tiles and the art over them, and fits the sensor to them, just above their top edge.
 func _apply_width() -> void:
 	if not is_node_ready():
 		return
 	_tiles.clear()
 	for column: int in width_tiles:
 		_tiles.set_cell(Vector2i(column, 0), ONE_WAY_SOURCE, ONE_WAY_ATLAS, ONE_WAY_ALTERNATIVE)
+	_art.build(width_tiles, TILE)
 	var rectangle: RectangleShape2D = _sensor_shape.shape as RectangleShape2D
 	rectangle.size.x = width_tiles * TILE
 	_sensor_shape.position.x = width_tiles * TILE / 2.0

@@ -163,6 +163,12 @@ func deaths_in_level() -> int:
 	return _record.deaths_in_level(_level)
 
 
+## count in words with a capital, to open a line: "{{RunStats.opening_words(RunStats.deaths_in_level())}}
+## falls" reads "Three falls" (#284). Only for the start of a sentence; NumberWords has the rules.
+func opening_words(count: int) -> String:
+	return NumberWords.opening(count)
+
+
 func total_deaths() -> int:
 	return _record.total_deaths()
 

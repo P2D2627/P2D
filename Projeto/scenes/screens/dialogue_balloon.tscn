@@ -16,6 +16,7 @@
 [ext_resource type="Texture2D" path="res://assets/ui/dialogue/portraits/asmodeus_portrait.tres" id="14_asmodeus"]
 [ext_resource type="Texture2D" path="res://assets/ui/dialogue/portraits/velvet_portrait.tres" id="15_velvet"]
 [ext_resource type="Texture2D" path="res://assets/ui/dialogue/portraits/player_portrait.tres" id="16_player"]
+[ext_resource type="PackedScene" path="res://scenes/screens/menu_feedback.tscn" id="17_feedback"]
 
 [sub_resource type="Theme" id="Theme_qq3yp"]
 default_font_size = 34
@@ -467,6 +468,10 @@ autoplay = &"progress"
 
 [node name="AudioStreamPlayer" type="AudioStreamPlayer" parent="." unique_id=1162558754]
 unique_name_in_owner = true
+
+[node name="AnswerFeedback" parent="." instance=ExtResource("17_feedback")]
+unique_name_in_owner = true
+only_asked = true
 
 [connection signal="gui_input" from="Balloon" to="." method="_on_balloon_gui_input"]
 [connection signal="response_selected" from="Balloon/Stage/Wheel" to="." method="_on_responses_menu_response_selected"]

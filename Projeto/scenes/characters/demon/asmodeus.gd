@@ -10,7 +10,8 @@ extends Node2D
 ## the level's AsmodeusDirector. appear_at() puts her
 ## next to where he is, for the offer that waits at the entrance of a zone: on his floor, in front
 ## of him if there is room and behind him if not, the two turned to face each other. Only Visible While
-## Talking off keeps her on screen between talks. She never decides what happens after a talk: the
+## Talking off keeps her on screen between talks. The level's TalkFraming shows her talks as a scene; with
+## Centres Camera on, she only glides the camera to the two instead. She never decides what happens after a talk: the
 ## lines accept or refuse through Offers, and whoever called talk() hears talk_ended.
 
 ## She started talking from cue.
@@ -68,6 +69,10 @@ const BODY_LIFT: float = 2.0
 ## before she turned, she always stood on his right.
 @export var art_faces_right: bool = false
 @export_group("Camera while talking")
+## Off: the level's TalkFraming shows her talks as a scene, with bars, a closer shot and the man shielded.
+## On: the camera only glides to the middle of the two (Centre Time, Centre Height), as before #284, and
+## TalkFraming stays out of her talks.
+@export var centres_camera: bool = false
 ## Seconds the camera takes to glide to the middle of the two when she starts talking.
 @export_range(0.0, 2.0, 0.05, "suffix:s") var centre_time: float = 0.5
 ## How far above their feet the middle of the screen goes: about the middle of their bodies.
@@ -102,6 +107,16 @@ func is_talking() -> bool:
 ## The cue she is talking from; empty when she is not talking.
 func get_talking_cue() -> String:
 	return _talking_cue
+
+
+## Her drawing, for what frames her, as the camera in a talk.
+func get_figure() -> Node2D:
+	return _sprite
+
+
+## Whether her talks are shown by her own camera glide (Centres Camera) rather than by TalkFraming.
+func frames_its_own_talks() -> bool:
+	return centres_camera
 
 
 ## Whether find_spot() has a spot for her next to the man whose feet are at point, as he faces now:
@@ -156,7 +171,8 @@ func talk(cue: String) -> void:
 		return
 	_talking_cue = cue
 	show()
-	_centre_the_camera()
+	if centres_camera:
+		_centre_the_camera()
 	player.add_movement_modifier(SOURCE, _modifier)
 	player.hold_still()
 	if is_instance_valid(crucifix):
@@ -252,8 +268,8 @@ func _floor_under(space: PhysicsDirectSpaceState2D, x: float, feet_y: float) -> 
 	return (hit["position"] as Vector2).y
 
 
-## Takes the screen's camera as a cutscene does and glides it to the middle of her and the man,
-## whatever its zone, so both are centred while she talks.
+## With Centres Camera: takes the screen's camera as a cutscene does and glides it to the middle of
+## her and the man, whatever its zone, so both are centred while she talks.
 func _centre_the_camera() -> void:
 	_camera = get_viewport().get_camera_2d() as GameCamera
 	if _camera == null:

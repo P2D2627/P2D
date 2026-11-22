@@ -791,8 +791,8 @@ func _the_constant_option_is_on_by_default_saved_and_read_back() -> bool:
 
 ## The options screen on its own, opened with Vibration at 0.3: its slider is the accessibility
 ## grid's second, under the screen shake's, with its title before it; it goes from 0 to 1 in steps of
-## the screen's own step and shows 0.3 and "30 %"; moving it to 0.6 hands 0.6 to Settings, shows
-## "60 %" and leaves the screen shake alone; Reset brings back the default on both.
+## the screen's own step and shows 0.3 and "30%"; moving it to 0.6 hands 0.6 to Settings, shows
+## "60%" and leaves the screen shake alone; Reset brings back the default on both.
 func _the_options_screen_shows_and_changes_the_option() -> bool:
 	var settings: GameSettings = root.get_node_or_null(^"Settings") as GameSettings
 	if settings == null:
@@ -809,15 +809,15 @@ func _the_options_screen_shows_and_changes_the_option() -> bool:
 		var titled: bool = _text_before(slider) == OptionsMenu.VIBRATION_TITLE
 		var steps_right: bool = (slider.min_value == 0.0 and slider.max_value == 1.0
 				and is_equal_approx(slider.step, OptionsMenu.VIBRATION_STEP))
-		var shown: bool = is_equal_approx(slider.value, 0.3) and _text_after(slider) == "30 %"
+		var shown: bool = is_equal_approx(slider.value, 0.3) and _text_after(slider) == "30%"
 		slider.value = 0.6
-		var changed: bool = (is_equal_approx(settings.get_vibration(), 0.6) and _text_after(slider) == "60 %"
+		var changed: bool = (is_equal_approx(settings.get_vibration(), 0.6) and _text_after(slider) == "60%"
 				and settings.get_screen_shake() == GameSettings.DEFAULT_SCREEN_SHAKE)
 		(options.get_node(^"%ResetButton") as Button).pressed.emit()
 		var default_vibration: float = GameSettings.DEFAULT_VIBRATION
 		var reset: bool = (is_equal_approx(settings.get_vibration(), default_vibration)
 				and is_equal_approx(slider.value, default_vibration)
-				and _text_after(slider) == "%d %%" % roundi(default_vibration * 100.0))
+				and _text_after(slider) == "%d%%" % roundi(default_vibration * 100.0))
 		passed = titled and steps_right and shown and changed and reset
 		what = ("the second slider is titled %s: %s; it goes from 0 to 1 in steps of %.2f: %s; it shows "
 				+ "0.3 as 30 %%: %s; moved to 0.6, it hands 0.6 to Settings, shows 60 %% and leaves the "

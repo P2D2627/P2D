@@ -57,9 +57,19 @@ const LEAST_WARNING_FRAMES: int = 1
 ## but not foreseen.
 @export_range(0.0, 1.0, 0.05) var chance_per_second: float = 1.0
 
+## On, a lunge also goes at a man on another floor, up to its demon's Jump Height above or below its
+## feet (#284): it leaps at him in an arc of its demon's jump, aimed where he stands as it starts to
+## warn, with no floor looked for along the way, and lands where the arc takes it, on his floor; the
+## warning is the time to get away. Off, it only lunges at a man on about its own floor (Max Height
+## Difference). Not used with Keeps Chasing.
+@export var leaps_to_other_floors: bool = false
+
 @export_group("Hit")
 ## SP the attack takes from the man when it lands (ADR 0021). Provisional: the group decides.
 @export_range(0.0, 100.0, 0.5, "suffix:SP") var damage: float = 10.0
+## On, the hit kills the man at once, whatever his SP, and takes no Damage (#284): the one exception
+## to a demon never killing with a hit (ADR 0021), for the chase's last dog.
+@export var kills: bool = false
 ## How far, in px along the floor away from the demon, the attack throws the man when it lands.
 @export_range(0.0, 1000.0, 10.0, "suffix:px") var knockback_distance: float = 150.0
 ## How high, in px, the attack throws the man when it lands. At least 1: the knockback lasts until

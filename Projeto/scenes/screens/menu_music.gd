@@ -11,9 +11,14 @@ extends AudioStreamPlayer
 ## The menus it plays for, each one a CanvasLayer, as the main menu and the pause are.
 @export var menus: Array[CanvasLayer] = []
 ## The time the music takes to come up when a menu shows.
-@export_range(0.0, 5.0, 0.05, "suffix:s") var fade_in_time: float = 1.0
+@export_range(0.0, 5.0, 0.05, "suffix:s") var fade_in_time: float = 1.5
 ## The time it takes to go quiet when the last menu hides, before it pauses.
-@export_range(0.0, 5.0, 0.05, "suffix:s") var fade_out_time: float = 1.0
+@export_range(0.0, 5.0, 0.05, "suffix:s") var fade_out_time: float = 1.5
+## The fades' curve. The ear hears loudness in decibels, not in gain: a straight ramp of the gain (Linear)
+## brings most of the loudness at once and drops it all at the end. Cubic eases the gain in slowly and out
+## quickly, closer to an even change of loudness, -18 dB halfway against the ramp's -6, with no -80 dB floor
+## to wait through as a ramp in decibels would have (#284).
+@export var fade_curve: Tween.TransitionType = Tween.TRANS_CUBIC
 
 ## The volume set in the Inspector, the one a fade-in comes up to, as a linear gain.
 var _full_volume: float = 1.0
@@ -56,14 +61,14 @@ func _follow_the_menus() -> void:
 	_wanted = wanted
 	if _fade != null:
 		_fade.kill()
-	_fade = create_tween()
+	_fade = create_tween().set_trans(fade_curve)
 	if wanted:
 		stream_paused = false
 		if not playing:
 			play()
-		_fade.tween_property(self, ^"volume_linear", _full_volume, fade_in_time)
+		_fade.tween_property(self, ^"volume_linear", _full_volume, fade_in_time).set_ease(Tween.EASE_IN)
 	else:
-		_fade.tween_property(self, ^"volume_linear", 0.0, fade_out_time)
+		_fade.tween_property(self, ^"volume_linear", 0.0, fade_out_time).set_ease(Tween.EASE_OUT)
 		_fade.tween_callback(_pause_the_song)
 
 

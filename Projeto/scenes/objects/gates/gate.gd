@@ -8,8 +8,9 @@ extends AnimatableBody2D
 ## scene, so it slides behind the rock. Something
 ## else, such as a GateUnlocker, calls unlock(). A level that starts over has its gates shut again.
 ## A cutscene that shows a gate locking puts it out of the way with open_now() and slides it back
-## with lock(); unlock() opens it again.
-## For now it is a gray box, until its art arrives.
+## with lock(); unlock() opens it again. Its Art child (GateArt) draws it: a door stays where it bars the
+## passage and topples out, or comes back, over Slide Time while the body slides, since the gate moves
+## the Art back by as much as it slides; a trapdoor's door slides with it.
 
 ## The gate started to slide out of the way.
 signal unlocked
@@ -37,14 +38,12 @@ const TILE: float = 48.0
 		height_tiles = value
 		_apply_size()
 ## Which way it slides once unlocked: up by its height, or sideways by its width.
-@export var slide_way: SlideWay = SlideWay.UP
+@export var slide_way: SlideWay = SlideWay.UP:
+	set(value):
+		slide_way = value
+		_apply_size()
 ## Seconds it takes to slide all the way.
 @export_range(0.05, 5.0, 0.05, "suffix:s") var slide_time: float = 0.8
-## Its colour until its art arrives.
-@export var color: Color = Color(0.55, 0.55, 0.55):
-	set(value):
-		color = value
-		queue_redraw()
 
 var _is_unlocked: bool = false
 ## Where it bars the passage: its place in the scene.
@@ -53,15 +52,12 @@ var _shut_position: Vector2 = Vector2.ZERO
 var _slide: Tween = null
 
 @onready var _shape: CollisionShape2D = %Shape
+@onready var _art: GateArt = %Art
 
 
 func _ready() -> void:
 	_apply_size()
 	_shut_position = position
-
-
-func _draw() -> void:
-	draw_rect(_box(), color)
 
 
 ## Slides the gate out of the way, Slide Way. Only a shut or locking gate does anything.
@@ -70,7 +66,8 @@ func unlock() -> void:
 		return
 	_is_unlocked = true
 	unlocked.emit()
-	_slide_to(_shut_position + slide_offset(), opened.emit)
+	_art.play_open(slide_time)
+	_slide_to(_shut_position + slide_offset(), _finish_opening)
 
 
 ## Slides the gate back into the passage, in Slide Time, so it bars it again. Only an open or
@@ -80,7 +77,8 @@ func lock() -> void:
 		return
 	_is_unlocked = false
 	locked.emit()
-	_slide_to(_shut_position, shut.emit)
+	_art.play_close(slide_time)
+	_slide_to(_shut_position, _finish_shutting)
 
 
 ## Puts the gate out of the way at once, with no slide and no signal, as if it had opened long ago:
@@ -89,7 +87,9 @@ func open_now() -> void:
 	_stop_slide()
 	_is_unlocked = true
 	position = _shut_position + slide_offset()
+	_art.position = _art_place(position)
 	reset_physics_interpolation()
+	_art.show_open()
 
 
 func is_unlocked() -> bool:
@@ -108,19 +108,37 @@ func slide_offset() -> Vector2:
 
 
 ## Slides to target in Slide Time, from wherever it is, and calls done there. A slide under way
-## stops first.
+## stops first. The Art slides back by as much at the same pace, so a door's stays in place.
 func _slide_to(target: Vector2, done: Callable) -> void:
 	_stop_slide()
 	_slide = create_tween().set_process_mode(Tween.TWEEN_PROCESS_PHYSICS)
 	_slide.tween_property(self, ^"position", target, slide_time) \
 			.set_trans(Tween.TRANS_SINE).set_ease(Tween.EASE_IN_OUT)
+	_slide.parallel().tween_property(_art, ^"position", _art_place(target), slide_time) \
+			.set_trans(Tween.TRANS_SINE).set_ease(Tween.EASE_IN_OUT)
 	_slide.tween_callback(done)
+
+
+## Where the Art goes with the gate at its_position: where the gate is shut, for a door that stays in
+## place; on the gate, for a trapdoor.
+func _art_place(its_position: Vector2) -> Vector2:
+	return _shut_position - its_position if _art.stays_in_place() else Vector2.ZERO
 
 
 func _stop_slide() -> void:
 	if _slide != null and _slide.is_valid():
 		_slide.kill()
 	_slide = null
+
+
+func _finish_opening() -> void:
+	_art.show_open()
+	opened.emit()
+
+
+func _finish_shutting() -> void:
+	_art.show_shut()
+	shut.emit()
 
 
 ## The gate's box, with its origin in the middle of its bottom edge.
@@ -136,4 +154,4 @@ func _apply_size() -> void:
 	var rectangle: RectangleShape2D = _shape.shape as RectangleShape2D
 	rectangle.size = box.size
 	_shape.position = box.get_center()
-	queue_redraw()
+	_art.build(box.size, slide_way != SlideWay.UP)

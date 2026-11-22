@@ -8,14 +8,16 @@ script = ExtResource("2_attack")
 animation = &"bite"
 keeps_chasing = true
 attack_range = 130.0
-warning_time = 0.1
 recover_time = 0.3
+kills = true
 
 [sub_resource type="Resource" id="Resource_lunge"]
 script = ExtResource("2_attack")
 attack_range = 390.0
 chance_per_second = 0.9
+leaps_to_other_floors = true
 damage = 20.0
+kills = true
 knockback_distance = 250.0
 knockback_height = 70.0
 
@@ -35,12 +37,14 @@ chases_only_on_screen = true
 screen_margin = 160.0
 return_speed = 200.0
 patrol_width = 480.0
+chase_speed = 550.0
 jump_height = 240.0
 max_drop = 1536.0
 drops_down_shafts = true
 attacks = Array[ExtResource("2_attack")]([SubResource("Resource_bite"), SubResource("Resource_lunge")])
 attacks_invulnerable_man = true
 bites_who_lands_on_it = true
+ignores_crucifix = true
 retreat_distance = 160.0
 waits_at_retreat_distance = true
 retreat_pace_width = 60.0

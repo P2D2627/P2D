@@ -3,7 +3,9 @@ extends Node
 
 ## When Asmodeus talks in a level, and from which cue; what she says is all in the .dialogue file.
 ## - The first time the man reaches a save point whose Starts Phase is in Phase Cues, she talks from
-##   that phase's cue: Lust's shortcut, at the start of phases 2 and 3.
+##   that phase's cue: Lust's shortcut, at the start of phases 2 and 3. She waits for him to stand on
+##   the floor first, so a save reached in the air, as coming up a shaft, never has her talk to a man
+##   falling back down it.
 ## - When RunStats holds offers for his deaths, each waits at the zone it is for, and she talks from
 ##   Death Cue as soon as he stands in one, the zone the camera shows: at once if he comes back to
 ##   life inside it, or as he walks in, before he tries it again. Several zones can wait at once, as one early on and one he

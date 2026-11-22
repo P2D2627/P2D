@@ -78,7 +78,7 @@ layout_mode = 2
 
 [node name="Heading" type="Label" parent="Center/LevelPanel"]
 layout_mode = 2
-text = "Choose a level"
+text = "CHOOSE A LEVEL"
 horizontal_alignment = 1
 
 [node name="LevelButtons" type="VBoxContainer" parent="Center/LevelPanel"]
@@ -113,7 +113,7 @@ text = "BACK"
 
 [node name="ReplaceSaveDialog" type="ConfirmationDialog" parent="."]
 unique_name_in_owner = true
-title = "New game"
+title = "NEW GAME"
 theme = ExtResource("2_theme")
 size = Vector2i(960, 380)
 borderless = true

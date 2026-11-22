@@ -43,6 +43,13 @@ func physics_update(delta: float) -> void:
 	_demon.velocity.x = 0.0
 	if not _demon.keeps_after_target(true):
 		return
+	if _demon.may_leap_at_the_man():
+		var gap: float = _demon.get_gap_to_target()
+		var attack: DemonAttack = _demon.attack_to_start(gap, delta)
+		if attack != null:
+			_demon.turn_to(gap)
+			_demon.warn_of(attack)
+			return
 	if _demon.has_trail_to_follow():
 		_demon.change_state_and_act(Demon.State.CHASE, delta)
 		return

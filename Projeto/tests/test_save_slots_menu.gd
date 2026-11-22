@@ -1,6 +1,6 @@
 # Checks the slots in the main menu. Load shows beside Continue, only while a slot holds a save
 # that can be continued, and lists the three slots, each with its level and phase, its play time,
-# deaths and date, or Empty, or Can't be read. Load selects the slot played last; a slot it can't
+# deaths and date, or Empty, or Unreadable save. Load selects the slot played last; a slot it can't
 # open can't be selected, and the one picked opens and is the one the game then writes to. With
 # no save on disk, New Game starts at once in slot 1; with one, it lists the slots with the first
 # empty one selected, and the new game starts in the slot picked. A slot that holds a file asks
@@ -145,7 +145,7 @@ func _load_lists_the_slots_and_selects_the_one_played_last() -> bool:
 	var slot_1: bool = (first.contains("Slot 1") and first.contains("Level 1")
 			and first.contains("Phase 2") and first.contains("2 deaths") and first.contains("1m"))
 	var damaged: Button = _slot_button(main, 2)
-	var slot_2: bool = damaged.text.contains("Can't be read") and damaged.disabled
+	var slot_2: bool = damaged.text.contains("Unreadable save") and damaged.disabled
 	var slot_3: bool = _slot_button(main, 3).text.contains("Saved game")
 	await tap(KEY_UP)
 	var skips_damaged: bool = has_focus(_slot_button(main, 1))
@@ -325,7 +325,7 @@ func _the_slot_text_says_what_the_slot_holds() -> bool:
 	damaged.slot = 3
 	damaged.state = SaveSlots.State.DAMAGED
 	var others: bool = (MainMenu.slot_text(empty, "") == "Slot 2\nEmpty"
-			and MainMenu.slot_text(damaged, "") == "Slot 3\nCan't be read")
+			and MainMenu.slot_text(damaged, "") == "Slot 3\nUnreadable save")
 	# This computer may be on UTC, as Portugal is in winter; the offset is then checked on its own,
 	# both its use and how it is found from a local time and the same moment in UTC.
 	var noon_utc: float = Time.get_unix_time_from_datetime_dict(
@@ -429,7 +429,7 @@ func _slots_opened_from_the_level_list_go_back_to_that_level() -> bool:
 
 
 ## Slots 1 and 3 hold games, slot 3 played last. With Load open on slot 3, slot 3 goes bad on disk:
-## picking it opens nothing, and it then reads Can't be read and can't be picked, with slot 1
+## picking it opens nothing, and it then reads Unreadable save and can't be picked, with slot 1
 ## selected. When slot 1 goes bad too, the main panel comes back, with New Game selected.
 func _a_slot_damaged_after_the_menu_opened_can_t_be_picked() -> bool:
 	_delete_slots()
@@ -442,7 +442,7 @@ func _a_slot_damaged_after_the_menu_opened_can_t_be_picked() -> bool:
 	await tap(KEY_ENTER)
 	var slot_3: Button = _slot_button(main, 3)
 	var stays: bool = (level_in(main) == null and _slots_shown(main) and slot_3.disabled
-			and slot_3.text.contains("Can't be read") and has_focus(_slot_button(main, 1)))
+			and slot_3.text.contains("Unreadable save") and has_focus(_slot_button(main, 1)))
 	_write_damaged(1)
 	await tap(KEY_ENTER)
 	var back_to_main: bool = (level_in(main) == null and not _slots_shown(main)

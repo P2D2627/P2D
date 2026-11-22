@@ -176,6 +176,9 @@ var _retreat_distance_draw: float = 0.0
 ## can't attack, so it draws a new wait as soon as it can. Without Hesitates Before First Attack,
 ## noticing the man sets it to 0, so its first attack draws none (ADR 0051).
 var _hesitation_frames_left: int = -1
+## The physics frame attack_to_start was last asked on, and its answer then, null for no attack.
+var _asked_on_frame: int = -1
+var _answer: DemonAttack = null
 ## The instance id of the man the demon holds a turn to attack, or 0 while it holds none (ADR 0053).
 var _turn_man_id: int = 0
 ## The demon's post, its home, which never changes (ADR 0043): where the level put it, with the y of
@@ -255,6 +258,8 @@ func _ready() -> void:
 	_pack_area.body_entered.connect(_on_pack_area_body_entered)
 	_pack_area.body_exited.connect(_on_pack_area_body_exited)
 	_repellable.repelled.connect(_on_repellable_repelled)
+	if stats.ignores_crucifix:
+		_repellable.collision_layer = 0
 	_hitbox.hit_landed.connect(_on_hitbox_hit_landed)
 	_hitbox.hold_started.connect(_on_hitbox_hold_started)
 	_hitbox.hold_ended.connect(_on_hitbox_hold_ended)
@@ -1440,7 +1445,17 @@ func _passes_through_the_man() -> bool:
 ## Per Side, takes a turn to attack, or waits a new draw while those on its side of him are taken.
 ## It gives its turn up when it can no longer attack, and when it has no attack to start and can
 ## get no nearer to him (_can_get_nearer), so the turn goes to one that can use it (ADR 0053).
+## It is asked once a physics frame: asked again in the same frame, as when a state hands over to
+## the chase, which asks too, it answers as it did, with no new draw nor step of its waits (#284).
 func attack_to_start(gap: float, delta: float) -> DemonAttack:
+	var frame: int = Engine.get_physics_frames()
+	if frame != _asked_on_frame:
+		_asked_on_frame = frame
+		_answer = _choose_attack_to_start(gap, delta)
+	return _answer
+
+
+func _choose_attack_to_start(gap: float, delta: float) -> DemonAttack:
 	_recover_frames_left = maxi(_recover_frames_left - 1, 0)
 	if not is_on_floor() or _target.get_unseen_frames() != 0 or _recover_frames_left > 0 \
 			or waits_for_the_man_to_take_hits() or _passes_through_the_man():
@@ -1483,13 +1498,75 @@ func _can_get_nearer(gap: float) -> bool:
 ## of delta seconds: he is in the attack's range and its chance comes up, and for a lunge, the demon
 ## is not within its wait (ADR 0053) and the lunge has somewhere to land. The chance is rolled
 ## before the lunge is aimed and the floor is looked for, which takes many rays: the odds are the
-## same either way.
+## same either way. A lunge that Leaps To Other Floors, at a man on another floor, needs only a leap
+## that gets to him (#284), with no wait, since he is out of reach of its bite.
 func _starts(attack: DemonAttack, gap: float, delta: float) -> bool:
 	if not _has_man_in_range(attack, gap):
 		return false
 	if attack.keeps_chasing:
 		return _rolls(attack, delta)
+	if is_man_on_another_floor(attack):
+		return _rolls(attack, delta) and get_leap_velocity(attack) != Vector2.ZERO
 	return not _is_within_its_wait(gap) and _rolls(attack, delta) and _can_lunge(attack, gap)
+
+
+## For its states: true when one of its attacks would leap at the man now (#284): he is on another
+## floor, inside its Attack Range, and a leap gets to him. The chase and the stop out of his reach
+## ask before they go by his trail or stand barking, so a man on a ledge within its jump is leapt at.
+func may_leap_at_the_man() -> bool:
+	var gap: float = get_gap_to_target()
+	for attack: DemonAttack in stats.attacks:
+		if is_man_on_another_floor(attack) and _has_man_in_range(attack, gap):
+			return get_leap_velocity(attack) != Vector2.ZERO
+	return false
+
+
+## For its states: true when the attack Leaps To Other Floors and the man stands higher or lower than
+## the attack's Max Height Difference, so it would leap at him rather than lunge.
+func is_man_on_another_floor(attack: DemonAttack) -> bool:
+	return attack.leaps_to_other_floors and not attack.keeps_chasing \
+			and absf(_target.get_man().global_position.y - global_position.y) > attack.max_height_difference
+
+
+## For its states: the take-off velocity of the attack's leap at the man where he stands now, in an
+## arc of the demon's jump that comes down to his feet as it gets to him: the lowest arc, peaking Jump
+## Clearance over the higher of its feet and his, or the highest its jump goes, which is longer in
+## the air and so slower across, whichever first is no faster across than its Chase Speed; failing
+## both, the highest no faster than the attack's lunge, a pounce. Vector2.ZERO when there is none:
+## he is higher than its Jump Height, or no arc, with him left out of it, lands on his floor, as with
+## a ceiling in the way (#284).
+func get_leap_velocity(attack: DemonAttack) -> Vector2:
+	var man: Vector2 = _target.get_man().global_position
+	var gravity: float = stats.get_jump_gravity()
+	var rise: float = global_position.y - man.y
+	if stats.jump_height <= 0.0 or gravity <= 0.0 or rise > stats.jump_height + REACH_TOLERANCE:
+		return Vector2.ZERO
+	var delta: float = 1.0 / Engine.physics_ticks_per_second
+	var lowest: float = maxf(rise, 0.0) + JUMP_CLEARANCE
+	var highest: float = maxf(lowest, stats.jump_height + JUMP_CLEARANCE)
+	var pounce: float = absf(attack.get_lunge_velocity(attack.lunge_distance).x)
+	# Each try: its arc's peak (x) and the fastest it may go across (y).
+	for arc: Vector2 in [Vector2(lowest, _chase_speed()), Vector2(highest, _chase_speed()),
+			Vector2(highest, maxf(pounce, _chase_speed()))]:
+		var peak: float = arc.x
+		var air_time: float = sqrt(2.0 * peak / gravity) + sqrt(2.0 * (peak - rise) / gravity)
+		var speed_x: float = (man.x - global_position.x) / air_time
+		if absf(speed_x) > arc.y:
+			continue
+		var take_off: Vector2 = Vector2(speed_x, -stats.get_jump_velocity(peak) + gravity * delta / 2.0)
+		if _arc_lands(global_transform, take_off, man.y - DemonTrail.SAME_FLOOR_TOLERANCE,
+				man.y + DemonTrail.SAME_FLOOR_TOLERANCE, true, true, delta):
+			return take_off
+	return Vector2.ZERO
+
+
+## For its states: takes off in a leap at take_off velocity (get_leap_velocity), in LUNGE, whose hit
+## can land on the man all the way, pulled down by its jump's gravity rather than the lunge's.
+func leap(take_off: Vector2) -> void:
+	turn_to(take_off.x)
+	velocity = take_off
+	change_state(State.LUNGE)
+	(_states[State.LUNGE] as DemonLungeState).leaping = true
 
 
 ## True when the attack's lunge, aimed now, has the man ahead to land on and floor all the way to
@@ -1505,11 +1582,13 @@ func lunge_distance_to(attack: DemonAttack, gap: float) -> float:
 	return attack.get_lunge_distance_to(gap * _facing, _target.get_speed() * _facing)
 
 
-## True when the man is inside the attack's Attack Range and at about the demon's own height.
+## True when the man is inside the attack's Attack Range and at about the demon's own height, or,
+## for an attack that Leaps To Other Floors, within its Jump Height above or below it (#284).
 func _has_man_in_range(attack: DemonAttack, gap: float) -> bool:
-	return absf(gap) < attack.attack_range \
-			and absf(_target.get_man().global_position.y - global_position.y) \
-					<= attack.max_height_difference
+	var height: float = absf(_target.get_man().global_position.y - global_position.y)
+	var reach: float = stats.jump_height + REACH_TOLERANCE \
+			if attack.leaps_to_other_floors and not attack.keeps_chasing else attack.max_height_difference
+	return absf(gap) < attack.attack_range and height <= reach
 
 
 ## True when the demon, the man gap px away along the floor, is within its wait: with Waits At
@@ -1639,6 +1718,7 @@ func _update_hitbox() -> void:
 		_hitbox.deactivate()
 	elif not _hitbox.is_active():
 		_hitbox.damage = _attack.damage
+		_hitbox.kills = _attack.kills
 		_hitbox.knockback_distance = _attack.knockback_distance
 		_hitbox.knockback_height = _attack.knockback_height
 		_hitbox.pierces_invulnerability = stats.attacks_invulnerable_man

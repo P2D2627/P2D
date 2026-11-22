@@ -375,7 +375,8 @@ Em grupo, cada demónio decide sozinho, mas o conjunto lê-se como uma matilha:
   seu vaivém (Attacks Invulnerable Man, ADR 0055). Sem esse valor, como nos outros demónios,
   nenhum ataca enquanto ela pisca;
 - mordem quem lhes está em cima. A personagem que aterra num cão, mesmo só na ponta das costas,
-  leva logo a mordida dele (10 SP) e um pequeno salto no sítio, 24 px para cima, e leva outra a
+  leva logo a mordida dele (10 SP) e um pequeno salto no sítio, 48 px para cima (24 px até à #284,
+  pouco para se sentir), e leva outra a
   cada 0,4 s enquanto lá ficar, deste cão ou de outro (Back Bite Interval, #271). Nada a empurra
   para fora: tem de sair a andar ou a saltar. Se ficar, o SP baixa e a mordida agarra-a como
   qualquer pancada, e ela cai através do cão até ao chão, onde se afunda, nunca em cima dele. Em
@@ -464,9 +465,10 @@ toque troca a mão que a personagem tem levantada, para que cada toque se veja. 
 pode juntar-se a meio, e pede mais 6. Com dois, o agarrão fica cheio: nenhuma pancada entra, e os
 outros demónios esperam a cerca de 130 px. Se o jogador parar de premir, o progresso desce: ao fim de 0,25 s sem premir, perde metade
 da barra por segundo, pelo que quem prime 4 vezes por segundo não perde nada. Se não se soltar em
-3 s, a personagem morre, aparece "You died", o ecrã escurece e o nível recomeça 0,7 s depois. Se morrer por outra
+3 s, a personagem morre, aparece "Another fall.", o ecrã escurece e o nível recomeça 0,7 s depois. Se morrer por outra
 causa enquanto está agarrada, como nos picos letais, o agarrão acaba da mesma forma: os toques
-deixam de contar e aparece "You died".
+deixam de contar e aparece "Another fall." (os demónios contam as mortes como quedas, como nas falas
+da Asmodeu).
 
 Durante o agarrão, a personagem e os demónios que a agarram afundam-se no chão, até 96 px, ao ritmo
 do tempo que passa: o jogador vê quanto tempo lhe resta sem olhar para um número. O afundar é só
@@ -493,7 +495,10 @@ Para quem não consegue premir depressa, a opção Hold to escape (ecrã Options
 vibration) troca os toques por manter o salto premido: 1,2 s com um demónio, mais 0,9 s com o
 segundo, o que cabe nos 3 s do agarrão. Só conta a partir de um toque dado já durante o agarrão,
 para que um salto que vinha premido de antes não solte a personagem sozinho, e o texto passa de
-"Press Jump!" a "Hold Jump!". Largar o salto esvazia a barra como parar de premir: ao fim de 0,25 s,
+"Break free!" a "Hold to break free". O texto não escreve o nome da ação: ao lado aparece a tecla do
+salto no aparelho usado por último, como na faixa do tutorial (`PromptGlyph`, #284,
+`test_grab_prompt_glyph.gd`). O texto desenha-se por cima da rocha (z 10), embora a
+personagem fique atrás dela, para se ver sempre (#284, `test_grab_prompt_over_rock.gd`). Largar o salto esvazia a barra como parar de premir: ao fim de 0,25 s,
 metade da barra por segundo. Com a opção ligada, os toques deixam de contar; aceitar as duas formas
 faria da opção um atalho para todos, porque cada toque somaria também o tempo premido. A opção vem
 desligada, porque os toques são o agarrão tal como foi desenhado, e guarda-se com as outras. O
@@ -509,11 +514,11 @@ são silvas.
 
 | Elemento | Cena | Comportamento | Medida |
 |---|---|---|---|
-| Portão | `scenes/objects/gates/gate.tscn` | barra uma passagem à personagem, aos demónios e à visão destes; desbloqueado, sobe a sua própria altura, por trás da rocha; com Slide Way em Left ou Right, é um alçapão e desliza para esse lado a sua própria largura; pode também ser posto aberto de imediato e trancado outra vez, deslizando de volta ao seu lugar, para uma cena de câmara o mostrar a fechar | desliza em 0,8 s (48 passos de física), para abrir e para fechar |
-| Desbloqueador | `scenes/objects/gates/gate_unlocker.tscn` | ativa-se uma vez, com a ação de interagir (E, ou X no comando) ao pé dele, e abre os portões da lista Gates; enquanto a personagem está perto e ele ainda não foi usado, mostra por cima a tecla e a palavra "Unlock", como a Velvet mostra "Talk"; o crucifixo já não o abre; com uma cena de câmara (Cutscene), a câmara vai primeiro ao portão e este só abre quando ela lá chega | área de uso de 400 × 192 px, 200 px para cada lado, o alcance que tinha o crucifixo |
+| Portão | `scenes/objects/gates/gate.tscn` | barra uma passagem à personagem, aos demónios e à visão destes; desbloqueado, sobe a sua própria altura, por trás da rocha; com Slide Way em Left ou Right, é um alçapão e desliza para esse lado a sua própria largura; pode também ser posto aberto de imediato e trancado outra vez, deslizando de volta ao seu lugar, para uma cena de câmara o mostrar a fechar; desenha-se como uma porta de blocos de pedra num caixilho, com um poste atrás e um pilar à frente (`GateArt`, #284): ao abrir, a arte fica no seu lugar e a porta tomba durante o deslize, enquanto o corpo sobe por trás da rocha, e desaparece quando o portão dá a passagem por livre; ao fechar, volta a erguer-se; num alçapão, a porta aparece deitada, com o topo onde a personagem pisa, e desliza com ele, sem caixilho; o poste de trás desenha-se atrás da personagem e dos cães, como o portão, e a porta e o pilar da frente à frente deles, para a personagem passar entre o poste e o pilar (no jogo, passam para o nó `GateFronts` do próprio nível, depois dos cães e antes da rocha, e seguem a arte por um `RemoteTransform2D`; saem com o portão quando ele é libertado; `test_gate_fronts.gd`); tudo fica atrás da rocha | desliza em 0,8 s (48 passos de física), para abrir e para fechar; a porta tomba em 10 imagens e volta em 9, repartidas por esses 0,8 s; tem a largura do portão (96 px com 2 tiles), à mesma escala nos dois eixos, e o que passa do topo fica escondido pela rocha |
+| Desbloqueador | `scenes/objects/gates/gate_unlocker.tscn` | ativa-se uma vez, com a ação de interagir (E, ou X no comando) ao pé dele, e abre os portões da lista Gates; enquanto a personagem está perto e ele ainda não foi usado, mostra por cima a tecla e a palavra "Unlock", como a Velvet mostra "Talk", desenhadas por cima da rocha (Z Index 10, como o aviso do agarrão), porque numa sala baixa ficam dentro do teto; o crucifixo já não o abre; com uma cena de câmara (Cutscene), a câmara vai primeiro ao portão e este só abre quando ela lá chega; desenha-se como uma estátua de demónio, apagada até ser usada e com uma chama acesa depois (#284), para que usado e por usar se distingam pela forma e pela luz, e não só pela cor; acesa, ilumina a sala à volta como um fogo mais fraco, com a cor dos fogos e metade da energia e do alcance (luz do `LightingRig`, só no modo de luz do nível) | área de uso de 400 × 192 px, 200 px para cada lado, o alcance que tinha o crucifixo; a chama tem 9 imagens de 0,11 s (Flame Frame Time); a estátua, a 0,6 da escala do desenho, tem cerca de 215 px de altura com a chama |
 | Anel de proximidade | `scenes/objects/gates/proximity_unlocker.tscn` | ativa-se uma vez, na primeira vez que a personagem entra no círculo, sem crucifixo, e abre os portões da lista Gates | alcance (Reach) de 288 px por omissão |
-| Picos letais | `scenes/objects/traps/lethal_spikes.tscn` | um toque mata a personagem de imediato, com qualquer valor de SP, e as silvas puxam-na para dentro (por baixo da tabela). Com Catches ligado (desligado por defeito, ADR 0067), prendem-na em vez disso: corre a 10 % da velocidade, não salta, afunda e perde 150 SP por segundo, e morre se o SP acabar lá dentro (valores no nó `Snag` do `player.tscn`, `test_snag.gd`); os demónios passam por cima sem efeito; desenham-se como silvas, um arbusto e meio por tile, em média (Brambles Per Tile; com um só, a sebe ficava rala), para formarem uma sebe contínua, com a altura e o espelho escolhidos ao acaso a partir da posição da faixa, que fica sempre igual; sem arte (Art), voltam aos dentes | parte que mata com 24 px de altura e 4 px de folga em cada ponta, para um salto que passe à vista passar mesmo; cada arbusto com 40 px de altura, mais ou menos 10 %, que cobre a parte que mata de ponta a ponta (`test_lethal_spikes_art.gd`) |
-| Plataforma que desaba | `scenes/objects/platforms/collapsing_platform.tscn` | usa o mesmo tile das plataformas de sentido único; pousar nela faz com que pisque e desapareça; saltar através dela, de baixo, não a ativa; volta ao fim de Come Back Time, com 0 fica desaparecida até o nível recomeçar | desaparece em 0,6 s (36 passos) e volta ao fim de 3 s |
+| Picos letais | `scenes/objects/traps/lethal_spikes.tscn` | um toque mata a personagem de imediato, com qualquer valor de SP, e as silvas puxam-na para dentro (por baixo da tabela). Com Catches ligado (desligado por defeito, ADR 0067), prendem-na em vez disso: corre a 10 % da velocidade, não salta, afunda e perde 150 SP por segundo, e morre se o SP acabar lá dentro (valores no nó `Snag` do `player.tscn`, `test_snag.gd`); os demónios passam por cima sem efeito; desenham-se como silvas, um arbusto e meio por tile, em média (Brambles Per Tile; com um só, a sebe ficava rala), para formarem uma sebe contínua, com a altura e o espelho escolhidos ao acaso a partir da posição da faixa, que fica sempre igual; sem arte (Art), voltam aos dentes; uma faixa no chão nasce entre as pedras da rocha, e uma virada para uma parede ou um teto desenha-se por cima da rocha (Turned Z Index, 2), para as silvas se verem (#284, `test_drawn_over_the_rock.gd`) | parte que mata com 24 px de altura e 4 px de folga em cada ponta, para um salto que passe à vista passar mesmo; cada arbusto com 40 px de altura, mais ou menos 10 %, que cobre a parte que mata de ponta a ponta (`test_lethal_spikes_art.gd`) |
+| Plataforma que desaba | `scenes/objects/platforms/collapsing_platform.tscn` | usa o mesmo tile das plataformas de sentido único; pousar nela faz com que estale e desapareça; saltar através dela, de baixo, não a ativa; volta ao fim de Come Back Time, com 0 fica desaparecida até o nível recomeçar; desenha-se como uma laje fina, mais fina do que a das plataformas que aguentam (`CollapsingPlatformArt`, #284), que racha enquanto aguenta e se parte quando desaparece; os tiles continuam a piscar por baixo, invisíveis no nível iluminado | desaparece em 0,6 s (36 passos) e volta ao fim de 3 s; racha em 5 imagens repartidas pelos 0,6 s, parte-se em 2 de 0,11 s e esbate-se em 0,2 s; volta inteira em 0,25 s; acima de 4 tiles leva uma laje por cada 4, a segunda espelhada |
 
 A largura e a altura destes elementos definem-se em tiles, no Inspector. A morte imediata é o método
 `die()` da personagem, que a imobiliza e fecha a sua caixa de dano, enquanto o nível recomeça.
@@ -616,6 +621,31 @@ normal em algo além destas distâncias, da perseguição sem fim, do salto e da
 distâncias deixarem de ser as do cão medidas a partir da cara, a visão incluída; falha também se não
 notar, morder ou perseguir a personagem como descrito, se as costas dele não morderem ou se a atacar
 escondida atrás de uma parede.
+
+Desde a #284, a pedido do grupo depois do playtest, em que se lia como fraco, o cão maior é a ameaça
+final da perseguição, de que a personagem só pode fugir:
+
+- As mordidas dele matam de um golpe, com qualquer valor de SP (Kills, no ataque). É a única
+  exceção à regra de que um demónio agarra em vez de matar (ADR 0021). Avisa 0,35 s antes, em vez
+  de 0,1 s, para que o golpe se possa ler.
+- Persegue a 550 px/s em vez de 510. Com a variação da matilha fica entre 506 e 594 px/s, sempre
+  abaixo dos 600 px/s da personagem, para que a fuga continue possível.
+- O crucifixo não o afeta (Ignores Crucifix): o Repellable dele não fica em nenhuma camada, e por
+  isso o crucifixo nem o empurra nem conta um toque nele.
+- Com a personagem noutra plataforma, até à altura do salto dele (240 px) e a menos de 390 px, salta
+  para ela (Leaps To Other Floors, no ataque de salto), num arco do seu salto que passa pelos pés
+  dela. Mira onde ela está quando começa o aviso, e quem sair dali escapa: nos testes, a
+  personagem parada que começa a correr quando o aviso começa, ou que dá 220 px pela plataforma,
+  já não está onde ele aterra. Se nenhum arco chegar a ela quando o aviso começa, o aviso acaba
+  sem ataque. Prefere o arco mais baixo que não passe da velocidade de perseguição, depois o mais
+  alto; só se nenhum chegar vai mais depressa, até à velocidade do seu salto em frente. Antes
+  ficava a ladrar por baixo dela (o refúgio da #271).
+- A mordida nas costas continua a não matar, para que saltar-lhe por cima continue a ser um caminho
+  (ADR 0073).
+
+O `test_biggest_dog_threat.gd` joga estes casos: a mordida mata (a de um cão normal não), o
+crucifixo não lhe chega, salta para a personagem numa plataforma 192 px acima, e falha quem saiu
+durante o aviso.
 
 ### Linha de vista
 
@@ -725,8 +755,21 @@ deste jogo: a corrida, as chaminés, as subidas e as quedas. As medidas foram ob
 60 passos de física por segundo, num ecrã de 1920×1080.
 
 Para comparar em playtest, a câmara tem também uma forma de zoom fixo, que se escolhe com a tecla F10
-nos builds de depuração (ver "Câmara" em "Para quem programa"). A tabela seguinte descreve a forma
-atual, com as zonas.
+nos builds de depuração (ver "Câmara" em "Para quem programa"). Depois do playtest de 22/11, em que
+alguns jogadores tiveram dores de cabeça e enjoo com a câmara das zonas, o nível 1 começa com a de
+zoom fixo (`Fixed`, Start Framing do `GameCamera` do nível; #284), mais suave do que no #282: zona
+morta de 96 px para cada lado em vez de 28, mola a 6 /s em vez de 8, antecipação de 3 % da largura
+em vez de 5 %, trocada mais devagar (1,5 /s em vez de 3), o homem 12 % abaixo do centro em vez de
+25 % e, numa queda, 30 % acima do centro em vez de 15 %, para se ver mais do que está por baixo
+(valores no `fixed_framing_stats.tres`). Com a zona morta maior do que a antecipação (3 % da largura
+são 41 px do mundo), a correr o homem fica 55 px do mundo à frente do centro do ecrã, cerca de 77 px
+no ecrã: vê-se um pouco mais do caminho que fica para trás, de onde vêm os cães, do que do que está
+à frente. É uma troca escolhida para o ecrã se mexer menos; para o ecrã antecipar de facto, o Look
+Ahead teria de subir para perto de 0,1, com mais movimento. Ficaram as regras do #282, que o `test_fixed_framing.gd`
+verifica: um salto completo não mexe o ecrã, e um segundo de queda mostra pelo menos mais 200 px
+por baixo dos pés (com Fall Delay a 0,25 s a descida de um salto contava como queda, e com Max
+Speed a 1200 px/s a câmara não acompanhava a queda, por isso ficaram em 0,35 s e 2000 px/s). A
+tabela seguinte descreve a forma com as zonas.
 
 | Técnica | Comportamento | Medida |
 |---|---|---|
@@ -748,6 +791,7 @@ atual, com as zonas.
 | Limite horizontal | com a opção Limit Horizontally desligada (por omissão), a zona limita o ecrã só em cima e em baixo, e na horizontal a câmara segue a personagem como fora das zonas; ligada, limita-o dos quatro lados, para uma sala em que a câmara deve ficar parada | numa zona de 1200 px de largura, com a personagem a 1100 px da borda esquerda, a câmara fica no centro da zona (x 600) com a opção ligada e acompanha a personagem (x 1036) com a opção desligada, com o mesmo enquadramento vertical |
 | Âncora vertical | numa zona mais baixa do que o ecrã, a âncora da zona escolhe onde fica o ecrã: em baixo (1), o fundo do ecrã coincide com o fundo da zona; em cima (0), o topo do ecrã coincide com o topo da zona; ao centro (0,5, o valor por omissão), o excesso divide-se pelos dois lados | numa zona de 400 px de altura, o ecrã mostra 680 px acima da zona com a âncora em baixo e 340 px de cada lado com a âncora ao centro; numa zona mais alta do que o ecrã, a âncora não altera a posição da câmara |
 | Cenas de câmara | uma cena de câmara (`CameraCutscene`) leva a câmara a mostrar, por ordem, os enquadramentos (`CameraShot`) que tem como filhos, cada um com uma Vista (um `ReferenceRect` filho), um tempo de viagem e um tempo de paragem, e volta depois à personagem; começa quando a personagem entra pela primeira vez na sua zona de câmara (Trigger Zone), quando outro elemento a pede, como um desbloqueador, ou quando acaba uma conversa com a deixa escolhida (Talk Cue), como a oferta da Asmodeu; o mundo continua a correr, mas a personagem fica parada, sem crucifixo e sem receber golpes; o que está no caminho da câmara acorda antes de ela lá chegar (ver "Atividade fora do ecrã"); a câmara desloca-se com aceleração e travagem suaves e muda o zoom em proporção constante; um enquadramento com Keep Zoom mantém o zoom que a câmara tinha e só a centra na Vista; entre dois sítios que não cabem no mesmo ecrã, pode afastar-se a meio caminho até os dois caberem (Zoom Out To Travel); com Motion Blur, a imagem arrasta-se na direção da deslocação, tanto mais quanto mais depressa, até Max Blur, num ecrã por cima do nível e por baixo dos menus (`MotionBlur`, na câmara); cada enquadramento avisa quando a câmara lá chega (arrived), para um portão fechar ou abrir à vista; com um evento (Event), só se vê uma vez em todo o jogo, e o jogo grava nesse momento, como com um upgrade aceite, para uma morte não a repetir; sem evento, vê-se sempre que é pedida, como a do desbloqueador B do nível 1, também depois de cada morte; com uma fase de repetição (Replay Phase) e um evento de repetição (Replay Event), uma cena já vista volta a ver-se uma única vez, quando o nível recomeça nessa fase depois da primeira morte nela, passado o tempo de Replay Delay (0,8 s, para o ecrã já ter voltado do negro); as mortes contam-se nas estatísticas da partida (`RunStats`), que uma morte não desfaz, e o evento de repetição grava-se no momento, para a segunda morte não a repetir; é o caso da cena da fase 2 do nível 1, que volta a mostrar o portão B a fechar; o salto termina-a, passado meio segundo | uma viagem de 1 s chegou ao enquadramento em 59 passos de física (60 previstos); entre duas Vistas a 24 000 px uma da outra, com zooms de 1,2 e 0,6 nos extremos, a câmara afastou-se até ao zoom 0,070 a meio; com Keep Zoom, o zoom não mudou (diferença abaixo de 0,0001); com Motion Blur 0,5 e Max Blur 30 px, o arrastamento chegou a 30 px durante a viagem e foi 0 na paragem e no fim; um elemento adormecido junto da Vista acordou dois frames depois do início, antes de a câmara chegar; a cena da fase 2 do nível 1 durou 3,00 s; com o nível recomeçado na fase 2, não se repetiu sem mortes nessa fase, repetiu-se depois da primeira, 47 passos de física após o recomeço (48 previstos), e não se repetiu depois da segunda; a cena do desbloqueador B, de 3 s, viu-se nas três cópias seguidas do nível, sem mudar o zoom (diferença abaixo de 0,001); no fim, a câmara ficou exatamente onde estava antes de começar |
+| Conversas em cena | quando um balão de diálogo começa (#284), entram barras pretas em cima e em baixo, por cima do nível e por baixo do balão (camada 7), com a proporção dos filmes em ecrã largo, 2,39:1 (cada barra com 12,8 % da altura): deslizam com travagem ao entrar (0,8 s) e com aceleração ao sair (0,6 s); a barra de alma esconde-se, como já acontecia; a câmara deixa a personagem e enquadra-a com quem lhe fala (`TalkFraming`, na câmara), num movimento de 1,4 s que começa e acaba devagar, com os pés logo acima da barra de baixo e as cabeças abaixo da roda das respostas, até ao zoom 2,0; o zoom pára onde as cabeças passariam para trás da roda, medido a partir das figuras desenhadas das duas personagens (o retângulo de cada imagem); com as barras de 2,39:1 há 304 px livres entre a roda e a barra de baixo: a conversa com a Velvet fica no zoom 2,0 e a da Asmodeu, mais alta, abaixo dele; a Asmodeu aparece a 300 px da personagem, para as duas figuras se lerem como duas, à direita ou, se aí a figura dela ficar dentro da rocha, como no fundo do poço da fase 2, à esquerda e espelhada para olhar para a personagem (`appear_clear_of`); uma conversa que comece enquanto a câmara volta de outra parte de onde a câmara está e, no fim, volta à posição de antes da primeira, contando com o que a personagem andou entretanto; o plano mantém-se parado 2 s e só depois a câmara se desvia 10 % da largura do ecrã para quem tem a vez (o demónio enquanto fala, a personagem quando aparecem as respostas); durante a conversa a personagem não recebe golpes e nenhum cão começa um ataque; ao fechar o balão, as barras saem e a câmara volta em 1,2 s, com a mesma suavização, à posição e ao zoom que tinha sobre a personagem, contando com o que ela se tenha mexido, e só então é devolvida; uma cena de câmara que comece durante esse regresso toma a câmara no sítio onde está; uma cena de câmara que comece no fim da conversa, como a da fase 2 depois da oferta da Asmodeu, parte do plano da conversa e volta à posição e ao zoom que a câmara tinha sobre a personagem antes da conversa; com Reduce Motion a conversa não muda a câmara, que continua a seguir a personagem como fora dela, e as barras aparecem por fade (0,2 s), com a altura toda; com Show Bars desligado não há barras; até haver ecrã de opções, estes dois valores mudam-se no Inspector do nó `TalkFraming`; numa conversa durante uma cena de câmara, a câmara e a proteção ficam com a cena, e uma proteção que já estava ligada antes da conversa (por exemplo, a personagem agarrada) continua ligada depois | barras de 138,2 px a 1080 px (12,8 % da altura); conversa com a Velvet ao zoom 2,0, com as duas figuras entre a roda e a barra; a câmara não se mexeu (0,000 px) nos primeiros 1,8 s do plano e depois desviou-se 96,0 px do nível para cada lado (192 px do ecrã ao zoom 2,0); no fim, 1,2 s depois de fechar o balão, a câmara estava a 0,002 px da posição de antes e no zoom 1,000 de antes; fundo da roda em y 613,6; com o zoom máximo subido para 4,0, o plano da Asmodeu parou em 1,971, os 304 px livres a dividir pelos 154 px das duas figuras; uma cena de câmara no fim da conversa terminou no zoom 1,249, o de antes da conversa (1,971 durante a conversa), e a 0,002 px da posição de antes; com Reduce Motion, a meio do fade as barras tinham a altura toda e opacidade 0,50, e a câmara nunca saiu da personagem |
 | Miradouros | antes de uma queda, de uma subida ou de um entroncamento, um miradouro (`CameraLookout`) afasta a câmara para mostrar esse troço: enquanto a personagem estiver no retângulo do miradouro, e depois durante o salto ou a queda até aterrar, o ecrã enche a Vista (um `ReferenceRect` filho) e nunca mostra nada fora dela, pelo que a Vista se desenha só sobre esse troço do caminho; tem prioridade sobre as zonas; no chão, deixa de valer quando o corpo fica a mais de um tile (48 px) do retângulo | numa Vista de 2400 × 1350 px, o zoom fica em 0,8 e o ecrã coincide com a Vista; numa Vista de 6000 × 5000 px, o zoom para em 0,7 e o ecrã segue a personagem sem sair dela; ao sair de um rebordo, o miradouro mantém-se durante toda a queda e acaba na aterragem |
 
 As zonas de câmara definem-se na cena de cada nível (ver "Câmara" em "Para quem programa"). Cada
@@ -1047,11 +1091,12 @@ A libertação também leva o tremor a um nível fixo, o mais alto do agarrão, 
 solte com toques quer mantendo o Salto; só a morte treme mais. Os
 movimentos de todos os dias, como um salto ou uma aterragem normais, não fazem tremer o ecrã, nem o
 crucifixo que o nível tira, ao começar, a quem já o perdeu. Cada momento acrescenta um
-trauma entre 0 e 1, que desce sozinho; o tremor é o trauma ao quadrado, pelo que os momentos fracos
-quase não se notam, e momentos seguidos somam-se até ao máximo. Nenhum tremor dura mais de meio
+trauma entre 0 e 1, que desce sozinho; o tremor é o trauma elevado a 1,5, pelo que os momentos fracos
+se notam menos do que os fortes, e momentos seguidos somam-se até ao máximo. Nenhum tremor dura mais de meio
 segundo depois do último impacto. O ecrã desloca-se segundo um ruído contínuo, sem saltos ao acaso,
 e nunca roda, para mexer o ecrã o menos possível. Junto à borda de um nível, um tremor forte mostra
-até 32 px de fora do nível. Nas opções, Screen shake regula a força de 0 a 100 %, e 0 desliga o
+até 48 px de fora do nível. No playtest de 22/11 os tremores não se sentiam (um golpe mexia o ecrã
+8 px), e por isso subiram (#284): um golpe mexe-o 17 px e uma morte 48 px. Nas opções, Screen shake regula a força de 0 a 100 %, e 0 desliga o
 tremor.
 
 Os valores do tremor estão em `camera_shake_stats.tres` (`Projeto/scenes/others/camera/`) e os de
@@ -1059,9 +1104,9 @@ cada momento em `impact_stats.tres` (`Projeto/scenes/others/feedback/`):
 
 | Campo no Inspector | Valor atual | O que controla |
 |---|---|---|
-| Max Offset | 32 px | o maior desvio do ecrã para cada lado, com trauma 1, em píxeis do ecrã |
+| Max Offset | 48 px | o maior desvio do ecrã para cada lado, com trauma 1, em píxeis do ecrã |
 | Decay | 2 /s | o trauma que desaparece por segundo; com 2, o trauma máximo acaba em 0,5 s, e o Inspector não aceita menos |
-| Exponent | 2 | a potência do trauma; com 2, metade do trauma produz um quarto do tremor |
+| Exponent | 1,5 | a potência do trauma; com 1,5, metade do trauma produz 35 % do tremor |
 | Speed | 10 | a rapidez do tremor; cada unidade faz o ecrã passar pelo centro cerca de 1,35 vezes por segundo, ou seja, cerca de 13 com 10 (medido a 60 FPS) |
 | Hit Trauma | 0,5 | um golpe de um demónio ou de um perigo |
 | Grab Trauma | 0,2 | um agarrão, somado ao golpe que o inicia |
@@ -1135,6 +1180,15 @@ sentir a força que escolhe. Se o slider for arrastado com o rato, toca uma vez,
 Constant vibration desliga só a vibração contínua, para quem aceita os impulsos mas não um zumbido
 prolongado. Os momentos têm também imagem ou som. O aviso de que o crucifixo vai baixar vê-se na luz
 dele, que pulsa, e ouve-se no som, que treme com ela (ver "Crucifixo").
+
+No jogo exportado, a vibração depende de uma definição do projeto: Project Settings › Editor ›
+Export › Convert Text Resources To Binary está desligada (#284, `test_export_settings.gd`). A 20/11,
+com ela ligada, o `.exe` só vibrava nos menus: os 18 impulsos que o `rumble_stats.gd` cria como
+valores por defeito chegavam vazios ao jogo exportado (o salto, o golpe e a morte saíam `null` num
+build de diagnóstico), e com ela desligada chegaram. O motivo exato da perda na conversão é uma
+inferência nossa. O custo é o jogo exportado levar as cenas e os recursos em texto, maiores e mais
+lentos de carregar, ainda por medir. A alternativa, que não mexe no projeto todo, é gravar os 18
+impulsos no próprio `rumble_stats.tres`. Fica a decisão do grupo.
 
 Os valores estão em `rumble_stats.tres` (`Projeto/scenes/others/feedback/`), agrupados no Inspector
 pelos degraus. Cada impulso tem o motor fraco e o forte, de 0 a 1, a duração e a parte final em que
@@ -1457,6 +1511,11 @@ godot --headless --fixed-fps 60 --path Projeto --script res://tests/test_bramble
 godot --headless --fixed-fps 60 --path Projeto --script res://tests/test_death_iris.gd
 godot --headless --fixed-fps 60 --path Projeto --script res://tests/test_gate.gd
 godot --headless --fixed-fps 60 --path Projeto --script res://tests/test_camera_cutscene.gd
+godot --headless --fixed-fps 60 --path Projeto --script res://tests/test_talk_framing.gd
+godot --headless --fixed-fps 60 --path Projeto --script res://tests/test_phase2_save_entry.gd
+godot --headless --fixed-fps 60 --path Projeto --script res://tests/test_fires_seated.gd
+godot --headless --fixed-fps 60 --path Projeto --script res://tests/test_menu_music_fade.gd
+godot --headless --fixed-fps 60 --path Projeto --script res://tests/test_asmodeus_appears_in_the_open.gd
 godot --headless --fixed-fps 60 --path Projeto --script res://tests/test_collapsing_platform.gd
 godot --headless --fixed-fps 60 --path Projeto --script res://tests/test_lust_phase_2.gd
 godot --headless --fixed-fps 60 --path Projeto --script res://tests/test_lust_phase_2_route.gd
@@ -2833,6 +2892,10 @@ chegam ao protótipo mesmo com uma fala no ecrã, porque o overlay as recebe ant
 protótipo deixou de escrever texto próprio no ecrã. Num nível sem o protótipo, a página da luz diz
 que não há iluminação para afinar. Teste: `test_lighting_debug_page.gd`, com o protótipo verdadeiro.
 
+Desde a #284, o valor da escuridão (F5/F6) parte de 0,35 (era 0,30), e a gradação de cor (Ctrl+F1)
+e o contorno (Ctrl+F6) partem desligados; o código fica, e as teclas voltam a ligá-los. O
+`test_level1_lit.gd` verifica estes valores por omissão.
+
 A tecla F4 retira à personagem o valor Debug Damage do overlay (10 SP, no Inspector), como um golpe,
 para experimentar a regeneração e os avisos antes de haver demónios. Cada toque conta uma vez,
 mesmo com a tecla premida, não atua com o jogo em pausa e funciona com o texto escondido. O overlay
@@ -2850,7 +2913,7 @@ razões do F4.
 
 A tecla F10 troca a câmara para a forma seguinte de enquadrar o homem (#282): a da própria câmara, com
 as zonas, e depois cada modo que a cena da câmara tiver (ver «Câmara»; hoje, a câmara de zoom fixo,
-`Fixed`). Funciona também com o texto escondido, e a forma escolhida mantém-se na cópia seguinte do
+`Fixed`, com que o nível 1 começa). Funciona também com o texto escondido, e a forma escolhida mantém-se na cópia seguinte do
 nível, como depois de uma morte: a câmara nova começa já enquadrada por ela, sem deslizar. Na página dos números, uma linha própria indica a forma em uso. Na página da
 iluminação, a F10 pertence ao rig, como as restantes teclas F. Está reservada nos perfis de controlos,
 pelas mesmas razões do F4, e o balão das falas deixa-a passar, como às outras teclas de depuração.
@@ -2963,14 +3026,17 @@ vibração e o feedback (ou os mudaria de nó a cada troca), e a passagem do có
 A cena da câmara traz uma forma alternativa, a câmara de zoom fixo (nó `Fixed`, script
 `FixedFraming`, valores em `FixedFramingStats`). Responde às queixas do playtest de 20/11: rocha a
 mais no ecrã, um zoom que muda em fronteiras que o jogador não vê e a personagem fora do centro. O
-zoom é sempre 1,4. Na horizontal, a personagem fica centrada; na vertical, fica 25 % da altura do ecrã
-abaixo do centro, porque por baixo do chão só há rocha. O ecrã segue um ponto de foco, que só se
-desloca quando a personagem sai de uma zona morta à volta dele: 28 px para cada lado e, no ar, um
+zoom é sempre 1,4. Na horizontal, a personagem fica centrada; na vertical, fica 12 % da altura do ecrã
+abaixo do centro (25 % no #282), porque por baixo do chão só há rocha. Os valores do jogo estão no
+`fixed_framing_stats.tres`, mais calmos desde o #284 (ver "Câmara" acima); os do script são os do
+#282. O ecrã segue um ponto de foco, que só se
+desloca quando a personagem sai de uma zona morta à volta dele: 96 px para cada lado (28 no #282) e, no ar, um
 salto completo para cima, pelo que um salto não move o ecrã. No chão, o foco acompanha logo a altura
 da personagem. O ecrã aproxima-se do foco com uma mola criticamente amortecida, no máximo a
 2000 px/s. Enquanto a personagem arrasta o foco, o ecrã aponta à frente dele a distância a que a mola
 fica para trás (2v/ω), pelo que, a uma velocidade constante, o ecrã não fica para trás nem passa à
-frente. A correr, o ecrã mostra mais 5 % da sua largura à frente da personagem; ao fim de 0,35 s de
+frente. A correr, o foco vai 3 % da largura do ecrã à frente da personagem (5 % no #282), menos do que
+a zona morta, pelo que o ecrã fica um pouco atrás dela; ao fim de 0,35 s de
 queda, mais do que dura a descida de um salto completo, mostra mais por baixo dela. Deslizar por uma
 parede não conta como queda, para a subida de uma chaminé não fazer o ecrã subir e descer. Com o
 corpo no ecrã, mantém-no a pelo menos 10 % do ecrã das bordas. Uma personagem colocada a mais de
@@ -2988,35 +3054,42 @@ com o espaço aberto a chegar à borda do mapa, valem só os limites da própria
 passagem vertical entre rocha com até 6 tiles de largura e pelo menos 6 de altura, o ecrã fica no
 eixo dela. A medição usa a mesma `RockMap`, para as duas lerem a rocha da mesma maneira.
 
-A medição (`measure_camera_space.gd`) coloca a personagem em 1467 posições do nível 1, um tile em cada
+A medição (`measure_camera_space.gd`) coloca a personagem em 1462 posições do nível 1, um tile em cada
 três de cada chão a que ela chega, e lê o ecrã depois de a câmara assentar. Conta como enchimento a
 rocha rodeada de rocha nos 8 lados, porque as pedras da orla cobrem cerca de um tile para dentro da
-rocha. As distâncias estão em píxeis de um ecrã de 1920 × 1080.
+rocha. As distâncias estão em píxeis de um ecrã de 1920 × 1080. A tabela foi medida a 22/11, no mapa
+depois do merge do `dev` e com os valores do #284.
 
-| Medida | Câmara atual (zonas) | Câmara de zoom fixo |
+| Medida | Câmara das zonas | Câmara de zoom fixo |
 |---|---|---|
-| Enchimento do ecrã, média | 34,8 % | 34,9 % |
-| Enchimento do ecrã, 90.º percentil | 54,3 % | 54,0 % |
-| Distância da personagem ao centro, na horizontal (média; 90.º percentil) | 237 px; 632 px | 39 px; 39 px |
-| Distância da personagem ao centro, na vertical (média; 90.º percentil) | 226 px; 369 px | 267 px; 270 px |
+| Enchimento do ecrã, média | 35,3 % | 37,5 % |
+| Enchimento do ecrã, 90.º percentil | 53,7 % | 55,6 % |
+| Distância da personagem ao centro, na horizontal (média; 90.º percentil) | 188 px; 490 px | 114 px; 134 px |
+| Distância da personagem ao centro, na vertical (média; 90.º percentil) | 223 px; 362 px | 135 px; 133 px |
 | Zoom | de 1,00 a 2,28 (1,30 em 53 % das posições) | 1,40 em todas |
-| Mudanças de zoom por 100 tiles percorridos | 2,2 | 0 |
+| Mudanças de zoom por 100 tiles percorridos | 2,6 | 0 |
 
-Na vertical, a câmara de zoom fixo deixa a personagem abaixo do centro de propósito: 25 % de 1080 px
-são 270 px. Os 39 px na horizontal são a borda da zona morta, à escala do zoom. Com o zoom 1,4, o
-enchimento médio fica 0,1 pontos acima do da câmara atual. Na comparação de zooms, com a personagem
-25 % abaixo do centro, o 1,5 ficava abaixo dele (34,0 %), mas mostra menos à volta da personagem
-(26,7 × 15,0 tiles, contra 28,6 × 16,1 a 1,4).
+Na vertical, a câmara de zoom fixo deixa a personagem abaixo do centro de propósito: 12 % de 1080 px
+são 130 px. Os 134 px na horizontal são a borda da zona morta (96 px do mundo), à escala do zoom.
+Com o homem mais acima do que no #282, o ecrã mostra mais do chão, que é rocha: o enchimento médio
+fica 2,2 pontos acima do das zonas. No #282, com 25 % abaixo do centro e no mapa de então, ficava 0,1
+pontos acima (34,9 % contra 34,8 %). É o custo de ver mais por baixo nas descidas, pedido no
+playtest de 22/11. Na comparação de zooms, com a personagem 25 % abaixo do centro, o 1,5 ficava
+abaixo das zonas, mas mostra menos à volta da personagem (26,7 × 15,0 tiles, contra 28,6 × 16,1 a
+1,4).
 
 A câmara de zoom fixo lê o mapa quando começa num nível: na primeira troca para ela e, se estiver
 escolhida, no primeiro frame de cada cópia nova do nível, depois de uma morte ou de um salto de fase.
 No nível 1 (373 × 381 tiles), a troca demora entre 88,5 e 89,7 ms (duas execuções da medição), um
-atraso de cinco ou seis frames, aceitável numa ferramenta de depuração.
+atraso de cinco ou seis frames. Como o nível 1 começa com esta câmara desde o #284, a leitura repete-se
+em cada recomeço: uma cópia nova do nível 1 leva de 555 a 571 ms a criar e a arrancar, contra 460 a
+482 ms com as zonas (três execuções alternadas). Esse frame cai com a íris da morte fechada, pelo que
+o ecrã preto dura cerca de 0,1 s mais. Ler o mapa uma vez por nível, e não por cópia, fica para depois.
 
 Ficaram de parte um zoom fixo com a personagem centrada também na vertical (40,3 % de enchimento a
 1,3), porque a metade de baixo do ecrã fica sob o chão, e um ecrã preso ao chão e ao teto (33,9 % a
-1,4), porque a altura da personagem no ecrã variava de sítio para sítio, como hoje. A câmara por
-defeito decide-se depois do playtest de comparação.
+1,4), porque a altura da personagem no ecrã variava de sítio para sítio, como com as zonas. Depois do
+playtest de 22/11, o nível 1 passou a começar com a câmara de zoom fixo (#284).
 
 As zonas (`CameraZone`, uma `Area2D` na camada `camera_bounds`) são lidas pela geometria das suas
 formas retangulares, com a transformação completa (uma zona escalada tem o retângulo que o editor
@@ -3201,7 +3274,7 @@ outra por acaso:
 | Ordem | O que se desenha | Como |
 |---|---|---|
 | 1 | camadas Far, Middle e Near do fundo | primeiro nó da cena do nível, com Z Index 0 |
-| 2 | plano de jogo: portões, personagem, demónios, tiles e as outras peças, por esta ordem | nós seguintes do nível, com Z Index 0 |
+| 2 | plano de jogo: portões, personagem, demónios, picos, tiles e as outras peças, por esta ordem | nós seguintes do nível, com Z Index 0 (os picos com 1) |
 | 3 | camada Front do fundo | Z Index 10 |
 | 4 | interface e overlay de depuração | `CanvasLayer`, por cima de tudo |
 
@@ -3211,8 +3284,19 @@ antes dos demónios, porque estes se movem depois dela em cada passo de física 
 conta com isso). Um demónio que avisa, investe ou agarra sobe para Z Index 1, para ficar por cima
 da personagem e dos outros demónios. A iluminação do nível 1 põe a rocha também em 1, e com o mesmo
 Z Index vale a ordem dos nós, por isso esse demónio continua por baixo da rocha; sem a iluminação, a
-rocha fica em 0 e ele passa por cima dela. O `test_dogs_behind_rock.gd` verifica a ordem com a
-iluminação, e também que a marca de alerta e os picos continuam por cima da rocha.
+rocha fica em 0 e ele passa por cima dela. Os picos vêm logo antes dos tiles (#284): com a
+iluminação, ficam por baixo da rocha e das pedras da orla e por cima da cópia da rocha que dá
+profundidade, como a personagem e os fogos, e nascem entre as pedras em vez de as taparem. As pedras
+da orla saem 20,4 px da rocha e escondem a metade de baixo dos 40 px dos dentes. Os picos continuam
+em Z Index 1, por cima da personagem, que na morte nas silvas é puxada para dentro delas. O
+`test_dogs_behind_rock.gd` verifica a ordem com a iluminação, que a marca de alerta continua por cima
+da rocha e que os picos ficam por baixo dela.
+
+Os fogos do nível 1 ficam 12 px abaixo do topo da rocha (`FIRE_SINK`, no `lighting_rig.gd`, #284).
+As chamas afinam na base, e a fogueira só chega à largura toda 10,8 px acima do fundo do desenho;
+pousadas no topo da rocha, essa ponta fina via-se por cima das pedras e o fogo parecia flutuar.
+O `test_fires_seated.gd` verifica que cada um dos 87 fogos está sobre rocha, com ar por cima, entre
+10,8 px e 20,4 px abaixo do topo (medido: 12,0 px em todos).
 
 #### Linha de vista: um componente por objeto
 
@@ -3281,6 +3365,15 @@ mesmo acontece a qualquer nó de um nível com Process Mode Always. Perder o foc
 (Main › Pause On Focus Loss), opção que convém desligar quando se afinam valores pelo separador
 Remote do editor.
 
+Na pausa, um véu preto a 90 % (`MenuBackdrop` › Background Alpha) cobre o nível, que continua a
+ver-se por baixo (#284; era 60 %, depois 80 %). A música dos menus (`MenuMusic`) entra quando a pausa abre e sai
+quando fecha, em 1,5 s de cada vez. O ouvido sente o volume em decibéis e não no ganho: subir o ganho
+em linha reta trazia quase todo o volume nos primeiros instantes e tirava-o de repente no fim. Por
+isso a subida e a descida seguem uma curva cúbica (Fade Curve), lenta ao começar a subir e rápida ao
+começar a descer: fica mais perto de uma variação regular do volume, sem a espera em silêncio de uma
+rampa em decibéis a partir de −80 dB. O `test_menu_music_fade.gd` mediu, a meio de cada fade, 0,125 do ganho (−18 dB),
+contra 0,500 (−6 dB) da linha reta.
+
 O Espaço e o A servem para saltar e para confirmar nos menus, e o B para voltar. Os
 botões do Godot disparam quando a tecla é largada, e o B fecha a pausa também ao ser largado. Isso
 não chega: num toque rápido, carregar e largar chegam no mesmo frame, e o Godot considera a ação
@@ -3331,7 +3424,9 @@ menu principal, para haver uma só marca de seleção, também nas linhas de tr�
 cima de um separador não o escolhe, para não trocar de página a caminho de uma opção; o separador
 escolhe-se com um clique. Por baixo das
 páginas, uma linha explica a opção selecionada. Reset to defaults e Back ficam numa barra à parte,
-em baixo e em letra mais pequena, com as teclas do Back ao lado (Esc / B). O Esc ou o B fecham as
+em baixo e em letra mais pequena, com a tecla do Back à frente, a do aparelho usado por último
+(Escape no teclado, B no comando; `test_options_back_key.gd`). O Escape é uma tecla reservada, que
+o ecrã dos controlos não oferece, e por isso a tecla mostra-o pelo nome dele. O Esc ou o B fecham as
 opções a partir de qualquer separador.
 
 - **Fundo partilhado** (`scenes/screens/menu_backdrop.tscn`): o preto (Background Alpha), os raios
@@ -3384,6 +3479,16 @@ opções a partir de qualquer separador.
   clique fica 9 dB abaixo do golpe. O script reproduz os ficheiros do repositório byte a byte. Se
   faltar um som na cena, o jogo usa um feito em código (`menu_sound_synth.gd`), com a sua própria
   mistura: o clique 11 dB abaixo do golpe.
+- **Respostas das falas** (#284, `test_wheel_feedback.gd`): a roda das respostas do balão soa e vibra
+  como os menus, com um `MenuFeedback` próprio (`AnswerFeedback`). Apontar outra resposta faz o clique
+  e o pulso de mudar, confirmar faz o golpe e o pulso de escolher, e voltar o stick ao centro não soa.
+  A roda não usa foco nem botões, por isso avisa o balão com o sinal `pointed`, e o balão chama o
+  `play_move()` e o `play_confirm()` do `MenuFeedback`, que neste caso não ouve nada sozinho (Only
+  Asked). A roda tem histerese: a resposta apontada só se larga quando o stick recua mais 0,12 do seu
+  curso (Aim Release Margin) para lá da zona morta ou da linha entre duas respostas. Sem ela, um
+  stick parado numa linha trocava de resposta a cada frame, e o destaque, o clique e o pulso com ele
+  (no teste, 10 vezes em 20 oscilações na beira da zona morta; com ela, uma). Os pulsos estão
+  gravados na cena, como os dos menus, e chegam ao jogo exportado.
 - **Cruzes** (`scenes/screens/menu_crosses.gd`): seguem o foco, de teclado, comando ou rato, e
   deslizam para a opção selecionada; o rato por cima de um botão dá-lhe o foco. Ficam só nos botões:
   um slider mostra a sua própria seleção.
@@ -3414,7 +3519,7 @@ e remapeamento por captura da tecla seguinte.
   ecrã esperar pela próxima tecla ou botão do rato. O Esc ou o B cancelam sem alterar nada. Uma
   tecla que não pode ser usada (as reservadas, como o F3 do overlay de depuração ou a tecla Windows) é recusada: o botão
   diz qual foi, soa o som de recusa, e a espera continua. O resto do comando, menos o B, também é
-  recusado, com o texto «Gamepad stays fixed: press a key (B cancels)», porque o comando é o mesmo em
+  recusado, com o texto «The controller can't be remapped (B cancels).», porque o comando é o mesmo em
   todos os perfis. Antes, era ignorado em silêncio, e o jogador não sabia se o jogo o tinha recebido.
   Um botão é recusado a cada carregão. Um eixo (o stick, um gatilho, como o RT do crucifixo) envia
   uma série de eventos ao longo do movimento, por isso é recusado uma só vez, quando passa de metade
@@ -3423,7 +3528,7 @@ e remapeamento por captura da tecla seguinte.
   carregões. Cada espera começa sem eixos registados, porque um eixo largado fora da espera não é
   visto. Um modificador (Shift, Ctrl, Alt) só fica atribuído quando é largado, se
   entretanto nada mais foi carregado e o jogo não perdeu nem recuperou o foco, porque carregado pode
-  ser o início de um atalho. Enquanto está em baixo, o botão diz «Shift: let go to use it». Antes, um
+  ser o início de um atalho. Enquanto está em baixo, o botão diz «Let go of Shift to use it.». Antes, um
   Alt+Tab durante a espera deixava a ação com o Alt. Shift com outra tecla atribui a outra tecla. A
   tecla Windows não conta como modificador: está reservada e é recusada logo ao ser carregada,
   porque largá-la abre o menu Iniciar e tira o foco ao jogo; atribuída, abriria o Iniciar sempre que
@@ -3621,11 +3726,35 @@ O `test_dialogue_skip.gd` verifica que o salto para nas respostas sem escolher n
 das falas saltadas é apresentada, que um toque curto não salta, que uma conversa sem respostas
 termina e que o retrato provisório mostra a inicial.
 
+Conversa em cena (#284). O balão avisa do início e do fim de cada conversa os nós do grupo
+`talk_watchers`, e passa o nó onde foi colocado, que é quem fala. O `TalkFraming` da câmara pertence
+a esse grupo. Assim, qualquer personagem que abra um balão recebe as barras e o enquadramento sem
+ligações na cena do nível. Ligar os sinais de cada personagem no nível obrigaria a repetir a ligação
+em cada personagem e em cada nível, e foi posto de lado. A conversa também não é um modo de câmara
+(`CameraBrain`): os modos entram na troca da tecla F10, e a conversa é um momento passageiro, como as
+cenas de câmara, com o mesmo `direct()` e `release()`. As contas do plano estão numa classe sem nós
+(`TalkShot`), testada sozinha. O espaço livre por baixo da roda mede-se no ecrã, a partir dos lugares
+das respostas: o palco do balão, com a caixa e a roda, está desenhado a 80 % do tamanho, a partir do
+centro de cima, e o fundo da roda fica em y 613,6 num ecrã de 1080 px, e não em y 767, como as
+coordenadas da cena sugerem. Uma cena de câmara pede à câmara a posição a que deve voltar
+(`get_home_centre()`): enquanto volta do plano da conversa e durante dois frames de física depois de
+devolvida, a câmara dá a posição que tinha sobre a personagem antes da conversa, e não o plano da
+conversa. No regresso, a câmara fica livre para ser tomada (`let_be_taken()`): uma cena de câmara que a
+peça nesse momento recebe-a no sítio onde está, e o regresso pára. A proteção contra golpes é um
+só interruptor na hurtbox, partilhado com as cenas de câmara e com o agarrão; a conversa só o desliga
+se foi ela a ligá-lo e se nenhuma cena de câmara tiver a câmara nesse momento. O `test_talk_framing.gd`
+verifica as contas, a conversa com a Velvet (barras, zoom, plano parado, desvio para cada lado,
+proteção e regresso), o fundo da roda e o seu limite com a Asmodeu, o Reduce Motion, as barras
+desligadas, a conversa durante uma cena de câmara, a cena de câmara no fim da conversa e a proteção
+que já estava ligada.
+
 #### Estatísticas da partida: mortes, zonas e tempo
 
 O autoload `RunStats` conta as mortes do homem por fase e por zona de cada nível. Estes números
 servem as falas dos demónios (por exemplo, "morreste tantas vezes no mesmo sítio") e o julgamento
-final, que mostra ao homem o que fez, com números. Não entram no registo moral: só as decisões
+final, que mostra ao homem o que fez, com números. Nas falas, os números saem por extenso
+(`RunStats.opening_words`, regras na classe `NumberWords`, `test_number_words.gd`): "Three falls on the way
+to me" soa a uma voz, e "3 falls" a um contador. Não entram no registo moral: só as decisões
 contam para a moral, e morrer não é uma decisão. Nada disto aparece no ecrã durante o jogo.
 
 A fase é dada pelo próprio nível. Cada nível começa na fase indicada em First Phase, que
@@ -3727,7 +3856,16 @@ A oferta por mortes só é verificada enquanto há uma à espera; sem ela, o dir
 cada frame. Uma conversa só conta como tida quando o homem responde à oferta. Nesse momento, o
 diretor marca-a no `GameState` (`answered_` e o nome do cue), e a oferta por mortes deixa de estar à
 espera. Se o jogador sair antes de responder, a conversa do início de uma fase volta assim que ele
-pousa no chão depois do Continue, e a oferta por mortes continua à espera da sua zona. Aceitar o atalho fecha as ofertas por mortes. A saída do nível (`PhaseExit` sem fase
+pousa no chão depois do Continue, e a oferta por mortes continua à espera da sua zona. Aceitar o atalho fecha as ofertas por mortes.
+
+A conversa do início de uma fase começa no ponto de gravação dessa fase (o sinal `reached`) e
+espera que o homem pouse no chão. Até à #284, o `Phase2Save` só tinha uma caixa, à esquerda da boca
+do poço por onde se chega à fase 2. Quem entrava pela boca ou caía direto na saliência não gravava a
+fase 2 nem ouvia a Asmodeu, e uma morte levava-o de volta à fase 1. A caixa nova, `MouthAndLedge`
+(232 × 96 px), cobre a boca e a saliência. Começa 8 px dentro do poço, para não apanhar o homem no
+sítio onde renasce. O `test_phase2_save_entry.gd` verifica quatro entradas: pela beira esquerda, na
+saliência, na boca ainda no ar (a gravação acontece e a conversa espera pelo chão) e o sítio onde
+renasce, que não conta como chegada. A saída do nível (`PhaseExit` sem fase
 seguinte e com Walk In Leads On desligado) só termina o nível depois da última fala de `stairs`;
 nessa altura o diretor marca o nível como feito (`lust_done`), com a tenda como ponto de chegada,
 o Main grava, escurece o ecrã e volta ao menu principal. Enquanto não houver nível 2, o Continue
@@ -3807,7 +3945,7 @@ deixar desatualizada, e um índice danificado esconderia os três slots.
 - **Load:** aparece por baixo do Continue e lista os três slots, cada um com o nível, a fase, o
   tempo de jogo, as mortes e a data, escrita como 2026-11-19 17:40 para se ler da mesma forma em
   qualquer país. Abre com o último slot jogado selecionado. Um slot vazio, ou com um ficheiro que não
-  se lê ("Can't be read"), aparece na lista, mas não se pode escolher. No caso mais comprido medido
+  se lê ("Unreadable save": estragado, de uma versão mais recente ou de uma cena que já não existe), aparece na lista, mas não se pode escolher. No caso mais comprido medido
   (10h 33m e 127 mortes), o texto ocupa 534 dos 600 px do botão.
 - **New Game:** sem nenhum ficheiro de gravação, começa logo no slot 1. Caso contrário, mostra os
   slots com o primeiro vazio selecionado. Um slot ocupado, ou com um ficheiro que não se lê, pede
@@ -4062,7 +4200,9 @@ vem o vento e a alturas ao acaso, e atravessam o ecrã em cerca de 3 s com a raj
 0,45 s, se mantém 2,8 s e depois amaina. Sobem na diagonal: cada rajada sopra, em média, 6° acima
 da horizontal (Slant), com um desvio ao acaso de 4°. Não seguem uma linha reta: a turbulência
 (ruído de curl, levado pela própria rajada) desvia-as, as quentes sobem e as que arrefecem descem,
-e as maiores, mais perto do olhar, vão mais depressa.
+e as maiores, mais perto do olhar, vão mais depressa. Desde o #284, a cor de cada brasa vem das
+cores das brasas dos fogos (Heat Ramp, do magenta escuro ao branco quente), com o brilho a 2,2, porque
+no playtest de 22/11 o amarelo de antes destoava das cores do nível.
 
 A sincronia entre as brasas e o som foi medida na mistura do próprio Godot, gravada com o modo de
 gravação de filme (`--write-movie`): cada rajada atinge o pico 0,6 a 0,9 s depois de começar, com
@@ -4537,7 +4677,14 @@ disponível começam no seu ponto. Se a sincronia está certa confirma-se a joga
   iluminação (#257; os três últimos desde a #263).
 - `bramble.png`, em `Projeto/assets/sprites/traps/`, e `platform_slab.png`, em
   `Projeto/assets/sprites/environment/`: a silva dos picos letais e a laje das plataformas,
-  desenhadas por von Hafe, do grupo, recortadas e reduzidas dos PNG originais (#263).
+  desenhadas por von Hafe, do grupo, recortadas e reduzidas dos PNG originais (#263). A silva foi
+  substituída na #284 pela versão nova, desenhada pelo grupo, recortada e reduzida da mesma forma.
+- `collapsing_slab_sheet.png`, em `Projeto/assets/sprites/environment/`, e `gate_door_sheet.png`,
+  `gate_frame_back.png`, `gate_frame_front.png` e `unlocker_statue_sheet.png`, em
+  `Projeto/assets/sprites/gates/` (#284): a laje que se parte, o portão (porta parada, a abrir e a
+  fechar, poste e pilar) e a estátua do desbloqueador (apagada e acesa), desenhados pelo grupo,
+  convertidos dos GIF e WEBP originais em folhas de frames, todos com o mesmo recorte por objeto,
+  para ficarem alinhados.
 - `velvet_walk_sheet.png`, em `Projeto/assets/sprites/velvet/`: a Velvet a andar, 8 frames,
   desenhada pela Sofia, do grupo, com o fundo branco tornado transparente e reduzida da folha
   original (#263).

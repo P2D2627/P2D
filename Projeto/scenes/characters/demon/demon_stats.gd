@@ -140,14 +140,19 @@ const MIN_BACK_BITE_INTERVAL: float = 0.34
 	set(value):
 		bites_who_lands_on_it = value
 		emit_changed()
+## On, the crucifix does not reach the demon (#284): its Repellable is on no layer, so the crucifix
+## neither pushes it nor counts a hit on it. For the chase's last dog, which the man can only flee.
+## Read as the demon is ready.
+@export var ignores_crucifix: bool = false
 ## How far, in px along the floor away from the demon, and how high the bite on its back throws the
 ## man. By default it only hops him in place, a little up and straight down onto the same back
 ## (#271): it never carries him, so a pack bites him again and again until he walks or jumps off,
 ## or his SP run low and it grabs him. With the bites again and again, the throw away from the
 ## demon it once had carried him clear of a pack on open floor, where the pack then took almost
-## twice as long to bring him low, and from back to back across a packed corridor.
+## twice as long to bring him low, and from back to back across a packed corridor. The hop is 48 px
+## since 22/11 (24 before), so the bite on the back is felt more.
 @export_range(0.0, 1000.0, 10.0, "suffix:px") var back_bite_knockback_distance: float = 0.0
-@export_range(1.0, 400.0, 1.0, "suffix:px") var back_bite_knockback_height: float = 24.0
+@export_range(1.0, 400.0, 1.0, "suffix:px") var back_bite_knockback_height: float = 48.0
 ## Seconds between two bites on a back, of this demon or any other, while the man stays on backs
 ## (#271): long enough that he sees he must get off. Under Min Back Bite Interval it counts as
 ## that, so the flash of the bites stays under three a second (WCAG 2.3.1).

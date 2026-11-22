@@ -4,3 +4,5 @@
 
 [resource]
 script = ExtResource("1_stats")
+max_offset = 48.0
+exponent = 1.5

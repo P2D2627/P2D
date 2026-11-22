@@ -73,6 +73,7 @@ func _phase_2_then_deaths_then_the_shortcut_and_the_ending() -> Array[bool]:
 	_delete_save()
 	var main: Node = await _new_game(main_menu_entries())
 	var level: Level = level_in(main) as Level
+	(level.get_node(^"Asmodeus") as Asmodeus).centres_camera = true
 	var start: Vector2 = level.player.global_position
 	var phase_2_save: SavePoint = level.get_node(^"Phase2Save") as SavePoint
 	var dogs: Node = level.get_node(^"Dogs")
