@@ -32,10 +32,10 @@ enum SlotsFor { LOAD, NEW_GAME }
 const FIRST_OPTION: StringName = &"MenuFirstOption"
 const OPTION: StringName = &"MenuOption"
 const SLOT: StringName = &"MenuSlot"
-const LOAD_HEADING: String = "Load a game"
-const NEW_GAME_HEADING: String = "Choose a slot for the new game"
+const LOAD_HEADING: String = "LOAD"
+const NEW_GAME_HEADING: String = "NEW GAME"
 const EMPTY_SLOT_TEXT: String = "Empty"
-const DAMAGED_SLOT_TEXT: String = "Can't be read"
+const DAMAGED_SLOT_TEXT: String = "Unreadable save"
 ## A save's level when its scene is no level's in the menu.
 const UNNAMED_LEVEL: String = "Saved game"
 const REPLACE_TEXT: String = "Starting a new game in slot %d replaces its saved game."

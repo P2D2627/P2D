@@ -10,8 +10,9 @@ extends "res://tests/support/player_test.gd"
 const LUST: DialogueResource = preload("res://dialogue/lust.dialogue")
 const LEVEL: StringName = &"a_level"
 const ZONE: StringName = &"pit"
-const LEVEL_FALLS_LINE: String = "3 falls on the way to me. I felt every one."
-const PHASE_FALLS_LINE: String = "3 falls on that climb, and you keep getting up. Why?"
+## The number in words, as NumberWords writes it (#284).
+const LEVEL_FALLS_LINE: String = "Three falls on the way to me. I felt every one."
+const PHASE_FALLS_LINE: String = "Three falls on that climb, and you keep getting up. Why?"
 ## Lines read from one cue before giving up, in case a jump loops.
 const MAX_LINES: int = 20
 

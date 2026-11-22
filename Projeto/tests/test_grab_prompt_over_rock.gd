@@ -1,4 +1,4 @@
-# Checks that the grab's prompt ("Press Jump!") always shows: in the lit level, where the man is drawn
+# Checks that the grab's prompt (the Jump key and "Break free!") always shows: in the lit level, where the man is drawn
 # behind the rock, the prompt still draws over the rock and its stone rim.
 # Run from the repository root; the exit code is 0 on pass and 1 on fail:
 # godot --headless --fixed-fps 60 --path Projeto --script res://tests/test_grab_prompt_over_rock.gd

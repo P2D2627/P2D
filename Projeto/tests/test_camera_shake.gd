@@ -305,8 +305,8 @@ func _the_shake_is_the_same_on_screen_at_any_zoom() -> bool:
 
 
 ## The options screen on its own, opened with Screen shake at 0.3: its slider, in the accessibility
-## grid, goes from 0 to 1 in steps of the screen's own step and shows 0.3 and "30 %"; moving it to 0.6
-## hands 0.6 to Settings and shows "60 %"; Reset brings back the default on both.
+## grid, goes from 0 to 1 in steps of the screen's own step and shows 0.3 and "30%"; moving it to 0.6
+## hands 0.6 to Settings and shows "60%"; Reset brings back the default on both.
 func _the_options_screen_shows_and_changes_the_option() -> bool:
 	var settings: GameSettings = root.get_node_or_null(^"Settings") as GameSettings
 	if settings == null:
@@ -321,15 +321,15 @@ func _the_options_screen_shows_and_changes_the_option() -> bool:
 	if slider != null:
 		var steps_right: bool = (slider.min_value == 0.0 and slider.max_value == 1.0
 				and is_equal_approx(slider.step, OptionsMenu.SCREEN_SHAKE_STEP))
-		var shown: bool = is_equal_approx(slider.value, 0.3) and _text_after(slider) == "30 %"
+		var shown: bool = is_equal_approx(slider.value, 0.3) and _text_after(slider) == "30%"
 		slider.value = 0.6
 		var changed: bool = (is_equal_approx(settings.get_screen_shake(), 0.6)
-				and _text_after(slider) == "60 %")
+				and _text_after(slider) == "60%")
 		(options.get_node(^"%ResetButton") as Button).pressed.emit()
 		var default_shake: float = GameSettings.DEFAULT_SCREEN_SHAKE
 		var reset: bool = (is_equal_approx(settings.get_screen_shake(), default_shake)
 				and is_equal_approx(slider.value, default_shake)
-				and _text_after(slider) == "%d %%" % roundi(default_shake * 100.0))
+				and _text_after(slider) == "%d%%" % roundi(default_shake * 100.0))
 		passed = steps_right and shown and changed and reset
 		what = ("the slider goes from 0 to 1 in steps of %.2f: %s; it shows 0.3 as 30 %%: %s; moved to "
 				+ "0.6, it hands 0.6 to Settings and shows 60 %%: %s; Reset brings back the default on "

@@ -465,9 +465,10 @@ toque troca a mão que a personagem tem levantada, para que cada toque se veja. 
 pode juntar-se a meio, e pede mais 6. Com dois, o agarrão fica cheio: nenhuma pancada entra, e os
 outros demónios esperam a cerca de 130 px. Se o jogador parar de premir, o progresso desce: ao fim de 0,25 s sem premir, perde metade
 da barra por segundo, pelo que quem prime 4 vezes por segundo não perde nada. Se não se soltar em
-3 s, a personagem morre, aparece "You died", o ecrã escurece e o nível recomeça 0,7 s depois. Se morrer por outra
+3 s, a personagem morre, aparece "Another fall.", o ecrã escurece e o nível recomeça 0,7 s depois. Se morrer por outra
 causa enquanto está agarrada, como nos picos letais, o agarrão acaba da mesma forma: os toques
-deixam de contar e aparece "You died".
+deixam de contar e aparece "Another fall." (os demónios contam as mortes como quedas, como nas falas
+da Asmodeu).
 
 Durante o agarrão, a personagem e os demónios que a agarram afundam-se no chão, até 96 px, ao ritmo
 do tempo que passa: o jogador vê quanto tempo lhe resta sem olhar para um número. O afundar é só
@@ -494,7 +495,9 @@ Para quem não consegue premir depressa, a opção Hold to escape (ecrã Options
 vibration) troca os toques por manter o salto premido: 1,2 s com um demónio, mais 0,9 s com o
 segundo, o que cabe nos 3 s do agarrão. Só conta a partir de um toque dado já durante o agarrão,
 para que um salto que vinha premido de antes não solte a personagem sozinho, e o texto passa de
-"Press Jump!" a "Hold Jump!". O texto desenha-se por cima da rocha (z 10), embora a
+"Break free!" a "Hold to break free". O texto não escreve o nome da ação: ao lado aparece a tecla do
+salto no aparelho usado por último, como na faixa do tutorial (`PromptGlyph`, #284,
+`test_grab_prompt_glyph.gd`). O texto desenha-se por cima da rocha (z 10), embora a
 personagem fique atrás dela, para se ver sempre (#284, `test_grab_prompt_over_rock.gd`). Largar o salto esvazia a barra como parar de premir: ao fim de 0,25 s,
 metade da barra por segundo. Com a opção ligada, os toques deixam de contar; aceitar as duas formas
 faria da opção um atalho para todos, porque cada toque somaria também o tempo premido. A opção vem
@@ -1162,6 +1165,15 @@ sentir a força que escolhe. Se o slider for arrastado com o rato, toca uma vez,
 Constant vibration desliga só a vibração contínua, para quem aceita os impulsos mas não um zumbido
 prolongado. Os momentos têm também imagem ou som. O aviso de que o crucifixo vai baixar vê-se na luz
 dele, que pulsa, e ouve-se no som, que treme com ela (ver "Crucifixo").
+
+No jogo exportado, a vibração depende de uma definição do projeto: Project Settings › Editor ›
+Export › Convert Text Resources To Binary está desligada (#284, `test_export_settings.gd`). A 20/11,
+com ela ligada, o `.exe` só vibrava nos menus: os 18 impulsos que o `rumble_stats.gd` cria como
+valores por defeito chegavam vazios ao jogo exportado (o salto, o golpe e a morte saíam `null` num
+build de diagnóstico), e com ela desligada chegaram. O motivo exato da perda na conversão é uma
+inferência nossa. O custo é o jogo exportado levar as cenas e os recursos em texto, maiores e mais
+lentos de carregar, ainda por medir. A alternativa, que não mexe no projeto todo, é gravar os 18
+impulsos no próprio `rumble_stats.tres`. Fica a decisão do grupo.
 
 Os valores estão em `rumble_stats.tres` (`Projeto/scenes/others/feedback/`), agrupados no Inspector
 pelos degraus. Cada impulso tem o motor fraco e o forte, de 0 a 1, a duração e a parte final em que
@@ -3362,7 +3374,9 @@ menu principal, para haver uma só marca de seleção, também nas linhas de tr�
 cima de um separador não o escolhe, para não trocar de página a caminho de uma opção; o separador
 escolhe-se com um clique. Por baixo das
 páginas, uma linha explica a opção selecionada. Reset to defaults e Back ficam numa barra à parte,
-em baixo e em letra mais pequena, com as teclas do Back ao lado (Esc / B). O Esc ou o B fecham as
+em baixo e em letra mais pequena, com a tecla do Back à frente, a do aparelho usado por último
+(Escape no teclado, B no comando; `test_options_back_key.gd`). O Escape é uma tecla reservada, que
+o ecrã dos controlos não oferece, e por isso a tecla mostra-o pelo nome dele. O Esc ou o B fecham as
 opções a partir de qualquer separador.
 
 - **Fundo partilhado** (`scenes/screens/menu_backdrop.tscn`): o preto (Background Alpha), os raios
@@ -3445,7 +3459,7 @@ e remapeamento por captura da tecla seguinte.
   ecrã esperar pela próxima tecla ou botão do rato. O Esc ou o B cancelam sem alterar nada. Uma
   tecla que não pode ser usada (as reservadas, como o F3 do overlay de depuração ou a tecla Windows) é recusada: o botão
   diz qual foi, soa o som de recusa, e a espera continua. O resto do comando, menos o B, também é
-  recusado, com o texto «Gamepad stays fixed: press a key (B cancels)», porque o comando é o mesmo em
+  recusado, com o texto «The controller can't be remapped (B cancels).», porque o comando é o mesmo em
   todos os perfis. Antes, era ignorado em silêncio, e o jogador não sabia se o jogo o tinha recebido.
   Um botão é recusado a cada carregão. Um eixo (o stick, um gatilho, como o RT do crucifixo) envia
   uma série de eventos ao longo do movimento, por isso é recusado uma só vez, quando passa de metade
@@ -3454,7 +3468,7 @@ e remapeamento por captura da tecla seguinte.
   carregões. Cada espera começa sem eixos registados, porque um eixo largado fora da espera não é
   visto. Um modificador (Shift, Ctrl, Alt) só fica atribuído quando é largado, se
   entretanto nada mais foi carregado e o jogo não perdeu nem recuperou o foco, porque carregado pode
-  ser o início de um atalho. Enquanto está em baixo, o botão diz «Shift: let go to use it». Antes, um
+  ser o início de um atalho. Enquanto está em baixo, o botão diz «Let go of Shift to use it.». Antes, um
   Alt+Tab durante a espera deixava a ação com o Alt. Shift com outra tecla atribui a outra tecla. A
   tecla Windows não conta como modificador: está reservada e é recusada logo ao ser carregada,
   porque largá-la abre o menu Iniciar e tira o foco ao jogo; atribuída, abriria o Iniciar sempre que
@@ -3644,7 +3658,9 @@ termina e que o retrato provisório mostra a inicial.
 
 O autoload `RunStats` conta as mortes do homem por fase e por zona de cada nível. Estes números
 servem as falas dos demónios (por exemplo, "morreste tantas vezes no mesmo sítio") e o julgamento
-final, que mostra ao homem o que fez, com números. Não entram no registo moral: só as decisões
+final, que mostra ao homem o que fez, com números. Nas falas, os números saem por extenso
+(`RunStats.opening_words`, regras na classe `NumberWords`, `test_number_words.gd`): "Three falls on the way
+to me" soa a uma voz, e "3 falls" a um contador. Não entram no registo moral: só as decisões
 contam para a moral, e morrer não é uma decisão. Nada disto aparece no ecrã durante o jogo.
 
 A fase é dada pelo próprio nível. Cada nível começa na fase indicada em First Phase, que
@@ -3813,7 +3829,7 @@ deixar desatualizada, e um índice danificado esconderia os três slots.
 - **Load:** aparece por baixo do Continue e lista os três slots, cada um com o nível, a fase, o
   tempo de jogo, as mortes e a data, escrita como 2026-11-19 17:40 para se ler da mesma forma em
   qualquer país. Abre com o último slot jogado selecionado. Um slot vazio, ou com um ficheiro que não
-  se lê ("Can't be read"), aparece na lista, mas não se pode escolher. No caso mais comprido medido
+  se lê ("Unreadable save": estragado, de uma versão mais recente ou de uma cena que já não existe), aparece na lista, mas não se pode escolher. No caso mais comprido medido
   (10h 33m e 127 mortes), o texto ocupa 534 dos 600 px do botão.
 - **New Game:** sem nenhum ficheiro de gravação, começa logo no slot 1. Caso contrário, mostra os
   slots com o primeiro vazio selecionado. Um slot ocupado, ou com um ficheiro que não se lê, pede

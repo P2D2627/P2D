@@ -2,6 +2,7 @@
 
 [ext_resource type="Script" path="res://scenes/characters/player/grab_prompt.gd" id="1_script"]
 [ext_resource type="Theme" path="res://themes/ui_theme.tres" id="2_theme"]
+[ext_resource type="PackedScene" path="res://scenes/levels/prompt_glyph.tscn" id="3_glyph"]
 
 [node name="GrabPrompt" type="VBoxContainer"]
 visible = false
@@ -10,17 +11,29 @@ offset_left = -150.0
 offset_top = -210.0
 offset_right = 150.0
 offset_bottom = -120.0
+grow_horizontal = 2
 mouse_filter = 2
 theme = ExtResource("2_theme")
 alignment = 1
 script = ExtResource("1_script")
 
-[node name="Label" type="Label" parent="."]
+[node name="Row" type="HBoxContainer" parent="."]
+layout_mode = 2
+mouse_filter = 2
+alignment = 1
+
+[node name="Glyph" parent="Row" instance=ExtResource("3_glyph")]
+unique_name_in_owner = true
+layout_mode = 2
+size_flags_vertical = 4
+action = &"jump"
+
+[node name="Label" type="Label" parent="Row"]
 unique_name_in_owner = true
 layout_mode = 2
 theme_override_colors/font_outline_color = Color(0, 0, 0, 1)
 theme_override_constants/outline_size = 8
-text = "Press Jump!"
+text = "Break free!"
 horizontal_alignment = 1
 
 [node name="Bar" type="ProgressBar" parent="."]

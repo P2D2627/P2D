@@ -12,9 +12,10 @@ const CUE: String = "asmodeus_deaths"
 const SHORTCUT: StringName = &"lust_shortcut"
 const ANSWERS: int = 4
 const ZONE: StringName = &"pit"
-const MINUTES_LINE: String = "5 minutes on this one stretch, darling. I watched every one."
-const DEATHS_LINE: String = "3 times, right here. I counted. Try not to give me another."
-const PLAIN_LINE: String = "This part was hard, wasn't it? Try not to die here again."
+## The numbers in words, as NumberWords writes them (#284).
+const MINUTES_LINE: String = "Five minutes on this one stretch, darling. I watched every one."
+const DEATHS_LINE: String = "Three times, right here. I counted. Try not to give me another."
+const PLAIN_LINE: String = "This part was hard, wasn't it?"
 const ASKED_BEFORE_LINE: String = "I did ask you before. The offer still stands."
 ## Lines read from one cue before giving up, in case a jump loops.
 const MAX_LINES: int = 20

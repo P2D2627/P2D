@@ -1,9 +1,11 @@
 class_name PromptGlyph
 extends PanelContainer
 
-## One action's prompt, drawn the same way in the tutorial's band at the bottom of the screen and in
-## the world, over Velvet: on the keyboard, the action's first key or mouse button, as the controls
-## screen names it, in a key of our own; once a pad is the device used last (the autoload
+## One action's prompt, drawn the same way in the tutorial's band at the bottom of the screen, in
+## the world over Velvet, in the grab's prompt and beside the options' Back: on the keyboard, the
+## action's first key or mouse button, as the controls screen names it, in a key of our own (a
+## reserved key, which the controls screen never offers, by its own name, as Escape for ui_cancel);
+## once a pad is the device used last (the autoload
 ## LastDevice), the pad's button, stick or trigger for the action: its picture from Pad Icons, tinted
 ## in the interface's bone colour, or, for a binding with no picture, its name in the key. It follows
 ## the profile picked in the options, which are only reached through the pause, so it reads the Input
@@ -97,12 +99,18 @@ func refresh() -> void:
 
 
 ## The name of the first key or mouse button the Input Map has for action, as the controls screen
-## shows it; NO_KEY_TEXT with none.
+## shows it; with none it can show, the first key by its own name, as a reserved key such as Escape
+## has no binding; NO_KEY_TEXT with no key at all.
 static func key_text(for_action: StringName) -> String:
+	var first_key: InputEventKey = null
 	for event: InputEvent in InputMap.action_get_events(for_action):
 		var binding: String = InputProfiles.binding_from_event(event)
 		if not binding.is_empty():
 			return InputProfiles.binding_title(binding)
+		if first_key == null:
+			first_key = event as InputEventKey
+	if first_key != null:
+		return OS.get_keycode_string(InputProfiles.keycode_of(first_key))
 	return NO_KEY_TEXT
 
 

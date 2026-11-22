@@ -83,7 +83,7 @@ func _velvet_speaks_alone_until_the_questions() -> bool:
 	for line: DialogueLine in lines:
 		if line.type != DMConstants.TYPE_RESPONSE:
 			speakers.append(line.character)
-	var passed: bool = not speakers.is_empty() and lines[0].text.begins_with("Well, well.") \
+	var passed: bool = not speakers.is_empty() and lines[0].text.begins_with("[i](sniffing the air)[/i] Fresh.") \
 			and speakers.all(func(name: String) -> bool: return name == SPEAKER)
 	return report(passed, "velvet: every line before the questions is Velvet's (speakers %s)"
 			% [speakers])
@@ -119,7 +119,7 @@ func _with_every_question_asked_the_argument_starts() -> bool:
 	if not lines.is_empty():
 		answers = _allowed_texts(lines[-1])
 	var passed: bool = lines.size() == 4 and lines[2].responses.is_empty() \
-			and lines[3].character == SPEAKER and lines[3].text.begins_with("Out of Hell?") \
+			and lines[3].character == SPEAKER and lines[3].text.begins_with("Out? [i](laughing)[/i] On your first day?") \
 			and answers.has("I don't belong here. I was a good person.")
 	return report(passed, "with every question asked, velvet goes on to velvet_argument (got %d lines, %s)"
 			% [lines.size(), answers])

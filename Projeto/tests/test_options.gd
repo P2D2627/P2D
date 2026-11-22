@@ -250,7 +250,7 @@ func _the_screen_shows_what_settings_holds() -> bool:
 			_is_pressed(options, ^"%VSyncCheck"), _fps_cap_shown(options)]
 	var nothing_written: bool = not FileAccess.file_exists(SETTINGS_TEST_PATH)
 	await remove_main(main)
-	return report(slider_right and shown == ["30 %", true, false, 120] and nothing_written,
+	return report(slider_right and shown == ["30%", true, false, 120] and nothing_written,
 			("The screen shows Music's slider at 0.3 %s; its label, full screen, V-Sync and the cap "
 			+ "%s; no file written %s") % [slider_right, shown, nothing_written])
 
@@ -266,7 +266,7 @@ func _each_control_changes_settings() -> bool:
 	await press_on(options, ^"%AudioTab", KEY_ENTER)
 	await tap(KEY_LEFT)
 	var volume_changed: bool = (is_equal_approx(settings.get_volume(&"Master"), 0.95)
-			and _value_label(master) == "95 %")
+			and _value_label(master) == "95%")
 	await press_on(options, ^"%DisplayTab", KEY_ENTER)
 	await press_on(options, ^"%FullscreenCheck", KEY_ENTER)
 	var fullscreen_changed: bool = settings.is_fullscreen()
@@ -413,7 +413,7 @@ func _reset_brings_back_the_defaults() -> bool:
 			and settings.get_fps_cap() == GameSettings.DEFAULT_FPS_CAP)
 	var sfx: HSlider = _slider(options, &"SFX")
 	var on_screen: bool = (sfx != null and is_equal_approx(sfx.value, GameSettings.DEFAULT_VOLUME)
-			and _value_label(sfx) == "100 %"
+			and _value_label(sfx) == "100%"
 			and _is_pressed(options, ^"%FullscreenCheck") == GameSettings.DEFAULT_FULLSCREEN
 			and _fps_cap_shown(options) == GameSettings.DEFAULT_FPS_CAP)
 	await remove_main(main)

@@ -29,7 +29,7 @@ columns = 2
 [node name="GamepadNote" type="Label" parent="."]
 layout_mode = 2
 theme_type_variation = &"OptionsDescription"
-text = "The gamepad's buttons are the same in every profile."
+text = "The controller's buttons are the same in every profile."
 horizontal_alignment = 1
 
 [node name="ControlsResetButton" type="Button" parent="."]
