@@ -114,6 +114,10 @@ var _on_left: bool = false
 @onready var _character_label: RichTextLabel = %CharacterLabel
 @onready var _dialogue_label: DialogueLabel = %DialogueLabel
 @onready var _wheel: DialogueWheel = %Wheel
+## The wheel's click, blow and pulses, the menus' own (#284), playing only what the balloon asks. It
+## lives in the balloon, which stays after an answer to write it (Write The Answer), so the blow is
+## only cut when a short answer ends the talk and Next comes again within the blow's 0.15 s.
+@onready var _answer_feedback: MenuFeedback = %AnswerFeedback
 @onready var _progress: CanvasItem = %Progress
 @onready var _audio_stream_player: AudioStreamPlayer = %AudioStreamPlayer
 @onready var _portrait: TextureRect = %Portrait
@@ -140,6 +144,8 @@ func _ready() -> void:
 	_next_inset = _text_area.position.x + _text_area.size.x - _next.position.x
 	Engine.get_singleton("DialogueManager").mutated.connect(_on_mutated)
 	_wheel.next_action = next_action
+	_wheel.pointed.connect(_answer_feedback.play_move.unbind(1))
+	_wheel.response_selected.connect(_answer_feedback.play_confirm.unbind(1))
 	tree_exiting.connect(_hide_others.bind(false))
 	_mutation_cooldown.timeout.connect(_on_mutation_cooldown_timeout)
 	add_child(_mutation_cooldown)

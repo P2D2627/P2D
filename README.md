@@ -3429,6 +3429,16 @@ opções a partir de qualquer separador.
   clique fica 9 dB abaixo do golpe. O script reproduz os ficheiros do repositório byte a byte. Se
   faltar um som na cena, o jogo usa um feito em código (`menu_sound_synth.gd`), com a sua própria
   mistura: o clique 11 dB abaixo do golpe.
+- **Respostas das falas** (#284, `test_wheel_feedback.gd`): a roda das respostas do balão soa e vibra
+  como os menus, com um `MenuFeedback` próprio (`AnswerFeedback`). Apontar outra resposta faz o clique
+  e o pulso de mudar, confirmar faz o golpe e o pulso de escolher, e voltar o stick ao centro não soa.
+  A roda não usa foco nem botões, por isso avisa o balão com o sinal `pointed`, e o balão chama o
+  `play_move()` e o `play_confirm()` do `MenuFeedback`, que neste caso não ouve nada sozinho (Only
+  Asked). A roda tem histerese: a resposta apontada só se larga quando o stick recua mais 0,12 do seu
+  curso (Aim Release Margin) para lá da zona morta ou da linha entre duas respostas. Sem ela, um
+  stick parado numa linha trocava de resposta a cada frame, e o destaque, o clique e o pulso com ele
+  (no teste, 10 vezes em 20 oscilações na beira da zona morta; com ela, uma). Os pulsos estão
+  gravados na cena, como os dos menus, e chegam ao jogo exportado.
 - **Cruzes** (`scenes/screens/menu_crosses.gd`): seguem o foco, de teclado, comando ou rato, e
   deslizam para a opção selecionada; o rato por cima de um botão dá-lhe o foco. Ficam só nos botões:
   um slider mostra a sua própria seleção.

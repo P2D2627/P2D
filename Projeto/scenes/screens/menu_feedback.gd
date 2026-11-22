@@ -5,7 +5,8 @@ extends Node
 ## keys, stick, d-pad or mouse), a heavy blow as an option is chosen, a dull thud as a screen is
 ## left, and the controller in use answering each with a pulse (through ControllerRumble, so the
 ## Vibration option scales it and only the controller in use vibrates). It only listens: it never
-## handles the input. It sounds while Menu shows; in the main scene the main menu and the pause have
+## handles the input. With Only Asked and no menu, it listens to nothing and plays only what it is
+## asked, as the dialogue wheel's answers (#284). It sounds while Menu shows; in the main scene the main menu and the pause have
 ## one each, and only one shows at a time. A selection the game moves itself, as a panel opens,
 ## makes no sound: a move counts only right after the player's own input. A switch clicks; a slider
 ## ticks at a pitch that follows its value. With no stream of their own, both are the selection's
@@ -48,6 +49,9 @@ const MADE_MIX_DB: Dictionary[StringName, float] = {&"move": -14.0, &"confirm": 
 
 ## The menu this one serves: it sounds only while that shows, and only for what lies under it.
 @export var menu: CanvasLayer
+## With no menu, it listens to nothing and plays only what play_move() and play_confirm() ask, as for
+## the dialogue wheel, which has no focus or buttons (#284). Off, a missing menu is warned about.
+@export var only_asked: bool = false
 
 @export_group("Sounds")
 ## The selection's click; empty, it is made in code.
@@ -146,7 +150,8 @@ func _ready() -> void:
 	_rumble = ControllerRumble.new()
 	add_child(_rumble)
 	if menu == null:
-		push_warning("MenuFeedback: no menu set, so it never sounds.")
+		if not only_asked:
+			push_warning("MenuFeedback: no menu set, so it never sounds.")
 		return
 	get_viewport().gui_focus_changed.connect(_on_focus_changed)
 	for node: Node in menu.find_children("*", "", true, false):
@@ -168,6 +173,18 @@ func _input(event: InputEvent) -> void:
 			if event.is_action_pressed(action, true):
 				_input_msec = now
 				return
+
+
+## A move of a selection it cannot see, as the dialogue wheel's, which has no focus or buttons: the
+## click and the move pulse, with the same gaps as any move.
+func play_move() -> void:
+	_play_move(_move_player, 1.0, &"move")
+
+
+## A choice made where it cannot see, as an answer confirmed on the dialogue wheel: the blow and the
+## confirm pulse.
+func play_confirm() -> void:
+	_play_confirm()
 
 
 func _is_showing() -> bool:
