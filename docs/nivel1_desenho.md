@@ -6,6 +6,9 @@ lista de verificação que cada sala tem de cumprir. Nos termos usados, os "cãe
 luxúria e "o homem" é a personagem jogável. Cada regra indica entre parênteses a fonte em que se
 apoia; as fontes, o que se leu de cada uma e onde se encontram estão na secção Referências.
 
+Este documento regista o desenho original. Nos pontos em que o jogo mudou depois dele, prevalecem o
+[bloco 3 do GDD](gdd/3_progression_and_levels.md) e o [README](../README.md).
+
 ## 1. Motivo da revisão
 
 Na apresentação do pitch, os docentes criticaram sobretudo o nível 1:

@@ -290,7 +290,7 @@ estados:
 | Parado | Espera no seu posto, onde o nível o colocou e virado para onde o nível o virou, até reparar na personagem. Com ronda, é a pausa entre duas idas, sorteada por cada demónio entre 0,8 e 2 s. |
 | Ronda | Vai e vem a passo, a 150 px/s, num troço de 480 px do seu chão, centrado no posto. Vira-se nas pontas, à beira de um desnível e contra uma parede. Fora do ecrã, fica parado. |
 | Alerta | Ao reparar na personagem, vira-se para ela e fica 0,3 s parado onde está, o tempo de ladrar, antes de a perseguir. Por cima da cabeça surge um "!", com o som de alerta do cão (1,8 s); o "!" fica mais 0,5 s já na perseguição, para se conseguir ler. Quando o som de alerta acaba, se o cão ainda a perseguir, ouve-se um de dois sons de quem se fixou na presa, ao acaso. |
-| Perseguir | Segue-a a cerca de 560 px/s, no chão onde está. A personagem corre a 720 px/s, pelo que fugir resulta, mas com pouca margem. |
+| Perseguir | Segue-a a cerca de 510 px/s, no chão onde está; cada demónio sorteia a sua velocidade uma vez, entre 459 e 561 px/s (±10 %, Pack Variation). A personagem corre a 600 px/s, pelo que fugir resulta, mas com pouca margem. |
 | Aviso | Antes de cada ataque, mostra qual vem, para que o jogador tenha tempo de reagir: antes da mordida, alarga-se e baixa durante 0,1 s, sem parar de correr; antes do salto, para e encolhe durante 0,35 s. |
 | Atirar-se | Salta para onde a personagem vai estar, entre 200 e 420 px, e fica 0,35 s parado onde aterra. |
 | Recuar | Depois de cada ataque, afasta-se de frente para a personagem, a cerca de 400 px/s, até ficar a cerca de 130 px dela. Enquanto não pode voltar a atacar, vai e vem entre cerca de 130 e 190 px dela, a cerca de 180 px/s e sempre virado para ela, e depois corre para ela e ataca à chegada. |
@@ -299,6 +299,8 @@ estados:
 | Repelido | Depois de atirado pelo crucifixo, fica 0,3 s parado onde aterrou e volta a perseguir. |
 | Atordoado | Depois de atirado pela personagem ao soltar-se, fica 1,2 s no chão, achatado e mais escuro, e depois recua ou volta a perseguir. |
 | Fora de alcance | Com a personagem num chão ou numa parede acima ou abaixo do que os seus ataques chegam, não a segue por baixo nem por cima: para virado para ela e ladra, e depois anda para trás e para a frente num troço de 160 px à volta do sítio onde parou e, em cada ponta, volta a parar e a ladrar; contra uma parede ou na borda do seu chão, do lado dela, salta no sítio. Se ela sair do troço por cima dele, corre por baixo à velocidade da perseguição até ficar debaixo dela e anda aí. Se ela descer ao seu alcance, volta a persegui-la. Enquanto a vir, nunca desiste; se ela sair da sua vista, ladra mais 3 s para onde ela estava e depois vai procurá-la. |
+| Saltar | Com a opção de subir ligada (Jump Height, ver abaixo), salta a correr um degrau no caminho, sem aviso; não ataca no ar e, ao aterrar mais acima, retoma o que fazia. |
+| Descer | Com a opção de descer ligada (Max Drop), salta da borda do seu chão para um chão mais baixo; não ataca no ar e, ao aterrar mais abaixo, retoma o que fazia. |
 | Procurar | Quando uma parede a esconde durante 0,5 s, vai a 300 px/s até onde a viu pela última vez, ou até onde o seu chão deixa, e fareja ali durante 2,5 s, virando-se para o outro lado a meio. Se a vir, fica alerta e volta a persegui-la; se não, desiste. Fora do ecrã, desiste logo. Os dois bips a descer do início da procura estão desligados (Play Beeps, no nó `DemonSounds`); o "?" sobre a cabeça está desligado desde a linha de vista (Shows Search, no nó `Mark`). |
 | Voltar | Depois de desistir, volta ao posto a passo, a 200 px/s, e retoma a ronda. Se a vir à frente pelo caminho, fica alerta e volta a persegui-la. |
 
@@ -418,11 +420,12 @@ uma parede o param, fazendo aí a ronda; nunca fica a tentar subir. O posto não
 desiste, volta a tentar chegar-lhe. É uma mecânica: o jogador pode gastar o crucifixo para tirar
 um demónio do caminho, e os níveis podem oferecer-lhe bordas e buracos para onde o atirar.
 
-Uma opção, desligada no demónio da luxúria, deixa um demónio subir e descer atrás da personagem,
-com alturas a que só ela chega (o salto dela sobe 240 px). Liga-se com dois valores do ficheiro de
-dados: Jump Height, o degrau mais alto que o demónio sobe, e Max Drop, a queda mais funda que
-desce; a 0, o demónio comporta-se como acima. Ligá-la num nível contraria a regra "o chão é dos
-cães" do nível 1 e é uma decisão do grupo. Na sala de testes e na estação 10 da sala de treino, os
+Uma opção deixa um demónio subir e descer atrás da personagem, com alturas a que só ela chega (o
+salto dela sobe 240 px). Liga-se com dois valores do ficheiro de dados: Jump Height, o degrau mais
+alto que o demónio sobe, e Max Drop, a queda mais funda que desce; a 0, o demónio comporta-se como
+acima. Os cães comuns do nível 1 têm-na desligada, pela regra "o chão é dos cães". Só o maior cão,
+no fim da fase 3, a usa, com 240 px e 1536 px, para seguir a personagem na fuga, também poços
+abaixo (ver mais abaixo). Na sala de testes e na estação 10 da sala de treino, os
 demónios usam-na com 96 px e 240 px:
 
 - **Subir.** Com a personagem acima do seu alcance e um degrau no caminho, o demónio salta-o a
@@ -480,11 +483,12 @@ altura), e cada um fica 1,2 s atordoado no chão. É a janela para fugir, e vê-
 personagem fica ainda 1 s invulnerável a todas as pancadas, também às dos demónios do nível 1,
 para não ser agarrada de novo logo a seguir.
 
-A personagem e os demónios não se atravessam: param encostados, também a meio de um salto. A
-personagem nunca fica de pé em cima de um demónio: é empurrada para o lado a 600 px/s, sem correr
-nem saltar até pisar outra coisa. Assim, a cabeça de um demónio, onde a mordida não chega, nunca é
-um sítio seguro. O mesmo vale ao contrário: um demónio nunca fica de pé em cima da personagem, e é
-empurrado para o lado a 600 px/s. Se os dois ficarem presos, porque o empurrão bate em paredes dos
+A personagem e os demónios não se atravessam: param encostados, também a meio de um salto. Em
+cima de um demónio cujas costas mordem, como todos os cães do nível 1, a personagem fica de pé e é
+mordida até sair (ver acima). De um demónio sem essa mordida, é empurrada para o lado a 720 px/s,
+sem correr nem saltar até pisar outra coisa, durante 0,4 s no máximo. Assim, o topo de um demónio,
+onde os seus ataques não chegam, nunca é um sítio seguro. Ao contrário, um demónio nunca fica de pé
+em cima da personagem, e é empurrado para o lado a 600 px/s. Se os dois ficarem presos, porque o empurrão bate em paredes dos
 dois lados, como num buraco da largura de um corpo, atravessam-se ao fim de 0,1 s até se
 separarem; enquanto se sobrepõem, o demónio não ataca.
 
@@ -1922,7 +1926,8 @@ serve duas ações de jogo; o Espaço e o A também confirmam nos menus, de prop
 Os poderes dos upgrades vão usar o botão do crucifixo: o crucifixo perde-se no primeiro upgrade
 aceite, pelo que os dois nunca coexistem, e o Shift e o RT (o Q, no perfil das setas) passam a usar
 o poder ativo. Trocar de poder fica no LB e no RB e, no perfil WASD, no Q e no R; o Y, o B e o LT
-ficam livres para a espada do nível 5. Estas ações entram no Input Map quando o primeiro upgrade
+ficam livres para a espada que Satanás oferece no nível 5: é a única arma do jogo e aceitá-la é a
+tentação da ira, pelo que quem a recusa continua sem ataques. Estas ações entram no Input Map quando o primeiro upgrade
 for implementado.
 
 Limitações conhecidas. No Windows, cinco toques seguidos no Shift abrem o aviso das Teclas Fixas
@@ -2175,8 +2180,9 @@ não dependa do momento em que o homem chega. O frame da folha segue o chão per
 frame, para que as patas não escorreguem a nenhuma velocidade. Ela anda sem colidir, por isso a zona
 tem de ser chão plano. A caixa de colisão cobre o tronco (66 × 54 px), sem a cabeça nem a cauda.
 
-- **Um objeto por estado.** Os catorze estados (`IDLE`, `CHASE`, `WARNING`, `LUNGE`, `RETREAT`,
-  `GRAB`, `THROWN`, `REPELLED`, `STUNNED`, `RETURN`, `OUT_OF_REACH`, `PATROL`, `ALERT` e `SEARCH`)
+- **Um objeto por estado.** Os dezasseis estados (`IDLE`, `CHASE`, `WARNING`, `LUNGE`, `RETREAT`,
+  `GRAB`, `THROWN`, `REPELLED`, `STUNNED`, `RETURN`, `OUT_OF_REACH`, `PATROL`, `ALERT`, `SEARCH`,
+  `JUMP` e `DROP`)
   continuam a ser uma
   enumeração no `demon.gd`, que a arte, o som e os testes leem, mas o que o demónio faz em cada um
   está num objeto próprio, uma classe derivada de `DemonState`, em `scenes/characters/demon/states/` (o padrão State).
@@ -2186,7 +2192,7 @@ tem de ser chão plano. A caixa de colisão cobre o tronco (66 × 54 px), sem a 
   objetos uma vez, ao entrar na cena, e muda de estado só por um método, `change_state`, que liga ou
   desliga a `Hitbox` e avisa a arte e o som. Os estados usam o corpo, os sentidos e os ataques do
   demónio pelos métodos cuja documentação começa por "For its states". Os objetos não são nós da
-  cena: assim o `demon.tscn` não muda, cada demónio não ganha doze nós (600 com 50 demónios) e os
+  cena: assim o `demon.tscn` não muda, cada demónio não ganha dezasseis nós (800 com 50 demónios) e os
   valores continuam todos no `DemonStats`. O alerta e a procura, que o desenho do nível 1 pedia,
   entraram assim: dois ficheiros novos, cada um com o seu nome na enumeração e a linha que o cria
   no `demon.gd` (ADR 0035). O alvo e a memória passaram depois para um componente (ver "Alvo e
@@ -3408,7 +3414,7 @@ o jogo numa janela à parte ou numa exportação.
 O menu principal e a pausa seguem a maqueta do grupo: fundo preto, a personagem principal à
 esquerda, iluminada por uma luz que entra pelo canto superior direito, e as opções à direita, em
 maiúsculas, com uma cruz de cada lado da opção selecionada. A pausa tem a mesma composição, mas o
-preto fica a 60 % de opacidade, para se continuar a ver o jogo por trás. As opções e os controlos
+preto fica a 90 % de opacidade, para se continuar a ver o jogo por trás. As opções e os controlos
 abrem na mesma coluna, com o mesmo estilo. As opções abrem num ecrã com quatro separadores em linha
 (Audio, Display, Controls e Accessibility), com o primeiro já escolhido, para o jogador nunca ver
 todas as opções de uma vez. As setas ou o D-pad percorrem os separadores, que dão a volta do último
@@ -3649,7 +3655,8 @@ atalho vale 1 e cada resposta arrogante 0,5), por isso o presente usa já o est�
 | Valor | Referência |
 |---|---|
 | Atalho de um demónio (Moral Weight, no ficheiro da oferta em `scenes/autoload/offers/`) | 1 ponto |
-| Dom de um demónio, como o charm (idem) | 2 pontos |
+| Dom da Asmodeu, o charm (idem) | 2 pontos |
+| Dons de Belzebu e de Mammon, o stomach e o claim (idem) | 1 ponto cada |
 | Cada portagem roubada (idem) | 0,4 pontos |
 | Tentação sem ficheiro de oferta (`scenes/autoload/moral_stats.tres`, tal como os seguintes) | 1 ponto |
 | Resposta arrogante | +0,5 pontos |
@@ -3658,7 +3665,7 @@ atalho vale 1 e cada resposta arrogante 0,5), por isso o presente usa já o est�
 | Estádio 1 / estádio 2 | a partir de 1 / de 3 pontos |
 
 São valores de referência, a afinar em jogo. Com eles, um atalho basta para a alma perder a resposta humilde do presente, o atalho
-e o dom juntos chegam ao estádio 2, e as três portagens juntas pesam pouco mais do que um atalho.
+e o dom da Asmodeu juntos chegam ao estádio 2, e as três portagens juntas pesam pouco mais do que um atalho.
 As regras estão numa classe sem nós
 (`MoralRecord`), testada isoladamente; o autoload limita-se a disponibilizá-la. O `reset()` limpa o
 registo para um jogo novo, e o registo entra na gravação do jogo.
@@ -3825,7 +3832,7 @@ estatísticas, para que a morte não a apague. Morrer não conta para a moral; s
 conta.
 
 A Asmodeu é um nó próprio (`scenes/characters/demon/asmodeus.tscn`), desenhada com a figura dela da
-visual novel de CDJ, com 150 px de altura, e com o nome por cima. Não combate. Quando fala, aparece ao lado do homem, prende-o
+visual novel de CDJ, com 150 px de altura. Não combate. Quando fala, aparece ao lado do homem, prende-o
 como a Velvet (sem correr, saltar nem erguer o crucifixo), fala no balão do jogo e desaparece.
 Enquanto fala, os cães do nível ficam parados (Asmodeus › Stills), para que nenhum morda o homem
 preso. O que acontece a seguir decidem as falas, através das ofertas.
@@ -4031,7 +4038,7 @@ cena do nível. As regras são estas:
   maior do que o ecrã.
 - Um membro acorda quando o seu retângulo chega a 480 px do ecrã (Wake Margin) e adormece quando
   fica a mais de 960 px (Sleep Margin). Entre as duas distâncias, mantém o que estava, pelo que nada
-  fica a alternar junto à margem. A diferença de 480 px corresponde a 0,67 s de corrida (720 px/s).
+  fica a alternar junto à margem. A diferença de 480 px corresponde a 0,8 s de corrida (600 px/s).
 - Só adormece o que está em repouso. Um cão parado ou em ronda no seu chão pode adormecer; em
   qualquer outro estado (a perseguir, à procura, a voltar ao posto, no ar, projetado, a agarrar, e
   qualquer estado que se acrescente), continua a ser processado, esteja a que distância estiver. Um
